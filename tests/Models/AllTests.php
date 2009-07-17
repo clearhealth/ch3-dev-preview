@@ -27,11 +27,6 @@ if (!defined('PHPUnit_MAIN_METHOD')) {
     define('PHPUnit_MAIN_METHOD', 'Models_AllTests::main');
 }
 
-/**
- * Models_NSDRDefinitionTest
- */
-require_once 'Models/NSDRDefinitionTest.php';
-
 class Models_AllTests {
 
 	public static function main() {
