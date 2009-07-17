@@ -1,0 +1,182 @@
+<div id="aclLayout" style="position:absolute;width:100%;height:480px;">
+<div id="aclToolbar" style="width:99.9%;"></div>
+<div id="aclContainer" style="width:100%;height:100%;overflow:auto"></div>
+</div>
+
+<script>
+aclToolbar = new dhtmlXToolbarObject('aclToolbar','ClearSilver');
+aclToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+aclToolbar.attachEvent('onClick',function (id) {onACLToolbarClick(id);} );
+aclToolbar.loadXML('<?=$this->baseUrl?>/acl.raw/toolbar.xml');
+
+function onACLToolbarClick(itemId) {
+	switch (itemId) {
+		case "reload_permissions":
+			reloadPermissions();
+			break;
+		default:
+			alert("<?=__('Invalid event.')?>");
+	}
+}
+
+aclGrid = new dhtmlXGridObject('aclContainer');
+aclGrid.setImagePath("<?=$this->baseUrl?>/img/");
+aclGrid.selMultiRows = true;
+var headerColRead = '<input id="<?=$this->chkLabelRead?>Header" name="<?=$this->chkLabelRead?>Header" disabled="disabled" type="checkbox" onclick="toggleColumn(this)"> <?=__('Read')?>';
+var headerColWrite = '<input id="<?=$this->chkLabelWrite?>Header" name="<?=$this->chkLabelWrite?>Header" disabled="disabled" type="checkbox" onclick="toggleColumn(this)"> <?=__('Write')?>';
+var headerColDelete = '<input id="<?=$this->chkLabelDelete?>Header" name="<?=$this->chkLabelDelete?>Header" disabled="disabled" type="checkbox" onclick="toggleColumn(this)"> <?=__('Delete')?>';
+var headerColOther = '<input id="<?=$this->chkLabelOther?>Header" name="<?=$this->chkLabelOther?>Header" disabled="disabled" type="checkbox" onclick="toggleColumn(this)"> <?=__('Other')?>';
+aclGrid.setHeader("Resource,"+headerColRead+","+headerColWrite+","+headerColDelete+","+headerColOther);
+aclGrid.setInitWidths("*,*,*,*,*");
+aclGrid.setColTypes("ro,ro,ro,ro,ro");
+aclGrid.init();
+aclGrid.load('<?=$this->baseUrl?>/acl.raw/list-items',onACLLoaded,"json");
+
+function onACLLoaded() {
+	toggleCheckboxHeaders(true);
+	var numRows = aclGrid.getRowsNum();
+	if (numRows <= 0) {
+		return;
+	}
+	toggleCheckboxHeaders(false);
+}
+
+var aclMenu = new dhtmlXMenuObject('aclColumnMenu','standard');
+aclMenu.setImagePath("<?=$this->baseUrl?>/img/");
+aclMenu.renderAsContextMenu();
+aclMenu.setOpenMode("web");
+aclMenu.attachEvent('onClick',onMenuClicked);
+aclMenu.loadXML('<?=$this->baseUrl?>/acl.raw/get-menu.xml');
+
+function onMenuClicked(itemId,type) {
+	switch (itemId) {
+		case 'acl_add_resource':
+			do {
+				var name = prompt("<?=__('Resource Name')?>");
+			} while (name != null && name.length <= 0);
+			if (name != null) {
+				addResource(name);
+			}
+			break;
+		case 'acl_add_permission':
+			var rowCol = type.split('_'); // 0: rowId, 1: colIndex
+			addPermission(rowCol[0],rowCol[1]);
+			break;
+	}
+}
+
+function addResource(name) {
+	// strip off spaces
+	var id = name.replace(/ /g,'');
+	// TODO: send ajax call
+	aclGrid.addRow(id,name);
+}
+
+function addPermission(rowId,colIndex) {
+	var name = 'Other';
+	switch (parseInt(colIndex)) {
+		case 1:
+			name = 'Read';
+			break;
+		case 2:
+			name = 'Write';
+			break;
+		case 3:
+			name = 'Delete';
+			break;
+		case 4:
+			name = 'Other';
+			break;
+		default:
+			return;
+	}
+	var resourceName = aclGrid.cells(rowId,0).getValue();
+	do {
+		var value = prompt(resourceName+'->'+name+"\n<?=__('Permission Name')?>");
+	} while (value != null && value.length <= 0);
+
+	if (value == null) {
+		return;
+	}
+	// TODO: send ajax call
+	var newCheckbox = '<input type="checkbox" name="chk'+name+'" value="'+value+'" onClick="toggleItem(this)" /> '+value;
+	var oldCheckboxes = aclGrid.cells(rowId,colIndex).getValue();
+	var newCheckboxes = oldCheckboxes;
+	if (oldCheckboxes.length > 0) {
+		newCheckboxes += "<br />\n";
+	}
+	newCheckboxes += newCheckbox;
+	aclGrid.cells(rowId,colIndex).setValue(newCheckboxes);
+}
+
+aclGrid.enableContextMenu(aclMenu);
+aclGrid.attachEvent('onBeforeContextMenu',onBeforeContextMenuEvent);
+
+function onBeforeContextMenuEvent(rowId,colIndex,gridObj) {
+	// hide all menus, only show relevant menu
+	aclMenu.forEachItem(function(id){ aclMenu.hideItem(id); });
+	if (colIndex == 0) {
+		aclMenu.showItem('acl_add_resource');
+	}
+	else {
+		aclMenu.showItem('acl_add_permission');
+	}
+
+	return true;
+}
+
+function toggleCheckboxHeaders(state) {
+	dojo.byId('<?=$this->chkLabelRead?>Header').disabled = state;
+	dojo.byId('<?=$this->chkLabelWrite?>Header').disabled = state;
+	dojo.byId('<?=$this->chkLabelDelete?>Header').disabled = state;
+	dojo.byId('<?=$this->chkLabelOther?>Header').disabled = state;
+}
+
+function toggleColumn(oChk) {
+	var chkName = oChk.name.replace(/Header/, '');
+	var chkEl = document.getElementsByName(chkName);
+	for(var i=0; i < chkEl.length; i++) {
+		chkEl[i].checked = oChk.checked;
+	}
+	savePermission(chkName,oChk.checked,'admin','all');
+}
+
+function toggleItem(oChk) {
+	savePermission(oChk.name,oChk.checked,'admin',oChk.value);
+}
+
+function savePermission(name,value,template,access) {
+	dojo.xhrGet({
+		url: '<?=$this->baseUrl?>/acl.raw/ajax-save-permission',
+		handleAs: "json",
+		content: {
+			name: name,
+			value: value,
+			template: template,
+			access: access,
+		},
+		load: function(data,ioArgs) {
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
+}
+
+function reloadPermissions() {
+	dojo.xhrGet({
+		url: '<?=$this->baseUrl?>/acl.raw/reload-permissions',
+		handleAs: "json",
+		load: function(data,ioArgs) {
+			alert(data.msg);
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
+}
+</script>

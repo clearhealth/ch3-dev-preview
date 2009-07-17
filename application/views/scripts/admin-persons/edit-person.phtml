@@ -1,0 +1,84 @@
+<?if ($this->person->person_id == 0):?>
+<?=__("No person is selected, you must select a person to edit.")?>
+<?else:?>
+<script>
+//djConfig.usePlainJson=true;
+//dojo.require("dijit.form.DateTextBox");
+</script>
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+		<?if ($this->message):?>
+		<div style="background-color:PaleGreen; width:100%;">
+		<?=$this->message?>
+		</div>
+		<?endif;?>
+		<?=$this->form->renderOpen()?>
+		<fieldset><legend><?=__("Person Information")?></legend>
+		<div style="float:left;">
+			<div>
+			<div style="display:table-cell; vertical-align:middle; height:100px;">
+				<img src="<?=$this->baseUrl?>/img/no-person-image.png">
+			</div>
+			</div>
+		</div>
+		<div style="float:left;width:400px;">
+			<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error) {?>
+			<?=$error?>
+			<?}?>
+			<?$this->form->person_idInput('FormHidden')?>
+			<div class="formRow">
+			<?=$this->form->last_name->renderLabel()?>
+			<?=$this->form->last_nameInput()?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->first_name->renderLabel()?>
+			<?=$this->form->first_nameInput()?>
+			</div>
+			<div class="formRow">
+			<?$this->form->middle_name->setAttrib('size',10)?>
+			<?=$this->form->middle_name->renderLabel()?>
+			<?=$this->form->middle_nameInput()?>
+			</div>
+			<br class="formRowDivider">
+			<div class="formRow">
+			</div>
+			<div class="formRow">
+			<?=$this->form->date_of_birth->renderLabel()?>
+			<div style="width:90px;overflow:hidden;"><input type="text" name="patient[person][lastName]" id="date_of_birthInput" size="10"/></div>
+			<script>
+				var dateOfBirthBox = dijit.byId('date_of_birthInput');
+                		if (dateOfBirthBox != undefined) {
+                			dateOfBirthBox.destroyRecursive();
+                			dateOfBirthBox = null;
+                		}
+
+				dateOfBirthBox = new dijit.form.DateTextBox({constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('date_of_birthInput'));
+			</script>
+			</div>
+			<div class="formRow">
+			<?=$this->form->gender->renderLabel()?>
+			<?//=$this->form->genderInput('FormSelect',array("options" => Enumeration::getEnumArray("Gender")))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->inactive->renderLabel()?>
+			<?=$this->form->inactiveInput('FormCheckbox', array('checked' => 1))?>
+			</div>
+			<br class="formRowDivider">
+			<div class="formRow">
+			<?=$this->form->primary_practice_id->renderLabel()?>
+			</div>
+			<div class="formRow">
+			</div>
+			<div class="formRow">
+			</div>
+			</div>
+			<?=$this->form->renderClose()?>
+			</fieldset>
+			<div style="text-align:right;">
+			<?=$this->form->okInput('FormButton')?>
+			<!--<input type="submit" />-->
+			</div>
+		</div>
+</div>
+<?endif;?>

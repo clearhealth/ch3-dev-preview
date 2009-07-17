@@ -1,0 +1,108 @@
+<div style="font-size:9pt;">
+	<div style="width:60%;float:left;">
+		<strong><?=__("Patient Information")?></strong>
+		<div style="float:left;">
+			<div>
+			<div style="display:table-cell; vertical-align:middle; height:100px;">
+				<?//TODO: Merge webcam code for community edition?>
+				<img src="<?=$this->baseUrl?>/img/no-person-image.png">
+			</div>
+			</div>
+		</div>
+		<div style="float:left;">
+			<div style="margin-left:10px;">
+			<div id="selectPatientNoPatient"><strong><?=__("No Patient")?></strong><br /></div>
+			<div id="selectPatientDetailDisplay" style="display: none;">
+			<strong><span id="patientDetailName"></span></strong><br />
+			<?=__("MRN")?>: <span id="patientDetailMRN"></span><br />
+			<?=__("Age/Sex")?>: <span id="patientDetailAge"></span> (<span id="patientDetailSex"></span>)<br />
+			<?=__("DOB")?>: <span id="patientDetailDateOfBirth"></span><br />
+			<?=__("Location")?>: <span id="patientDetailCurrentLocation"></span>
+			</div>
+			</div>
+		</div>
+		<br style="clear:left;" />
+				<?//TODO: Merge filtering code for community edition?>
+		<div>
+		<strong><?=__("Quick List Options")?></strong>
+		<div style="padding-left:10px;padding-bottom:10px;">
+		<input type="radio" checked="checked" disabled="disabled"><?=__("Default: Most Recent")?><br />
+		<input type="radio" disabled="disabled"><?=__("Providers")?>
+		<input type="radio" disabled="disabled"><?=__("Clinics")?>
+		<input type="radio" disabled="disabled"><?=__("Specialties")?>
+		<br />
+		<input type="radio" disabled="disabled"><?=__("Team/Personal")?>
+		<input type="radio" disabled="disabled"><?=__("Units")?>
+		<input type="radio" disabled="disabled"><?=__("Most Recent")?>
+		</div>
+		<span style="font-weight:bold;color:grey;"><?=__("Select an Item")?><br />
+		<input type="text"  disabled="disabled" style="width:98%;">
+		<select disabled="disabled" multiple="multple" style="width:98%;height:100px;">
+		<option><?=__("No items")?></option>
+		</select>
+		<?=__("List Appointments For")?>:
+		<select disabled="disabled" style="width:60%;">
+		<option><?=__("Today")?></option>
+		</select><br />
+		<input type="radio" disabled="disabled"><?=__("All Days Of Week")?>
+		<input type="radio" disabled="disabled"><?=__("Current Day Only")?>
+		<input type="button" value="<?=__("Set as Default")?>" disabled="disabled">
+		</span>
+		</div>
+	</div>
+	<div style="float:left; width:39%;">
+		<strong><?=__("All Patients (Most Recent)")?></strong><br />
+		<div id="patientSelectAutoCompleteDiv"></div>
+		<script>
+		function populatePatientList(/*Object*/ results, /*Object*/ dataObject) {
+			pscb._hideResultList();
+			var selectList = dojo.byId('patientSelectMultiSelect');
+			selectList.options.length = 0;
+			for (i=0;i<results.length;i++) {
+				var newOption = document.createElement('option');
+    				newOption.text = results[i].i['name'];
+    				newOption.value = results[i].i['label'];
+    				  
+    				try {
+      					selectList.add(newOption,null); // standards compliant; doesn't work in IE
+    				}
+    				catch(ex) {
+      					selectList.add(newOption,null); // IE only
+    				}
+				if (i==0) {
+					selectList.selectedIndex = 0;
+					dojo.xhrGet ({url: '<?=$this->baseUrl?>/patient-select/detail?personId=' + selectList.options[selectList.selectedIndex].value,handleAs: 'json', load: loadPatientDetail, error: function (er) {alert('multiselect: ' + er)}});
+				}
+			}
+		}
+
+		function loadPatientDetail(data) {
+		  if (data != undefined) {
+			var patient = data;
+			dojo.byId('patientDetailName').innerHTML = patient.person.last_name + ', ' + patient.person.first_name + ' ' + patient.person.middle_name;
+			dojo.byId('patientDetailMRN').innerHTML = patient.record_number;
+			dojo.byId('patientDetailAge').innerHTML = patient.age;
+			dojo.byId('patientDetailSex').innerHTML = patient.displayGender;
+			dojo.byId('patientDetailDateOfBirth').innerHTML = patient.person.date_of_birth;
+			//dojo.byId('patientDetailLocation').innerHTML = patient['dateOfBirth'];
+			//dojo.byId('patientDetailRoom').innerHTML = patient['dateOfBirth'];
+			//dojo.byId('patientDetailBed').innerHTML = patient['dateOfBirth'];
+		  }
+		  dojo.byId('selectPatientNoPatient').style.display = 'none';
+		  dojo.byId('selectPatientDetailDisplay').style.display = 'block';
+		}
+		var pscb = dijit.byId('patientSelectAutoCompleteDiv');
+		if (pscb != undefined) { 
+		  pscb.destroyRecursive();
+		  pscb = null;
+		}
+		  var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
+		  pscb = new dijit.form.ComboBox({name:"patientSelectAutoCompleteId",autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
+		dojo.connect(pscb,"_openResultList",'populatePatientList');
+		</script>
+		<select id="patientSelectMultiSelect" multiple="multiple" style="width:100%;height:400px;" onChange="dojo.xhrGet ({url: '<?=$this->baseUrl?>/patient-select/detail?personId=' + this.options[this.selectedIndex].value,handleAs: 'json', load: loadPatientDetail, error: function (er) {alert('multiselect: ' + er)}});">
+		</select>
+		<input style="float:right;" type="button" value="<?=__("Select Patient")?>" onClick="mainController.setActivePatient(dojo.byId('patientSelectMultiSelect').options[dojo.byId('patientSelectMultiSelect').selectedIndex].value); closeWindowSelectPatient();"/>
+	</div>
+	</div>
+</div>

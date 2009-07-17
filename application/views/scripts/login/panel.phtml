@@ -1,0 +1,90 @@
+<?php
+if ($this->authenticated) {
+    ?>
+    You are already authenticated, <?php echo $this->escape($this->user->getId()) ?>.
+    </p>
+    <p>
+    <a href="<?=$this->baseUrl ?>/logout">Logout</a>
+    <?php
+} else {
+    if (isset($this->messages)) {
+        ?>
+        The following problems were encountered with your last login attempt:
+        </p>
+        <p>
+        <?php
+        foreach ($this->messages as $message) {
+            echo $this->escape($message) . "<br />\n";
+        }
+        ?>
+        </p>
+        <?php
+    }
+    ?>
+
+<script>
+function submitFormLogin() {
+	var url = "<?=$this->baseUrl?>/login.raw/process";
+	var params = "username="+document.frmLogin.username.value+"&password="+document.frmLogin.password.value;
+	dhtmlxAjax.post(url,params,loginResponse);
+	return false;
+}
+function loginResponse(loader) {
+	if (loader.xmlDoc.responseXML != null) {
+		response = loader.xmlDoc.responseXML;
+		var result = loader.doXPath("/clearhealth/code");
+		for(var i=0;i<result.length;i++) {
+			if (result[i].textContent == "200") { // login successful
+				if (mainController.isForcedLogout()) {
+					mainFileLoader.dimension = winSP.getDimension();
+					mainFileLoader.onLoadComplete = 'onLoadingComplete';
+					mainFileLoader.render();
+				}
+				else {
+					document.location.href="<?=$this->baseUrl.'/'.Zend_Registry::get('config')->user->preferences->default_action?>";
+				}
+				//renderProgressBar();
+				//appendResourcesToHead();
+			}
+			else {
+				alert("<?=__('Invalid username/password.')?>");
+			}
+		} 
+	}
+	else {
+		alert("<?=__('Response contains no XML')?>");
+	}
+}
+
+function onLoadingComplete() {
+	winSP.close();
+}
+
+</script>
+<div id="loginContainer">
+    <div id="loadingZone"></div>
+    <form name="frmLogin" action="<?php echo $this->baseUrl ?>/login/process" method="POST" onSubmit="return submitFormLogin();">
+    <fieldset>
+    <legend><?=__("Authenticate")?></legend>
+	<div style="border: thin solid darkGrey;vertical-align:top;">
+	<p style="padding:4px;vertical-align:top;">Welcome to ClearHealth</p>
+	</div>
+	<div class="formRow">
+	<label>Username</label>
+    <input name="username" type="text" size="30" value="<?php echo $this->escape($this->username) ?>" />
+	</div>
+<br style="clear:left;"/>
+	<div class="formRow">
+	<label>Password</label>
+    <input name="password" type="password" size="30" value="<?php echo $this->escape($this->password) ?>" />
+	</div>
+<br style="clear:left;"/>
+<div style="padding-top:10px; text-align:right;">
+    <input type="submit" value="Login" />
+</div>
+    </fieldset>
+    </form>
+</div>
+    <?php
+}
+?>

@@ -1,0 +1,360 @@
+<?='<?xml version="1.0" encoding="UTF-8" ?>'; ?>
+<?=$this->doctype()?>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<?=$this->headTitle() ?>
+<?//=$this->headLink() ?>
+<?//=$this->headScript() ?>
+
+<link rel="stylesheet" type="text/css" href="<?=$this->baseUrl?>/css/global.css">
+<link rel="stylesheet" type="text/css" href="<?=$this->baseUrl?>/css/style.css">
+<link rel="stylesheet" type="text/css" href="<?=$this->baseUrl?>/css/dhtmlxwindows.css">
+<link rel="stylesheet" type="text/css" href="<?=$this->baseUrl?>/css/dhtmlxwindows_clear_silver.css">
+<script type="text/javascript" src="<?=$this->baseUrl?>/js/dhtmlxcommon.js"></script>
+<script type="text/javascript" src="<?=$this->baseUrl?>/js/dhtmlxwindows.js"></script>
+
+
+</head>
+<body class="tundra">
+
+<script>
+var logoutTimer = null;
+var forceLogout = false;
+var dhxWins = new dhtmlXWindows();
+dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+dhxWins.setSkin('clear_silver');
+
+var mainFileLoaderClass = function(){
+	this.value = 0;
+	this.sources = Array();
+	this.sourcesDB = Array();
+	this.totalFiles = 0;
+	this.loadedFiles = 0;
+	this.totalLinkFiles = 0;
+	this.onLoadComplete = null;
+	this.dimension = null; // [0] = width [1] = height
+};
+//Show the loading bar interface
+mainFileLoaderClass.prototype.show = function() {
+	this.locate();
+	document.getElementById("loadingZone").style.display = "block";
+};
+//Hide the loading bar interface
+mainFileLoaderClass.prototype.hide = function() {
+	document.getElementById("loadingZone").style.display = "none";
+};
+//Add all scripts to the DOM
+mainFileLoaderClass.prototype.run = function(){
+	// add current number of stylesheets to totalLinkFiles
+	this.totalLinkFiles += document.styleSheets.length;
+	this.show();
+	var i;
+	var head = document.getElementsByTagName("head")[0];
+	for (i=0; i<this.sourcesDB.length; i++){
+		var source = this.sourcesDB[i];
+		var type = this.sources[source];
+
+		if (type == 'script') {
+			var elem = document.createElement("script");
+			elem.type = "text/javascript";
+			elem.src = source;
+			elem.onload = function() { setTimeout("mainFileLoader.loaded('"+source+"');",500); };
+			// IE 6 & 7
+			elem.onreadystatechange = function() {
+				if (this.readyState == 'complete') {
+					setTimeout("mainFileLoader.loaded('"+source+"');",500);
+				}
+			}
+		}
+		else if (type == 'link') {
+			var elem = document.createElement("link");
+			elem.media = "screen";
+			elem.rel = "stylesheet";
+			elem.type = "text/css";
+			elem.href = source;
+			setTimeout("mainFileLoader.loaded('"+source+"')",1000);
+		}
+		else {
+			continue;
+		}
+		head.appendChild(elem);
+	}
+};
+
+//Center in the screen remember it from old tutorials? ;)
+mainFileLoaderClass.prototype.locate = function(){
+	var loadingZone = document.getElementById("loadingZone");
+	var windowWidth = document.documentElement.clientWidth;
+	var windowHeight = document.documentElement.clientHeight;
+	if (this.dimension != null) {
+		var windowWidth = this.dimension[0];
+		var windowHeight = this.dimension[1];
+	}
+	var popupHeight = loadingZone.clientHeight;
+	var popupWidth = loadingZone.clientWidth;
+	loadingZone.style.position = "absolute";
+	loadingZone.style.top = parseInt(windowHeight/2-popupHeight/2) + "px";
+	loadingZone.style.left = parseInt(windowWidth/2-popupWidth/2) + "px";
+};
+//Set the value position of the bar (Only 0-100 values are allowed)
+mainFileLoaderClass.prototype.setValue = function(value){
+	if(value >= 0 && value <= 100){
+		document.getElementById("progressBar").style.width = value + "%";
+		document.getElementById("infoProgress").innerHTML = parseInt(value) + "%";
+	}
+};
+//Add the specified script to the list
+mainFileLoaderClass.prototype.addFile = function(source,type){
+	if (type == 'link') {
+		this.totalLinkFiles++;
+	}
+	this.totalFiles++;
+	this.sources[source] = type;
+	this.sourcesDB.push(source);
+};
+//Called when a script is loaded. Increment the progress value and check if all files are loaded
+mainFileLoaderClass.prototype.loaded = function(file) {
+	this.loadedFiles++;
+	delete this.sources[file];
+	var pc = (this.loadedFiles * 100) / this.totalFiles;
+	this.setValue(pc);
+	//Are all files loaded?
+	if (this.loadedFiles == this.totalFiles){
+		setTimeout("mainFileLoader.hide();",300);
+		// all were setting up... monitor use activity
+		setTimeout("mainFileLoader.onLoadingCompleted();",500);
+	}
+};
+
+//Global var to reference from other scripts
+
+mainFileLoaderClass.prototype.onLoadingCompleted = function() {
+	var timeoutInterval = 10;
+	var i = 0;
+	do {
+		if (document.styleSheets.length >= this.totalLinkFiles) {
+			break;
+		}
+		i++;
+	} while (i < timeoutInterval);
+	if (mainFileLoader.onLoadComplete != null) {
+		setTimeout(mainFileLoader.onLoadComplete+"();",100);
+	}
+	else {
+		var defaultAction = '<?=Zend_Registry::get('config')->user->preferences->default_action?>';
+		splittedAction = defaultAction.split('/');
+		splittedAction[0] += '.raw';
+		var action = splittedAction.join('/');
+		// render the default page using dojo.xhrGet in raw format
+		dojo.xhrGet({
+			url: "<?=$this->baseUrl?>/"+action,
+			handleAs: "text",
+			load: function(data, ioArgs) {
+				dojo.setInnerHTML(dojo.byId('mainContentLayout'),data);
+				return data;
+			},
+			error: function(response, ioArgs) {
+				console.error("HTTP status code: ", ioArgs.xhr.status);
+				return response;
+			}
+		});
+	}
+	mainController.attachPageActivityListener();
+	mainController.startTimer();
+	// re-initialize everything
+	this.value = 0;
+	this.sources = Array();
+	this.sourcesDB = Array();
+	this.totalFiles = 0;
+	this.loadedFiles = 0;
+	this.totalLinkFiles = 0;
+	this.onLoadComplete = null;
+	this.dimension = null; // [0] = width [1] = height
+}
+
+mainFileLoaderClass.prototype.render = function(layoutContainer) { // load all the necessary javascript/css files
+	if (layoutContainer == undefined) {
+		layoutContainer = 'loginContainer';
+	}
+	var loaderDiv = (<r><![CDATA[<style>
+table {
+	border-collapse:separate;
+	border-spacing:0pt;
+}
+caption, th, td {
+	font-weight:normal;
+	text-align:left;
+}
+blockquote:before, blockquote:after, q:before, q:after {
+	content:"";
+}
+blockquote, q {
+	quotes:"" "";
+}
+a{
+	cursor: pointer;
+	text-decoration:none;
+}
+.clear{
+	clear:both;
+}
+#button{
+	text-align:center;
+	margin:50px 50px 150px 50px;
+}
+#loadingZone{
+	margin:0 auto;
+	width:410px;
+	text-align:center;
+}
+#loadingBar{
+	border:1px solid #c2c2c2;
+	height:2px;
+	text-align:left;
+	line-height:0;
+	margin:0;
+	padding:0;
+	overflow:hidden; /*fix for IE 6*/
+}
+#progressBar{
+	height:2px;
+	line-height:0;
+	margin:0;
+	padding:0;
+	background:#ccc;
+	width:0%;
+}
+#loadingSms{
+	color:#6ea1fa;
+	float:left;
+	padding:10px 2px;
+}
+#infoProgress{
+	color:#6ea1fa;
+	float:right;
+	padding:10px 2px;
+}
+#infoLoading{
+	padding:10px;
+	color:#b9b9b9;
+	font-size:10px;
+}
+</style>
+
+        <div id="loadingZone">
+                <div id="loadingSms">LOADING</div>
+                <div id="infoProgress">0%</div>
+                <br class="clear" />
+                <div id="loadingBar">
+                        <div id="progressBar">&nbsp;</div>
+                </div>
+                <div id="infoLoading"></div>
+        </div>]]></r>).toString();
+
+	document.getElementById(layoutContainer).innerHTML = loaderDiv;
+
+	mainFileLoader.addFile("<?=$this->baseUrl?>/cache-file.raw/css?files=dojocss,dhtmlxcss",'link');
+	mainFileLoader.addFile("<?=$this->baseUrl?>/cache-file.raw/js?files=dojojs,dhtmlxjs",'script');
+	mainFileLoader.run();
+}
+
+
+function mainControllerClass() {
+
+}
+mainControllerClass.prototype.personId = 0;
+mainControllerClass.prototype.setActivePatient = function (personId) {
+	this.personId = personId;
+	if (typeof initMainToolbar == 'function') {
+		initMainToolbar(null,personId);
+	}
+};
+mainControllerClass.prototype.getActivePatient = function() {
+	return this.personId;
+}
+mainControllerClass.prototype.popupLoginWindow = function() {
+	winSP = dhxWins.createWindow('windowLoginId',60,10,550,300);
+	winSP.progressOn();
+	winSP.setText('<?=__('Login')?>');
+	winSP.attachURL('<?=$this->baseUrl?>/login.popup/panel',true);
+	winSP.setModal(true);
+	winSP.centerOnScreen();
+	// hides window buttons
+	winSP.button("park").hide();
+	winSP.button("minmax1").hide();
+	winSP.button("minmax2").hide();
+	winSP.button("close").hide();
+	// clear timer to prevent multiple login popup
+	if (logoutTimer) {
+		clearTimeout(logoutTimer);
+		logoutTimer = null;
+	}
+}
+mainControllerClass.prototype.startTimer = function() {
+	var second = 1000;
+	var minute = 60 * second;
+	var interval = 5 * minute;
+	var interval = <?=$this->timerTimeout?> * second;
+	if (logoutTimer) {
+		clearTimeout(logoutTimer);
+	}
+	interval = 360000000;
+	logoutTimer = setTimeout("mainController.forcedLogout()",interval);
+}
+mainControllerClass.prototype.forcedLogout = function() {
+	dojo.xhrGet({
+		url: '<?=$this->baseUrl?>/logout.raw',
+		content: {
+			noRedirection: 1,
+		},
+		handleAs: "text",
+		load: function(data,ioArgs) {
+			forceLogout = true;
+			mainController.popupLoginWindow();
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
+}
+mainControllerClass.prototype.isForcedLogout = function() {
+	return forceLogout;
+}
+mainControllerClass.prototype.attachPageActivityListener = function() {
+	dojo.connect(dojo,"xhrGet",null,function(args){ mainController.startTimer(); });
+	dojo.connect(dojo,"xhrPost",null,function(args){ mainController.startTimer(); });
+}
+
+
+mainController = new mainControllerClass();
+mainFileLoader = new mainFileLoaderClass();
+
+function varDump(obj) {
+	var out = '';
+	for (var i in obj) {
+		out += i + ": " + obj[i] + "\n";
+	}
+
+	alert(out);
+}
+
+</script>
+
+<div id="mainContentLayout">
+<?if ($this->authenticated):?>
+<script>
+function onLoadedComplete() {
+}
+mainFileLoader.onLoadComplete = 'onLoadedComplete';
+mainFileLoader.render('mainContentLayout');
+</script>
+<?endif;?>
+
+<?=$this->layout()->content?>
+</div>
+
+</body>
+</html>

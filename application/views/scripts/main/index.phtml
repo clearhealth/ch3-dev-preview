@@ -1,0 +1,159 @@
+<div id="mainMenu" style="width:100%; text-align:left;"></div>
+<script>
+        window.locationId = 0;
+        window.patientId = 0;
+        window.visitId = 0;
+        jsMainMenu=new dhtmlXMenuBarObject('mainMenu','100%',30,"");
+        jsMainMenu.sysGfxPath = '<?=$this->baseUrl?>/img/';
+        jsMainMenu.setOnClickHandler(onMenuItemSelect);
+        jsMainMenu.loadXML('<?=$this->baseUrl?>/menu.raw');
+
+        function refreshCurrentTab() {
+                mainTabbar.forceLoad(mainTabbar.getActiveTab());
+        }
+
+        function onMenuItemSelect(itemId,itemValue) {
+                switch(itemId) {
+			case 'default_review___sign_changes':
+                		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+                		dhxWins.setSkin('clear_silver');
+                		winES = dhxWins.createWindow('windowESignId',60,10,450,450);
+                		winES.setText('Review / Sign Documents');
+                		winES.attachURL('<?=$this->baseUrl?>/e-sign.raw',true);
+                		//winES.setModal(true);
+                		winES.centerOnScreen();
+				break;
+			case 'default_add_vitals':
+				var patientId = mainController.getActivePatient();
+				if (parseInt(patientId) == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				winVitals = dhxWins.createWindow('windowAddVitalsId',60,10,500,300);
+				winVitals.setText('<?=__('Add Vitals')?>');
+				winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?patientId='+patientId,true);
+				winVitals.centerOnScreen();
+				break;
+			case 'default_quit':
+				if (confirm('<?=__("Are you sure you want to logout of the application, unsaved data will be lost?")?>')) {
+                                	window.location="<?=$this->baseUrl?>/logout";
+				}
+				break;
+                        default:
+                                alert("Button "+itemId+" was pressed "+itemValue);
+                                break;
+                }
+        };
+function windowSelectPatient() {
+                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+                dhxWins.setSkin('clear_silver');
+                winSP = dhxWins.createWindow('windowSelectPatientId',60,10,800,575);
+                winSP.setText('Select Patient');
+                winSP.attachURL('<?=$this->baseUrl?>/patient-select.raw',true);
+                //winSP.setModal(true);
+                winSP.centerOnScreen();
+        }
+function windowSelectVisit() {
+                if (!mainController.getActivePatient() > 0) {
+                        alert('<?=_("You must select a patient before selecting a visit.")?>');
+                        return false;
+                }
+                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+                dhxWins.setSkin('clear_silver');
+                winSV = dhxWins.createWindow('windowSelectVisitId',60,10,450,250);
+                winSV.setText('Select Location & Visit');
+                winSV.attachURL('<?=$this->baseUrl?>/visit-select.raw?personId=' + mainController.getActivePatient(),true);
+                winSV.centerOnScreen();
+        }
+function closeWindowSelectPatient() {
+	winSP.close();
+	refreshCurrentTab();
+}
+</script>
+<div id="mainToolbar" style="width:99.9%;" ></div>
+<script>
+        function initMainToolbar(loadAction,personId) {
+		jsMainToolbar=new dhtmlXToolbarObject('mainToolbar','ClearSilver');
+	        jsMainToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+	        jsMainToolbar.attachEvent('onClick',function (id) {onToolbarClick(id);} );
+	        jsMainToolbar.loadXML('<?=$this->baseUrl?>/main-toolbar.raw?personId=' + personId, loadAction);
+        }
+        initMainToolbar();
+
+    function onToolbarClick(itemId) {
+        switch (itemId) {
+                case "tbSelectPatient":
+                        windowSelectPatient();
+                        break;
+                case "tbSelectVisit":
+                        windowSelectVisit();
+                        break;
+                default:
+                        alert("Button "+itemId + " was pressed");
+        }
+    };
+
+</script>
+<div id="mainTabbar_container" style="width:99.9%;height:505px;" align="left" >
+<script>
+    mainTabbar = new dhtmlXTabBar('mainTabbar_container','bottom','20');
+    mainTabbar.setImagePath('<?=$this->baseUrl?>/img/');
+    mainTabbar.setStyle('silver');
+    mainTabbar.setHrefMode('ajax');
+    mainTabbar.setSkinColors('#FFFFFF,#FFFACD');
+
+function setActiveTab(activeTab) {
+	dojo.xhrPost ({
+		url: '<?=$this->baseUrl?>/main.raw/set-active-tab',
+		handleAs: 'json',
+		content: {
+			activeTab: activeTab,
+		},
+		load: function (data) {
+			jsMainMenu.clearAll();
+			jsMainMenu.loadXML('<?=$this->baseUrl?>/menu.raw');
+		},
+		error: function (er) {
+			alert('err: ' + er);
+		}
+	});
+	mainController.attachPageActivityListener();
+}
+
+function mainTabbarClick(id) {
+	//contents of certain stabs when moving between iframe and ajax will stick and show, this hides that content
+	if(mainTabbar._getTabById(mainTabbar.getActiveTab()) != undefined) {
+                oldTab = mainTabbar._getTabById(mainTabbar.getActiveTab());
+                oldTab.parentNode.parentNode.parentNode.tabbar._content[oldTab.idd].style.display = 'none';
+                newTab = mainTabbar._getTabById(id);
+                newTab.parentNode.parentNode.parentNode.tabbar._content[newTab.idd].style.display = 'block';
+        }
+	setActiveTab(id.substr(4));
+        switch(id) {
+	<?foreach ($this->mainTabs as $tabName => $tab):?>
+	case 'tab_<?=$tabName?>':
+		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports"):?>
+                dojo.byId('mainToolbar').style.display = 'none';
+                <?else:?>
+                dojo.byId('mainToolbar').style.display = 'block';
+                <?endif?>
+    		mainTabbar.setHrefMode('<?=$tab['hrefMode']?>');
+                mainTabbar.setContentHref(id,'<?=$tab['url']?>');
+		break;
+	<?endforeach?>
+            default:
+                alert("You selected a tab " + id + " that does not exist");
+        }
+        return true;
+    }
+	<?foreach ($this->mainTabs as $tabName => $url):?>
+	mainTabbar.addTab('tab_<?=$tabName?>','<?=$tabName?>','95');
+    	mainTabbar.setContentHref('tab_<?=$tabName?>','blank.php');
+	<?endforeach?>
+	mainTabbar.setOnSelectHandler(mainTabbarClick);
+	mainTabbar.setTabActive('tab_<?=$this->activeTab?>');
+
+
+    </script>
+</div>
+

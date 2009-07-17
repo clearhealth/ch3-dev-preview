@@ -1,0 +1,15 @@
+<?php
+if ($this->authenticated) {
+    ?>
+    You are already authenticated, <?php echo $this->escape($this->user->getId()) ?>.
+    </p>
+    <p>
+    <a href="<?=$this->baseUrl ?>/logout">Logout</a>
+    <?php
+}
+else {
+?>
+<script>
+mainController.popupLoginWindow();
+</script>
+<?}?>

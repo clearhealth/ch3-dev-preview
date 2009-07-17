@@ -1,0 +1,52 @@
+<div style="padding:5px;">
+<h2>Synchronize Pharmacies Database with HealthCloud</h2>
+<p>This activity is performance intensive and can disrupt normal system activity. It is strongly reccomended that this only be done during off-hours.</p>
+<script>
+
+function handlePharmaciesSyncStepOne() {
+	dojo.byId('syncButton').disabled = 'disabled';
+	dojo.byId('progressNotes').innerHTML += "Activating download url, this process can take up to 60 seconds...<br />";	
+	dojo.xhrGet ({
+		url: '<?=$this->baseUrl?>/admin-pharmacies.raw/ajax-activate-download-url',
+		handleAs: 'json', 
+		load: function (data) { 
+			handlePharmaciesSyncStepTwo(data.downloadUrl[0], data.cookieFile);}, 
+		error: function (er) {alert('err: ' + er)}
+		}
+	);
+}
+
+function handlePharmaciesSyncStepTwo(filename, cookieFile) {
+	dojo.byId('progressNotes').innerHTML += "Download url retrieved, downloading and unpacking file, this process can take 1-3 minutes...<br />";	
+	dojo.xhrGet ({
+                url: '<?=$this->baseUrl?>/admin-pharmacies.raw/ajax-download-pharmacies-file',
+		content: {'filename' : filename,'cookieFile':cookieFile},
+                handleAs: 'json', 
+                load: function (data) {
+                        handlePharmaciesSyncStepThree(data.filename);}, 
+                error: function (er) {alert('err: ' + er)}
+                }
+        );
+}
+
+function handlePharmaciesSyncStepThree(filename) {
+	dojo.byId('progressNotes').innerHTML += "Loading data, this process can take 1-3 minutes...<br />";	
+	dojo.xhrGet ({
+                url: '<?=$this->baseUrl?>/admin-pharmacies.raw/ajax-load-pharmacies-data',
+		content: {'filename' : filename},
+                handleAs: 'json', 
+                load: function (data) {
+			dojo.byId('progressNotes').innerHTML += "Loading complete, number of rows updated: " + data;	
+	
+		}, 
+                error: function (er) {alert('err: ' + er)}
+                }
+        );
+}
+</script>
+<input type="button" id="syncButton" value="Synchronize" onclick="handlePharmaciesSyncStepOne();"/>
+<br />
+<br />
+<div id="progressNotes">
+</div>
+</div>

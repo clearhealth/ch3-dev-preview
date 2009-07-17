@@ -1,0 +1,37 @@
+<?if ($this->noProvider):?>
+<script>
+function addProvider() {
+	alert('person id: ' + personId);
+	dojo.xhrGet ({
+                        url: '<?=$this->baseUrl?>/admin-providers/add-process?personId=' + personId,
+                        handleAs: 'json', 
+                        error: function (er) {alert(er)}
+        });	
+}
+</script>
+<?=__("No provider record exists for this person. Would you like to add a provider record?")?><br /> <input type="button" value="Add Provider Record" onclick="addProvider();"/>
+<?elseif ($this->person->person_id == 0):?>
+<?=__("No person is selected, you must select a person to edit.")?>
+<?else:?>
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+		<?if ($this->message):?>
+		<div style="background-color:PaleGreen; width:100%;">
+		<?=$this->message?>
+		</div>
+		<?endif;?>
+		<?=$this->form->renderOpen()?>
+		<fieldset><legend><?=__("Provider Information")?></legend>
+		<div style="float:left;width:400px;">
+			<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error) {?>
+			<?=$error?>
+			<?}?>
+			<?=$this->form?>
+			<div style="text-align:right;">
+			<?=$this->form->okInput('FormButton')?>
+			<!--<input type="submit" />-->
+			</div>
+		</div>
+</div>
+<?endif;?>

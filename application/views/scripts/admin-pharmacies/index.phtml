@@ -1,0 +1,62 @@
+<div>
+<div>
+<label><?=__("Select Pharmacy to View/Edit")?></label>
+</div>
+<div id="pharmacySelectAutoCompleteDiv"></div>
+<input style="margin-left: 30px;" type="button" value="Add Pharmacy Record" onclick="addPharmacy();"/>
+<br style="clear:all;"/>
+<div id="pharmacyEditTabContainer" style="height:400px;"></div>
+<script>
+var pharmacyId = 0;
+	function addPharmacy() {
+		pharmacyEditTabbar.setContentHref('tab_pharmacyDetails','<?=$this->baseUrl?>/admin-pharmacies/add');
+		pharmacyEditTabbar.setTabActive('tab_pharmacyDetails');
+                pharmacyEditTabbar.forceLoad(pharmacyEditTabbar.getActiveTab());        
+	}
+dojo.require("dijit.form.FilteringSelect");
+var pscb = dijit.byId('pharmacySelectAutoCompleteDiv');
+                if (pscb != undefined) { 
+                  pscb.destroyRecursive();
+                  pscb = null;
+                }
+                  var psac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/admin-pharmacies/auto-complete",requestMethod:"get"},'pharmacySelectAutoComplete');
+                  pscb = new dijit.form.FilteringSelect({name:"pharmacySelectAutoCompleteId",autocomplete:true,store:psac},"pharmacySelectAutoCompleteDiv");
+		pscb.validate = function () {return true;};
+	dojo.connect(pscb,"onChange", "loadPharmacy");
+	function loadPharmacy(id) {
+		if (id) {
+			pharmacyId = id;
+			pharmacyEditTabbar.setContentHref('tab_pharmacyDetails','<?=$this->baseUrl?>/admin-pharmacies/edit?pharmacyId=' + pharmacyId);
+			pharmacyEditTabbar.setTabActive('tab_pharmacyDetails');
+			refreshCurrentTab();
+		}
+	}
+	function refreshCurrentTab() {
+                pharmacyEditTabbar.forceLoad(pharmacyEditTabbar.getActiveTab());        
+        }
+	pharmacyEditTabbar = new dhtmlXTabBar('pharmacyEditTabContainer','top','25');
+        pharmacyEditTabbar.setImagePath('<?=$this->baseUrl?>/img/');
+        pharmacyEditTabbar.setStyle('silver');
+        pharmacyEditTabbar.setHrefMode('ajax-html');
+        pharmacyEditTabbar.setSkinColors('#FFFFFF,#FFFACD');
+        pharmacyEditTabbar.addTab('tab_pharmacyDetails','Pharmacy Details','145');
+        pharmacyEditTabbar.setContentHref('tab_pharmacyDetails','blank.php');
+        pharmacyEditTabbar.addTab('tab_pharmacyHealthCloudLoadDetails','Load Pharmacies','145');
+        pharmacyEditTabbar.setContentHref('tab_pharmacyHealthCloudLoadDetails','blank.php');
+
+	function onPharmacyTabbarClick(id) {
+                        switch(id) {
+                                case 'tab_pharmacyDetails':
+                                        pharmacyEditTabbar.setContentHref(id,'<?=$this->baseUrl?>/admin-pharmacies/edit?pharmacyId=' + pharmacyId);
+                                	break;
+                                case 'tab_pharmacyHealthCloudLoadDetails':
+                                        pharmacyEditTabbar.setContentHref(id,'<?=$this->baseUrl?>/admin-pharmacies/healthcloud-sync');
+                                	break;
+				default:
+					break;
+			}
+		return true;
+	}
+	pharmacyEditTabbar.setOnSelectHandler (onPharmacyTabbarClick);
+        pharmacyEditTabbar.setTabActive('tab_pharmacyDetails');
+</script>
