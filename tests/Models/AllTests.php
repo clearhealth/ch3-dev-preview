@@ -42,10 +42,6 @@ class Models_AllTests {
 		$suite = new PHPUnit_Framework_TestSuite('ClearHealth 3.0 - Models');
 		$suite->addTestSuite('Models_DbTablesTest');
 		$suite->addTestSuite('Models_PHPModulesTest');
-		$suite->addTestSuite('Models_NSDRTest');
-		$suite->addTestSuite('Models_NSDRDefinitionTest');
-		$suite->addTestSuite('Models_ClinicalNoteTest');
-		$suite->addTestSuite('Models_ProblemListTest');
 		return $suite;
 	}
 
