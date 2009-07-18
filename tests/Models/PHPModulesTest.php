@@ -46,9 +46,11 @@ class Models_PHPModulesTest extends TestCase {
 	}
 
 	public function testPHPModulesExist() {
+
+		$this->assertTrue((boolean)(version_compare(PHP_VERSION,'5.2.6') !== -1), "You must be running PHP version 5.2.6 or greater (very soon to be 5.3), your version is: " . PHP_VERSION);
+
 		foreach ($this->_modulesList as $moduleFunc => $module) {
 			$this->assertTrue((boolean)(function_Exists($moduleFunc) | class_exists($moduleFunc)),"Module: {$module} must be installed.");
-			//$this->assertTrue(function_exists($moduleFunc),"Module  {$module} must be installed.");
 		}
 	}
 
