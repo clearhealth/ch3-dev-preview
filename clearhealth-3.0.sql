@@ -368,4 +368,22 @@ INSERT INTO `mainmenu` (`menuId`, `siteSection`, `parentId`, `dynamicKey`, `sect
 INSERT INTO `mainmenu` (`menuId`, `siteSection`, `parentId`, `dynamicKey`, `section`, `displayOrder`, `title`, `action`, `prefix`, `type`, `active`, `typeValue`) VALUES('50', 'default', '0', '', 'children', 50, 'Tools', '', '', 'submenu', 1, '');
 INSERT INTO `mainmenu` (`menuId`, `siteSection`, `parentId`, `dynamicKey`, `section`, `displayOrder`, `title`, `action`, `prefix`, `type`, `active`, `typeValue`) VALUES('60', 'default', '0', '', 'children', 60, 'Reports', '', '', 'submenu', 1, '');
 INSERT INTO `mainmenu` (`menuId`, `siteSection`, `parentId`, `dynamicKey`, `section`, `displayOrder`, `title`, `action`, `prefix`, `type`, `active`, `typeValue`) VALUES('70', 'default', '0', '', 'children', 70, 'Help', '', '', 'submenu', 1, '');
-
+CREATE TABLE IF NOT EXISTS `appointments` (
+  `appointmentId` int(11) NOT NULL,
+  `arrived` tinyint(1) NOT NULL,
+  `title` varchar(255) NOT NULL default '',
+  `reason` int(11) NOT NULL default '0',
+  `walkin` tinyint(1) NOT NULL default '0',
+  `createdDate` datetime NOT NULL default '0000-00-00 00:00:00',
+  `lastChangeId` int(11) NOT NULL default '0',
+  `lastChangeDate` datetime NOT NULL default '0000-00-00 00:00:00',
+  `creatorId` int(11) NOT NULL default '0',
+  `practiceId` int(11) NOT NULL default '0',
+  `providerId` int(11) NOT NULL default '0',
+  `patientId` int(11) NOT NULL default '0',
+  `roomId` int(11) NOT NULL default '0',
+  `appointmentCode` varchar(255) NOT NULL default '',
+  `start` datetime NOT NULL,
+  `end` datetime NOT NULL,
+  PRIMARY KEY  (`appointmentId`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
