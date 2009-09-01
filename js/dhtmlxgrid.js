@@ -1040,7 +1040,8 @@ function dhtmlXGridObject(id){
 				if (!(this.callEvent("onBeforeContextMenu", [
 					el.parentNode.idd,
 					el._cellIndex,
-					this
+					this,
+					el
 				])))
 					return true;
 					

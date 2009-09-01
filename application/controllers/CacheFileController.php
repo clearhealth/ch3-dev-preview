@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	CacheFileController.php
+*       CacheFileController.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -89,7 +89,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		// skip if key does not exists
 		if (!array_key_exists($index,$jsListFiles)) {
 			continue;
-                	//throw new Exception(__("File list does not exist : ") . $index);
+                	throw new Exception(__("File list does not exist : ") . $index);
 		}
 		$listFiles[] = implode(',',$jsListFiles[$index]);
 	}
@@ -386,14 +386,20 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dojojs'][] = '_base-sniff';
 		$files['dojojs'][] = '_base-bidi';
 		$files['dojojs'][] = '_base-typematic';
-		$files['dojojs'][] = 'dijit-_base-wai';
-		$files['dojojs'][] = 'dijit-_base';
-		$files['dojojs'][] = '_Widget';
 		$files['dojojs'][] = 'date-stamp';
 		$files['dojojs'][] = 'parser';
+		$files['dojojs'][] = 'dijit-_base-wai';
+		$files['dojojs'][] = 'dijit-_base';
+		$files['dojojs'][] = 'dijit-_Widget';
+		$files['dojojs'][] = 'dijit-_Templated';
+		$files['dojojs'][] = 'dijit-_Container';
+		$files['dojojs'][] = 'dijit-layout-_LayoutWidget';
+		$files['dojojs'][] = 'dijit-form-_FormWidget';
+		$files['dojojs'][] = 'dijit-dijit';
+		$files['dojojs'][] = 'dijit-_base-manager';
+		$files['dojojs'][] = '_Widget';
 		$files['dojojs'][] = '_Templated';
 		$files['dojojs'][] = '_Calendar';
-		$files['dojojs'][] = 'dijit-_Container';
 		$files['dojojs'][] = 'widget-Calendar';
 		$files['dojojs'][] = 'data-QueryReadStore';
 		$files['dojojs'][] = 'form-_FormWidget';
@@ -455,6 +461,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dojojs'][] = 'charting-plot2d-Grid';
 		$files['dojojs'][] = 'charting-plot2d-Pie';
 		$files['dojojs'][] = 'charting-Chart2D';
+		$files['dojojs'][] = 'custom-Chart2D';
 
 		$files['dojojs'][] = 'form-FilteringSelect';
 
@@ -467,14 +474,19 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxtoolbar';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid';
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
+		//$files['dhtmlxjs'][] = 'dhtmlxgrid_excell_sub_row';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_drag';
+		//$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';
+		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid';
+		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
 		$files['dhtmlxjs'][] = 'dhtmlxtree_json';
 		$files['dhtmlxjs'][] = 'dhtmlxlayout';
 		$files['dhtmlxjs'][] = 'dhtmlxaccordion';
 		$files['dhtmlxjs'][] = 'dhtmlxmenu';
 		$files['dhtmlxjs'][] = 'dhtmlxeditor';
-
+		
+		$files['chbootstrap'][] = 'ch3main';
 		return $files;
 	}
 }

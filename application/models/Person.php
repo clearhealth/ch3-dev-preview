@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	Person.php
+*       Person.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -27,6 +27,7 @@ class Person extends WebVista_Model_ORM {
 	protected $salutation;
 	protected $last_name;
 	protected $first_name;
+	protected $suffix;
 	protected $middle_name;
 	protected $gender;
 	protected $initials;
@@ -41,6 +42,7 @@ class Person extends WebVista_Model_ORM {
 	protected $identifier_type;
 	protected $marital_status;
 	protected $inactive;
+	protected $active;
 	protected $primary_practice_id;
 	protected $_table = "person";
 	protected $_primaryKeys = array("person_id");

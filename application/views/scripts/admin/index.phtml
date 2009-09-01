@@ -1,4 +1,4 @@
-<div id="adminLayout" style="float:left;width:100%;height:480px;"></div>
+<div id="adminLayout" style="position:relative;float:left;width:100%;height:480px;"></div>
 <script>
                 var adminLayout = new dhtmlXLayoutObject("adminLayout","2U");
                 adminLayout.setImagePath("<?=$this->baseUrl?>/img/");
@@ -15,8 +15,15 @@
 			sysObjectsTree.attachEvent('onClick',onSystemObjectsTreeItemSelect);
 			sysObjectsTree.insertNewChild(0,2,'Physical Plant');
 			sysObjectsTree.insertNewChild(0,3,'NSDR Manager');
-			sysObjectsTree.insertNewChild(0,4,'Menu Manager');
+			//sysObjectsTree.insertNewChild(0,4,'Menu Manager');
 			sysObjectsTree.insertNewChild(0,5,'Permissions Templates');
+			sysObjectsTree.insertNewChild(0,6,'Prescriptions');
+			sysObjectsTree.insertNewChild(0,7,'Note Templates');
+			//sysObjectsTree.insertNewChild(0,8,'Formulary Manager');
+			sysObjectsTree.insertNewChild(0,9,'Enumeration Manager');
+			sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
+			sysObjectsTree.insertNewChild(0,11,'Services');
+			sysObjectsTree.insertNewChild(0,12,'HL7');
 			sysObjectsTree.closeAllItems();
 
                         adminAccordion.addItem("healthcloud","HealthCloud");
@@ -27,25 +34,47 @@
 			healthCloudTree.insertNewChild(0,2,'CHMED Pharmacies');
 			healthCloudTree.closeAllItems();
 
+		 adminAccordion.cells("systemObjects").open();
+
 function onSystemObjectsTreeItemSelect(itemId) {
 	itemName = sysObjectsTree.getItemText(itemId);
 	switch (itemName) {
 		case 'Persons/Users':
-			adminLayout.cells("b").setText(itemName);
-			adminLayout.cells("b").attachURL('<?=$this->baseUrl?>/admin-persons.raw',true);
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-persons.raw');
 			break;
 		case 'CHMED Pharmacies':
 			adminLayout.cells("b").setText(itemName);
-			adminLayout.cells("b").attachURL('<?=$this->baseUrl?>/admin-pharmacies.raw');
+			adminLayout.cells("b").attachURL('<?=$this->baseUrl?>/admin-pharmacies');
 			break;
 		case 'NSDR Manager':
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/nsdr-manager.raw');
 			break;
-		case 'Menu Manager':
-			changeAdminContainer(itemName,'<?=$this->baseUrl?>/menu-manager.raw');
-			break;
+		//case 'Menu Manager':
+		//	changeAdminContainer(itemName,'<?=$this->baseUrl?>/menu-manager.raw');
+		//	break;
 		case 'Permissions Templates':
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/acl.raw');
+			break;
+		case 'Prescriptions':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-prescriptions.raw');
+			break;
+		case 'Note Templates':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/clinical-notes-manager.raw');
+			break;
+		case 'Formulary Manager':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/formulary-manager.raw');
+			break;
+		case 'Enumeration Manager':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/enumerations-manager.raw');
+			break;
+		case 'Barcode Manager':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-barcode.raw');
+			break;
+		case 'Services':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-services.raw');
+			break;
+		case 'HL7':
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-hl7.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');
@@ -53,14 +82,35 @@ function onSystemObjectsTreeItemSelect(itemId) {
 }
 
 function changeAdminContainer(itemName,url) {
-	var newDiv = document.createElement('div');
-	newDiv.setAttribute('id',"adminContainer");
+	if (url.substr(url.length-4) == '.raw') {
+		url = url.substr(0,url.length-4);
+	}
+	adminLayout.cells("b").attachURL(url,true);
+	adminLayout.cells("b").setText(itemName);
+	return;
+
+	var hasAdmin = true;
+	var adminContainerId = 'adminContainer';
+	var adminContainer = dojo.byId(adminContainerId);
+	if (adminContainer == null) {
+		hasAdmin = false;
+		adminContainer = document.createElement('div');
+		adminContainer.setAttribute('id',adminContainerId);
+		adminContainer.style.height = '440px';
+		adminContainer.style.position = 'relative';
+		adminContainer.style.overflow = 'auto';
+	}
+	adminContainer.style.width = adminLayout.cells("b").getWidth() + 'px';
 	dojo.xhrGet({
 		url: url,
 		handleAs: "text",
 		load: function(data,ioArgs) {
-			dojo.setInnerHTML(newDiv,data);
-			adminLayout.cells("b").attachObject(newDiv);
+			dojo.setInnerHTML(adminContainer,data);
+			if (!hasAdmin) {
+				var body = document.getElementsByTagName('body').item(0);
+				body.appendChild(adminContainer);
+			}
+			adminLayout.cells("b").attachObject(adminContainerId);
 			adminLayout.cells("b").setText(itemName);
 			return data;
 		},
@@ -82,5 +132,4 @@ function onHealthCloudTreeItemSelect(itemId) {
 			alert('\'' + itemName + '\' does not have an action defined');
 	}
 }
-</script>
 </script>

@@ -1,28 +1,28 @@
 <?php
 /*****************************************************************************
-*	ORM.php
+*       ORM.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
-class WebVista_Model_ORM implements ORM {
+class WebVista_Model_ORM implements ORM,Iterator {
 
 	const REPLACE = 1;
 	const INSERT = 2;
@@ -80,18 +80,16 @@ class WebVista_Model_ORM implements ORM {
 	}
 
 	public function populateWithArray($array) {
-		$fields = $this->ormFields();
-			foreach($array as $key => $value) {
-				//echo "key: $key -- $value<br/>";
-				if (in_array($key,$fields)) {
-					if ($this->$key instanceof ORM) {
-						$this->$key->populateWithArray($value);
-					}
-					else {
-						$this->__set($key,$value);
-					}
-				}
+		//$fields = $this->ormFields();
+		foreach($array as $key => $value) {
+			//echo "key: $key -- $value<br/>";
+			if ($this->$key instanceof ORM) {
+				$this->$key->populateWithArray($value);
 			}
+			else {
+				$this->__set($key,$value);
+			}
+		}
 		$this->postPopulate();
 	}
 
@@ -101,7 +99,7 @@ class WebVista_Model_ORM implements ORM {
 		foreach($this->_primaryKeys as $key) {
 			if ($this->$key > 0 || strlen($this->$key) == 32) {
 				$doPopulate = true;
-				$sql .= " and $key = '" . preg_replace('/[^0-9a-zA-Z\.]/','',$this->$key) . "'";
+				$sql .= " and $key = '" . preg_replace('/[^0-9a-z_A-Z-\.]/','',$this->$key) . "'";
 			}
 		}
 		if ($doPopulate == false) return false;
@@ -300,13 +298,15 @@ class WebVista_Model_ORM implements ORM {
 		$sql = "";
 
 		if ($this->_persistMode == WebVista_Model_ORM::REPLACE) {
-			$sql = "REPLACE INTO ";
+			$sql = "REPLACE INTO `" . $this->_table . "` SET ";
 		}
 		elseif ($this->_persistMode == WebVista_Model_ORM::INSERT) {
-			$sql = "INSERT INTO "; 
+			$sql = "INSERT INTO `" . $this->_table . "` SET "; 
 		}
-		$sql .= " `" . $this->_table . "` SET ";
-		$pWhere = " WHERE 1 " ;
+		elseif ($this->_persistMode == WebVista_Model_ORM::DELETE) {
+			$sql = "DELETE FROM `" . $this->_table . "` "; 
+		}
+		$pWhere = "WHERE 1 ";
 		for ($i=0;$i<count($fields);$i++) {
 			$field = $fields[$i];
 			//echo "setting: " . get_class($this)  ." " .  $field ."<br />";
@@ -326,43 +326,57 @@ class WebVista_Model_ORM implements ORM {
 				}
 				continue;
 			}
-				if (in_array($field,$this->_primaryKeys)  && !$val > 0) {
-					$pWhere .= " and $field = '" . preg_replace('/[^a-zA-Z0-9]/','',$val) . "' ";
-					$seqTable = "";
-					if (get_class($this) == "Audit" || get_class($this) == "AuditValue") {
-						$seqTable = Zend_Registry::get('config')->audit->sequence->table;
-					}
+			if (in_array($field,$this->_primaryKeys) && !$val > 0) {
+				$pWhere .= " and $field = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
+				$seqTable = "";
+				if (get_class($this) == "Audit" || get_class($this) == "AuditValue") {
+					$seqTable = Zend_Registry::get('config')->audit->sequence->table;
+				}
+				if (get_class($this) == "Audit" || get_class($this) == "AuditValue" || $this->_persistMode != WebVista_Model_ORM::DELETE) {
 					$lastId = WebVista_Model_ORM::nextSequenceId($seqTable);
 					//echo $lastId . "<br />";
 					//ob_flush();
 					$this->__set($field,$lastId);
 					$val = $lastId;
+				}
 
-					/*if ($ordo->_createOwnership) {
-						// add an ownership entry
-						$me =& Me::getInstance();
-						$myid = $me->get_id();
-						$this->db->execute("insert into ownership values ($last_id,$myid)");
-					}
-					if ($ordo->_createRegistry) {
-						// add a ordo_registry entry
-						$me =& Me::getInstance();
-						$myid = $me->get_id();
-						$this->db->execute("insert into ordo_registry values ($last_id,$myid,$myid)");
-					}*/
+				/*if ($ordo->_createOwnership) {
+					// add an ownership entry
+					$me =& Me::getInstance();
+					$myid = $me->get_id();
+					$this->db->execute("insert into ownership values ($last_id,$myid)");
+				}
+				if ($ordo->_createRegistry) {
+					// add a ordo_registry entry
+					$me =& Me::getInstance();
+					$myid = $me->get_id();
+					$this->db->execute("insert into ordo_registry values ($last_id,$myid,$myid)");
+				}*/
 			}
 			
+			if ($this->_persistMode == WebVista_Model_ORM::DELETE) {
+				if (isset($seqTable)) {
+					unset($seqTable);
+				}
+				else {
+					if (strlen($val) > 0) {
+						$pWhere .= " and $field = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
+					}
+				}
+				// code below is just for replace/insert
+				continue;
+			}
 			if (substr($field,0,1) != "_" ) {
-			//echo "field: " . $field . "<br/>";
+				//echo "field: " . $field . "<br/>";
 				$sql .= " `$field` = " . $db->quote($val) .",";
 			}
 		}
 
 		if (strrpos($sql,",") == (strlen($sql) -1)) {
-				$sql = substr($sql,0,(strlen($sql) -1));
+			$sql = substr($sql,0,(strlen($sql) -1));
 		}
 		
-		if ($this->_persistMode == "update") {
+		if ($this->_persistMode == "update" || $this->_persistMode == WebVista_Model_ORM::DELETE) {
 			$sql .= " $pWhere ";
 		}
 		return $sql;
@@ -440,6 +454,46 @@ class WebVista_Model_ORM implements ORM {
 	function shouldAudit() {
 		return $this->_shouldAudit;
 	}
+	function getLegacyORMNaming() {
+		return $this->_legacyORMNaming;
+	}
+
+
+	public function rewind() {
+		if ($this->_tracking == null) $this->_tracking = $this->getObjectProperties();
+		reset($this->_tracking);
+	}
+
+	public function current() {
+		$key = current($this->_tracking);
+		$var = $this->__get($key);
+		return $var;
+	}
+
+	public function key() {
+		$var = current($this->_tracking);
+		return $var;
+	}
+
+	public function next() {
+		$var = next($this->_tracking);
+		return $var;
+	}
+
+	public function valid() {
+		$var = current($this->_tracking) !== false;
+		return $var;
+	}
+	private function getObjectProperties() {
+		$obj = new ReflectionObject($this);
+                $properties = $obj->getProperties();
+                $fields = array();
+                foreach ($properties as $property) {
+                        if (substr($property->name,0,1) == "_") continue;
+                        $fields[] = $property->name;
+                }
+		return $fields;
+	}	
 
 /*
 	public function getControllerName() {
@@ -466,6 +520,11 @@ Interface Document {
 	static public function getPrettyName();
 }
 
+interface NSDRMethods {
+	public function nsdrPersist($tthis,$context,$data);
+	public function nsdrPopulate($tthis,$context,$data);
+	public function nsdrMostRecent($tthis,$context,$data);
+}
 
 if (!function_exists('lcfirst')) {
 	function lcfirst($str) {

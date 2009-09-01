@@ -4,7 +4,6 @@
 		<div style="float:left;">
 			<div>
 			<div style="display:table-cell; vertical-align:middle; height:100px;">
-				<?//TODO: Merge webcam code for community edition?>
 				<img src="<?=$this->baseUrl?>/img/no-person-image.png">
 			</div>
 			</div>
@@ -22,7 +21,6 @@
 			</div>
 		</div>
 		<br style="clear:left;" />
-				<?//TODO: Merge filtering code for community edition?>
 		<div>
 		<strong><?=__("Quick List Options")?></strong>
 		<div style="padding-left:10px;padding-bottom:10px;">
@@ -102,7 +100,7 @@
 		</script>
 		<select id="patientSelectMultiSelect" multiple="multiple" style="width:100%;height:400px;" onChange="dojo.xhrGet ({url: '<?=$this->baseUrl?>/patient-select/detail?personId=' + this.options[this.selectedIndex].value,handleAs: 'json', load: loadPatientDetail, error: function (er) {alert('multiselect: ' + er)}});">
 		</select>
-		<input style="float:right;" type="button" value="<?=__("Select Patient")?>" onClick="mainController.setActivePatient(dojo.byId('patientSelectMultiSelect').options[dojo.byId('patientSelectMultiSelect').selectedIndex].value); closeWindowSelectPatient();"/>
+		<input style="float:right;" type="button" value="<?=__("Select Patient")?>" onClick="mainController.setActiveVisit(0); mainController.setActivePatient(dojo.byId('patientSelectMultiSelect').options[dojo.byId('patientSelectMultiSelect').selectedIndex].value); closeWindowSelectPatient();"/>
 	</div>
 	</div>
 </div>

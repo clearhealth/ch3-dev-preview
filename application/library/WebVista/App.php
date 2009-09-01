@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	App.php
+*       App.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -27,7 +27,6 @@ class WebVista {
 	protected static $_instance = null;
     	protected $_paths = array();
 	protected $_config;
-	public static $_auditLogs = array();
 
 	public static function getInstance() {
         	if (null === self::$_instance) {
@@ -35,42 +34,6 @@ class WebVista {
         	}
 
 		return self::$_instance;
-	}
-
-	public static function persistAuditLogs() {
-		if (!is_array($_SESSION['auditLog']['sql']) || count($_SESSION['auditLog']['sql']) <= 0) {
-			return;
-		}
-
-		$config = $_SESSION['auditLog']['database'];
-		$hostname = $config['params']['host'];
-		$username = $config['params']['username'];
-		$password = $config['params']['password'];
-		$dbname = $config['params']['dbname'];
-
-		// in the meantime, just use mysqli because of its multi-query support
-		$mysqli = new mysqli($hostname,$username,$password,$dbname);
-
-		/* check connection */
-		$retry = 10; // 10 seconds to retry
-		$ctr = 0;
-		do {
-			$err = mysqli_connect_errno();
-		} while($err && $ctr++ < $retry);
-
-		if ($err) {
-			printf("Connect failed: %s\n", mysqli_connect_error());
-			return;
-		}
-
-		// generate queries
-		$queries = implode(";\n",$_SESSION['auditLog']['sql']);
-
-		/* execute multi query */
-		$mysqli->multi_query($queries);
-
-		/* close connection */
-		$mysqli->close();
 	}
 
 	protected function _computePaths() {
@@ -121,10 +84,10 @@ class WebVista {
 			die($e->getMessage());
 		}
 
-		$_SESSION['auditLog']['sql'] = array();
-		$_SESSION['auditLog']['database'] = $this->_config->database->toArray();
+		AuditLog::setDbConfig($this->_config->database->toArray()); // this MUST be required as this is used as DB connection
 		// register shutdown function
-		register_shutdown_function(array('WebVista','persistAuditLogs'));
+		register_shutdown_function(array('AuditLog','closeConnection'));
+		ob_start(); // this MUST be required after register shutdown
 
 		return $this;	
 	}
@@ -249,13 +212,14 @@ class WebVista {
         $cache = Zend_Cache::factory('Core', 'File', $frontendOptions, $backendOptions);
         Zend_Registry::set('cache', $cache);
 
-	$cache = new Memcache();
-	$cache->connect('127.0.0.1',11211);
-	$status = $cache->getServerStatus('127.0.0.1',11211);
+	$memcache = new Memcache();
+	$memcache->connect('127.0.0.1',11211);
+	$status = $memcache->getServerStatus('127.0.0.1',11211);
 	if ($status === 0) {
 		// memcache server failed, do error trapping?
 	}
-	Zend_Registry::set('memcache', $cache);
+	Zend_Registry::set('memcache', $memcache);
+	Zend_Registry::set('memcacheStatus', $status);
 
         return $this;
     }

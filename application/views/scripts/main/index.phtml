@@ -14,7 +14,7 @@
 
         function onMenuItemSelect(itemId,itemValue) {
                 switch(itemId) {
-			case 'default_review___sign_changes':
+			case 'all_review___sign_changes':
                 		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
                 		dhxWins.setSkin('clear_silver');
                 		winES = dhxWins.createWindow('windowESignId',60,10,450,450);
@@ -23,27 +23,38 @@
                 		//winES.setModal(true);
                 		winES.centerOnScreen();
 				break;
-			case 'default_add_vitals':
-				var patientId = mainController.getActivePatient();
-				if (parseInt(patientId) == 0) {
-					alert("No patient selected.");
-					break;
-				}
-				winVitals = dhxWins.createWindow('windowAddVitalsId',60,10,500,300);
-				winVitals.setText('<?=__('Add Vitals')?>');
-				winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?patientId='+patientId,true);
-				winVitals.centerOnScreen();
+			case 'all_add_vitals':
+				windowAddVitals();
 				break;
-			case 'default_quit':
+			case 'all_quit':
 				if (confirm('<?=__("Are you sure you want to logout of the application, unsaved data will be lost?")?>')) {
                                 	window.location="<?=$this->baseUrl?>/logout";
 				}
 				break;
+			case 'all_select_patient':
+				windowSelectPatient();
+				break;
                         default:
-                                alert("Button "+itemId+" was pressed "+itemValue);
+                                //alert("Button "+itemId+" was pressed "+itemValue);
                                 break;
                 }
         };
+
+function windowAddVitals(jsCallback) {
+	var patientId = mainController.getActivePatient();
+	if (parseInt(patientId) == 0) {
+		alert("No patient selected.");
+		return;
+	}
+	if (jsCallback == undefined) {
+		jsCallback = '';
+	}
+	winVitals = dhxWins.createWindow('windowAddVitalSignsId',60,10,500,300);
+	winVitals.setText('<?=__('Add Vitals')?>');
+	winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?patientId='+patientId+'&jsCallback='+jsCallback,true);
+	winVitals.centerOnScreen();
+}
+
 function windowSelectPatient() {
                 dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
                 dhxWins.setSkin('clear_silver');
@@ -52,23 +63,26 @@ function windowSelectPatient() {
                 winSP.attachURL('<?=$this->baseUrl?>/patient-select.raw',true);
                 //winSP.setModal(true);
                 winSP.centerOnScreen();
-        }
-function windowSelectVisit() {
-                if (!mainController.getActivePatient() > 0) {
-                        alert('<?=_("You must select a patient before selecting a visit.")?>');
-                        return false;
-                }
-                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-                dhxWins.setSkin('clear_silver');
-                winSV = dhxWins.createWindow('windowSelectVisitId',60,10,450,250);
-                winSV.setText('Select Location & Visit');
-                winSV.attachURL('<?=$this->baseUrl?>/visit-select.raw?personId=' + mainController.getActivePatient(),true);
-                winSV.centerOnScreen();
-        }
+}
 function closeWindowSelectPatient() {
 	winSP.close();
 	refreshCurrentTab();
 }
+
+function windowPatientDetails() {
+	var patientId = mainController.getActivePatient();
+	if (parseInt(patientId) == 0) {
+		windowSelectPatient();
+		return;
+	}
+	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+	dhxWins.setSkin('clear_silver');
+	winPD = dhxWins.createWindow('windowPatientDetailsId',60,10,900,900);
+	winPD.setText('<?=__('Patient Details')?>');
+	winPD.attachURL('<?=$this->baseUrl?>/patient.raw/details?patientId='+patientId,true);
+	winPD.centerOnScreen();
+}
+
 </script>
 <div id="mainToolbar" style="width:99.9%;" ></div>
 <script>
@@ -76,18 +90,24 @@ function closeWindowSelectPatient() {
 		jsMainToolbar=new dhtmlXToolbarObject('mainToolbar','ClearSilver');
 	        jsMainToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 	        jsMainToolbar.attachEvent('onClick',function (id) {onToolbarClick(id);} );
-	        jsMainToolbar.loadXML('<?=$this->baseUrl?>/main-toolbar.raw?personId=' + personId, loadAction);
+		var additionalParams = new Array();
+		additionalParams.push("personId="+personId);
+		additionalParams.push("visitId="+mainController.getActiveVisit());
+	        jsMainToolbar.loadXML('<?=$this->baseUrl?>/main-toolbar.raw?' + additionalParams.join('&'), loadAction);
         }
         initMainToolbar();
 
     function onToolbarClick(itemId) {
         switch (itemId) {
                 case "tbSelectPatient":
-                        windowSelectPatient();
+                        windowPatientDetails();
                         break;
                 case "tbSelectVisit":
-                        windowSelectVisit();
+                        visitSelector.openWindow();
                         break;
+		case "tbSelectTeam":
+			teamSelector.openWindow();
+			break;
                 default:
                         alert("Button "+itemId + " was pressed");
         }
@@ -132,7 +152,7 @@ function mainTabbarClick(id) {
         switch(id) {
 	<?foreach ($this->mainTabs as $tabName => $tab):?>
 	case 'tab_<?=$tabName?>':
-		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports"):?>
+		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports" || $tabName == "Admin"):?>
                 dojo.byId('mainToolbar').style.display = 'none';
                 <?else:?>
                 dojo.byId('mainToolbar').style.display = 'block';
@@ -147,7 +167,7 @@ function mainTabbarClick(id) {
         return true;
     }
 	<?foreach ($this->mainTabs as $tabName => $url):?>
-	mainTabbar.addTab('tab_<?=$tabName?>','<?=$tabName?>','95');
+	mainTabbar.addTab('tab_<?=str_replace(' ','_',$tabName)?>','<?=$tabName?>','95');
     	mainTabbar.setContentHref('tab_<?=$tabName?>','blank.php');
 	<?endforeach?>
 	mainTabbar.setOnSelectHandler(mainTabbarClick);

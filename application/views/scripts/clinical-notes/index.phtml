@@ -1,0 +1,329 @@
+<style>div.gridbox_xp table.obj td {border-bottom: none;border-right:none;}</style>
+<script>
+// Tab State Class definition
+// == BEGIN ==
+function TabStateClass() {
+}
+TabStateClass.prototype.params = {};
+TabStateClass.prototype.setParam = function(params) {
+	this.params = params;
+}
+TabStateClass.prototype.redrawTab = function() {
+	redrawTabGrid(this.params);
+}
+TabStateClass.prototype.getAllParams = function() {
+	return this.params;
+}
+// instantiate global object
+TabState = new TabStateClass();
+// == END ==
+
+//alert(tabstate.getAllParams().personId);
+
+
+function redrawTabGrid(params) {
+	var filter = '';
+	if (typeof params == "object") {
+		for (var key in params) {
+			filter += '&'+key+'='+params[key];
+		}
+	}
+	else {
+		filter += '&filter='+params;
+	}
+	if (filter == '') {
+		return;
+	}
+
+	cnGrid.clearAll();
+	cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,'json');
+}
+
+</script>
+
+
+<div id="upperLeftContainer">
+
+<div id="clinicalNotesToolbar" style="width:100%;border:1px solid Silver;"></div>
+<select id="cnFilterOptions" style="width:100%;margin-top:4px;margin-bottom:4px;" onchange="changeCNFilterOptions(this.options[this.selectedIndex].value)">
+	<option value="byLast100"><?=__("Default: Last 100 Notes")?></option>
+	<option value="byAllSigned"><?=__("All Signed Notes")?></option>
+	<option value="byAuthoringPersonId"><?=__("Signed Notes By Author")?></option>
+	<option value="byDateRange"><?=__("Signed Notes By Date Range")?></option>
+	<?if ($this->provider->displayName != ',  '):?>
+	<option value="byAllUserUncosigned"><?=__("All Uncosigned Notes for ")."[{$this->provider->displayName}]"?></option>
+	<option value="byAllUserUnsigned"><?=__("All Unsigned Notes for ")."[{$this->provider->displayName}]"?></option>
+	<?endif;?>
+	<option value="byAllAuthorsUnsigned"><?=__("All Unsigned Notes for All Authors")?></option>
+	<option value="byCustom"><?=__("Custom View")?></option>
+</select>
+
+<div id="clinicalNotesContainer" style="float:left;width:100%;height:420px;"></div>
+</div>
+
+
+<div id="templateNote">
+<div style="padding-left:5px;height:600px;" id="templatePaneId">
+	&nbsp;
+	<textarea style="width:97%;height:600px;"></textarea>
+</div>
+</div>
+
+<div id="clinicalNotesLayout" style="position:absolute;width:100%;height:480px;"></div>
+<script>
+
+//var dhxLayout = new dhtmlXLayoutObject("clinicalNotesLayout", "4U");
+var cnLayout = new dhtmlXLayoutObject("clinicalNotesLayout", "2U");
+cnLayout.setEffect('collapse',true);
+cnLayout.cells("a").hideHeader();
+cnLayout.cells("a").setWidth('600');
+cnLayout.cells("b").hideHeader();
+var leftLayout = new dhtmlXLayoutObject(cnLayout.cells("a"), "2E");
+leftLayout.cells("a").hideHeader();
+leftLayout.cells("a").setHeight('30');
+//leftLayout.cells("a").attachObject(dojo.byId('cnFilterOptions'));
+leftLayout.cells("b").setText('<?=__('Template')?>');
+leftLayout.cells("b").collapse();
+
+var rightLayout = new dhtmlXLayoutObject(cnLayout.cells("b"), "2E");
+rightLayout.cells("a").hideHeader();
+rightLayout.cells("a").attachObject(dojo.byId('templateNote'));
+
+rightLayout.cells("b").setHeight('180');
+rightLayout.cells("b").setText("Attachments &nbsp;&nbsp;<a onclick='windowAddAttachments();' href='javascript:void(0);' style='margin-top:-7px;'>attach</a>");
+
+
+var cnAttachmentLayout = new dhtmlXLayoutObject(rightLayout.cells("b"), "2E");
+cnAttachmentLayout.setImagePath("<?=$this->baseUrl?>/img/");
+cnAttachmentLayout.setEffect('collapse',true);
+cnAttachmentsGrid = cnAttachmentLayout.cells('a').attachGrid();
+cnAttachmentsGrid.setImagePath("<?=$this->baseUrl?>/img/");
+cnAttachmentsGrid.setHeader('Type,Filename,Date/Time');
+cnAttachmentsGrid.setInitWidths("75,400,*");
+cnAttachmentsGrid.setSkin("xp");
+cnAttachmentsGrid.init();
+cnAttachmentLayout.cells("a").hideHeader();
+cnAttachmentLayout.cells("b").hideHeader();
+cnAttachmentLayout.cells("b").collapse();
+rightLayout.cells("b").collapse();
+
+
+
+cncxMenu = new dhtmlXMenuObject(null ,'standard');
+cncxMenu.setImagePath("<?=$this->baseUrl?>/img/");
+cncxMenu.renderAsContextMenu();
+cncxMenu.setOpenMode("web");
+cncxMenu.loadXML('<?=$this->baseUrl?>/clinical-notes.raw/clinical-notes-grid-context-menu');
+cncxMenu.attachEvent('onClick',contextMenuClickHandler);
+function contextMenuClickHandler(id) {
+	switch (id) {
+		case 'route_checkIn':
+			eSignWindow();
+			break;
+	}
+}
+
+
+leftLayout.cells("a").attachObject(dojo.byId('upperLeftContainer'));
+
+//cnGrid = leftLayout.cells("a").attachGrid();
+cnGrid = new dhtmlXGridObject('clinicalNotesContainer');
+cnGrid.setImagePath("<?=$this->baseUrl?>/img/");
+cnGrid.setHeader(',Date,Title,Author,Location');
+cnGrid.setInitWidths("25,*,*,*,*");
+//alGrid.setColAlign("left");
+cnGrid.setColTypes("img,ro,ro,ro,ro");
+cnGrid.setSkin("xp");
+cnGrid.attachEvent("onRowSelect",loadTemplatePane);
+cnGrid.enableContextMenu(cncxMenu);
+cnGrid.init();
+if (mainController.getActivePatient() > 0) {
+	cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient(),null,"json");
+}
+dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
+  (e||event).cancelBubble=true;
+  return false;
+});
+
+
+
+//var jsPLToolbar = new dhtmlXToolbarObject(leftLayout.cells("a"), "2E");
+//var jsPLToolbar = leftLayout.cells("a").attachToolbar();
+
+    jsPLToolbar=new dhtmlXToolbarObject('clinicalNotesToolbar','ClearSilver');
+    jsPLToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+    jsPLToolbar.attachEvent("onClick",onButtonClick);
+    jsPLToolbar.loadXML('<?=$this->baseUrl?>/clinical-notes.raw/toolbar-xml')
+
+    function onButtonClick(itemId,itemValue) {
+	switch(itemId) {
+                        case 'newnote':
+                                windowNewNote();
+                                break;
+			case 'editproblem':
+				editNote();
+				break;
+			case 'deletenote':
+				deleteNote();
+				break;
+                        default:
+                                alert("Button "+itemId+" was pressed "+itemValue);
+                                break;
+                }
+    };
+	function windowNewNote() {
+		if (!mainController.getActivePatient() > 0) {
+			alert('<?=__("You must have a patient selected to add a note")?>');
+			return false;
+		}
+                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+                dhxWins.setSkin('clear_silver');
+                winSP = dhxWins.createWindow('windowNewNoteId',60,10,400,375);
+                winSP.setText('Clinical Note Properties');
+                winSP.attachURL('<?=$this->baseUrl?>/clinical-notes.raw/add-note?personId=' + mainController.getActivePatient(),true);
+                //winSP.setModal(true);
+                winSP.centerOnScreen();
+        }
+	function closeWindowNewNote() {
+		winSP.close();
+	}
+	
+	function editNote() {
+		if (!cnGrid.getSelectedRowId() > 0) {
+			alert("Please select a note to edit.");
+			return false;
+		}
+		if (confirm("Re-opening note will require it to be re-signed and will display its status as **Edited**, continue?")) {
+			clinicalNoteId = cnGrid.getSelectedRowId();
+			dojo.xhrGet (
+                        {url: '<?=$this->baseUrl?>/clinical-notes.raw/process-edit-note?clinicalNoteId=' + clinicalNoteId,handleAs: 'json', load: function (data) {  loadTemplatePane(clinicalNoteId);}, error: function (er) {alert('err: ' + er)}});
+
+		}
+	}
+
+	function deleteNote() {
+                if (!cnGrid.getSelectedRowId() > 0) {
+                        alert("Please select a note to delete.");
+                        return false;
+                }
+		//if (confirm("Are you sure you want to delete the note '" + cnGrid.cellById(cnGrid.getSelectedRowId(),1).cell.innerHTML +  "' ?")) {
+		if (confirm("Are you sure you want to delete the note ?")) {
+                        clinicalNoteId = cnGrid.getSelectedRowId();
+                        dojo.xhrGet (
+                        {url: '<?=$this->baseUrl?>/clinical-notes.raw/delete-note?clinicalNoteId=' + clinicalNoteId,handleAs: 'json', load: function (data) { refreshCurrentTab();}, error: function (error) {errObj = dojo.fromJson(error.responseText); alert(errObj.error);}});
+
+                }
+        }
+
+	function windowAddAttachments() {
+		clinicalNoteId = cnGrid.getSelectedRowId();
+		if (!clinicalNoteId > 0) {
+			alert('A clinical note must be selected before adding an attachment.');
+			return false;
+		}
+                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+                dhxWins.setSkin('clear_silver');
+                winAA = dhxWins.createWindow('windowAddAttachmentId',60,10,400,175);
+                winAA.setText('Add Attachments');
+                winAA.attachURL('<?=$this->baseUrl?>/attachments.raw/add-attachments?attachmentReferenceId=' + clinicalNoteId,true);
+                //winAA.setModal(true);
+                winAA.centerOnScreen();
+        }
+	function loadTemplatePane(clinicalNoteId) {
+		dojo.xhrGet (
+			{url: '<?=$this->baseUrl?>/clinical-notes-form.raw/template?clinicalNoteId=' + clinicalNoteId,handleAs: 'text', load: function (data) { dojo.setInnerHTML(dojo.byId('templatePaneId'), data); }, error: function (er) {alert('err: ' + er)}});
+		cnAttachmentsGrid.clearAll();
+		cnAttachmentsGrid.load('<?=$this->baseUrl?>/attachments.raw/list-attachments?attachmentReferenceId=' + clinicalNoteId,null,"json");
+	}
+	function addedNewNote(clinicalNoteId) {
+		if (!mainController.getActivePatient() > 0) {
+			alert('<?=__("You must have a patient selected to add a note")?>');
+			return false;
+		}
+
+		cnGrid.clearAll();
+		cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient(),function () { dhxWins.window('windowNewNoteId').close(); cnGrid.selectRowById(clinicalNoteId,null,true,true);},"json");
+	}
+
+	function changeCNFilterOptions(optionVal) {
+		var filter = '&';
+		switch(optionVal) {
+			case 'byAuthoringPersonId': // window
+				openNotesByAuthorWindow();
+				return;
+				break;
+			case 'byDateRange': // window
+				openNotesByDateRangeWindow();
+				return;
+				break;
+			case 'byCustom': // window
+				openNotesByCustomViewWindow();
+				return;
+				break;
+			case 'byLast100':
+				filter += 'filter=byLast100';
+				break;
+			case 'byAllSigned':
+				filter += 'filter=byAllSigned';
+				break;
+			case 'byAllUserUncosigned':
+				filter += 'filter=byAllUserUncosigned';
+				break;
+			case 'byAllUserUnsigned':
+				filter += 'filter=byAllUserUnsigned';
+				break;
+			case 'byAllAuthorsUnsigned':
+				filter += 'filter=byAllAuthorsUnsigned';
+				break;
+			default:
+				return;
+				break;
+		}
+		if (filter == '&') {
+			return;
+		}
+		cnGrid.clearAll();
+		cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,function () { },"json");
+	}
+	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+	dhxWins.setSkin('clear_silver');
+	function openNotesByAuthorWindow() {
+		winNBA = dhxWins.createWindow('windowNotesByAuthor',60,10,400,150);
+		winNBA.setText('<?=__('List Signed Notes By Author')?>');
+		winNBA.attachURL('<?=$this->baseUrl?>/clinical-notes.raw/notes-by-author',true);
+		//winNBA.setModal(true);
+		winNBA.centerOnScreen();
+	}
+	function closeNotesByAuthorWindow() {
+		winNBA.close();
+	}
+	function openNotesByDateRangeWindow() {
+		winNBDR = dhxWins.createWindow('windowNotesByDateRange',60,10,175,150);
+		winNBDR.setText('<?=__('Select a Date Range')?>');
+		winNBDR.attachURL('<?=$this->baseUrl?>/clinical-notes.raw/notes-by-date-range',true);
+		//winNBDR.setModal(true);
+		winNBDR.centerOnScreen();
+	}
+	function closeNotesByDateRangeWindow() {
+		winNBDR.close();
+	}
+	function openNotesByCustomViewWindow() {
+		winNBCV = dhxWins.createWindow('windowByCustomView',60,10,400,400);
+		winNBCV.setText('<?=__('Filter Documents')?>');
+		winNBCV.attachURL('<?=$this->baseUrl?>/clinical-notes.raw/notes-by-custom-view',true);
+		//winNBCV.setModal(true);
+		winNBCV.centerOnScreen();
+	}
+	function closeNotesByCustomViewWindow() {
+		winNBCV.close();
+	}
+
+	function eSignWindow() {
+		winES = dhxWins.createWindow('windowESignId',60,10,450,450);
+		winES.setText('Review / Sign Documents');
+		winES.attachURL('<?=$this->baseUrl?>/e-sign.raw',true);
+		//winES.setModal(true);
+		winES.centerOnScreen();
+	}
+</script>
+

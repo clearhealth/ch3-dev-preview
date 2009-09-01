@@ -61,3 +61,4 @@ define ('APPLICATION_ENVIRONMENT','production');
 require_once './application/library/WebVista/App.php';
 WebVista::getInstance()->run();
 
+

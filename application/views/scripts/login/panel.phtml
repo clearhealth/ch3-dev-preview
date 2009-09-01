@@ -35,7 +35,7 @@ function loginResponse(loader) {
 		var result = loader.doXPath("/clearhealth/code");
 		for(var i=0;i<result.length;i++) {
 			if (result[i].textContent == "200") { // login successful
-				if (mainController.isForcedLogout()) {
+				if (window.mainController && mainController.isForcedLogout()) {
 					mainFileLoader.dimension = winSP.getDimension();
 					mainFileLoader.onLoadComplete = 'onLoadingComplete';
 					mainFileLoader.render();
@@ -63,7 +63,7 @@ function onLoadingComplete() {
 </script>
 <div id="loginContainer">
     <div id="loadingZone"></div>
-    <form name="frmLogin" action="<?php echo $this->baseUrl ?>/login/process" method="POST" onSubmit="return submitFormLogin();">
+    <form name="frmLogin" method="POST" onSubmit="return submitFormLogin();">
     <fieldset>
     <legend><?=__("Authenticate")?></legend>
 	<div style="border: thin solid darkGrey;vertical-align:top;">

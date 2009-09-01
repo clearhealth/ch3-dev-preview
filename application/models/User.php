@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	User.php
+*       User.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -28,6 +28,7 @@ class User extends WebVista_Model_ORM {
 	protected $person;
 	protected $username;
 	protected $password;
+	protected $default_location_id;
 
 	protected $_table = "user";
 	protected $_primaryKeys = array("user_id");
@@ -38,18 +39,28 @@ class User extends WebVista_Model_ORM {
 		$this->person = new Person();
 	}
 
-	public function populateWithUsername() {
+	public function populateWithUsername($username = null) {
+		if ($username === null) {
+			$username = $this->username;
+		}
 		$db = Zend_Registry::get('dbAdapter');
 		$sql = "SELECT * from " . $this->_table . " WHERE 1 "
-		  . " and username = " . $db->quote($this->username);
+		  . " and username = " . $db->quote($username);
                 $this->populateWithSql($sql);
+		$this->person->person_id = $this->person_id;
+		$this->person->populate();
 	}
 
-	public function populateWithPersonId() {
+	public function populateWithPersonId($personId = null) {
+		if ($personId === null) {
+			$personId = $this->person_id;
+		}
 		$db = Zend_Registry::get('dbAdapter');
 		$sql = "SELECT * from " . $this->_table . " WHERE 1 "
-		  . " and person_id = " . $db->quote($this->username);
+		  . " and person_id = " . $db->quote($personId);
                 $this->populateWithSql($sql);
+		$this->person->person_id = $this->person_id;
+		$this->person->populate();
 	}
 
 	public function __get($key) {

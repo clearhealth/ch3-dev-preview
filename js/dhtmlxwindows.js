@@ -1063,7 +1063,9 @@ function dhtmlXWindows() {
 				this.tabbar._lineAHeight=this.tabbar._lineA.style.height="4px";
 				this.tabbar._bFix=4;
 			}
-			this.tabbar.setSkin(that.skin);	
+			if (typeof this.tabbar.setSkin != 'undefined') {
+				this.tabbar.setSkin(that.skin);	
+			}
 			this.tabbar._conZone.style.borderWidth="0px";
 			this.tabbar._EARS = true;
 			this.tabbar.setMargin(-1)

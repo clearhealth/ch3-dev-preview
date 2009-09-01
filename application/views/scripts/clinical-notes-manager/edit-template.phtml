@@ -1,0 +1,58 @@
+<?=$this->form->renderOpen()?>
+
+<fieldset>
+<legend><?=__(ucwords($this->event)." Clinical Notes Template")?></legend>
+<div style="float:left;">
+	<div class="formRow">
+		<?=$this->form->clinicalNoteTemplateIdInput('FormHidden')?>
+
+		<?=$this->form->name->renderLabel()?>
+		<?$this->form->name->setAttrib('size',60)?>
+
+		<?=$this->form->nameInput()?>
+
+	</div>
+
+	<br style="clear:left;" />
+	<div class="formRow">
+		<?=$this->form->guid->renderLabel()?>
+		<?$this->form->guid->setAttrib('size',60)?>
+
+		<?=$this->form->guidInput()?>
+
+	</div>
+
+	<br style="clear:left;" />
+	<div class="formRow">
+		<?=$this->form->template->renderLabel()?>
+		<textarea cols="70" rows="12" name="cnTemplate[template]" id="cnTemplate-template"><?=$this->form->template->getValue()?></textarea>
+
+	</div>
+
+	<br style="clear:left;" />
+	<div class="formRow">
+		<?=$this->form->okInput('FormButton')?>
+		<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('windowEditTemplateId').close();" />
+
+	</div>
+</div>
+</fieldset>
+
+<?=$this->form->renderClose()?>
+
+<script>
+
+function preSubmitcnTemplate() {
+	return true;
+}
+
+function postSubmitcnTemplate() {
+	// reload all template items
+	cnmTemplateGrid.clearAll();
+	cnmTemplateGrid.load('<?=$this->baseUrl?>/clinical-notes-manager.raw/templates.json',"json");
+	cnmDefinitionGrid.clearAll();
+	cnmToggleButtons(true);
+	dhxWins.window("windowEditTemplateId").close();
+	return false;
+}
+</script>

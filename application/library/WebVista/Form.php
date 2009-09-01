@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	Form.php
+*       Form.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 class WebVista_Form extends Zend_Form {
@@ -33,6 +33,14 @@ class WebVista_Form extends Zend_Form {
 		$this->setElementsBelongTo(lcfirst($namespace));
 		$fields = $obj->ormFields();
 		foreach ($fields as $field) {
+			if ($obj->legacyORMNaming) {
+				$field = preg_replace_callback('/_(.)/',
+					create_function(
+						'$matches',
+						'return strtoupper($matches[1]);'
+					),
+					$field);
+			}
 			if (!is_object($obj->$field)) {
 				if (preg_match('/^date.*/',$field)) {
 					$element = new Zend_Dojo_Form_Element_DateTextBox($field);
@@ -72,7 +80,7 @@ class WebVista_Form extends Zend_Form {
 			}
 		}*/
 		if (preg_match('/(.*)Input$/',$method,$matches)) {
-			if ($this->$matches[1]) {
+			if (strlen($matches[1]) > 0) {
 				return $this->_generateInput($matches[1],$args);
 			}
 		}

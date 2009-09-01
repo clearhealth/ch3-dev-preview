@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	EnumerationsController.php
+*       EnumerationsController.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -58,26 +58,31 @@ class EnumerationsController extends WebVista_Controller_Action {
 		//$enumerationsTree->addNode(648,"Height");
 		//$enumerationsTree->addNode(708,"cm");
 		//$enumerationsTree->addNode(648,"Pain");
-		/*$enumerationsTree->addNode(709,"0 - No Pain");
-		$enumerationsTree->addNode(709,"1 - Slightly uncomfortable");
-		$enumerationsTree->addNode(709,"2");
-		$enumerationsTree->addNode(709,"3");
-		$enumerationsTree->addNode(709,"4");
-		$enumerationsTree->addNode(709,"5");
-		$enumerationsTree->addNode(709,"6");
-		$enumerationsTree->addNode(709,"7");
-		$enumerationsTree->addNode(709,"8");
-		$enumerationsTree->addNode(709,"9");
-		$enumerationsTree->addNode(709,"10 - Worst imaginable");
-		$enumerationsTree->addNode(709,"99 - Unable to respond");*/
+		//$enumerationsTree->addNode(709,"0 - No Pain");
+		//$enumerationsTree->addNode(709,"1 - Slightly uncomfortable");
+		//$enumerationsTree->addNode(709,"2");
+		//$enumerationsTree->addNode(709,"3");
+		//$enumerationsTree->addNode(709,"4");
+		//$enumerationsTree->addNode(709,"5");
+		//$enumerationsTree->addNode(709,"6");
+		//$enumerationsTree->addNode(709,"7");
+		//$enumerationsTree->addNode(709,"8");
+		//$enumerationsTree->addNode(709,"9");
+		//$enumerationsTree->addNode(709,"10 - Worst imaginable");
+		//$enumerationsTree->addNode(709,"99 - Unable to respond");*/
 		//$enumerationsTree->addNode(648,"Temperature");
 		//$enumerationsTree->addNode(710,"C");
 		//$enumerationsTree->addNode(648,"Weight");
 		//$enumerationsTree->addNode(711,"Kg");
 		//$enumerationsTree->deleteNode(704);
+		//$enumerationsTree->addNode(0,"Routing");
+		//$enumerationsTree->addNode(727,"No Station");
+		//$enumerationsTree->addNode(727,"Vitals");
+		//$enumerationsTree->addNode(727,"DIS");
 		$enumerationsTree->populate();
-		$this->view->xml = $enumerationsTree->toXml();
+		echo $enumerationsTree->toXml();
                 header('content-type: text/xml');
-		$this->render();
+		exit;
+		//$this->render();
 	}
 }

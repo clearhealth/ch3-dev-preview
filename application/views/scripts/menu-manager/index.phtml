@@ -104,7 +104,7 @@ pdLayout.setEffect("resize", true);
 onLoadLeftFunction = function(){
     leftToolbar.disableItem("delete");
 }
-var leftToolbar = new dhtmlXToolbarObject("leftToolbar");
+var leftToolbar = new dhtmlXToolbarObject("leftToolbar","ClearSilver");
 leftToolbar.loadXML("<?=$this->baseUrl?>/menu-manager.raw/left-toolbar.xml", onLoadLeftFunction);
 leftToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 leftToolbar.attachEvent("onClick", function(id){

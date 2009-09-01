@@ -1,0 +1,46 @@
+<style>table.obj td {border-bottom: none;border-right:none;}</style>
+<div style="float:left;">
+	<div class="formRow">
+		<dt><label for="date-begin"><?=__("Begin Date")?></label></dt>
+		<input type="text" name="dateBegin" id="date-begin" />
+		<script>
+			var dateBegin = dijit.byId('date-begin');
+			if (dateBegin != undefined) {
+				dateBegin.destroyRecursive();
+				dateBegin = null;
+			}
+
+			dateBegin = new dijit.form.DateTextBox({name:'dateBegin',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('date-begin'));
+			<?$dateBeginValue = date('Y-m-d');
+			  $x = explode('-',$dateBeginValue);?>
+			var beginDate = new Date();
+			beginDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+			dateBegin.setValue(beginDate);
+		</script>
+	</div>
+	<br />
+	<div class="formRow">
+		<dt><label for="date-end"><?=__("End Date")?></label></dt>
+		<input type="text" name="dateEnd" id="date-end" />
+		<script>
+			var dateEnd = dijit.byId('date-end');
+			if (dateEnd != undefined) {
+				dateEnd.destroyRecursive();
+				dateEnd = null;
+			}
+
+			dateEnd = new dijit.form.DateTextBox({name:'dateEnd',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('date-end'));
+			<?$dateEndValue = date('Y-m-d');
+			  $x = explode('-',$dateEndValue);?>
+			var endDate = new Date();
+			endDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+			dateEnd.setValue(endDate);
+		</script>
+	</div>
+	<br />
+	<br style="clear:left"/>
+	<div style="text-align:right;margin-top:10px;">
+		<input type="button" value="<?=__("Cancel")?>" onClick="closeNotesByDateRangeWindow()" />
+		<input type="button" value="<?=__("OK")?>" onClick="TabState.setParam({'filter':'byDateRange&dateRange','dateRange':dojo.byId('date-begin').value + '^' + dojo.byId('date-end').value});TabState.redrawTab();closeNotesByDateRangeWindow();" />
+	</div>
+</div>

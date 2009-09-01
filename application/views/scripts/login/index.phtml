@@ -10,6 +10,23 @@ if ($this->authenticated) {
 else {
 ?>
 <script>
-mainController.popupLoginWindow();
+
+// changes to this window must also sync with the mainControllerClass.prototype.popupLoginWindow in js/ch3main.js
+winSP = dhxWins.createWindow('windowLoginId',60,10,400,250);
+winSP.progressOn();
+winSP.setText('<?=__('Login')?>');
+winSP.attachURL(globalBaseUrl + '/login.popup/panel',true);
+winSP.setModal(true);
+winSP.centerOnScreen();
+// hides window buttons
+winSP.button("park").hide();
+winSP.button("minmax1").hide();
+winSP.button("minmax2").hide();
+winSP.button("close").hide();
+// clear timer to prevent multiple login popup
+if (globalLogoutTimer) {
+	clearTimeout(globalLogoutTimer);
+	globalLogoutTimer = null;
+}
 </script>
 <?}?>

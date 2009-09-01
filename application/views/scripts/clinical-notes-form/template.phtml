@@ -1,0 +1,34 @@
+<script type="text/javascript" src="<?=$this->baseUrl?>/js/custom/common.js"></script>
+<?// above code is placed temporarily to fix the loading of richEdit (dhtmlxeditor) ?>
+
+<style>
+dt {
+	display:inline;
+}
+dd {
+	display:inline;
+	padding-right:10px;
+
+}
+dl {
+}
+fieldset {
+	padding: 4px;
+}
+</style>
+<div style="background-color: whiteSmoke;padding:10px;overflow-y: auto;">
+<?=$this->signatureInfo?>
+<?=$this->form?>
+<?=$this->form->renderClose(false)?>
+<script>
+function preSubmitcntemplateform() {
+	if (window.transcriptionNotesFormSubmit) {
+		var retval = transcriptionNotesFormSubmit();
+		if (retval === false) {
+			return false;
+		}
+	}
+	return true;
+}
+</script>
+</div>

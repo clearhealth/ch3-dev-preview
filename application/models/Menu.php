@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	Menu.php
+*       Menu.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -32,8 +32,74 @@ class Menu {
     protected static $_arrCollectionMenus = array();
 
 
+	public static function generateMenus($menu = 'default',$attributes = array('name' => '','absolutePosition' => 'auto','mixedImages' => 'yes')) {
+		static $_menus = array();
+
+		if (!strlen($menu) > 0) {
+			throw new Exception("Menu argument must be a string referencing a valid activity tab");
+			return;
+		}
+
+		$rootTag = '<menu';
+		foreach ($attributes as $k => $v) {
+			$rootTag .= " {$k}=\"{$v}\"";
+		}
+		$rootTag .= ' />';
+		$xml = new SimpleXMLElement($rootTag);
+
+		$name = 'Menu';
+		$enumeration = new Enumeration();
+		$enumeration->populateByEnumerationName($name);
+		self::_generateEnumerationTree($xml,$enumeration->enumerationId);
+
+		return $xml->asXML();
+	}
+
+	protected static function _generateEnumerationTree(SimpleXMLElement $xml,$enumerationId) {
+		$db = Zend_Registry::get('dbAdapter');
+		static $enumerationList = array();
+		$enumerationsClosure = new EnumerationsClosure();
+
+		$enumeration = new Enumeration();
+		$dbSelect = $db->select()->from(array('e'=>$enumeration->_table))
+			       ->join(array('ec'=>'enumerationsClosure'),'e.enumerationId = ec.descendant')
+			       ->join(array('m'=>'mainmenu'),'m.title = e.name',array('menuId','title','siteSection'))
+			       ->where('ec.ancestor = ?',(int)$enumerationId)
+			       ->where('ec.ancestor != ec.descendant')
+			       ->where('ec.depth = 1')
+			       ->where('e.active = 1')
+			       ->order('ec.weight ASC')
+			       ->order('m.displayOrder ASC');
+
+		if ($rowset = $db->fetchAll($dbSelect)) {
+			$item = null;
+			foreach ($rowset as $row) {
+				if (in_array($row['enumerationId'],$enumerationList)) {
+					continue;
+				}
+				$enumerationList[] = $row['enumerationId'];
+				if ($item === null) {
+					$item = $xml;
+				}
+				$leaf = $item->addChild('MenuItem');
+				$idName = preg_replace('/\ |[^A-Za-z]/','_',strtolower($row['title']));
+				$menuId = "{$row['siteSection']}_{$idName}";
+				$leaf->addAttribute('id',$menuId);
+				$leaf->addAttribute('height',25);
+				$leaf->addAttribute('name',$row['title']);
+				if (!self::userHasPermissionForMenuItem($row['menuId'])) {
+					$leaf->addAttribute('disabled','disabled');
+				}
+				if ($enumerationId != $row['enumerationId']) { // prevents infinite loop
+					self::_generateEnumerationTree($leaf,$row['enumerationId']);
+				}
+			}
+		}
+	}
+
+
 	public static function generateCurrentMenu() {
-		return Menu::generateMenu(Menu::getCurrentlySelectedActivityGroup());
+		return Menu::generateMenus(Menu::getCurrentlySelectedActivityGroup());
 	}
 
 

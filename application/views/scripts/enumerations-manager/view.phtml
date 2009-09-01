@@ -1,0 +1,132 @@
+<div id="enumItemsGridContainer" style="width:100%;height:99%;overflow:auto;"></div>
+<script>
+var enumItemsGrid = new dhtmlXGridObject('enumItemsGridContainer');
+enumItemsGrid.enableDragAndDrop(true);
+enumItemsGrid.setImagePath("<?=$this->baseUrl?>/img/");
+enumItemsGrid.setSkin("xp");
+enumItemsGrid.setHeader("<?=__('Name')?>,<?=__('Category')?>,<?=__('Active')?>,ORM");
+enumItemsGrid.setInitWidths("*,100,50,40");
+enumItemsGrid.setColAlign("left,left,left,left");
+enumItemsGrid.setColTypes("tree,ed,ch,ro");
+enumItemsGrid.attachEvent("onDrag",enumItemsDragHandler);
+enumItemsGrid.attachEvent("onDrop",enumItemsDropHandler);
+enumItemsGrid.attachEvent("onEditCell",enumItemsOnEditCell);
+enumItemsGrid.attachEvent("onCheck",enumItemsOnChecked);
+enumItemsGrid.attachEvent("onRowSelect",enumItemsOnRowSelected);
+enumItemsGrid.enableTreeGridLines(true);
+enumItemsGrid.init();
+enumItemsGrid.load('<?=$this->baseUrl?>/enumerations-manager.raw/list-items?enumerationId=<?=$this->enumerationId?>',enumItemsExpand,"xml");
+
+function enumItemsOnRowSelected(rowId,cellIndex) {
+	// get the orm hidden column
+	if (enumItemsGrid.cells(rowId,3).getValue() == '1') { // contains an ORM
+		// enable Edit ORM toolbar
+		enumLeftToolbar.enableItem("tbEditObject");
+		enumLeftToolbar.showItem("tbEditObject");
+	}
+}
+
+function enumItemsOnChecked(rowId,cellIndex,state) {
+	var value = 0;
+	if (state) {
+		value = 1;
+	}
+	enumSingleUpdate('active',rowId,value,enumItemsReload); // defined in index.phtml
+}
+
+function enumItemsReload(data,reload) {
+	if (reload == undefined || reload == null) {
+		reload = false;
+	}
+	if (reload) {
+		changeAdminContainer("Enumeration Manager",'<?=$this->baseUrl?>/enumerations-manager.raw');
+	}
+	else {
+		enumItemsReloadGrid();
+	}
+}
+
+function enumItemsOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
+	switch (stage) {
+		case 0:
+			if (cellIndex == 1) { // Category Column
+				if (enumItemsGrid.getLevel(rowId) != 0 && enumItemsGrid.cells(rowId,cellIndex).getValue() == '') {
+					return false;
+				}
+			}
+			break;
+		case 1:
+			break;
+		case 2:
+			if (newValue != oldValue) {
+				var field = '';
+				if (cellIndex == 0) {
+					field = 'name';
+				}
+				else if (cellIndex == 1) {
+					field = 'category';
+				}
+				else {
+					break;
+				}
+				var reload = false;
+				if (enumItemsGrid.getLevel(rowId) == 0) {
+					reload = true; // this requires reload of the entire page
+				}
+				enumSingleUpdate(field,rowId,newValue,function(data) {enumItemsReload(data,reload);}); // defined in index.phtml
+			}
+			break;
+	}
+	return true;
+}
+
+function enumItemsReloadGrid() {
+	enumItemsGrid.clearAll();
+	enumItemsGrid.load('<?=$this->baseUrl?>/enumerations-manager.raw/list-items?enumerationId=<?=$this->enumerationId?>',enumItemsExpand,"xml");
+}
+
+function enumItemsDragHandler(idFrom,idTo,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/enumerations-manager.raw/process-reorder-items",
+		handleAs: "json",
+		content: {
+			idFrom: idFrom,
+			idTo: idTo,
+		},
+		load: function (data) {
+			enumItemsReloadGrid();
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
+	return false;
+}
+
+function enumItemsDropHandler(idFrom,idTo,idMercy,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+	return false;
+}
+
+function enumItemsExpand() {
+	enumItemsGrid.expandAll();
+	enumHideNecessaryToolbars(); // defined in index.phtml
+}
+
+
+var enumItemsMenu = new dhtmlXMenuObject(null ,'standard');
+enumItemsMenu.setImagePath("<?=$this->baseUrl?>/img/");
+enumItemsMenu.renderAsContextMenu();
+enumItemsMenu.setOpenMode("web");
+enumItemsMenu.loadXML('<?=$this->baseUrl?>/enumerations-manager.raw/context-menu.xml');
+enumItemsMenu.attachEvent('onClick',enumItemsMenuClickHandler);
+enumItemsGrid.enableContextMenu(enumItemsMenu);
+function enumItemsMenuClickHandler(id) {
+	switch (id) {
+		case "menuAddSubItem":
+			enumerationEditWindow(null,enumItemsGrid.getSelectedRowId()); // defined from index.phtml
+			break;
+	}
+}
+
+</script>

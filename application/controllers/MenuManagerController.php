@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	MenuManagerController.php
+*       MenuManagerController.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 
@@ -33,9 +33,67 @@ class MenuManagerController extends WebVista_Controller_Action {
         $this->_session = new Zend_Session_Namespace(__CLASS__);
     }
 
-    public function editAction() {
-        $this->ajaxEditAction();
-    }
+	public function editAction() {
+		if (isset($this->_session->messages)) {
+			$this->view->messages = $this->_session->messages;
+		}
+		$menuId = $this->_getParam('menuId');
+		//if ((int)$menuId === 0 && substr($menuId,0,11) != 'newMenuItem') {
+		//	$msg = __("Root menu id cannot be modified.");
+		//	throw new Exception($msg);
+		//}
+		$objMenu = new MenuItem();
+		$objMenu->menuId = $menuId;
+		$objMenu->populate();
+		$objForm = new WebVista_Form(array('name' => 'menu-item'));
+		$objForm->setAction(Zend_Registry::get('baseUrl') . "menu-manager.raw/edit-process");
+		$objForm->loadORM($objMenu, "MenuItem");
+		$objForm->setWindow('windowEditMenuId');
+		$this->view->form = $objForm;
+
+		if (!strlen($objMenu->type) > 0) {
+			$objMenu->type = 'freeform';
+		}
+		$this->view->mainTabs = $this->getMainTabs();
+		$this->view->types = array('freeform', 'report', 'form', 'submenu');
+
+		$data['report'] = array();
+		$objReport = new Report();
+		$data['report'] = $objReport->getReportList();
+
+		$data['form'] = array();
+		$objForm = new Form();
+		$data['form'] = $objForm->getFormList();
+
+		$data['typeValue'] = $objMenu->action;
+		switch ($objMenu->type) {
+			case 'report':
+				$x = explode('?', $objMenu->action);
+				$requestUri = explode('&', $x[1]);
+				foreach ($requestUri as $uri) {
+					$kvp = explode('=', $uri);
+					if ($kvp[0] == 'templateId') {
+						$data['typeValue'] = $kvp[1];
+						break;
+					}
+				}
+				break;
+			case 'form':
+				$x = explode('?', $objMenu->action);
+				$requestUri = explode('&', $x[1]);
+				foreach ($requestUri as $uri) {
+					$kvp = explode('=', $uri);
+					if ($kvp[0] == 'formId') {
+						$data['typeValue'] = $kvp[1];
+						break;
+					}
+				}
+				break;
+		}
+
+		$this->view->data = $data;
+		$this->render();
+	}
 
     protected function getMainTabs() {
         // temporarily placed it here, move this later to appropriate location
@@ -131,10 +189,10 @@ class MenuManagerController extends WebVista_Controller_Action {
     function editProcessAction() {
         $menuParams = $this->_getParam('menuItem');
         $menuId = (int)$menuParams['menuId'];
-        if ($menuId === 0 && substr($menuParams['menuId'],0,11) != 'newMenuItem') {
+        /*if ($menuId === 0 && substr($menuParams['menuId'],0,11) != 'newMenuItem') {
             $msg = __("Invalid menu id.");
             throw new Exception($msg);
-	}
+	}*/
         $menuParams['menuId'] = (int)$menuParams['menuId'];
         $objMenu = new MenuItem();
         $objMenu->menuId = $menuId;
