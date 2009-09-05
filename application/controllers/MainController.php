@@ -59,8 +59,8 @@ class MainController extends WebVista_Controller_Action {
         $mainTabs = array();
         //$mainTabs['Calendar']['url'] = $this->view->baseUrl.'/calendar.raw';
         //$mainTabs['Calendar']['hrefMode'] =  'ajax-html';
-        //$mainTabs['Provider']['url'] = $this->view->baseUrl.'/provider-dashboard.raw';
-        //$mainTabs['Provider']['hrefMode'] =  'ajax-html';
+        $mainTabs['Provider']['url'] = $this->view->baseUrl.'/provider-dashboard.raw';
+        $mainTabs['Provider']['hrefMode'] =  'ajax-html';
         //$mainTabs['Station']['url'] = $this->view->baseUrl.'/station-dashboard.raw';
         //$mainTabs['Station']['hrefMode'] =  'ajax-html';
 //        $mainTabs['Patient']['url'] = "/index.php/minimal/PatientDashboard/View?patient_id=' + mainController.getActivePatient() + '";

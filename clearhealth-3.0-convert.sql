@@ -82,3 +82,7 @@ ALTER TABLE `patient` ADD `teamId` INT NOT NULL ;
 
 ALTER TABLE `audits` ADD `startProcessing` DATETIME NOT NULL ,
 ADD `endProcessing` DATETIME NOT NULL ;
+
+ALTER TABLE `patient` ADD `defaultPharmacyId` CHAR( 36 ) NOT NULL ;
+
+ALTER TABLE `patient` ADD `signedHipaaDate` DATE NOT NULL ;
