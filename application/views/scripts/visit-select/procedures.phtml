@@ -1,0 +1,242 @@
+<div id="proceduresContainer" style="width:100%;height:100%;overflow:auto;">
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="procedures-section"><?=__("Procedure Section")?></label></dt>
+			<div id="proceduresSectionListContainer" style="float:left;width:230px;height:120px;"></div><br />
+			<?=$this->formButton('otherProcedure',__('Other Procedure...'),array('style'=>'float:right;','onClick'=>'openProcedureLookupWindow()'))?>
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="procedures-section"><?=__("Section Name")?></label></dt>
+			<div id="proceduresSectionNameListContainer" style="float:left;width:260px;height:140px;"></div>
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="procedures-modifiers"><?=__("Modifiers")?></label></dt>
+			<div id="proceduresModifiersListContainer" style="float:left;width:240px;height:140px;"></div>
+		</div>
+	</div>
+	<script>
+	function saveProcedures() {
+		var arrProcedures = new Array();
+		arrProcedures.push("'patientId':'"+mainController.getActivePatient()+"'");
+		if (proceduresListGrid.getRowsNum() > 0) {
+			proceduresListGrid.forEachRow(function(rowId) {
+					arrProcedures.push("'procedures["+rowId+"][providerId]':'"+proceduresListGrid.cells(rowId,3).getValue()+"'");
+					arrProcedures.push("'procedures["+rowId+"][quantity]':'"+parseInt(proceduresListGrid.cells(rowId,0).getValue(),10)+"'");
+					arrProcedures.push("'procedures["+rowId+"][procedure]':'"+proceduresListGrid.cells(rowId,1).getValue().replace(/\n/g," ")+"'");
+					//arrProcedures.push("'procedures["+rowId+"][modifiers]':'"+toBeImplemented+"'");
+					arrProcedures.push("'procedures["+rowId+"][comments]':'"+proceduresListGrid.cells(rowId,4).getValue()+"'");
+				});
+		}
+
+		eval("var procedureContent = {"+arrProcedures.join(',')+"}");
+
+		dojo.xhrPost({
+			url: "<?=$this->baseUrl?>/procedures.raw/process-patient-procedure",
+			handleAs: "json",
+			content: procedureContent,
+			load: function (data) {
+				alert(data.msg);
+			},
+			error: function (error) {
+				alert(error);
+				console.error ('Error: ', error);
+			}
+		});
+
+	}
+
+	function proceduresAddOthers(code,data) {
+		proceduresAddToList(code,data);
+	}
+
+	function openProcedureLookupWindow() {
+		var params = new Array();
+		params.push("callback=proceduresAddOthers");
+		globalCreateWindow("winLookupProceduresId",params,"<?=$this->baseUrl?>/procedures.raw/lookup","<?=__('Lookup Procedure')?>",400,400);
+	}
+
+	var proceduresSectionListGrid = new dhtmlXGridObject("proceduresSectionListContainer");
+	proceduresSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+	proceduresSectionListGrid.setHeader("");
+	proceduresSectionListGrid.setNoHeader(true);
+	proceduresSectionListGrid.setInitWidths("*");
+	proceduresSectionListGrid.setSkin("xp");
+	proceduresSectionListGrid.init();
+	proceduresSectionListGrid.load("<?=$this->baseUrl?>/procedures.raw/list","json");
+	proceduresSectionListGrid.attachEvent("onRowSelect",proceduresSectionListOnRowSelected);
+	function proceduresSectionListOnRowSelected(rowId,cellIndex) {
+		proceduresSectionNameListGrid.clearAll();
+		proceduresSectionNameListGrid.load("<?=$this->baseUrl?>/procedures.raw/list-section?section="+rowId,proceduresOnSectionNameLoaded,"json");
+	}
+
+	function proceduresOnSectionNameLoaded() {
+		proceduresListGrid.forEachRow(function(rowId){ if (proceduresSectionNameListGrid.doesRowExist(rowId)){ proceduresSectionNameListGrid.cells(rowId,0).setChecked(true);} });
+	}
+
+	var proceduresSectionNameListGrid = new dhtmlXGridObject("proceduresSectionNameListContainer");
+	proceduresSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+	proceduresSectionNameListGrid.setHeader(",,");
+	proceduresSectionNameListGrid.setNoHeader(true);
+	proceduresSectionNameListGrid.setInitWidths("20,*,70");
+	proceduresSectionNameListGrid.setColTypes("ch,ro,ro");
+	proceduresSectionNameListGrid.setColAlign("right,left,left");
+	proceduresSectionNameListGrid.setSkin("xp");
+	proceduresSectionNameListGrid.init();
+	proceduresSectionNameListGrid.attachEvent("onCheck",proceduresSectionNameOnChecked);
+
+	function proceduresAddToList(id,data) {
+		var providerSelect = dojo.byId("procedures-providerId");
+		var selectedProvider = providerSelect.options[0];
+		var providerText = "";
+		var providerValue = 0;
+		if (selectedProvider) {
+			providerText = selectedProvider.text.replace(/,/g, "&#44;");
+			providerValue = selectedProvider.value;
+		}
+		proceduresListGrid.addRow(id,"1 time,,"+providerText);
+		proceduresListGrid.cells(id,1).setValue(data);
+		proceduresListGrid.cells(id,3).setValue(providerValue);
+	}
+
+	function proceduresSectionNameOnChecked(rowId,cellIndex,state) {
+		if (state) { // add to procedure list
+			proceduresAddToList(rowId,proceduresSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+		}
+		else { // remove from procedure list
+			proceduresRemoveSelected(rowId);
+		}
+	}
+
+	var proceduresModifiersListGrid = new dhtmlXGridObject("proceduresModifiersListContainer");
+	proceduresModifiersListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+	proceduresModifiersListGrid.setHeader("");
+	proceduresModifiersListGrid.setNoHeader(true);
+	proceduresModifiersListGrid.setInitWidths("*");
+	proceduresModifiersListGrid.setSkin("xp");
+	proceduresModifiersListGrid.init();
+	//proceduresModifiersListGrid.load("<?=$this->baseUrl?>/procedures.raw/list-modifiers.json","json");
+	</script>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<div id="proceduresListContainer" style="float:left;width:70%;height:150px"></div>
+		<script>
+		var proceduresListGrid = new dhtmlXGridObject("proceduresListContainer");
+		proceduresListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		proceduresListGrid.setHeader("<?=__('Quantity')?>,<?=__('Selected Procedures')?>,<?=__('Provider')?>,,");
+		proceduresListGrid.setInitWidths("70,*,*,0,0");
+		proceduresListGrid.setSkin("xp");
+		proceduresListGrid.init();
+		proceduresListGrid.load("<?=$this->baseUrl?>/procedures.raw/list-patient-procedures?patientId="+mainController.getActivePatient(),null,"json");
+
+		function proceduresListOnRowSelected(rowId,cellIndex) {
+			var providerSelect = dojo.byId("procedures-providerId");
+			providerSelect.disabled = false;
+			var providerId = proceduresListGrid.cells(rowId,3).getValue();
+			for (var i in providerSelect.options) {
+				if (providerSelect.options[i].value == providerId) {
+					providerSelect.options[i].selected = true;
+					break;
+				}
+			}
+
+			proceduresQuantity.setDisabled(false);
+			proceduresQuantity.setValue(parseInt(proceduresListGrid.cells(rowId,0).getValue(),10));
+
+			var proceduresComments = dojo.byId("procedures-comments");
+			proceduresComments.disabled = false;
+			proceduresComments.value = proceduresListGrid.cells(rowId,4).getValue();
+
+			var proceduresRemove = dojo.byId("proceduresRemoveId");
+			proceduresRemove.disabled = false;
+
+			// TODO: update modifier grid
+		}
+		proceduresListGrid.attachEvent("onRowSelect",proceduresListOnRowSelected);
+
+		function proceduresRemoveSelected(rowId) {
+			if (!rowId) {
+				rowId = proceduresListGrid.getSelectedRowId();
+			}
+			if (rowId == null) {
+				return;
+			}
+			proceduresListGrid.deleteRow(rowId);
+			if (proceduresSectionNameListGrid.doesRowExist(rowId)) {
+				proceduresSectionNameListGrid.cells(rowId,0).setChecked(false);
+			}
+
+			var providerSelect = dojo.byId("procedures-providerId");
+			providerSelect.disabled = true;
+
+			proceduresQuantity.setDisabled(true);
+
+			var proceduresComments = dojo.byId("procedures-comments");
+			proceduresComments.disabled = true;
+
+			var proceduresRemove = dojo.byId("proceduresRemoveId");
+			proceduresRemove.disabled = true;
+		}
+
+		function setProcedureList(cellIndex,txt) {
+			var rowId = proceduresListGrid.getSelectedRowId();
+			if (rowId == null) {
+				alert('<?=__('No procedure selected.')?>');
+				return;
+			}
+			if (typeof txt == "string") {
+				txt = txt.replace(/,/g, "&#44;");
+			}
+			proceduresListGrid.cells(rowId,cellIndex).setValue(txt);
+		}
+
+		function proceduresUpdateComment(comment) {
+			var rowId = proceduresListGrid.getSelectedRowId();
+			if (rowId == null) {
+				return;
+			}
+			proceduresListGrid.cells(rowId,4).setValue(comment);
+		}
+
+		function setProviderId(opt) {
+			setProcedureList(2,opt.text);
+			setProcedureList(3,opt.value);
+		}
+		</script>
+		<div id="proceduresRightContainer" style="float:left;margin:0 0 0 10px;">
+			<dt><label for="procedures-provider-id"><?=__("Provider")?></label></dt>
+			<?=$this->formSelect('procedures[providerId]',null,array('id'=>'procedures-providerId','disabled'=>'disabled','onchange'=>'setProviderId(this.options[this.selectedIndex])','style'=>'width:150px;'),$this->listProviders)?>
+			<dt><label for="procedures-quantity"><?=__("Quantity")?></label></dt>
+			<?=$this->formText('procedures[quantity]',null,array('id'=>'procedures-quantity','disabled'=>'disabled','style'=>'width:150px;'))?>
+			<br /><?=$this->formButton('proceduresRemoveId',__('Remove'),array('id'=>'proceduresRemoveId','onClick'=>'proceduresRemoveSelected()','disabled'=>'disabled'))?>
+			<script>
+			if (proceduresQuantity != undefined) {
+				proceduresQuantity.destroyRecursive();
+				proceduresQuantity = null;
+			}
+			var proceduresQuantity = new dijit.form.NumberSpinner({value:0,constraints:{min:0,places:0},maxlength:2,style:"width:150px;",name:"procedures[quantity]",intermediateChanges:"true"},dojo.byId("procedures-quantity"));
+			proceduresQuantity.setDisabled(true);
+			dojo.connect(dijit.byId("procedures-quantity"),'onChange',function(){
+				var quantityVal = proceduresQuantity.getValue();
+				if (quantityVal > 1) {
+					quantityVal += " times";
+				}
+				else {
+					quantityVal += " time";
+				}
+				setProcedureList(0,quantityVal);
+			});
+			</script>
+		</div>
+		<div style="float:left;width:100%;">
+		<br />
+		<?=__("Comments")?>: <?=$this->formText('procedures[comments]','',array('id'=>'procedures-comments','onchange'=>'proceduresUpdateComment(this.value)','style'=>'width:70%','disabled'=>'disabled'))?>
+		</div>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<?=$this->formButton('proceduresOK',__('OK'),array('onClick'=>'saveProcedures()'))?>
+		<?=$this->formButton('proceduresCancel',__('Cancel'),array('onClick'=>'dhxWins.window("windowSelectVisitId").close()'))?>
+	</div>
+</div>

@@ -57,26 +57,18 @@ class MainController extends WebVista_Controller_Action {
 
     private function getMainTabs() {
         $mainTabs = array();
-        //$mainTabs['Calendar']['url'] = $this->view->baseUrl.'/calendar.raw';
-        //$mainTabs['Calendar']['hrefMode'] =  'ajax-html';
+        $mainTabs['Calendar']['url'] = $this->view->baseUrl.'/calendar.raw';
+        $mainTabs['Calendar']['hrefMode'] =  'ajax-html';
         $mainTabs['Provider']['url'] = $this->view->baseUrl.'/provider-dashboard.raw';
         $mainTabs['Provider']['hrefMode'] =  'ajax-html';
-        //$mainTabs['Station']['url'] = $this->view->baseUrl.'/station-dashboard.raw';
-        //$mainTabs['Station']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Patient']['url'] = "/index.php/minimal/PatientDashboard/View?patient_id=' + mainController.getActivePatient() + '";
-//        $mainTabs['Patient']['hrefMode'] =  'iframe';
-//        $mainTabs['Medications']['url']   = $this->view->baseUrl.'/medications.raw';
-//        $mainTabs['Medications']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Problems']['url']   = $this->view->baseUrl.'/problem-list.raw';
-//        $mainTabs['Problems']['hrefMode'] =  'ajax-html';
+        $mainTabs['Medications']['url']   = $this->view->baseUrl.'/medications.raw';
+        $mainTabs['Medications']['hrefMode'] =  'ajax-html';
+        $mainTabs['Problems']['url']   = $this->view->baseUrl.'/problem-list.raw';
+        $mainTabs['Problems']['hrefMode'] =  'ajax-html';
         $mainTabs['Notes']['url']   = $this->view->baseUrl.'/clinical-notes.raw';
         $mainTabs['Notes']['hrefMode'] =  'ajax-html';
         $mainTabs['Labs']['url']   = $this->view->baseUrl.'/lab-results.raw';
         $mainTabs['Labs']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Order']['url']   = $this->view->baseUrl.'/orders.raw';
-//        $mainTabs['Order']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Billing']['url']   = '/index.php/minimal/claim/list';
-//        $mainTabs['Billing']['hrefMode'] =  'iframe';
         $mainTabs['Admin']['url']   = $this->view->baseUrl.'/admin.raw';
         $mainTabs['Admin']['hrefMode'] =  'ajax-html';
 
@@ -88,7 +80,7 @@ class MainController extends WebVista_Controller_Action {
         return $mainTabs;
     }
 	private function getActiveTab() {
-		$activeTab = 'Admin';
+		$activeTab = 'Provider';
 		Menu::setCurrentlySelectedActivityGroup($activeTab);
 		return $activeTab;
 	}
@@ -98,6 +90,41 @@ class MainController extends WebVista_Controller_Action {
                 }
                 return 0;
         }
+
+	public function generateTestDataAction() {
+		// Patient Test Data
+		$person = new Person();
+		$person->lastName = 'Test';
+		$person->firstName = 'One';
+		$person->persist();
+
+		$patient = new Patient();
+		$patient->personId = $person->personId;
+		$patient->person = $person;
+		$patient->persist();
+
+
+		// Provider Test Data
+		$person = new Person();
+		$person->lastName = 'Provider';
+		$person->firstName = 'ClearHealth';
+		$person->persist();
+
+		$provider = new Provider();
+		$provider->personId = $person->personId;
+		$provider->person = $person;
+		$provider->persist();
+
+		// set provider as user
+		$user = new User();
+		$user->username = 'provider';
+		$user->password = 'provider';
+		$user->person = $person;
+		$user->persist();
+
+		echo 'Done.';
+		die;
+	}
 
 }
 

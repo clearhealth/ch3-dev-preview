@@ -132,6 +132,7 @@ class WebVista_Model_ORMIterator implements SeekableIterator {
 
 	private function _initDbStmt() {
 		$db = Zend_Registry::get('dbAdapter');
+		//$this->_dbStmt = $db->prepare($this->_dbSelect,array(PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL));
                 $this->_dbStmt = $db->query($this->_dbSelect);
 	}
 

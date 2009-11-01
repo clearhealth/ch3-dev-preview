@@ -83,7 +83,7 @@ if (typeof mainTabbar != "undefined") {
 		// check if mainController object exists
 		if (typeof mainController != "undefined") {
 			// set active patientId
-			mainController.setActivePatient('{$patientId}');
+			mainController.setActivePatient(patientId);
 		}
 		mainTabbar.setTabActive(tabId); // tabName should be dynamic
 	}
@@ -93,10 +93,12 @@ EOL;
 		return $js;
 	}
 
-    public function __call($name, $args)
-    {
-        throw new Exception('Sorry, the requested action does not exist');
-    }
+	public function __call($name, $args) {
+		$request = Zend_Controller_Front::getInstance();
+		$controllerName = $request->getRequest()->getControllerName();
+		$actionName = substr($name,0,-6);
+		throw new Exception('Sorry, the requested controller/action does not exist: '.$controllerName.'/'.$actionName);
+	}
 
 
 	protected function _renderToolbar($phtml = "toolbar") {

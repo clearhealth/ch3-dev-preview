@@ -22,16 +22,27 @@
 *****************************************************************************/
 
 
-class LogoutController extends WebVista_Controller_Action
-{
-    public function indexAction()
-    {
-	$noRedirect = (int)$this->_getParam('noRedirection',0);
-        Zend_Auth::getInstance()->clearIdentity();
-	Zend_Session::destroy(true);
-	if ($noRedirect === 0) {
-        	$this->_redirect('');
+class LogoutController extends WebVista_Controller_Action {
+
+	public function indexAction() {
+		if (Zend_Auth::getInstance()->hasIdentity()) {
+			$identity = Zend_Auth::getInstance()->getIdentity();
+			$audit = new Audit();
+			$audit->objectClass = 'Logout';
+			$audit->userId = (int)$identity->userId;
+			$audit->message = __('user') . ': ' . $identity->username . ' ' . __('logged out');
+			$audit->dateTime = date('Y-m-d H:i:s');
+			$audit->_ormPersist = true;
+			$audit->persist();
+			// audit only if logged in to avoid multiple logouts
+		}
+		$noRedirect = (int)$this->_getParam('noRedirection',0);
+		Zend_Auth::getInstance()->clearIdentity();
+		// comment-out session destroy to give way the session expiration in WebVista_Session_SaveHandler hook
+		//Zend_Session::destroy(true);
+		if ($noRedirect === 0) {
+			$this->_redirect('');
+		}
+		exit;
 	}
-	exit;
-    }
 }

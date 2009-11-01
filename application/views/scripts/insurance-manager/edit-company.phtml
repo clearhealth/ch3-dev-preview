@@ -1,0 +1,247 @@
+<div style="width:100%;">
+
+<div style="float:left;width:45%;">
+<fieldset><legend><?=__('Company Details')?></legend>
+
+<?if ($this->message) :?>
+<div style="background-color:PaleGreen; width:100%;">
+<?=$this->message?>
+</div>
+<?endif;?>
+
+<?=$this->form->renderOpen()?>
+
+<div style="margin-left:10px;">
+<?foreach ($this->form->getErrorMessages() as $error) {?>
+<?=$error?>
+<?}?>
+</div>
+
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->name->renderLabel()?>
+	<?$this->form->name->setAttrib('size',35)?>
+	<?=$this->form->nameInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->initials->renderLabel()?>
+	<?$this->form->initials->setAttrib('size',35)?>
+	<?=$this->form->initialsInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<dt><label for="company-email" class="optional"><?=__('Email')?></label></dt>
+	<?=$this->formText('email',$this->email,array('id'=>'email','size'=>35))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<dt><label for="company-url" class="optional"><?=__('Website')?></label></dt>
+	<?$this->form->url->setAttrib('size',35)?>
+	<?=$this->form->urlInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->description->renderLabel()?>
+	<?=$this->form->descriptionInput('FormTextarea',array('cols'=>40,'rows'=>4))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->notes->renderLabel()?>
+	<?=$this->form->notesInput('FormTextarea',array('cols'=>40,'rows'=>4))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->formHidden('id',$this->form->companyId->getValue())?>
+	<?=$this->form->companyIdInput('FormHidden')?>
+	<?=$this->form->okInput()?>
+	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winEditCompanyId').close()"/>
+</div>
+
+<script>
+function postSubmiteditcompany(data) {
+	insuranceGridReload();
+	dhxWins.window("winEditCompanyId").close();
+	return false;
+}
+</script>
+
+<?=$this->form->renderClose()?>
+
+</fieldset>
+</div>
+
+
+<div style="float:left;width:50%;margin-left:10px;">
+	<fieldset><legend><?=__('Phone Numbers')?> (<a href="javascript:companyPhonesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
+		<div id="companyPhonesGridId" style="height:150px;"></div>
+	</fieldset>
+	<fieldset><legend><?=__('Addresses')?> (<a href="javascript:companyAddrAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
+		<div id="companyAddrGridId" style="height:150px;"></div>
+	</fieldset>
+</div>
+
+<script>
+var companyPhonesGrid = new dhtmlXGridObject("companyPhonesGridId");
+companyPhonesGrid.setImagePath("<?=$this->baseUrl?>/img/");
+companyPhonesGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Number')?>,<?=__('Notes')?>,<?=__('Active')?>");
+companyPhonesGrid.setInitWidths("250,50,100,300,50");
+companyPhonesGrid.setColTypes("ed,ed,ed,ed,ch");
+companyPhonesGrid.setSkin("xp");
+companyPhonesGrid.attachEvent("onEditCell",companyPhonesGridOnCellEdited);
+companyPhonesGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
+	var val = 0;
+	if (state) {
+		val = 1;
+	}
+	companySingleUpdate(rowId,companyPhonesColFields[cellIndex],val,"phone","<?=$this->form->companyId->getValue()?>",companyPhonesGridReload);
+});
+
+function companyPhonesGridReload() {
+	companyPhonesGrid.clearAll();
+	companyPhonesGrid.load("<?=$this->baseUrl?>/insurance-manager.raw/list-phones?companyId=<?=$this->form->companyId->getValue()?>","json");
+}
+companyPhonesGrid.init();
+companyPhonesGridReload();
+
+function companyPhonesRemove(id) {
+	companyRemove(id,"phone","<?=$this->form->companyId->getValue()?>",companyPhonesGridReload);
+}
+
+function companyPhonesAdd() {
+	if (companyPhonesGrid.doesRowExist(0)) {
+		companyPhonesGrid.selectRow(companyPhonesGrid.getRowIndex(0),true);
+	}
+	else {
+		companySingleUpdate(0,companyPhonesColFields[0],"blank","phone","<?=$this->form->companyId->getValue()?>",companyPhonesGridReload);
+	}
+}
+
+function companyPhonesMenuOnClicked(menuItemId,type) {
+	var rowCol = type.split("_");
+	switch (menuItemId) {
+		case "delete":
+			companyPhonesRemove(rowCol[0]);
+			break;
+		default:
+			alert("<?=__('Invalid event')?>");
+	}
+}
+
+var companyPhonesMenu = new dhtmlXMenuObject(null,"standard");
+companyPhonesMenu.setImagePath("<?=$this->baseUrl?>/img/");
+companyPhonesMenu.renderAsContextMenu();
+companyPhonesMenu.setOpenMode("web");
+companyPhonesMenu.attachEvent("onClick",companyPhonesMenuOnClicked);
+function companyPhonesMenuOnLoaded() {
+	companyPhonesMenu.forEachItem(function(itemId) { companyPhonesMenu.hideItem(itemId); });
+	companyPhonesMenu.showItem("delete");
+}
+companyPhonesMenu.loadXML("<?=$this->baseUrl?>/insurance-manager.raw/get-menu",companyPhonesMenuOnLoaded);
+
+companyPhonesGrid.enableContextMenu(companyPhonesMenu);
+dhtmlxEvent(companyPhonesGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+var companyPhonesColFields = new Array();
+// Phone field names, in order based on companyPhonesGrid.setHeader
+companyPhonesColFields.push("name");
+companyPhonesColFields.push("type");
+companyPhonesColFields.push("number");
+companyPhonesColFields.push("notes");
+companyPhonesColFields.push("active");
+
+function companyPhonesGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		companySingleUpdate(rowId,companyPhonesColFields[cellIndex],newValue,"phone","<?=$this->form->companyId->getValue()?>",companyPhonesGridReload);
+	}
+	return true;
+}
+
+var companyAddrGrid = new dhtmlXGridObject("companyAddrGridId");
+companyAddrGrid.setImagePath("<?=$this->baseUrl?>/img/");
+companyAddrGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Line1')?>,<?=__('Line2')?>,<?=__('City')?>,<?=__('Region')?>,<?=__('Country')?>,<?=__('State')?>,<?=__('Zip')?>,<?=__('Notes')?>,<?=__('Active')?>");
+companyAddrGrid.setInitWidths("260,50,120,120,120,120,120,120,100,300,50");
+companyAddrGrid.setColTypes("ed,ed,ed,ed,ed,ed,ed,ed,ed,ed,ch");
+companyAddrGrid.setSkin("xp");
+companyAddrGrid.attachEvent("onEditCell",companyAddrGridOnCellEdited);
+companyAddrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
+	var val = 0;
+	if (state) {
+		val = 1;
+	}
+	companySingleUpdate(rowId,companyAddrColFields[cellIndex],val,"address","<?=$this->form->companyId->getValue()?>",companyAddrGridReload);
+});
+
+function companyAddrGridReload() {
+	companyAddrGrid.clearAll();
+	companyAddrGrid.load("<?=$this->baseUrl?>/insurance-manager.raw/list-addresses?companyId=<?=$this->form->companyId->getValue()?>","json");
+}
+companyAddrGrid.init();
+companyAddrGridReload();
+
+function companyAddrRemove(id) {
+	companyRemove(id,"address","<?=$this->form->companyId->getValue()?>",companyAddrGridReload);
+}
+
+function companyAddrAdd() {
+	if (companyAddrGrid.doesRowExist(0)) {
+		companyAddrGrid.selectRow(companyAddrGrid.getRowIndex(0),true);
+	}
+	else {
+		companySingleUpdate(0,companyAddrColFields[0],"blank","address","<?=$this->form->companyId->getValue()?>",companyAddrGridReload);
+	}
+}
+
+function companyAddrMenuOnClicked(menuItemId,type) {
+	var rowCol = type.split("_");
+	switch (menuItemId) {
+		case "delete":
+			companyAddrRemove(rowCol[0]);
+			break;
+		default:
+			alert("<?=__('Invalid event')?>");
+	}
+}
+
+var companyAddrMenu = new dhtmlXMenuObject(null,"standard");
+companyAddrMenu.setImagePath("<?=$this->baseUrl?>/img/");
+companyAddrMenu.renderAsContextMenu();
+companyAddrMenu.setOpenMode("web");
+companyAddrMenu.attachEvent("onClick",companyAddrMenuOnClicked);
+function companyAddrMenuOnLoaded() {
+	companyAddrMenu.forEachItem(function(itemId) { companyAddrMenu.hideItem(itemId); });
+	companyAddrMenu.showItem("delete");
+}
+companyAddrMenu.loadXML("<?=$this->baseUrl?>/insurance-manager.raw/get-menu",companyAddrMenuOnLoaded);
+
+companyAddrGrid.enableContextMenu(companyAddrMenu);
+dhtmlxEvent(companyAddrGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+var companyAddrColFields = new Array();
+// Address field names, in order based on companyAddrGrid.setHeader
+companyAddrColFields.push("name");
+companyAddrColFields.push("type");
+companyAddrColFields.push("line1");
+companyAddrColFields.push("line2");
+companyAddrColFields.push("city");
+companyAddrColFields.push("region");
+companyAddrColFields.push("country");
+companyAddrColFields.push("state");
+companyAddrColFields.push("postal_code");
+companyAddrColFields.push("notes");
+companyAddrColFields.push("active");
+
+function companyAddrGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		companySingleUpdate(rowId,companyAddrColFields[cellIndex],newValue,"address","<?=$this->form->companyId->getValue()?>",companyAddrGridReload);
+	}
+	return true;
+}
+</script>
+
+</div>

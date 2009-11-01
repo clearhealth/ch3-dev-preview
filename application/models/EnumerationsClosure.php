@@ -65,7 +65,7 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 			       ->where("ancestor != descendant")
 			       ->order("depth ASC")
 			       ->limit(1);
-		$parentId = $enumerationId;
+		$parentId = 0;
 		if ($row = $db->fetchRow($dbSelect)) {
 			$parentId = $row['ancestor'];
 		}
@@ -216,7 +216,8 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 			$enumeration->ormClass = $enumParent->ormClass;
 			// we only need to use the parent ormId if child's ormId less than or equal to 0
 			if ($enumeration->ormId <= 0) {
-				$enumeration->ormId = $enumParent->ormId;
+				// temporarily comment out
+				//$enumeration->ormId = $enumParent->ormId;
 			}
 			// we only need to use the parent ormEditMethod if child's ormEditMethod not defined
 			if (!strlen($enumeration->ormEditMethod) > 0) {

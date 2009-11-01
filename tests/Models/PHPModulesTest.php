@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	PHPModulesTest.php
+*       PHPModulesTest.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 /**
@@ -43,14 +43,13 @@ class Models_PHPModulesTest extends TestCase {
 		$this->_modulesList['PDO'] = 'php-pdo';
 		$this->_modulesList['simplexml_load_string'] = 'php-xml';
 		$this->_modulesList['mysql_connect'] = 'php-mysql';
+		$this->_modulesList['XSLTProcessor'] = 'php-xsl';
 	}
 
 	public function testPHPModulesExist() {
-
-		$this->assertTrue((boolean)(version_compare(PHP_VERSION,'5.2.6') !== -1), "You must be running PHP version 5.2.6 or greater (very soon to be 5.3), your version is: " . PHP_VERSION);
-
 		foreach ($this->_modulesList as $moduleFunc => $module) {
 			$this->assertTrue((boolean)(function_Exists($moduleFunc) | class_exists($moduleFunc)),"Module: {$module} must be installed.");
+			//$this->assertTrue(function_exists($moduleFunc),"Module  {$module} must be installed.");
 		}
 	}
 

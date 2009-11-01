@@ -1,0 +1,245 @@
+<div id="diagnosesContainer" style="width:100%;height:100%;overflow:auto;">
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="diagnoses-section"><?=__("Diagnoses Section")?></label></dt>
+			<div id="diagnosesSectionListContainer" style="float:left;width:250px;height:100px;"></div><br />
+			<input type="button" value="<?=__('Other Diagnosis...')?>" style="float:right;width:150px;" onClick="openDiagnosisLookupWindow()" />
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="diagnoses-section-name"><?=__("Section Name")?></label></dt>
+			<div id="diagnosesSectionNameListContainer" style="float:left;width:490px;height:120px;"></div>
+		</div>
+		<script>
+		function openDiagnosisLookupWindow() {
+			var params = new Array();
+			params.push("jsCallback=selectedDiagnosis");
+			globalCreateWindow("windowDiagnosisLookupId",params,"<?=$this->baseUrl?>/diagnosis.raw/lookup","<?=__('Lookup Diagnosis')?>",400,450);
+		}
+
+		function selectedDiagnosis(code,description) {
+			if (!diagnosesListGrid.doesRowExist(code)) {
+				var primary = "";
+				if (diagnosesListGrid.getRowsNum() == 0) {
+					var primary = "1";
+				}
+				diagnosesListGrid.addRow(code,","+primary+","+description.replace(/,/g, "&#44;"));
+			}
+		}
+
+		var diagnosesSectionListGrid = new dhtmlXGridObject("diagnosesSectionListContainer");
+		diagnosesSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		diagnosesSectionListGrid.setHeader("");
+		diagnosesSectionListGrid.setNoHeader(true);
+		diagnosesSectionListGrid.setInitWidths("*");
+		diagnosesSectionListGrid.setSkin("xp");
+		diagnosesSectionListGrid.init();
+		diagnosesSectionListGrid.load("<?=$this->baseUrl?>/diagnosis.raw/list",null,"json");
+		diagnosesSectionListGrid.attachEvent("onRowSelect",diagnosesSectionListOnRowSelected);
+		function diagnosesSectionListOnRowSelected(rowId,cellIndex) {
+			diagnosesSectionNameListGrid.clearAll();
+			diagnosesSectionNameListGrid.load("<?=$this->baseUrl?>/diagnosis.raw/list-section?diagnosis="+rowId+"&personId="+mainController.getActivePatient(),diagnosesOnSectionNameLoaded,"json");
+		}
+
+		function diagnosesOnSectionNameLoaded() {
+			diagnosesListGrid.forEachRow(function(rowId){ if (diagnosesSectionNameListGrid.doesRowExist(rowId)){ diagnosesSectionNameListGrid.cells(rowId,0).setChecked(true);} });
+		}
+
+		var diagnosesSectionNameListGrid = new dhtmlXGridObject("diagnosesSectionNameListContainer");
+		diagnosesSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		diagnosesSectionNameListGrid.setHeader(",,");
+		diagnosesSectionNameListGrid.setNoHeader(true);
+		diagnosesSectionNameListGrid.setInitWidths("20,*,120");
+		diagnosesSectionNameListGrid.setColTypes("ch,ro,ro");
+		diagnosesSectionNameListGrid.setColAlign("right,left,left");
+		diagnosesSectionNameListGrid.setSkin("xp");
+		diagnosesSectionNameListGrid.init();
+		diagnosesSectionNameListGrid.attachEvent("onCheck",diagnosesSectionNameOnChecked);
+
+		function diagnosesSectionNameOnChecked(rowId,cellIndex,state) {
+			if (state) { // add to diagnoses list
+				var primary = "";
+				if (diagnosesListGrid.getRowsNum() == 0) {
+					var primary = "1";
+				}
+				diagnosesListGrid.addRow(rowId,","+primary+","+diagnosesSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+				var diagSectRowId = diagnosesSectionListGrid.getSelectedRowId();
+				if (diagSectRowId == "problem_list_items") {
+					diagnosesListGrid.cells(rowId,0).setDisabled(true);
+					diagnosesListGrid.cells(rowId,4).setValue("1");
+				}
+			}
+			else { // remove from diagnoses list
+				diagnosesRemoveSelected(rowId);
+			}
+		}
+		</script>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<div id="diagnosesListContainer" style="float:left;width:80%;height:150px"></div>
+		<script>
+
+		var diagnosesListGrid = new dhtmlXGridObject("diagnosesListContainer");
+		diagnosesListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		diagnosesListGrid.setHeader("<?=__('Add to PL')?>,<?=__('Primary')?>,<?=__('Selected Diagnoses')?>,,"); // 3-comments, 4-fromPL
+		diagnosesListGrid.setInitWidths("100,100,*,0,0");
+		diagnosesListGrid.setColTypes("ch,ra,ro,ro,ro");
+		diagnosesListGrid.setSkin("xp");
+		diagnosesListGrid.init();
+
+		function diagnosesListOnRowSelected(rowId,cellIndex) {
+			var addToPL = diagnosesListGrid.cells(rowId,0);
+			var isPrimary = diagnosesListGrid.cells(rowId,1);
+			dojo.byId("diagnoses-addToProblemList").checked = addToPL.isChecked();
+			dojo.byId("diagnoses-isPrimary").checked = isPrimary.isChecked();
+			dojo.byId("diagnoses-comments").value = diagnosesListGrid.cells(rowId,3).getValue();
+
+			dojo.byId("diagnoses-addToProblemList").disabled = addToPL.isDisabled();
+			// primary can only be enabled if radio is not selected
+			dojo.byId("diagnoses-isPrimary").disabled = isPrimary.isChecked();
+			dojo.byId("diagnosesRemoveId").disabled = false;
+			dojo.byId("diagnoses-comments").disabled = false;
+		}
+		diagnosesListGrid.attachEvent("onRowSelect",diagnosesListOnRowSelected);
+
+		function diagnosesListOnChecked(rowId,cellIndex,state) {
+			diagnosesListGrid.selectRow(diagnosesListGrid.getRowIndex(rowId),true);
+			switch (cellIndex) {
+				case 0: // Add to Problem List
+					dojo.byId("diagnoses-addToProblemList").checked = state;
+					break;
+				case 1: // Primary
+					if (state) {
+					}
+					else {
+					}
+					dojo.byId("diagnoses-isPrimary").checked = state;
+					break;
+			}
+		}
+		diagnosesListGrid.attachEvent("onCheck",diagnosesListOnChecked);
+
+		function diagnosesListOnLoaded() {
+			var hasPrimary = false;
+			diagnosesListGrid.forEachRow(function(rowId){
+				if (diagnosesListGrid.cells(rowId,1).isChecked()) {
+					hasPrimary = true;
+				}
+				if (diagnosesListGrid.cells(rowId,4).getValue() == "1") {
+					diagnosesListGrid.cells(rowId,0).setDisabled(true);
+				}
+			});
+			if (!hasPrimary && diagnosesListGrid.getRowsNum() > 0) {
+				diagnosesListGrid.cells2(0,1).setChecked(true);
+			}
+		}
+		diagnosesListGrid.load("<?=$this->baseUrl?>/diagnosis.raw/list-patient-diagnoses?patientId="+mainController.getActivePatient(),diagnosesListOnLoaded,"json");
+
+		function diagnosesSetAddToProblemList(checked) {
+			var rowId = diagnosesListGrid.getSelectedRowId();
+			if (rowId == null) {
+				alert("<?=__('No problem selected.')?>");
+				return;
+			}
+			diagnosesListGrid.cells(rowId,0).setChecked(checked);
+		}
+
+		function diagnosesSetPrimary(checked) {
+			var rowId = diagnosesListGrid.getSelectedRowId();
+			if (rowId == null) {
+				alert("<?=__('No problem selected.')?>");
+				return;
+			}
+			diagnosesListGrid.cells(rowId,1).setChecked(checked);
+			dojo.byId("diagnoses-isPrimary").disabled = true;
+		}
+
+		function diagnosesCleanupControls() {
+			dojo.byId("diagnoses-addToProblemList").checked = false;
+			dojo.byId("diagnoses-isPrimary").checked = false;
+			dojo.byId("diagnoses-comments").value = "";
+
+			dojo.byId("diagnoses-addToProblemList").disabled = true;
+			dojo.byId("diagnoses-isPrimary").disabled = true;
+			dojo.byId("diagnoses-comments").disabled = true;
+			dojo.byId("diagnosesRemoveId").disabled = true;
+		}
+
+		function diagnosesRemoveSelected(rowId) {
+			if (!rowId) {
+				rowId = diagnosesListGrid.getSelectedRowId();
+			}
+			if (rowId == null) {
+				alert("<?=__('No problem selected.')?>");
+				return;
+			}
+			var isPrimary = false;
+			// check if it's primary and assigned the primary to its predecessor
+			if (diagnosesListGrid.cells(rowId,1).isChecked()) {
+				isPrimary = true;
+			}
+			diagnosesListGrid.deleteRow(rowId);
+			if (isPrimary && diagnosesListGrid.getRowsNum() > 0) {
+				// assign new Primary to its predecessor
+				diagnosesListGrid.cells2(0,1).setChecked(true);
+			}
+			if (diagnosesSectionNameListGrid.doesRowExist(rowId)) {
+				diagnosesSectionNameListGrid.cells(rowId,0).setChecked(false);
+			}
+			diagnosesCleanupControls();
+		}
+
+		function diagnosesUpdateComment(comment) {
+			var rowId = diagnosesListGrid.getSelectedRowId();
+			if (rowId == null) {
+				return;
+			}
+			diagnosesListGrid.cells(rowId,3).setValue(comment);
+		}
+
+		function saveDiagnoses() {
+			var arrDiagnoses = new Array();
+			arrDiagnoses.push("'patientId': '"+mainController.getActivePatient()+"'");
+			diagnosesListGrid.forEachRow(function(rowId) {
+				arrDiagnoses.push("'diagnoses["+rowId+"][addToProblemList]':'"+diagnosesListGrid.cells(rowId,0).getValue()+"'");
+				arrDiagnoses.push("'diagnoses["+rowId+"][isPrimary]':'"+diagnosesListGrid.cells(rowId,1).getValue()+"'");
+				arrDiagnoses.push("'diagnoses["+rowId+"][diagnosis]':'"+diagnosesListGrid.cells(rowId,2).getValue().replace(/\n/g," ")+"'");
+				arrDiagnoses.push("'diagnoses["+rowId+"][comments]':'"+diagnosesListGrid.cells(rowId,3).getValue()+"'");
+			});
+
+			var jsCode = "var diagnosesContent = {"+arrDiagnoses.join(",")+"}";
+			eval(jsCode);
+
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/diagnosis.raw/process-patient-diagnoses",
+				handleAs: "json",
+				content: diagnosesContent,
+				load: function (data) {
+					alert(data.msg);
+				},
+				error: function (error) {
+					alert(error);
+					console.error ('Error: ', error);
+				}
+			});
+
+		}
+		</script>
+		<div id="diagnosesCheckboxContainer" style="float:left;margin:10px;">
+			<input id="diagnoses-addToProblemList" type="checkbox" disabled="disabled" onClick="diagnosesSetAddToProblemList(this.checked)" /><?=__('Add to Problem List')?><br />
+			<input id="diagnoses-isPrimary" type="checkbox" disabled="disabled" onClick="diagnosesSetPrimary(this.checked)" /><?=__('Primary')?>
+			<br /><?=$this->formButton('diagnosesRemoveId',__('Remove'),array('id'=>'diagnosesRemoveId','onClick'=>'diagnosesRemoveSelected()','disabled'=>'disabled'))?>
+		</div>
+		<div style="float:left;width:100%;">
+		<br />
+		<?=__("Comments")?>: <?=$this->formText('diagnoses[comments]','',array('id'=>'diagnoses-comments','onchange'=>'diagnosesUpdateComment(this.value)','style'=>'width:70%','disabled'=>'disabled'))?>
+		</div>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<?=$this->formButton('diagnosesOK',__('OK'),array('onClick'=>'saveDiagnoses()'))?>
+		<?=$this->formButton('diagnosesCancel',__('Cancel'),array('onClick'=>'dhxWins.window("windowSelectVisitId").close()'))?>
+	</div>
+</div>

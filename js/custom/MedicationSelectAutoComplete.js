@@ -38,7 +38,8 @@ dojo.declare("custom.MedicationSelectAutoComplete", dojox.data.QueryReadStore, {
 		for (var i=0; i<data.length; i++) {
 			retData.items[i] = new Object();
 			retData.items[i].label = data[i].id;
-			retData.items[i].name = data[i].tradename + ' ' + data[i].strength + ' ' + data[i].unit + ' ' + data[i].packsize + data[i].packtype + ' ' + data[i].ndc;
+			var drugName = data[i].tradename + ' ' + data[i].strength + ' ' + data[i].unit + ' ' + data[i].packsize + data[i].packtype + ' ' + data[i].ndc;
+			retData.items[i].name = drugName;
 		}
 		return retData;
 	}
@@ -46,9 +47,27 @@ dojo.declare("custom.MedicationSelectAutoComplete", dojox.data.QueryReadStore, {
 dojo.provide("custom.MedicationSelectComboBox");
 dojo.declare("custom.MedicationSelectComboBox", dijit.form.ComboBox, {
 	_doSelect: function(tgt){
+			tgt.item.i.name = tgt.item.i.name.replace(/<.*?>/g, "");
 			this.selectedKey = tgt.item.i.label;
                         this.item = tgt.item;
                         this.setValue(this.store.getValue(tgt.item, this.searchAttr), true);
+                },
+	_autoCompleteText: function(/*String*/ text){
+                        var fn = this.focusNode;
+                        dijit.selectInputText(fn, fn.value.length);
+                        var caseFilter = this.ignoreCase? 'toLowerCase' : 'substr';
+                        if(text[caseFilter](0).indexOf(this.focusNode.value[caseFilter](0)) == 0){
+                                var cpos = this._getCaretPos(fn);
+                                if((cpos+1) > fn.value.length){
+                                        fn.value = text;//.substr(cpos);
+                                        dijit.selectInputText(fn, cpos);
+                                }
+                        }else{
+                                // text does not autoComplete; replace the whole value and highlight
+                                fn.value = text.replace(/<.*?>/g, "");
+;
+                                dijit.selectInputText(fn);
+                        }
                 }
 });
 

@@ -24,12 +24,15 @@
 
 class AddressIterator extends WebVista_Model_ORMIterator implements Iterator {
 
-    public function __construct($dbSelect = null) {
-	$db = Zend_Registry::get('dbAdapter');
-        $dbSelect = $db->select()
-		->from('address');
-        parent::__construct("Address",$dbSelect);
-    }
+	public function __construct($dbSelect = null) {
+		if ($dbSelect === null) {
+			$db = Zend_Registry::get('dbAdapter');
+			$dbSelect = $db->select()
+				       ->from('address');
+		}
+		parent::__construct("Address",$dbSelect);
+	}
+
 	function setFilters(array $filters) {
 		foreach ($filters as $filter => $value) {
 			switch ($filter) {

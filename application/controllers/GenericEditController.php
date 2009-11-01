@@ -81,5 +81,14 @@ class GenericEditController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
+	// a placeholder for generic edit popup, all manipulations are in javascripts
+	public function codeEditorAction() {
+		$jsVar = $this->_getParam('jsVar');
+                $jsVar = preg_replace('/[^a-z_0-9- ]/i','',$jsVar);
+                $jsVar = ltrim(preg_replace('/^(?P<digit>\d+)/','',$jsVar));
+		$this->view->jsVar = $jsVar;
+		$this->render();
+	}
+
 }
 

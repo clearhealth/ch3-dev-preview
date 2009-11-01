@@ -23,13 +23,13 @@
 
 
 class Report extends WebVista_Model_ORM {
-	protected $reportId;
+	protected $id;
 	protected $uuid;
 	protected $name;
 	protected $systemName;
 	protected $reportQueries = array();
 	protected $reportTemplates = array();
-	protected $_primaryKeys = array('reportId');
+	protected $_primaryKeys = array('id');
 	protected $_table = "reports";
 	
 	function __construct() {
@@ -53,7 +53,7 @@ class Report extends WebVista_Model_ORM {
         }
 
 	function setReportId($id) {
-		$this->reportId = (int)$id;
+		$this->id = (int)$id;
 		foreach ($this->reportQueries as $reportQuery) {
 			$reportQuery->reportId = (int)$id;
 		}
@@ -68,7 +68,7 @@ class Report extends WebVista_Model_ORM {
 		$repSelect = $db->select()
                         ->from('reportQueries')
                         ->joinUsing('reportsToQueries', "reportQueryId")
-                        ->where('reportsToQueries.reportId =' . (int)$this->reportId);
+                        ->where('reportsToQueries.reportId =' . (int)$this->id);
                 foreach($db->query($repSelect)->fetchAll() as $row) {
                         $rq = new ReportQuery();
 			$rq->populateWithArray($row);
@@ -78,7 +78,7 @@ class Report extends WebVista_Model_ORM {
 		$repSelect = $db->select()
                         ->from('reportTemplates')
                         ->joinUsing('reportsToTemplates', "reportTemplateId")
-                        ->where('reportsToTemplates.reportId =' . (int)$this->reportId);
+                        ->where('reportsToTemplates.reportId =' . (int)$this->id);
                 foreach($db->query($repSelect)->fetchAll() as $row) {
                         $rt = new ReportTemplate();
                         $rt->populateWithArray($row);

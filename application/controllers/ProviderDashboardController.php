@@ -215,19 +215,20 @@ class ProviderDashboardController extends WebVista_Controller_Action {
         $user = $this->getCurrentUserId();
         $userTemplates = ProviderDashboardState::getIterAllTemplates(0, $user);
         $globalTemplates = ProviderDashboardState::getIterAllTemplates(1);
-
+	$userTempArr = array();
+	$globTempArr = array();
         if ( $userTemplates ) { 
             foreach ( $userTemplates as $userTempl ) {
                 $userTempArr[] = array('id' => $userTempl->providerDashboardStateId, 'name' => $userTempl->name); 
             }
         } else $userTempArr = array();
 
-        if ( $globalTemplates ) { 
+        if ( count($globalTemplates) > 0 ) { 
             foreach ( $globalTemplates as $globTempl ) {
                 $globTempArr[] = array('id' => $globTempl->providerDashboardStateId, 'name' => $globTempl->name); 
             }
         } else $globTempArr = array();
-
+	
         $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
         $json->suppressExit = true;
         $json->direct(array($userTempArr, $globTempArr));

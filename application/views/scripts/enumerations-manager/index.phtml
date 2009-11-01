@@ -14,7 +14,7 @@ $categories = $this->enumIterator->toArray('category','category');
 $categories['System'] = "System";
 $categories['User'] = "User";
 ?>
-<div id="enumLayout" style="position:relative;width:100%;height:450px;">
+<div id="enumLayout" style="position:relative;width:100%;height:440px;">
 	<div id="enumLeftPane" style="width:100%;height:100%;margin:0px;">
 		<div id="enumLeftToolbar"></div>
 		<select id="enumCategorySelect" name="enumCategorySelect" onChange="enumUpdateListGrid()">
@@ -34,7 +34,7 @@ function enumEditObject(enumerationId) {
 	var winEditORM = dhxWins.createWindow('windowEditORMObjectId',60,10,400,400);
 	winEditORM.setText('<?=__('Edit ORM Object')?>');
 	winEditORM.attachURL('<?=$this->baseUrl?>/generic-edit.raw?enumerationId='+enumerationId,true);
-	winEditORM.setModal(true);
+	//winEditORM.setModal(true);
 	winEditORM.centerOnScreen();
 }
 
@@ -164,7 +164,7 @@ function enumerationEditWindow(enumerationId,parentId) {
 	var winEditEnumeration = dhxWins.createWindow('windowEditEnumerationId',60,10,350,420);
 	winEditEnumeration.setText('<?=__('Add/Edit Enumeration')?>');
 	winEditEnumeration.attachURL('<?=$this->baseUrl?>/enumerations-manager.raw/edit?'+additionalArgs.join("&"),true);
-	winEditEnumeration.setModal(true);
+	//winEditEnumeration.setModal(true);
 	winEditEnumeration.centerOnScreen();
 }
 

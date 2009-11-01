@@ -1,0 +1,63 @@
+<dl class="formRow"  style="margin-right:15px;">
+<dd><b>Primary Co-pay (Aetna)</b></dd>
+<dt style="text-align:center;">25.00</dt>
+</dl>
+<dl class="formRow" style="margin-right:15px;">
+<dd><b>Balance Forward</b></dd>
+<dt style="text-align:center;">77.34</dt>
+</dl>
+<dl class="formRow" style="margin-right:15px;">
+<dd><b>Record Payment</b></dd>
+<dt style="text-align:center;"><a href="">Credit Card</a><br />
+<a href="">Check/Cash</a>
+</dt>
+</dl>
+<br style="clear:left;" />
+<h3>Payments</h3>
+<div id="payGridContainer" width="95%" height="75px" style="width:95%;height:75px;" ></div>
+<script>
+payGrid = new dhtmlXGridObject('payGridContainer');
+payGrid.setImagePath("../img/");
+payGrid.setHeader("Date,Type,Amount,Note");
+payGrid.setInitWidths("75,100,100,*");
+payGrid.setColAlign("left");
+payGrid.setSkin("xp");
+var testdata=[
+	["2009-06-05","Visa","25.00","Aetna Co-Pay"],
+	["2009-06-01","Visa","77.34","Unallocated Payment"]
+]
+payGrid.init(); 
+payGrid.parse(testdata,"jsarray");
+</script>
+<h3>Charges</h3>
+<div id="chargeGridContainer" width="95%" height="75px" style="width:95%;height:75px;" ></div>
+<script>
+chargeGrid = new dhtmlXGridObject('chargeGridContainer');
+chargeGrid.setImagePath("../img/");
+chargeGrid.setHeader("Date,Type,Amount,Note");
+chargeGrid.setInitWidths("75,100,100,*");
+chargeGrid.setColAlign("left");
+chargeGrid.setSkin("xp");
+var testdata=[
+	["2009-06-05","Co-Pay","25.00","Aetna Co-Pay"],
+	["2009-06-01","Balance Forward","25.00","Balance Forward"]
+]
+chargeGrid.init(); 
+chargeGrid.parse(testdata,"jsarray");
+</script>
+<h3>Elegibility</h3>
+<div id="eligibilityGridContainer" width="95%" height="75px" style="width:95%;height:75px;" ></div>
+<script>
+eligGrid = new dhtmlXGridObject('eligibilityGridContainer');
+eligGrid.setImagePath("../img/");
+eligGrid.setHeader("Date,Program,Expires,Verified,Desc");
+eligGrid.setInitWidths("75,125,75,85,*");
+eligGrid.setColAlign("center,left,center,center,left");
+eligGrid.setSkin("xp");
+var testdata=[
+	["Today","Aetna - Healthy Family","<span style='padding:2px;color:black;background-color:palegreen;font-weight:bold;'>2010-01-17</span>","Auto","P/25 S/35"],
+	["2009-04-03","AZ Medicaid","<span style='padding:2px;color:black;background-color:palevioletred;font-weight:bold;'>2009-05-01</span>","Manual",""]
+]
+eligGrid.init(); 
+eligGrid.parse(testdata,"jsarray");
+</script>

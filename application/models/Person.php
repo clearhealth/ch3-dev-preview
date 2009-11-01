@@ -22,7 +22,7 @@
 *****************************************************************************/
 
 
-class Person extends WebVista_Model_ORM {
+class Person extends WebVista_Model_ORM implements NSDRMethods {
 	protected $person_id;
 	protected $salutation;
 	protected $last_name;
@@ -46,7 +46,8 @@ class Person extends WebVista_Model_ORM {
 	protected $primary_practice_id;
 	protected $_table = "person";
 	protected $_primaryKeys = array("person_id");
-	protected $_legacyORMNaming = true;	
+	protected $_legacyORMNaming = true;
+	public static $_nsdrNamespace = 'com.clearhealth.person';	
 
 	public function __construct() {
 		parent::__construct();
@@ -86,5 +87,39 @@ class Person extends WebVista_Model_ORM {
 		$year = 60*60*24*365;
 		$age = floor($age/$year);
 		return $age;
+        }
+	public function nsdrPersist($tthis,$context,$data) {
+		$msg = __('Persist not implemented ORM: Person');
+                throw new Exception($msg);
+	}
+	public function nsdrMostRecent($tthis,$context,$data) {
+		$msg = __('Most recent not implemented for this ORM: Person');
+                throw new Exception($msg);
+	}
+
+	public function nsdrPopulate($tthis,$context,$data) {
+                $ret = array();
+		//debug_print_backtrace();
+		$context = key($context);
+                if ((int)$context > 0) {
+                	$this->personId = (int)$context;
+                	if (!$this->populate()) {
+                		//throw error, populate failed with supplied non-zero context
+                		$msg = __('populate failed with supplied non-zero context');
+                		throw new Exception($msg);
+                	}
+			if (preg_match('/.*'.$this->_nsdrNamespace.'\.([a-zA-Z0-9]+)/',$tthis->_aliasedNamespace,$matches)) {
+				if (isset($matches[1]) && $this->$matches[1] !== null) {
+					return $this->$matches[1];
+				}
+				else {
+                			$msg = __('Populate failed, request namespace: ' . $tthis->_aliasedNamespace . " item: '" . $matches[1] . "' could not be answered by this namespace: " . $this->_nsdrNamespace);
+                			throw new Exception($msg);
+
+				}
+			}
+                 	$ret[] = $this->toArray();
+                }
+                return $ret;
         }
 }

@@ -95,10 +95,19 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
                 return $iter;
 
         }
-	static public function getEnumArray($name,$key = "key", $value = "name") {
-                $iter = self::getIterByEnumerationName($name);
-                return $iter->toArray($key, $value);
+	static public function getEnumArray($name,$key='key',$value='name') {
+                //$iter = self::getIterByEnumerationName($name);
+                //return $iter->toArray($key, $value);
 
+		$enumeration = new self();
+		$enumeration->populateByEnumerationName($name);
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		$ret = array();
+		foreach ($enumerationIterator as $enumeration) {
+			$ret[$enumeration->$key] = $enumeration->$value;
+		}
+		return $ret;
         }
 
 	/**
@@ -176,6 +185,19 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		self::generateMaritalStatusEnum();
 		self::generateImmunizationPreferencesEnum();
 		self::generateTeamPreferencesEnum();
+		self::generateHSAPreferencesEnum();
+		self::generateReasonPreferencesEnum();
+		self::generateReactionTypePreferencesEnum();
+		self::generateSeverityPreferencesEnum();
+		self::generateSymptomPreferencesEnum();
+		self::generateAppointmentReasonEnum();
+		self::generateProcedurePreferencesEnum();
+		self::generatePatientEducationPreferencesEnum();
+		self::generateEducationTopicPreferencesEnum();
+		self::generateEducationLevelPreferencesEnum();
+		self::generatePatientExamPreferencesEnum();
+		self::generateExamResultPreferencesEnum();
+		self::generateExamOtherPreferencesEnum();
 	}
 
 	public static function generateContactPreferencesEnum($force = false) {
@@ -303,74 +325,69 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
 				break;
 			}
+
 			$level1 = array();
 			$level1['key'] = 'F';
 			$level1['name'] = 'File';
 			$level1['active'] = 1;
-			$level1['ormClass'] = 'MenuItem';
-			$level1['ormEditMethod'] = 'ormEditMethod';
 
 			$level11 = array();
-			$level11['key'] = 'SP';
-			$level11['name'] = 'Select Patient';
+			$level11['key'] = 'AP';
+			$level11['name'] = 'Add Patient';
 			$level11['active'] = 1;
-			$level11['ormClass'] = 'MenuItem';
-			$level11['ormEditMethod'] = 'ormEditMethod';
 
 			$level12 = array();
-			$level12['key'] = 'AP';
-			$level12['name'] = 'Add Patient';
+			$level12['key'] = 'SP';
+			$level12['name'] = 'Select Patient';
 			$level12['active'] = 1;
-			$level12['ormClass'] = 'MenuItem';
-			$level12['ormEditMethod'] = 'ormEditMethod';
 
 			$level13 = array();
 			$level13['key'] = 'RSC';
 			$level13['name'] = 'Review / Sign Changes';
 			$level13['active'] = 1;
-			$level13['ormClass'] = 'MenuItem';
-			$level13['ormEditMethod'] = 'ormEditMethod';
 
 			$level14 = array();
-			$level14['key'] = 'Q';
-			$level14['name'] = 'Quit';
+			$level14['key'] = 'CP';
+			$level14['name'] = 'Change Password';
 			$level14['active'] = 1;
-			$level14['ormClass'] = 'MenuItem';
-			$level14['ormEditMethod'] = 'ormEditMethod';
+
+			$level15 = array();
+			$level15['key'] = 'ESK';
+			$level15['name'] = 'Edit Signing Key';
+			$level15['active'] = 1;
+
+			$level16 = array();
+			$level16['key'] = 'Q';
+			$level16['name'] = 'Quit';
+			$level16['active'] = 1;
 
 			$level1['data'] = array();
 			$level1['data'][] = $level11;
 			$level1['data'][] = $level12;
 			$level1['data'][] = $level13;
 			$level1['data'][] = $level14;
+			$level1['data'][] = $level15;
+			$level1['data'][] = $level16;
 
 			$level2 = array();
 			$level2['key'] = 'A';
 			$level2['name'] = 'Action';
 			$level2['active'] = 1;
-			$level2['ormClass'] = 'MenuItem';
-			$level2['ormEditMethod'] = 'ormEditMethod';
 
 			$level21 = array();
 			$level21['key'] = 'AV';
 			$level21['name'] = 'Add Vitals';
 			$level21['active'] = 1;
-			$level21['ormClass'] = 'MenuItem';
-			$level21['ormEditMethod'] = 'ormEditMethod';
 
 			$level22 = array();
 			$level22['key'] = 'P';
 			$level22['name'] = 'Print';
 			$level22['active'] = 1;
-			$level22['ormClass'] = 'MenuItem';
-			$level22['ormEditMethod'] = 'ormEditMethod';
 
 			$level221 = array();
 			$level221['key'] = 'FS';
 			$level221['name'] = 'Flow Sheet';
 			$level221['active'] = 1;
-			$level221['ormClass'] = 'MenuItem';
-			$level221['ormEditMethod'] = 'ormEditMethod';
 
 			$level22['data'] = array();
 			$level22['data'][] = $level221;
@@ -386,6 +403,8 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level0['active'] = 1;
 			$level0['ormClass'] = 'MenuItem';
 			$level0['ormEditMethod'] = 'ormEditMethod';
+
+
 			$level0['data'] = array();
 			$level0['data'][] = $level1;
 			$level0['data'][] = $level2;
@@ -393,9 +412,52 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$data = array();
 			$data[] = $level0;
 			self::_saveEnumeration($data);
+
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+
+			$menu = new MenuItem();
+			$menu->siteSection = 'All';
+			$menu->type = 'freeform';
+			$menu->active = 1;
+			$menu->title = $enumeration->name;
+			$menu->displayOrder = 0;
+			$menu->parentId = 0;
+			$menu->persist();
+
+			$enumeration->ormId = $menu->menuId;
+			$enumeration->persist();
+			self::_generateMenuEnumerationTree($enumeration);
+
 			$ret = true;
 		} while(false);
 		return $ret;
+	}
+
+	protected static function _generateMenuEnumerationTree(Enumeration $enumeration) {
+		$enumerationId = $enumeration->enumerationId;
+		$enumerationsClosure = new EnumerationsClosure();
+		$descendants = $enumerationsClosure->getEnumerationTreeById($enumerationId);
+		$displayOrder = 0;
+		foreach ($descendants as $enum) {
+			$displayOrder += 10;
+			$menu = new MenuItem();
+			$menu->siteSection = 'All';
+			$menu->type = 'freeform';
+			$menu->active = 1;
+			$menu->title = $enum->name;
+			//$menu->displayOrder = $displayOrder;
+			$menu->displayOrder = $enum->enumerationId; // temporarily set displayOrder using the enumerationId
+			$menu->parentId = $enumerationId;
+			$menu->persist();
+
+			$enum->ormId = $menu->menuId;
+			$enum->persist();
+
+			if ($enumerationId != $enum->enumerationId) { // prevents infinite loop
+				self::_generateMenuEnumerationTree($enum);
+			}
+		}
 	}
 
 	public static function generateGenderEnum($force = false) {
@@ -592,7 +654,7 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 	public static function generateTeamPreferencesEnum($force = false) {
 		$ret = false;
 		do {
-			$name = 'Team Preferences';
+			$name = TeamMember::ENUM_PARENT_NAME;
 			$key = 'TP';
 			$enumeration = new self();
 			$enumeration->populateByEnumerationName($name);
@@ -667,6 +729,779 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		return $ret;
 	}
 
+	public static function generateHSAPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = HealthStatusAlert::ENUM_PARENT_NAME;
+			$key = 'HP';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'LSA';
+			$level1['name'] = 'Lab Status Alerts';
+			$level1['active'] = 1;
+
+			$level2 = array();
+			$level2['key'] = 'VSA';
+			$level2['name'] = 'Vitals Status Alerts';
+			$level2['active'] = 1;
+
+			$level3 = array();
+			$level3['key'] = 'NSA';
+			$level3['name'] = 'Note Status Alerts';
+			$level3['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateReasonPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientNote::ENUM_REASON_PARENT_NAME;
+			$key = 'RP';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'RPCB';
+			$level1['name'] = 'Call Back';
+			$level1['active'] = 1;
+
+			$level2 = array();
+			$level2['key'] = 'RPCP';
+			$level2['name'] = 'Check Progress';
+			$level2['active'] = 1;
+
+			$level3 = array();
+			$level3['key'] = 'RPC';
+			$level3['name'] = 'Converted';
+			$level3['active'] = 1;
+
+			$level4 = array();
+			$level4['key'] = 'RPRT';
+			$level4['name'] = 'Repeat Test';
+			$level4['active'] = 1;
+
+			$level5 = array();
+			$level5['key'] = 'RPO';
+			$level5['name'] = 'Other';
+			$level5['active'] = 1;
+
+			$level6 = array();
+			$level6['key'] = 'RPNA';
+			$level6['name'] = 'N/A';
+			$level6['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+			$level0['data'][] = $level5;
+			$level0['data'][] = $level6;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateReactionTypePreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientAllergy::ENUM_REACTION_TYPE_PARENT_NAME;
+			$key = 'REACTYPE';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'ALLERGY';
+			$level1['name'] = 'Allergy';
+			$level1['active'] = 1;
+
+			$level2 = array();
+			$level2['key'] = 'PHARMA';
+			$level2['name'] = 'Pharmacological';
+			$level2['active'] = 1;
+
+			$level3 = array();
+			$level3['key'] = 'UK';
+			$level3['name'] = 'Unknown';
+			$level3['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateSeverityPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientAllergy::ENUM_SEVERITY_PARENT_NAME;
+			$key = 'SEVERITY';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'MILD';
+			$level1['name'] = 'Mild';
+			$level1['active'] = 1;
+
+			$level2 = array();
+			$level2['key'] = 'MOD';
+			$level2['name'] = 'Moderate';
+			$level2['active'] = 1;
+
+			$level3 = array();
+			$level3['key'] = 'SEVERE';
+			$level3['name'] = 'Severe';
+			$level3['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateSymptomPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientAllergy::ENUM_SYMPTOM_PARENT_NAME;
+			$key = 'SYMPTOM';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'CONFUSE';
+			$level1['name'] = 'CONFUSION';
+			$level1['active'] = 1;
+
+			$level2 = array();
+			$level2['key'] = 'ITCHING';
+			$level2['name'] = 'ITCHING, WATERING EYES';
+			$level2['active'] = 1;
+
+			$level3 = array();
+			$level3['key'] = 'HYPO';
+			$level3['name'] = 'HYPOTENSION';
+			$level3['active'] = 1;
+
+			$level4 = array();
+			$level4['key'] = 'DROWSE';
+			$level4['name'] = 'DROWSINESS';
+			$level4['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateAppointmentReasonEnum($force = false) {
+		$ret = false;
+		do {
+			$name = AppointmentTemplate::ENUM_PARENT_NAME;
+			$key = 'APP_REASON';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$appointmentTemplate = new AppointmentTemplate();
+
+			$level1 = array();
+			$level1['key'] = 'Provider';
+			$level1['name'] = 'Provider';
+			$level1['active'] = 1;
+			$level1['ormClass'] = 'AppointmentTemplate';
+			$level1['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Provider';
+			$appointmentTemplate->persist();
+			$level1['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level2 = array();
+			$level2['key'] = 'Specialist';
+			$level2['name'] = 'Specialist';
+			$level2['active'] = 1;
+			$level2['ormClass'] = 'AppointmentTemplate';
+			$level2['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Specialist';
+			$appointmentTemplate->persist();
+			$level2['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level3 = array();
+			$level3['key'] = 'MedPhone';
+			$level3['name'] = 'Medical Phone';
+			$level3['active'] = 1;
+			$level3['ormClass'] = 'AppointmentTemplate';
+			$level3['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Medical Phone';
+			$appointmentTemplate->persist();
+			$level3['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level4 = array();
+			$level4['key'] = 'MedPU';
+			$level4['name'] = 'Medication PU';
+			$level4['active'] = 1;
+			$level4['ormClass'] = 'AppointmentTemplate';
+			$level4['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Medication PU';
+			$appointmentTemplate->persist();
+			$level4['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level5 = array();
+			$level5['key'] = 'Education';
+			$level5['name'] = 'Education';
+			$level5['active'] = 1;
+			$level5['ormClass'] = 'AppointmentTemplate';
+			$level5['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Education';
+			$appointmentTemplate->persist();
+			$level5['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level6 = array();
+			$level6['key'] = 'Eligibility';
+			$level6['name'] = 'Eligibility';
+			$level6['active'] = 1;
+			$level6['ormClass'] = 'AppointmentTemplate';
+			$level6['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Eligibility';
+			$appointmentTemplate->persist();
+			$level6['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level7 = array();
+			$level7['key'] = 'BlockedTime';
+			$level7['name'] = 'Blocked Time';
+			$level7['active'] = 1;
+			$level7['ormClass'] = 'AppointmentTemplate';
+			$level7['ormEditMethod'] = 'ormEditMethod';
+			$appointmentTemplate->appointmentTemplateId = 0;
+			$appointmentTemplate->name = 'Blocked Time';
+			$appointmentTemplate->persist();
+			$level7['ormId'] = $appointmentTemplate->appointmentTemplateId;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['ormClass'] = 'AppointmentTemplate';
+			$level0['ormEditMethod'] = 'ormEditMethod';
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+			$level0['data'][] = $level5;
+			$level0['data'][] = $level6;
+			$level0['data'][] = $level7;
+
+			$data = array();
+			$data[] = $level0;
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateProcedurePreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientProcedure::ENUM_PARENT_NAME;
+			$key = 'ProcPref';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'GIPROC';
+			$level1['name'] = 'GI PROCEDURES';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'COLON';
+			$level2['name'] = 'COLONOSCOPY';
+			$level2['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generatePatientEducationPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientEducation::ENUM_PARENT_NAME;
+			$key = 'PatEduPref';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+
+			$level11 = array();
+			$level11['key'] = 'sections';
+			$level11['name'] = 'Sections';
+			$level11['active'] = 1;
+
+			$data = array($level0);
+			//self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateEducationTopicPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientEducation::ENUM_TOPIC_PARENT_NAME;
+			$key = 'Educ_Topic';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'HFA';
+			$level1['name'] = 'HF ACTIVITY';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'HFD';
+			$level2['name'] = 'HF DIET';
+			$level2['active'] = 1;
+
+			$level3['key'] = 'HFDM';
+			$level3['name'] = 'HF DISCHARGE MEDS';
+			$level3['active'] = 1;
+
+			$level4['key'] = 'HFF';
+			$level4['name'] = 'HF FOLLOWUP';
+			$level4['active'] = 1;
+
+			$level5['key'] = 'HFS';
+			$level5['name'] = 'HF SYMPTOMS';
+			$level5['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+			$level0['data'][] = $level5;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateEducationLevelPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientEducation::ENUM_LEVEL_PARENT_NAME;
+			$key = 'Educ_Level';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'POOR';
+			$level1['name'] = 'Poor';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'FAIR';
+			$level2['name'] = 'Fair';
+			$level2['active'] = 1;
+
+			$level3['key'] = 'GOOD';
+			$level3['name'] = 'Good';
+			$level3['active'] = 1;
+
+			$level4['key'] = 'GNA';
+			$level4['name'] = 'Group-no assessment';
+			$level4['active'] = 1;
+
+			$level5['key'] = 'REFUSED';
+			$level5['name'] = 'Refused';
+			$level5['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+			$level0['data'][] = $level5;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generatePatientExamPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientExam::ENUM_PARENT_NAME;
+			$key = 'PatExPref';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+
+			$level11 = array();
+			$level11['key'] = 'sections';
+			$level11['name'] = 'Sections';
+			$level11['active'] = 1;
+
+			$data = array($level0);
+			//self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateExamResultPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientExam::ENUM_RESULT_PARENT_NAME;
+			$key = 'Exam_Res';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'Exam_Abn';
+			$level1['name'] = 'Abnormal';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'Exam_Norm';
+			$level2['name'] = 'Normal';
+			$level2['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateExamOtherPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = PatientExam::ENUM_OTHER_PARENT_NAME;
+			$key = 'Exam_Other';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'EXAM_ABD';
+			$level1['name'] = 'ABDOMEN EXAM';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'EXAM_AMS';
+			$level2['name'] = 'AUDIOMETRIC SCREENING';
+			$level2['active'] = 1;
+
+			$level3['key'] = 'EXAM_AMT';
+			$level3['name'] = 'AUDIOMETRIC THRESHOLD';
+			$level3['active'] = 1;
+
+			$level4['key'] = 'EXAM_BREAST';
+			$level4['name'] = 'BREAST EXAM';
+			$level4['active'] = 1;
+
+			$level5['key'] = 'EXAM_CHEST';
+			$level5['name'] = 'CHEST EXAM';
+			$level5['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+			$level0['data'][] = $level3;
+			$level0['data'][] = $level4;
+			$level0['data'][] = $level5;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateVitalUnitsEnum($force = false) {
+		self::generateVitalUnitHeightEnum();
+		self::generateVitalUnitWeightEnum();
+		self::generateVitalUnitTemperatureEnum();
+	}
+
+	public static function generateVitalUnitHeightEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Height';
+			$key = 'Height';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'IN';
+			$level1['name'] = 'IN';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'CM';
+			$level2['name'] = 'CM';
+			$level2['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateVitalUnitWeightEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Weight';
+			$key = 'Weight';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'LB';
+			$level1['name'] = 'LB';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'KG';
+			$level2['name'] = 'KG';
+			$level2['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateVitalUnitTemperatureEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Temperature';
+			$key = 'Temper';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key && !$force) {
+				break;
+			}
+
+			$level1 = array();
+			$level1['key'] = 'F';
+			$level1['name'] = 'F';
+			$level1['active'] = 1;
+
+			$level2['key'] = 'C';
+			$level2['name'] = 'C';
+			$level2['active'] = 1;
+
+			$level0 = array();
+			$level0['key'] = $key;
+			$level0['name'] = $name;
+			$level0['category'] = 'System';
+			$level0['active'] = 1;
+			$level0['data'] = array();
+			$level0['data'][] = $level1;
+			$level0['data'][] = $level2;
+
+			$data = array($level0);
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
 	protected static function _saveEnumeration($data,$parentId=0) {
 		$enumerationsClosure = new EnumerationsClosure();
 		foreach ($data as $item) {
@@ -675,6 +1510,14 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 				self::_saveEnumeration($item['data'],$enumerationId);
 			}
 		}
+	}
+
+	public static function enumerationToJson($name) {
+		$enumeration = new self();
+		$enumeration->populateByEnumerationName($name);
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		return $enumerationIterator->toJsonArray('enumerationId',array('name'));
 	}
 
 }

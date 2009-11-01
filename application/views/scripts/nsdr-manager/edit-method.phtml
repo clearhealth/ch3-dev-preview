@@ -1,0 +1,44 @@
+<style>
+body {
+	margin: 0;
+	font: 13px Myriad,Arial,Helvetica,clean,sans-serif; 
+	*font-size: small;
+	*font: x-small;
+}
+</style>
+
+<?=$this->form->renderOpen()?>
+
+<form name="frmMethod" method="post" onsubmit="return false;">
+<div style="float:left;">
+	<div class="formRow">
+		<?=$this->form->methodName->renderLabel()?>
+		<?$this->form->methodName->setAttrib('size',50)?>
+		<?=$this->form->methodNameInput()?>
+	</div>
+
+	<br style="clear:left;" />
+	<div class="formRow">
+		<?=$this->form->method->renderLabel()?>
+		<?=$this->form->methodInput('FormTextarea',array('cols'=>63,'rows'=>15))?>
+	</div>
+
+	<br style="clear:left;" />
+	<div class="formRow">
+		<?=$this->form->uuidInput('FormHidden')?>
+		<?=$this->form->nsdrDefinitionUuidInput('FormHidden')?>
+		<?=$this->form->okInput('FormButton')?>
+		<input type="button" value="<?=__('Cancel')?>" onClick="dhxWins.window('windowEditMethodId').close()" />
+	</div>
+</div>
+
+<?=$this->form->renderClose()?>
+
+
+<script>
+function postSubmitnsdrDefinitionMethod() {
+	nsdrMethodReload();
+	dhxWins.window('windowEditMethodId').close();
+	return false;
+}
+</script>

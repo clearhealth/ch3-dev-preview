@@ -1,0 +1,219 @@
+<script>
+function getActivePatient() {
+	return mainController.getActivePatient();
+}
+</script>
+
+<div id="medicationToolbar" style="height:50px;width:100%;border:1px solid Silver;"></div>
+<script>
+var dhxWins= new dhtmlXWindows();
+dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+dhxWins.setSkin("clear_silver");
+
+chToolbar=new dhtmlXToolbarObject('medicationToolbar','ClearSilver');
+chToolbar.attachEvent("onClick", onButtonClick);
+chToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+chToolbar.loadXML("<?=$this->baseUrl?>/medications.raw/toolbar");
+
+function onButtonClick(itemId) {
+	switch (itemId) {
+		case 'medtbNewMedication':
+			openNewMedicationWindow();
+			break;
+		case 'medtbChangeMedication':
+			changeMedication();
+			break;
+		case 'medtbCancelMedication':
+			cancelMedication();
+			break;
+		case 'medtbCopyMedication':
+			copyMedication();
+			break;
+		case 'medtbRefreshMedication':
+			loadMedication();
+			break;
+	}
+}
+
+function openNewMedicationWindow(medicationId,duplicate) {
+	winNewMedObjects = dhxWins.createWindow('windowNewMedication',60,10,520,550);
+	var label = '<?=__('New Medication')?>';
+	var additionalArgs = '';
+	if (medicationId != undefined) {
+		label = '<?=__('Change Medication')?>';
+		additionalArgs += '&medicationId=' + medicationId;
+	}
+	if (duplicate != undefined) {
+		label = '<?=__('Copy Medication')?>';
+		additionalArgs += '&copy=1';
+	}
+	winNewMedObjects.setText(label);
+	winNewMedObjects.attachURL('<?=$this->baseUrl?>/medications.raw/edit-medication?personId='+mainController.getActivePatient()+additionalArgs,true);
+	winNewMedObjects.centerOnScreen();
+}
+
+function closeNewMedicationWindow() {
+	winNewMedObjects.close();
+}
+
+function reloadMedicationGrid() {
+	closeNewMedicationWindow();
+	// reload medication grid here if required
+	loadMedication(true);
+	openNewMedicationWindow();
+}
+
+function loadMedication(medicationId) {
+	mGrid.clearAll();
+	mGrid.load("<?=$this->baseUrl?>/medications.raw/list-medications?personId="+mainController.getActivePatient(),function(){
+				if (mGrid.doesRowExist(medicationId)) {
+					mGrid.selectRow(mGrid.getRowIndex(medicationId),true);
+				}
+			},"json");
+}
+
+function changeMedication() {
+	medicationId = mGrid.getSelectedRowId();
+	if (medicationId == null) {
+		return;
+	}
+	openNewMedicationWindow(medicationId);
+}
+
+function cancelMedication() {
+	medicationId = mGrid.getSelectedRowId();
+	if (medicationId == null) {
+		return;
+	}
+	dojo.xhrPost ({
+		url: '<?=$this->baseUrl?>/medications.raw/ajax-discontinue-medication?medicationId='+medicationId,
+		handleAs: 'json',
+		load: function (data) {
+			alert(data);
+		},
+		error: function (er) {
+			alert('err: ' + er);
+		}
+	});
+}
+
+function copyMedication() {
+	medicationId = mGrid.getSelectedRowId();
+	if (medicationId == null) {
+		return;
+	}
+	openNewMedicationWindow(medicationId,true);
+}
+
+function transmitEPrescription(medicationId) {
+	dojo.xhrGet ({
+                url: '<?=$this->baseUrl?>/medications.raw/transmit-eprescription?medicationId='+medicationId,
+                handleAs: 'json',
+                load: function (data) {
+                        alert(data);
+                },
+                error: function (er) {
+                        alert('err: ' + er);
+                }
+        });
+}
+function getPrescriptionPDF(medicationId) {
+	medIframe = document.createElement("IFRAME");
+	medIframe.setAttribute('src','<?=$this->baseUrl?>/medications.raw/get-prescription-pdf?medicationId='+medicationId);
+	medIframe.style.display = 'none';
+	document.body.appendChild(medIframe);
+}
+
+function updatePrintedRx(medicationId) {
+	dojo.xhrPost ({
+		url: '<?=$this->baseUrl?>/medications.raw/process-printed-rx?medicationId='+medicationId,
+		handleAs: 'json',
+		load: function (data) {
+			loadMedication();
+		},
+		error: function (er) {
+			alert('err: ' + er);
+		}
+	});
+}
+
+function handleMedicationsContextClick(item,rowId) {
+	var medicationId = rowId.split('_');
+	switch (item) {
+		case 'medications_printRx':
+			getPrescriptionPDF(medicationId[0]);
+			updatePrintedRx(medicationId[0]);
+			break;
+		default:
+			alert(item);
+	}
+}
+</script>
+<div>
+</script>
+<div>
+
+<style>div.gridbox_xp table.obj td {border-bottom: none;border-right:none;}</style>
+<div id="medicationContainer" style="width:100%;height:150px;"></div>
+<script>
+
+
+medcxMenu = new dhtmlXMenuObject(null ,'standard');
+medcxMenu.setImagePath("<?=$this->baseUrl?>/img/");
+medcxMenu.renderAsContextMenu();
+medcxMenu.setOpenMode("web");
+medcxMenu.attachEvent('onClick',handleMedicationsContextClick);
+medcxMenu.loadXML('<?=$this->baseUrl?>/medications.xml/medications-context-menu');
+
+
+
+var mGrid = new dhtmlXGridObject('medicationContainer');
+mGrid.setImagePath("<?=$this->baseUrl?>/img/");
+mGrid.setHeader(',Medication,Action,Status,Expires,Last Filled,Refills,Details');
+mGrid.setInitWidths("25,500,70,*,*,*,40,300");
+mGrid.setColAlign("center,left,center,center,center,center,center,center,left");
+mGrid.setColTypes("ro");
+mGrid.setSkin("xp");
+mGrid.enableAlterCss("even","uneven");
+mGrid.attachEvent("onRowSelect",rowSelectHandler);
+mGrid.attachEvent("onRowDblClicked",medRowDblClicked);
+mGrid.init();
+mGrid.enableContextMenu(medcxMenu);
+dhtmlxEvent(mGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+loadMedication();
+
+function rowSelectHandler(rowId,cellIndex) {
+	chToolbar.enableItem('medtbChangeMedication');
+	chToolbar.enableItem('medtbCancelMedication');
+	chToolbar.enableItem('medtbCopyMedication');
+}
+
+function medRowDblClicked(rowId,colIndex) {
+	changeMedication();
+}
+</script>
+</div>
+
+<div id="rrMedicationContainer" style="width:100%;height:150px;"></div>
+<script>
+rrGrid = new dhtmlXGridObject('rrMedicationContainer');
+rrGrid.setImagePath("<?=$this->baseUrl?>/img/");
+rrGrid.setHeader('Refills & Re-Authorizations,Action,Status,Start Date, Details');
+rrGrid.setInitWidths("250,*,*,*,500");
+rrGrid.setColTypes("ro");
+rrGrid.setSkin("xp");
+var testdata=[['']];
+rrGrid.enableAlterCss("even","uneven");
+
+rrGrid.init();
+rrGrid.parse(testdata,"jsarray");
+</script>
+</div>
+</div>
+
+</div>
+
+</div>

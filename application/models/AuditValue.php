@@ -30,11 +30,15 @@ class AuditValue extends WebVista_Model_ORM {
 	protected $_table = "auditValues";
 	protected $_primaryKeys = array('auditValueId');
 	protected $_persistMode = WebVista_Model_ORM::INSERT;
+	protected $_ormPersist = false;
 
 	public function persist() {
 		if ($this->shouldAudit()) {
 			$sql = $this->toSQL();
 			AuditLog::appendSql($sql);
+		}
+		if ($this->_ormPersist) {
+			parent::persist();
 		}
 	}
 }

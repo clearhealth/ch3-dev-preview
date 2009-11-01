@@ -27,4 +27,8 @@ dojo.declare("custom.PatientSelectAutoComplete", dojox.data.QueryReadStore, {
     	}
 });
 
+dojo.provide("custom.PatientSelectComboBox");
+dojo.declare("custom.PatientSelectComboBox", dijit.form.ComboBox, {
+	searchDelay: 300
+});
 

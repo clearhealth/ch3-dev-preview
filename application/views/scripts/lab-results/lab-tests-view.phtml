@@ -344,6 +344,10 @@ function strSort(a,b) {
 resultsMenu.loadXML('<?=$this->baseUrl?>/lab-results.xml/menu.xml');
 
 resultsGrid.enableContextMenu(resultsMenu);
+dhtmlxEvent(resultsGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
 resultsGrid.enableMultiselect(true);
 
 comTree = new dhtmlXTreeObject("commentsTree","100%","100%",0);

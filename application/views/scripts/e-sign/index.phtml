@@ -1,0 +1,79 @@
+<div id="esignItemsContainerId" style="width:100%;height:85%;overflow:hidden"></div>
+<script>
+        esrdGrid = new dhtmlXGridObject('esignItemsContainerId');
+        esrdGrid.setImagePath("<?=$this->baseUrl?>/img/");
+        esrdGrid.selMultiRows = true;
+        esrdGrid.setHeader(",Sign,,");
+        esrdGrid.setInitWidths("*,45,0,0");
+        esrdGrid.setColAlign("left,center,left,left");
+        esrdGrid.setColTypes("tree,ch,ro,ro");
+	esrdGrid.attachEvent('onRowDblClicked',doubleClickedEvent);
+	esrdGrid.attachEvent('onCheck',onCheckedEvent);
+        esrdGrid.init();
+	esrdGrid.load('<?=$this->baseUrl?>/e-sign.raw/list-items',esrdExpand,"xml");
+	function esrdExpand() {
+		esrdGrid.expandAll();
+		if (!<?=$this->multipleSign?>) {
+			esrdGrid.forEachRow(function(rowId){
+				var parentId = esrdGrid.getParentId(rowId);
+				if (parentId == null || parentId != 0) {
+					return;
+				}
+				esrdGrid.cells(rowId,1).cell.innerHTML = '';
+			});
+		}
+	}
+	function doubleClickedEvent(rowId,colIndex) {
+		var objectClassId = esrdGrid.getParentId(rowId);
+		if (objectClassId == null || objectClassId == 0) {
+			return;
+		}
+		var objectId = esrdGrid.cells(rowId,2).getValue();
+		var patientId = esrdGrid.cells(rowId,3).getValue();
+		if (patientId == '0' || patientId == '') {
+			winES.close();
+			return;
+		}
+		var jsCode = esrdGrid.cells(objectClassId,2).getValue();
+		jsCode += "\njumpLink"+objectClassId+"('"+objectId+"','"+patientId+"');";
+		eval(jsCode);
+		winES.close();
+	}
+	function onCheckedEvent(rowId,cellIndex,state) {
+		var objectClassId = esrdGrid.getParentId(rowId);
+		if (rowId == objectClassId) {
+			esrdGrid.setCheckedRows(1,state);
+		}
+	}
+</script>
+	 
+	<?=$this->form->renderOpen()?>
+<div style="float:right;">
+<?=$this->form->getElement('signature')->renderViewHelper()?>
+</div>
+<div style="float:right;padding-right:4px;padding-top:4px;">
+<?=$this->form->signature->renderLabel()?>
+</div>
+<div style="clear:right;text-align:right;">
+<?=$this->form->okInput()?>
+</div>
+<?=$this->form->renderClose()?>
+<input type="hidden" name="signIds" value="" id="e-sign-doc-ids"/>
+<script>
+function preSubmit<?=$this->form->getId()?> () {
+	var ids = esrdGrid.getCheckedRows(1);
+	dojo.xhrPost ({
+	    url: "<?=$this->baseUrl?>/e-sign.raw/edit-sign-items",
+	    content: {'electronicSignatureIds': dojo.toJson(ids), 'signature':dojo.byId('signature').value },
+	    load: function(data){
+		esrdGrid.clearAll();
+		esrdGrid.load('<?=$this->baseUrl?>/e-sign.raw/list-items',esrdExpand,"xml");
+	     },
+	     error: function (error) {
+	        errObj = dojo.fromJson(error.responseText);
+		alert(errObj.error);
+	     }
+	});
+	return false;
+}
+</script>

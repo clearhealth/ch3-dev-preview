@@ -1,0 +1,129 @@
+<script>
+djConfig.usePlainJson=true;
+dojo.require("dijit.form.DateTextBox");
+</script>
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+		<?if ($this->message) :?>
+		<div style="background-color:PaleGreen; width:100%;">
+		<?=$this->message?>
+		</div>
+		<?endif;?>
+		<?=$this->form->renderOpen()?>
+		<fieldset><legend><?=__("Patient Information")?></legend>
+		<div style="float:left;">
+			<div>
+			<div style="display:table-cell; vertical-align:middle; height:100px;">
+				<img src="<?=$this->baseUrl?>/img/no-person-image.png">
+			</div>
+			</div>
+		</div>
+		<div style="float:left;">
+			<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error) {?>
+			<?=$error?>
+			<?}?>
+			<?=$this->form->formPerson->personIdInput('FormHidden')?>
+			<div class="formRow">
+			<?=$this->form->formPerson->lastName->renderLabel()?>
+			<?=$this->form->formPerson->lastNameInput()?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->formPerson->firstName->renderLabel()?>
+			<?=$this->form->formPerson->firstNameInput()?>
+			</div>
+			<div class="formRow">
+			<?$this->form->formPerson->middleName->setAttrib('size',10)?>
+			<?=$this->form->formPerson->middleName->renderLabel()?>
+			<?=$this->form->formPerson->middleNameInput()?>
+			</div>
+			<br class="formRowDivider">
+			<div class="formRow">
+			<?$this->form->recordNumber->setAttrib('size',10)?>
+			<?=$this->form->recordNumber->renderLabel()?>
+			<?=$this->form->recordNumberInput()?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
+			<div style="width:90px;overflow:hidden;"><input type="text" name="patient[person][lastName]" id="dateOfBirthInput" size="10"/></div>
+			<script>
+				var dateOfBirthBox = dijit.byId('dateOfBirthInput');
+                		if (dateOfBirthBox != undefined) {
+                			dateOfBirthBox.destroyRecursive();
+                			dateOfBirthBox = null;
+                		}
+
+				dateOfBirthBox = new dijit.form.DateTextBox({constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('dateOfBirthInput'));
+			</script>
+			</div>
+			<div class="formRow">
+			<?=$this->form->formPerson->gender->renderLabel()?>
+			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray("Gender")))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->formPerson->maritalStatus->renderLabel()?>
+			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray("Marital Status")))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->confidentiality->renderLabel()?>
+			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray("Confidentiality")))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->formPerson->active->renderLabel()?>
+			<?=$this->form->formPerson->activeInput('FormCheckbox', array('checked' => 1))?>
+			</div>
+			<br class="formRowDivider">
+			<div class="formRow">
+			<?=$this->form->formPerson->defaultInstitutionId->renderLabel()?>
+			<?=$this->form->formPerson->defaultInstitutionIdInput('FormSelect',array("options" => Location::getLocationArrayByType('INSTITUTION')))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->registrationLocationId->renderLabel()?>
+			<?=$this->form->registrationLocationIdInput('FormSelect',array("options" => Location::getLocationArrayByType('WARD')))?>
+			</div>
+			<div class="formRow">
+			<?=$this->form->defaultProviderId->renderLabel()?>
+			<?=$this->form->defaultProviderIdInput('FormSelect',array("options" => Provider::getArray()))?>
+			</div>
+			</div>
+			<?=$this->form->renderClose()?>
+			</fieldset>
+			<fieldset><legend>Addresses</legend>
+			<div class="formRow">
+                        <?=$this->form->formAddress->line1->renderLabel()?>
+                        <?=$this->form->formAddress->line1Input()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formAddress->line2->renderLabel()?>
+                        <?=$this->form->formAddress->line2Input()?>
+                        </div>
+			<br style="clear:left;"/>
+			<div class="formRow">
+                        <?=$this->form->formAddress->city->renderLabel()?>
+                        <?=$this->form->formAddress->cityInput()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formAddress->state->renderLabel()?>
+                        <?=$this->form->formAddress->stateInput()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formAddress->postalCode->renderLabel()?>
+                        <?=$this->form->formAddress->postalCodeInput()?>
+                        </div>
+			</fieldset>
+			<fieldset><legend>Phone Numbers</legend>
+			<div class="formRow">
+                        <?=$this->form->formPhoneNumber->name->renderLabel()?>
+                        <?=$this->form->formPhoneNumber->nameInput()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formPhoneNumber->number->renderLabel()?>
+                        <?=$this->form->formPhoneNumber->numberInput()?>
+                        </div>
+			</fieldset>
+			<div style="text-align:right;">
+			<?=$this->form->okInput('FormButton')?>
+			<!--<input type="submit" />-->
+			</div>
+		</div>
+</div>

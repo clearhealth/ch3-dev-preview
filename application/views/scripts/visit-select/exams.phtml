@@ -1,0 +1,196 @@
+<div id="examsContainer" style="width:100%;height:100%;overflow:auto;">
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="exams-section"><?=__("Exam Section")?></label></dt>
+			<div id="examsSectionListContainer" style="float:left;width:250px;height:100px;"></div><br />
+			<input type="button" value="<?=__('Other Exam...')?>" style="float:right;" onClick="openExamsLookupWindow()" />
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="exams-section"><?=__("Section Name")?></label></dt>
+			<div id="examsSectionNameListContainer" style="float:left;width:490px;height:120px;"></div>
+		</div>
+		<script>
+		function openExamsLookupWindow() {
+			var params = new Array();
+			params.push("callback=examAddOthers");
+			globalCreateWindow("winLookupExamId",params,"<?=$this->baseUrl?>/exams.raw/lookup","<?=__('Other Exams')?>",400,400);
+		}
+
+		function examAddOthers(code,data) {
+			if (examsListGrid.doesRowExist(code)) {
+				alert("<?=__('Selected exam already exists')?>");
+				return;
+			}
+			examAddToList(code,data);
+		}
+		var examsSectionListGrid = new dhtmlXGridObject("examsSectionListContainer");
+		examsSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		examsSectionListGrid.setHeader("");
+		examsSectionListGrid.setNoHeader(true);
+		examsSectionListGrid.setInitWidths("*");
+		examsSectionListGrid.setSkin("xp");
+		examsSectionListGrid.init();
+		examsSectionListGrid.load("<?=$this->baseUrl?>/exams.raw/list",null,"json");
+		examsSectionListGrid.attachEvent("onRowSelect",examsSectionListOnRowSelected);
+
+		function examsSectionListOnRowSelected(rowId,cellIndex) {
+			examsSectionNameListGrid.clearAll();
+			examsSectionNameListGrid.load("<?=$this->baseUrl?>/exams.raw/list-section?section="+rowId,examsOnSectionNameLoaded,"json");
+		}
+
+		function examsOnSectionNameLoaded() {
+			examsListGrid.forEachRow(function(rowId){ if (examsSectionNameListGrid.doesRowExist(rowId)){ examsSectionNameListGrid.cells(rowId,0).setChecked(true);} });
+		}
+
+
+		var examsSectionNameListGrid = new dhtmlXGridObject("examsSectionNameListContainer");
+		examsSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		examsSectionNameListGrid.setHeader(",,");
+		examsSectionNameListGrid.setNoHeader(true);
+		examsSectionNameListGrid.setInitWidths("20,*,120");
+		examsSectionNameListGrid.setColTypes("ch,ro,ro");
+		examsSectionNameListGrid.setColAlign("right,left,left");
+		examsSectionNameListGrid.setSkin("xp");
+		examsSectionNameListGrid.init();
+		examsSectionNameListGrid.attachEvent("onCheck",examsSectionNameOnChecked);
+
+		function examAddToList(id,data) {
+			examsListGrid.addRow(id,","+data+",");
+		}
+
+		function examsSectionNameOnChecked(rowId,cellIndex,state) {
+			if (state) { // add to exams list
+				examsListGrid.addRow(rowId,",,,");
+				examsListGrid.cells(rowId,4).setValue(examsSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+			}
+			else { // remove from exams list
+				examRemoveSelected(rowId);
+			}
+		}
+		</script>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<div id="examsListContainer" style="float:left;width:70%;height:150px"></div>
+		<script>
+		var examsListGrid = new dhtmlXGridObject("examsListContainer");
+		examsListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		examsListGrid.setHeader("<?=__('Results')?>,<?=__('Selected Exams')?>,,");
+		examsListGrid.setInitWidths("*,*,0,0");
+		examsListGrid.setColTypes("ro,ro,ro,ro");
+		examsListGrid.setSkin("xp");
+		examsListGrid.init();
+		examsListGrid.load("<?=$this->baseUrl?>/exams.raw/list-patient-exams?patientId="+mainController.getActivePatient(),null,"json");
+
+		function examsListOnRowSelected(rowId,cellIndex) {
+			var resultSelect = dojo.byId("exam-result");
+			resultSelect.disabled = false;
+			var result = examsListGrid.cells(rowId,2).getValue();
+			for (var i in resultSelect.options) {
+				if (resultSelect.options[i].value == result) {
+					resultSelect.options[i].selected = true;
+					break;
+				}
+			}
+
+			var examComments = dojo.byId("exam-comments");
+			examComments.disabled = false;
+			examComments.value = examsListGrid.cells(rowId,3).getValue();
+
+			var examRemove = dojo.byId("examRemoveId");
+			examRemove.disabled = false;
+		}
+		examsListGrid.attachEvent("onRowSelect",examsListOnRowSelected);
+
+		function examRemoveSelected(rowId) {
+			if (!rowId) {
+				rowId = examsListGrid.getSelectedRowId();
+			}
+			if (rowId == null) {
+				return;
+			}
+			examsListGrid.deleteRow(rowId);
+			if (examsSectionNameListGrid.doesRowExist(rowId)) {
+				examsSectionNameListGrid.cells(rowId,0).setChecked(false);
+			}
+
+			var resultSelect = dojo.byId("exam-result");
+			resultSelect.disabled = true;
+
+			var examComments = dojo.byId("exam-comments");
+			examComments.disabled = true;
+
+			var examRemove = dojo.byId("examRemoveId");
+			examRemove.disabled = true;
+		}
+
+		function examSetResult(result) {
+			var rowId = examsListGrid.getSelectedRowId();
+			if (rowId == null) {
+				alert('<?=__('No exam selected.')?>');
+				return;
+			}
+			var txt = result.text;
+			if (typeof txt == "string") {
+				txt = txt.replace(/,/g, "&#44;");
+			}
+			if (result.value == "") {
+				txt = "";
+			}
+			examsListGrid.cells(rowId,0).setValue(txt);
+			examsListGrid.cells(rowId,2).setValue(result.value);
+		}
+
+		function examUpdateComment(comment) {
+			var rowId = examsListGrid.getSelectedRowId();
+			if (rowId == null) {
+				return;
+			}
+			examsListGrid.cells(rowId,3).setValue(comment);
+		}
+
+		function saveExams() {
+			var arrExams = new Array();
+			arrExams.push("'patientId': '"+mainController.getActivePatient()+"'");
+			examsListGrid.forEachRow(function(rowId) {
+				arrExams.push("'exams["+rowId+"][result]':'"+examsListGrid.cells(rowId,2).getValue()+"'");
+				arrExams.push("'exams["+rowId+"][exam]':'"+examsListGrid.cells(rowId,1).getValue().replace(/\n/g,"")+"'");
+				arrExams.push("'exams["+rowId+"][comments]':'"+examsListGrid.cells(rowId,3).getValue()+"'");
+			});
+
+			var jsCode = "var examsContent = {"+arrExams.join(",")+"}";
+			eval(jsCode);
+
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/exams.raw/process-patient-exams",
+				handleAs: "json",
+				content: examsContent,
+				load: function (data) {
+					alert(data.msg);
+				},
+				error: function (error) {
+					alert(error);
+					console.error ("Error: ", error);
+				}
+			});
+
+		}
+		</script>
+		<div id="examsRightContainer" style="float:left;margin:10px;">
+			<dt><label for="exam-result"><?=__("Results")?></label></dt>
+			<?=$this->formSelect('exam[result]',null,array('id'=>'exam-result','disabled'=>'disabled','onchange'=>'examSetResult(this.options[this.selectedIndex])','style'=>'width:150px;'),$this->listResults)?>
+			<br /><?=$this->formButton('examRemoveId',__('Remove'),array('id'=>'examRemoveId','onClick'=>'examRemoveSelected()','disabled'=>'disabled'))?>
+		</div>
+		<div style="float:left;width:100%;">
+		<br />
+		<?=__("Comments")?>: <?=$this->formText('exam[comments]','',array('id'=>'exam-comments','onchange'=>'examUpdateComment(this.value)','style'=>'width:70%','disabled'=>'disabled'))?>
+		</div>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<?=$this->formButton('examOK',__('OK'),array('onClick'=>'saveExams()'))?>
+		<?=$this->formButton('examCancel',__('Cancel'),array('onClick'=>'dhxWins.window("windowSelectVisitId").close()'))?>
+	</div>
+</div>

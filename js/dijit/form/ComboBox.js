@@ -682,7 +682,8 @@ dojo.declare(
 			var labelObject = labelFunc(item);
 			var menuitem = dojo.doc.createElement("li");
 			dijit.setWaiRole(menuitem, "option");
-			if(labelObject.html){
+			if(true){
+			//if(labelObject.html){
 				menuitem.innerHTML = labelObject.label;
 			}else{
 				menuitem.appendChild(

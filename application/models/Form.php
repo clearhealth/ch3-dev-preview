@@ -26,13 +26,10 @@ class Form extends WebVista_Model_ORM {
 	protected $form_id;
 	protected $name;
 	protected $description;
-	protected $systemName;
+	protected $system_name;
 	protected $_primaryKeys = array('form_id');
 	protected $_table = "form";
-	
-	function __construct() {
-		parent::__construct();
-	}
+	protected $_legacyORMNaming = true;
 
     public function getFormList() {
         $db = Zend_Registry::get('dbAdapter');

@@ -30,6 +30,7 @@ class ClinicalNoteDefinition extends WebVista_Model_ORM {
 	protected $active;
 	protected $_primaryKeys = array('clinicalNoteDefinitionId');
 	protected $_table = "clinicalNoteDefinitions";
+	protected $_cascadePersist = false;
 	
 	function __construct() {
 		parent::__construct();

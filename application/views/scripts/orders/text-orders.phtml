@@ -1,0 +1,84 @@
+
+<br style="clear:left;" />
+<?=$this->form->renderOpen()?>
+
+<?=$this->form->orderText->renderLabel()?>
+<textarea name="order[orderText]" id="order-order-text" rows="5" cols="45"></textarea>
+
+<div>
+<div style="float:left;">
+	<div class="formRow">
+	<?=$this->form->dateStart->renderLabel()?>
+	<input type="text" name="order[dateStart]" id="order-date-start" />
+	</div>
+</div>
+<div style="float:left;">
+	<div class="formRow">
+	<?=$this->form->dateStop->renderLabel()?>
+	<input type="text" name="order[dateStop]" id="order-date-stop" />
+	</div>
+</div>
+</div>
+
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:8px;">
+	<input type="hidden" name="status" value="text_orders" />
+	<?=$this->form->okInput('FormButton')?>
+	<button name="order[cancel]" id="order-cancel" type="button" value="<?=__('Cancel')?>" helper="formButton" onclick="winTextOrders.close();"><?=__('Cancel')?></button>
+</div>
+
+<?=$this->form->renderClose()?>
+
+<script>
+
+function preSubmittextOrders() {
+	// do before form submitted
+	var orderText = dojo.byId('order-order-text');
+	var dateStart = dojo.byId('order-date-start');
+	var dateStop = dojo.byId('order-date-stop');
+	var ret = true;
+	if (orderText.value.length == 0 || 
+	    dateStart.value.length == 0 || 
+	    dateStop.value.length == 0) {
+		alert('<?=__('Please fill all the fields.')?>');
+		ret = false;
+	}
+	return ret;
+}
+
+function postSubmittextOrders() {
+	winTextOrders.close();
+	return false;
+}
+
+var dateStartBox = dijit.byId('order-date-start');
+if (dateStartBox != undefined) {
+	dateStartBox.destroyRecursive();
+	dateStartBox = null;
+}
+
+dateStartBox = new dijit.form.DateTextBox({name:'order[dateStart]',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('order-date-start'));
+<?if($this->form->dateStart->getValue()):
+	$dateStartValue = date('Y-m-d',strtotime($this->form->dateStart->getValue()));
+	$x = explode('-',$dateStartValue);?>
+	var onsetDate = new Date();
+	onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+	dateStartBox.setValue(onsetDate);
+<?endif?>
+
+var dateStopBox = dijit.byId('order-date-stop');
+if (dateStopBox != undefined) {
+	dateStopBox.destroyRecursive();
+	dateStopBox = null;
+}
+
+dateStopBox = new dijit.form.DateTextBox({name:'order[dateStop]',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('order-date-stop'));
+<?if($this->form->dateStop->getValue()):
+	$dateStopValue = date('Y-m-d',strtotime($this->form->dateStop->getValue()));
+	$x = explode('-',$dateStopValue);?>
+	var onsetDate = new Date();
+	onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+	dateStopBox.setValue(onsetDate);
+<?endif?>
+
+</script>

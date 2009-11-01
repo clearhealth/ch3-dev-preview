@@ -36,6 +36,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 	protected $_shouldAudit = true;
 	protected $_legacyORMNaming = false;
 	protected $_cascadePopulate = true;
+	public static $_nsdrNamespace = false;
 
 	function __construct() {
 		if (count($this->_primaryKeys) == 0) {
@@ -307,7 +308,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 			$sql = "DELETE FROM `" . $this->_table . "` "; 
 		}
 		$pWhere = "WHERE 1 ";
-		for ($i=0;$i<count($fields);$i++) {
+		for ($i=0,$fieldsCount=count($fields);$i<$fieldsCount;$i++) {
 			$field = $fields[$i];
 			//echo "setting: " . get_class($this)  ." " .  $field ."<br />";
 			$val = $this->__get($field);
@@ -326,8 +327,17 @@ class WebVista_Model_ORM implements ORM,Iterator {
 				}
 				continue;
 			}
+
+			if ($this->_persistMode == WebVista_Model_ORM::DELETE) {
+				if (in_array($field,$this->_primaryKeys) && ($val > 0 || (!is_numeric($val) && strlen($val) > 0))) {
+					$pWhere .= " and `$field` = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
+				}
+				// code below is just for replace/insert
+				continue;
+			}
+
 			if (in_array($field,$this->_primaryKeys) && !$val > 0) {
-				$pWhere .= " and $field = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
+				$pWhere .= " and `$field` = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
 				$seqTable = "";
 				if (get_class($this) == "Audit" || get_class($this) == "AuditValue") {
 					$seqTable = Zend_Registry::get('config')->audit->sequence->table;
@@ -354,18 +364,6 @@ class WebVista_Model_ORM implements ORM,Iterator {
 				}*/
 			}
 			
-			if ($this->_persistMode == WebVista_Model_ORM::DELETE) {
-				if (isset($seqTable)) {
-					unset($seqTable);
-				}
-				else {
-					if (strlen($val) > 0) {
-						$pWhere .= " and $field = '" . preg_replace('/[^0-9_a-z-\.]/i','',$val) . "' ";
-					}
-				}
-				// code below is just for replace/insert
-				continue;
-			}
 			if (substr($field,0,1) != "_" ) {
 				//echo "field: " . $field . "<br/>";
 				$sql .= " `$field` = " . $db->quote($val) .",";
@@ -493,7 +491,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
                         $fields[] = $property->name;
                 }
 		return $fields;
-	}	
+	}
 
 /*
 	public function getControllerName() {

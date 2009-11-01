@@ -1,0 +1,152 @@
+<script>
+
+function setBuildingRooms(practiceId) {
+	var practiceBuildingRoomMap = new Array();
+	<?$this->facilityIterator->rewind()?>
+	<?$this->facilityIterator->setFilter(array('Practice','Building', 'Room'))?>
+	<?foreach($this->facilityIterator as $facilities):?>
+		if (practiceBuildingRoomMap['<?=$facilities['Practice']->practiceId?>'] == undefined) {
+			practiceBuildingRoomMap['<?=$facilities['Practice']->practiceId?>'] = new Array();
+		}
+		if (practiceBuildingRoomMap['<?=$facilities['Practice']->practiceId?>']['<?=$facilities['Building']->buildingId?>_<?=$facilities['Room']->roomId?>'] == undefined) {
+			practiceBuildingRoomMap['<?=$facilities['Practice']->practiceId?>']['<?=$facilities['Building']->buildingId?>_<?=$facilities['Room']->roomId?>'] = new Array();
+		}
+		practiceBuildingRoomMap['<?=$facilities['Practice']->practiceId?>']['<?=$facilities['Building']->buildingId?>_<?=$facilities['Room']->roomId?>'] = '<?=$facilities['Building']->name?>-><?=$facilities['Room']->name?>';
+	<?endforeach?>
+	var buildingRoom = dojo.byId('visit-building-room-id');
+	if (practiceBuildingRoomMap[practiceId] == undefined) {
+		alert('<?=__("The selected practice has no buildings enabled, you must select another.")?>');
+		buildingRoom.disabled = true;
+		return;
+	}
+	buildingRoom.disabled = false;
+	buildingRoom.options.length = 0;
+	for (var roomId in practiceBuildingRoomMap[practiceId]) {
+		newOption = new Option(practiceBuildingRoomMap[practiceId][roomId],roomId);
+		if (roomId == '<?=$this->defaultLocationId?>') {
+			newOption.defaultSelection = true;
+		}
+		buildingRoom.options[buildingRoom.options.length] = newOption;
+	}
+}
+</script>
+
+
+
+
+<?$providers = $this->providerIterator->toArray('personId','displayName');?>
+<div id="addSelectVisitContainer" style="width:99.9%;overflow:auto;">
+<fieldset>
+<legend>Select Location</legend>
+
+	<div class="formRow">
+		<dt><label for="visit-practice-id"><?=__("Select Practice")?>:</label></dt>
+		<?$this->facilityIterator->rewind();?>
+		<?$this->facilityIterator->setFilter(array('Practice'));?>
+		<?=$this->formSelect(
+			array(
+				"name" => "visit[practiceId]",
+				"options" => $this->facilityIterator->toArray('practiceId','name'),
+				"attribs" => array("onchange" => "setBuildingRooms(this.options[this.selectedIndex].value)"),
+				"selected" => '<?=$this->defaultLocationId?>'
+				
+			)
+		);?>
+		</select>
+		</dt>
+		<br style="clear:left"/>
+		<dt><label for="visit-building-room-id"><?=__("Select Building/Room")?>:</label></dt>
+		<select id="visit-building-room-id" name="visit[buildingRoomId]" disabled="disabled">
+		<option value="0"><?=__("Select Practice First")?></option>
+		</select>
+	</div>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<dt><label for="visit-provider-id"><?=__("Provider")?></label></dt>
+		<?=$this->formSelect(
+			array(
+				"name" => "visit[providerId]",
+				"options" => $providers,
+				"selected" => $this->currentUserPersonId
+			)
+		)?>
+	</div>
+	<div class="formRow" style="float:right;">
+		<dt><label>&nbsp;</label></dt>
+		<input style="lign:right;" type="button" value="<?=__("Add New Visit")?>" onclick="addNewVisit();">
+	</div>
+</fieldset>
+<fieldset>
+<legend><?=__("Select Visit")?></legend>
+	<div id="visitContainerId" style="margin-left:auto;margin-right:auto;width:600px;height:200px;"></div>
+	<script>
+	visitListGrid = new dhtmlXGridObject('visitContainerId');
+	visitListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+	visitListGrid.setHeader('Date/Time,Location,Provider');
+	visitListGrid.setInitWidths("75,*,*");
+	visitListGrid.setColTypes("ro,ro,ro");
+	visitListGrid.setSkin("xp");
+	visitListGrid.init();
+	visitListGrid.load('<?=$this->baseUrl?>/visit-select.raw/list-visits?personId=' + mainController.getActivePatient(),"json");
+	</script>
+	<div style="text-align:right;margin-top:10px;">
+		<input type="button" value="Cancel" onclick="dhxWins.window('windowSelectVisitId').close()">
+		<input type="button" value="<?=__("Select Visit")?>" onclick="selectVisit(visitListGrid.getSelectedRowId(),dhxWins.window('windowSelectVisitId'));">
+	</div>
+</fieldset>
+
+</div>
+
+<script>
+practiceSelect = dojo.byId('visit-practiceId');
+setBuildingRooms(practiceSelect.options[practiceSelect.selectedIndex].value);
+
+function addNewVisit() {
+	var providerSelect = dojo.byId('visit-providerId');
+	var providerId = providerSelect.options[providerSelect.selectedIndex].value;
+	var practiceSelect = dojo.byId('visit-practiceId');
+	var practiceId = practiceSelect.options[practiceSelect.selectedIndex].value;
+	var buildingRoomSelect = dojo.byId('visit-building-room-id');
+	var buildingRoomId = buildingRoomSelect.options[buildingRoomSelect.selectedIndex].value;
+	// explode buildingRoomId to buildingId and roomId
+	var splittedBuildingRoomId = buildingRoomId.split("_");
+	var buildingId = splittedBuildingRoomId[0];
+	var roomId = splittedBuildingRoomId[1];
+	dojo.xhrPost ({
+		url: '<?=$this->baseUrl?>/visit-select.raw/process-add-visit',
+		handleAs: "json",
+		content: {
+			"visit[patient_id]": mainController.getActivePatient(),
+			"visit[treating_person_id]": providerId,
+			"visit[practice_id]": practiceId,
+			"visit[building_id]": buildingId,
+			"visit[room_id]": roomId,
+		},
+		load: function (data) {
+			mainController.setActiveRoom(roomId);
+			mainController.setActiveBuilding(buildingId);
+			mainController.setActivePractice(practiceId);
+
+			mainController.setActiveVisit(data.visitId);
+			initMainToolbar(null,mainController.getActivePatient());
+			dhxWins.window('windowSelectVisitId').close();
+		},
+		error: function (er) {
+			alert('err: ' + er)
+		}
+	});
+}
+
+
+function selectVisit() {
+	var rowId = visitListGrid.getSelectedRowId();
+	if (rowId == null) {
+		alert("<?=__('Please select visit.')?>");
+		return;
+	}
+
+	mainController.setActiveVisit(rowId);
+	initMainToolbar(null,mainController.getActivePatient());
+	dhxWins.window('windowSelectVisitId').close();
+}
+</script>

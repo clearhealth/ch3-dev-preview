@@ -35,11 +35,25 @@ class Audit extends WebVista_Model_ORM {
 	protected $_table = "audits";
 	protected $_primaryKeys = array('auditId');
 	protected $_persistMode = WebVista_Model_ORM::INSERT;
+	protected $_ormPersist = false;
 
 	public function persist() {
 		if ($this->shouldAudit()) {
 			$sql = $this->toSQL();
 			AuditLog::appendSql($sql);
 		}
+		if ($this->_ormPersist) {
+			parent::persist();
+		}
+	}
+
+	public function getIteratorByCurrentDate() {
+		$currentDate = date('Y-m-d');
+		$db = Zend_Registry::get("dbAdapter");
+		$dbSelect = $db->select()
+			       ->from($this->_table)
+			       ->where('dateTime LIKE ?',$currentDate.'%')
+			       ->order('dateTime');
+		return $this->getIterator($dbSelect);
 	}
 }

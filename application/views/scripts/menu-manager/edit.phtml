@@ -93,14 +93,20 @@ function submitmenuitemForm() {
 				<select id="typeform" name="typeform">
 				<?foreach ($this->data['form'] as $form):
 					$selected = '';
-					if ($this->form->type->getValue() == 'form' && $form['formId'] == $this->form->action->getValue()) {
+					if ($this->form->type->getValue() == 'form' && $form['form_id'] == $this->form->action->getValue()) {
 						$selected = 'selected="selected"';
 					}
 				?>
-				<option value="<?=$form['formId']?>" <?=$selected?>><?=$form['name']?></option>
+				<option value="<?=$form['form_id']?>" <?=$selected?>><?=$form['name']?></option>
 				<?endforeach?>
 				</select>
 			</div>
+		</div>
+
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->siteSection->renderLabel()?>
+			<?=$this->form->siteSectionInput('FormSelect',array('options'=>$this->mainTabs))?>
 		</div>
 
 		<br style="clear:left;" />
@@ -130,6 +136,7 @@ function submitmenuitemForm() {
 	</fieldset>
 	<br style="clear:left;" />
 	<div class="formRow" style="float:right;">
+		<?=$this->formHidden('enumerationId',$this->enumerationId)?>
 		<?=$this->form->menuIdInput('FormHidden')?>
 		<?=$this->form->parentIdInput('FormHidden')?>
 		<?=$this->formButton('btnCancel','Cancel',array('onClick'=>'dhxWins.window("windowEditORMObjectId").close();'))?>

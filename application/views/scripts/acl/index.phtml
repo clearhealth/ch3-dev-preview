@@ -110,6 +110,11 @@ function addPermission(rowId,colIndex) {
 }
 
 aclGrid.enableContextMenu(aclMenu);
+dhtmlxEvent(aclGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
 aclGrid.attachEvent('onBeforeContextMenu',onBeforeContextMenuEvent);
 
 function onBeforeContextMenuEvent(rowId,colIndex,gridObj) {

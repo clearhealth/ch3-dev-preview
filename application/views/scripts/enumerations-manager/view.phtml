@@ -121,6 +121,10 @@ enumItemsMenu.setOpenMode("web");
 enumItemsMenu.loadXML('<?=$this->baseUrl?>/enumerations-manager.raw/context-menu.xml');
 enumItemsMenu.attachEvent('onClick',enumItemsMenuClickHandler);
 enumItemsGrid.enableContextMenu(enumItemsMenu);
+dhtmlxEvent(enumItemsGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
 function enumItemsMenuClickHandler(id) {
 	switch (id) {
 		case "menuAddSubItem":

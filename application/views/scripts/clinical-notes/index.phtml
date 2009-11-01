@@ -8,8 +8,8 @@ TabStateClass.prototype.params = {};
 TabStateClass.prototype.setParam = function(params) {
 	this.params = params;
 }
-TabStateClass.prototype.redrawTab = function() {
-	redrawTabGrid(this.params);
+TabStateClass.prototype.redrawTab = function(clinicalNoteId) {
+	redrawTabGrid(this.params,clinicalNoteId);
 }
 TabStateClass.prototype.getAllParams = function() {
 	return this.params;
@@ -21,7 +21,7 @@ TabState = new TabStateClass();
 //alert(tabstate.getAllParams().personId);
 
 
-function redrawTabGrid(params) {
+function redrawTabGrid(params,clinicalNoteId) {
 	var filter = '';
 	if (typeof params == "object") {
 		for (var key in params) {
@@ -36,7 +36,11 @@ function redrawTabGrid(params) {
 	}
 
 	cnGrid.clearAll();
-	cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,'json');
+	cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,function(){
+			if (cnGrid.doesRowExist(clinicalNoteId)) {
+				cnGrid.selectRow(cnGrid.getRowIndex(clinicalNoteId));
+			}
+		},'json');
 }
 
 </script>
@@ -58,7 +62,7 @@ function redrawTabGrid(params) {
 	<option value="byCustom"><?=__("Custom View")?></option>
 </select>
 
-<div id="clinicalNotesContainer" style="float:left;width:100%;height:420px;"></div>
+<div id="clinicalNotesContainer" style="float:left;width:100%;height:370px;"></div>
 </div>
 
 

@@ -2,9 +2,26 @@
 <toolbar>
 	<item type="button" imgStyle="float:left;" img="no-person-image.png" height="60" width="375" id="tbSelectPatient" title="Selected Patient" disableImage="../images/iconDelete_dis.gif"><![CDATA[ <div style="float:left;text-align:left;"><? if ($this->patient):?><strong><?=utf8_decode($this->patient->lastName)?>, <?=utf8_encode($this->patient->firstName)?> <?=utf8_decode($this->patient->middleInitial)?></strong><br /> <?=__("MRN")?>: <?=$this->patient->recordNumber?> <br /><?=__("Age/Sex")?>:  (<?=$this->patient->person->age?>/<?=$this->patient->displayGender?>) </div><div style="float:left;text-align:left;margin-left:10px;"><?=__("Wt")?>: <?=$this->patient->getWeight()?>  <br /><?=__("Ht")?>: <?=$this->patient->getHeight()?><br /><?=__("BMI/BSA")?>: <?=$this->patient->getBMI()?> (0.00)<? else: ?><strong><?=__("No Patient Selected")?></strong><? endif; ?></div>]]>
 </item>
-<separator id="div_1"/>
+	<item id="sep1" type="separator"/>
         <item type="button" img="blank.gif" imgStyle="display:none;" height="60" width="300" id="tbSelectVisit" title="Select Admission" disableImage="../images/iconDelete_dis.gif"><![CDATA[ <div style="text-align:left;"><? if($this->visit): ?><strong><?=__("Visit Detail")?></strong> <br /> <?=__("Visitted")?>: <?=date('Y-m-d',strtotime($this->visit->date_of_treatment))?><br />Provider: <?=$this->visit->getProviderDisplayName()?><br /><?=__("Visit Dx")?>: <?=__("None")?> <? else: ?><strong><?=__("Visit Not Selected")?></strong><br /><?=__("Current Loc.")?>:<?//=$this->location->name?><? endif;?></div>]]></item>
-<separator id="div_2"/>
+	<item id="sep2" type="separator"/>
+	<item type="button" img="blank.gif" imgStyle="display:none;" height="60" width="300" id="tbAlerts" title="Alerts" disableImage="../images/iconDelete_dis.gif"><![CDATA[ <div style="text-align:left;"><strong><?=__('Postings')?></strong>: <?
+if (isset($this->postings)):?><strong><a href="javascript:openPostings()" style="color:<?=($this->postings)?'#ff0000':'#000000'?>;" title="<?=__('Postings')?>">A</a></strong><?
+else:?>none<?
+endif;?>
+<br /><strong>Alerts</strong>: 
+<?if ($this->alerts):?>
+<a onClick="windowSelectPatient(true)" title="<?=$this->alerts . ' ' . __('alerts pending')?>"><img style="vertical-align:middle;" src="../img/alert.png" /></a>
+<?else:?>
+none
+<?endif;?>
+<br /><strong>Health Status</strong>:
+<?if ($this->reminders):?> <a onClick="openHealthStatusAlerts()" title="<?=$this->reminders . ' ' . __('reminders are due')?>"><img style="vertical-align:middle;margin-left:5px;" src="../img/reminder.png" /></a>
+<?else:?>
+none
+<?endif;?>
+</div>]]></item>
+	<item id="sep3" type="separator"/>
 	<item type="button" img="blank.gif" imgStyle="display:none;" height="60" width="300" id="tbSelectTeam" title="Select Team" disableImage="../images/iconDelete_dis.gif"><![CDATA[ <div style="text-align:left;"><strong><?=__("Care Team")?></strong><br /><?
 if($this->patient):
 	if (isset($this->team)):

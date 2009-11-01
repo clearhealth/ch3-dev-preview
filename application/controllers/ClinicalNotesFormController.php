@@ -50,6 +50,20 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$this->_form = new WebVista_Form(array('name' => 'cn-template-form'));
                 $this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
 		$cnXML = simplexml_load_string($cnTemplate->template);
+		$element = $this->_form->createElement('button','print', array('label' => 'Print'));
+                $element->setAttrib('onclick',"
+printHtml = dojo.byId('mainToolbar').innerHTML; 
+printHtml +=  dojo.byId('cntemplateform').innerHTML;
+dojo.byId('iframeprint').contentWindow.document.body.innerHTML = printHtml;
+dojo.byId('iframeprint').contentWindow.focus();
+dojo.byId('iframeprint').contentWindow.print();
+//dojo.byId('iframeprint').contentWindow.document.body.innerHTML = '';
+printHtml = '';
+");
+                $element->setValue('Print');
+		// pre-register print element to view so that other elements can override particularly the onclick event
+		$this->view->elementPrint = $element;
+                $this->_form->addElement($element);
 		$this->_buildForm($cnXML);
 		$this->_form->addElement($this->_form->createElement('hidden','clinicalNoteId', array('value' => (int)$cn->clinicalNoteId)));
 
@@ -111,7 +125,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 			foreach($question as $key => $item) {
 				if ($key == "dataPoint") $dataPoint = $item;
 				elseif ($key == "heading") {
-					$headingName = preg_replace('/[^a-zA-Z0-9]/','',(string)$item);
+					$headingName = preg_replace('/[^a-zA-Z0-9\ ]/','',(string)$item);
 					$element = $this->_form->createElement('hidden',$headingName, array('label' => (string)$item, 'disabled' => "disabled"));
 					$element->addDecorator('Label', array('tag' => 'h3'));
 					$this->_form->addElement($element);
@@ -149,6 +163,10 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
                                                 $element->setValue((string)$dataPoint->attributes()->value);     
                                         }
                                 }
+                                if ((string)$dataPoint->attributes()->type == "checkbox") {
+					$element->AddDecorator('Label', array('placement' => 'APPEND'));
+					$element->AddDecorator('HtmlTag', array('placement' => 'PREPEND', 'tag' => '<br />'));
+				}
                                 if (strlen((string)$dataPoint->attributes()->templateText) > 0) {
 					$templateName = (string)$dataPoint->attributes()->templateText;
 					//$element->setValue($this->view->action('index','template-text',null,array('personId' => $this->_cn->personId)));
@@ -167,6 +185,19 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 			//var_dump($elements);
 			if (count($elements) > 0) {
 				$this->_form->addDisplayGroup($elements,(string)$question->attributes()->label,array("legend" => (string)$question->attributes()->label));
+				if (strlen(trim((string)$question->attributes()->containerStyle)) > 0) { 
+				    $displayGroup = $this->_form->getDisplayGroup((string)$question->attributes()->label);
+				    $style = preg_replace('/\xEF\xBB\xBF/','',trim((string)$question->attributes()->containerStyle));
+				    $displayGroup->setDecorators(array(
+						'FormElements',
+						array('HtmlTag',
+						  array('tag'=>'dl', 
+						    'style'=> $style
+						  )
+						),
+						'Fieldset'
+					));
+				}
 			}
 		}
 	}

@@ -235,6 +235,11 @@ DashboardComponentMarshall.prototype.refreshComponents = function () {
     }, 30000);
 }
 DashboardComponentMarshall.prototype.refreshComponentsById = function (personIdParam) {
+	
+    if (!personIdParam > 0) {
+		personId = mainController.getActivePatient(); 
+		personIdParam = (personId > 0) ? personId : null;
+	}
     if (null != personIdParam) { 
         for ( i = 0; i < this.dcArray.length; i++ ) {
             if (this.dcArray[i].dashboardComponentId != "" ) {
@@ -321,7 +326,7 @@ function pdAppointmentsGridReload() {
         <?= $this->formSelect('layout_id', null, array('style' => 'font-size:8pt;', 'onChange' => "loadLayout(null, this);"), $this->selectableLayouts); ?>
         <?= $this->formSelect('templatesDropdown', null, 
             array('style' => 'font-size:8pt;', 'onChange' => "processTemplatesDropdown(this);"), 
-            array("a" => "Select Template","b" => "--Global",  "b" => "--Mine",  "c" => "Save Current Layout To...")); ?>
+            array("a" => "Select Template","b" => "--Global",  "b" => "--Mine",  "-1" => "Save Current Layout To...")); ?>
 </div>
 
 
@@ -342,7 +347,6 @@ function createTemplatesDropdown() {
 
 /* build the dropdown for layout templates */
 function buildDropdown(optionsArr) {
-
     var templdrop = dojo.byId('templatesDropdown')
     templdrop.options.length = 0;
 
@@ -367,7 +371,6 @@ function buildDropdown(optionsArr) {
     }
     iterator += arLen2;
     templdrop.options[iterator] = new Option('Save Current Layout To...', -1);
-
     pdLayout.cells("b").setText("Dashboard" + dojo.byId('layoutSelect').innerHTML);
 }
 
@@ -609,7 +612,7 @@ var pdLayout = new dhtmlXLayoutObject('providerDashboardLayoutContainer',"2U");
 pdLayout.setImagePath("<?=$this->baseUrl?>/img/");
 pdLayout.cells("a").setText("Appointments For " + dojo.byId('providerSelect').innerHTML);
 pdLayout.cells("a").setWidth(400);
-pdLayout.cells("b").setText("Dashboard" + dojo.byId('layoutSelect').innerHTML);
+//pdLayout.cells("b").setText("Dashboard" + dojo.byId('layoutSelect').innerHTML);
 pdLayout.setEffect('collapse',true);
 
 pdcxMenu = new dhtmlXMenuObject(null ,'standard');
@@ -621,16 +624,16 @@ pdcxMenu.loadXML('<?=$this->baseUrl?>/provider-dashboard.raw/appointments-grid-c
 pdAppointmentsGrid = pdLayout.cells('a').attachGrid();
 pdAppointmentsGrid.setImagePath('<?=$this->baseUrl?>/img/');
 pdAppointmentsGrid.setHeader('personId,Time,,,Details');
-//pdAppointmentsGrid.setColTypes('ro,ro,img,sub_row_grid,ro');
-pdAppointmentsGrid.setColTypes('ro,ro,img,ro,ro');
+pdAppointmentsGrid.setColTypes('ro,ro,img,sub_row_grid,ro');
 pdAppointmentsGrid.setInitWidths("0,125,20,20,*");
 pdAppointmentsGrid.setSkin("xp");
 pdAppointmentsGrid.attachEvent("onSubRowOpen", function (id) {
 	 return true;});
 pdAppointmentsGrid.attachEvent("onRowSelect", function (rowId) {
 	personId = pdAppointmentsGrid.cells(rowId, 0).getValue();
-	DCM.refreshComponentsById(personId);
 	mainController.setActivePatient(personId);
+	//DCM.refreshComponentsById automatically called because it listens for the setActivePatient event
+	//DCM.refreshComponentsById(personId);
 });
 pdAppointmentsGrid.attachEvent('onBeforeContextMenu',handlePDContextBeforeClick);
 dhtmlxEvent(pdAppointmentsGrid.entBox,"contextmenu",function(e){
@@ -663,7 +666,7 @@ dcmArray = new Array();
 
 DCM.init(dcmArray);
 DCM.refreshComponents(null);
-
+dojo.connect(mainController, "setActivePatient", DCM, "refreshComponentsById");
 
 
 var pdProviderId = tabStateObject.getParam("pdProviderId");

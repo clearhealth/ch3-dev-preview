@@ -1,0 +1,136 @@
+<div id="allergiesGridId" style="float:left;width:100%;height:300px;overflow:auto;"></div>
+<script>
+function allergiesMarkEnteredInError(rowId) {
+	if (!rowId) {
+		var rowId = allergiesGrid.getSelectedRowId();
+	}
+	if (rowId == null) {
+		alert('<?=__('No allergy selected')?>');
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/allergies.raw/process-mark-entered-in-error",
+		handleAs: "json",
+		content: {
+			id: rowId,
+		},
+		load: function (data) {
+			allergiesGridReload();
+			initMainToolbar(null,mainController.getActivePatient());
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
+}
+
+function allergiesMarkNoKnownAllergies() {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/allergies.raw/process-mark-no-known-allergies",
+		handleAs: "json",
+		content: {
+			personId: mainController.getActivePatient(),
+		},
+		load: function (data) {
+			alert(data);
+			allergiesGridReload();
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
+}
+
+function openNewAllergy(data) {
+	var patientId = mainController.getActivePatient();
+	var params = new Array();
+	params.push("personId="+patientId);
+	params.push("allergy="+data);
+	globalCreateWindow("winAddAllergyId",params,"<?=$this->baseUrl?>/allergies.raw/add","<?=__('Enter Allergy or Adverse Reaction')?>",400,550);
+}
+
+function openLookupAllergy() {
+	var patientId = mainController.getActivePatient();
+	var params = new Array();
+	params.push("personId="+patientId);
+	params.push("callback=openNewAllergy");
+	globalCreateWindow("winLookupAllergiesId",params,"<?=$this->baseUrl?>/allergies.raw/lookup","<?=__('Lookup Allergy/ADR')?>",400,400);
+}
+
+var allergiesMenu = new dhtmlXMenuObject(null,"standard");
+allergiesMenu.setImagePath("<?=$this->baseUrl?>/img/");
+allergiesMenu.renderAsContextMenu();
+allergiesMenu.setOpenMode("web");
+function allergiesMenuOnClicked(menuItemId,type) {
+	switch(menuItemId) {
+		case "newAllergy":
+			openLookupAllergy();
+			break;
+		case "enteredInError":
+			allergiesMarkEnteredInError();
+			break;
+		case "nka":
+			allergiesMarkNoKnownAllergies();
+			break;
+	}
+}
+allergiesMenu.attachEvent("onClick",allergiesMenuOnClicked);
+function allergiesMenuOnLoaded() {
+}
+allergiesMenu.loadXML("<?=$this->baseUrl?>/allergies.raw/get-context-menu",allergiesMenuOnLoaded);
+
+var allergiesGrid = new dhtmlXGridObject("allergiesGridId");
+allergiesGrid.setImagePath("<?=$this->baseUrl?>/img/");
+allergiesGrid.setHeader("<?=__('Allergy')?>,<?=__('Severity')?>,<?=__('Signs/Symptoms')?>");
+allergiesGrid.setInitWidths("*,*,*");
+allergiesGrid.setColAlign("left,left,left");
+allergiesGrid.setColTypes("ro,ro,ro");
+allergiesGrid.setSkin("xp");
+
+function allergiesGridOnDoubleClicked(rowId,colIndex) {
+	var allergyName = allergiesGrid.cells(rowId,0).getValue();
+	var params = new Array();
+	params.push("id="+rowId);
+	globalCreateWindow("winDetailsAllergyId",params,"<?=$this->baseUrl?>/allergies.raw/details",allergyName,400,400);
+}
+//allergiesGrid.attachEvent("onRowDblClicked",allergiesGridOnDoubleClicked);
+function allergiesOnRowSelected(rowId,cellIndex) {
+}
+allergiesGrid.attachEvent("onRowSelect",allergiesOnRowSelected);
+
+allergiesGrid.init();
+
+// temporary replace grid onBeforeContextMenu
+allergiesGrid.objBox.id = allergiesGrid.uid();
+allergiesMenu.addContextZone(allergiesGrid.objBox.id);
+allergiesMenu.attachEvent("onContextMenu",function(id){
+	allergiesMenu.forEachItem(function (itemId) { allergiesMenu.hideItem(itemId); });
+	var rowId = allergiesGrid.getSelectedRowId();
+	allergiesMenu.showItem("newAllergy");
+	if (rowId != null) {
+		allergiesMenu.showItem("enteredInError");
+	}
+	var gridRowsize = allergiesGrid.getRowsNum();
+ 	if (gridRowsize == 0) {
+		allergiesMenu.showItem("nka");
+	}
+});
+
+
+dhtmlxEvent(allergiesGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+function allergiesGridOnLoaded() {
+}
+
+function allergiesGridReload() {
+	allergiesGrid.clearAll();
+	allergiesGrid.load("<?=$this->baseUrl?>/allergies.raw/list?personId="+mainController.getActivePatient(),allergiesGridOnLoaded,"json");
+}
+
+allergiesGridReload();
+</script>

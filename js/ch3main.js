@@ -45,12 +45,15 @@ mainFileLoaderClass.prototype.run = function(){
 	this.show();
 	var i;
 	var head = document.getElementsByTagName("head")[0];
+	var source = null;
+	var type = null;
+	var elem = null;
 	for (i=0; i<this.sourcesDB.length; i++){
-		var source = this.sourcesDB[i];
-		var type = this.sources[source];
+		source = this.sourcesDB[i];
+		type = this.sources[source];
 
 		if (type == 'script') {
-			var elem = document.createElement("script");
+			elem = document.createElement("script");
 			elem.type = "text/javascript";
 			elem.src = source;
 			elem.onload = function() { setTimeout("mainFileLoader.loaded('"+source+"');",500); };
@@ -59,10 +62,10 @@ mainFileLoaderClass.prototype.run = function(){
 				if (this.readyState == 'complete') {
 					setTimeout("mainFileLoader.loaded('"+source+"');",500);
 				}
-			}
+			};
 		}
 		else if (type == 'link') {
-			var elem = document.createElement("link");
+			elem = document.createElement("link");
 			elem.media = "screen";
 			elem.rel = "stylesheet";
 			elem.type = "text/css";
@@ -81,21 +84,21 @@ mainFileLoaderClass.prototype.locate = function(){
 	var loadingZone = document.getElementById("loadingZone");
 	var windowWidth = document.documentElement.clientWidth;
 	var windowHeight = document.documentElement.clientHeight;
-	if (this.dimension != null) {
-		var windowWidth = this.dimension[0];
-		var windowHeight = this.dimension[1];
+	if (this.dimension !== null) {
+		windowWidth = this.dimension[0];
+		windowHeight = this.dimension[1];
 	}
 	var popupHeight = loadingZone.clientHeight;
 	var popupWidth = loadingZone.clientWidth;
 	loadingZone.style.position = "absolute";
-	loadingZone.style.top = parseInt(windowHeight/2-popupHeight/2) + "px";
-	loadingZone.style.left = parseInt(windowWidth/2-popupWidth/2) + "px";
+	loadingZone.style.top = parseInt((windowHeight/2)-(popupHeight/2),10) + "px";
+	loadingZone.style.left = parseInt((windowWidth/2)-(popupWidth/2),10) + "px";
 };
 //Set the value position of the bar (Only 0-100 values are allowed)
 mainFileLoaderClass.prototype.setValue = function(value){
 	if(value >= 0 && value <= 100){
 		document.getElementById("progressBar").style.width = value + "%";
-		document.getElementById("infoProgress").innerHTML = parseInt(value) + "%";
+		document.getElementById("infoProgress").innerHTML = parseInt(value,10) + "%";
 	}
 };
 //Add the specified script to the list
@@ -132,7 +135,7 @@ mainFileLoaderClass.prototype.onLoadingCompleted = function() {
 		}
 		i++;
 	} while (i < timeoutInterval);
-	if (mainFileLoader.onLoadComplete != null) {
+	if (mainFileLoader.onLoadComplete !== null) {
 		setTimeout(mainFileLoader.onLoadComplete+"();",100);
 	}
 	else {
@@ -165,43 +168,20 @@ mainFileLoaderClass.prototype.onLoadingCompleted = function() {
 	this.totalLinkFiles = 0;
 	this.onLoadComplete = null;
 	this.dimension = null; // [0] = width [1] = height
-}
+};
 
 mainFileLoaderClass.prototype.render = function(layoutContainer) { // load all the necessary javascript/css files
-	if (typeof layoutContainer == 'undefined') {
-		layoutContainer = 'loginContainer';
+	if (typeof layoutContainer == "undefined") {
+		layoutContainer = "loginContainer";
 	}
-	var loaderDiv = (<r><![CDATA[<style>
-table {	border-collapse:separate;border-spacing:0pt;}
-caption, th, td {font-weight:normal;text-align:left;}
-blockquote:before, blockquote:after, q:before, q:after {content:"";}
-blockquote, q {	quotes:"" "";}
-a{cursor: pointer;text-decoration:none;}
-.clear{	clear:both;}
-#button{text-align:center;margin:50px 50px 150px 50px;}
-#loadingZone{margin:0 auto;width:410px;	text-align:center;}
-#loadingBar{border:1px solid #c2c2c2;height:2px;text-align:left;line-height:0;margin:0;padding:0;overflow:hidden; /*fix for IE 6*/}
-#progressBar{height:2px;line-height:0;margin:0;padding:0;background:#ccc;width:0%;}
-#loadingSms{	color:#6ea1fa;float:left;padding:10px 2px;}
-#infoProgress{	color:#6ea1fa;float:right;padding:10px 2px;}
-#infoLoading{	padding:10px;	color:#b9b9b9;	font-size:10px;}
-</style>
-<div id="loadingZone">
-<div id="loadingSms">LOADING</div>
-<div id="infoProgress">0%</div>
-<br class="clear" />
-<div id="loadingBar">
-<div id="progressBar">&nbsp;</div>
-</div>
-<div id="infoLoading"></div>
-</div>]]></r>).toString();
+	var loaderDiv = '<style>table{border-collapse:separate;border-spacing:0pt;} caption,th,td{font-weight:normal;text-align:left;} blockquote:before,blockquote:after,q:before,q:after{content:"";} blockquote,q{quotes:"" "";} a{cursor:pointer;text-decoration:none;} .clear{clear:both;} #button{text-align:center;margin:50px 50px 150px 50px;} #loadingZone{margin:0 auto;width:410px;	text-align:center;} #loadingBar{border:1px solid #c2c2c2;height:2px;text-align:left;line-height:0;margin:0;padding:0;overflow:hidden; /*fix for IE 6*/} #progressBar{height:2px;line-height:0;margin:0;padding:0;background:#ccc;width:0%;} #loadingSms{color:#6ea1fa;float:left;padding:10px 2px;} #infoProgress{color:#6ea1fa;float:right;padding:10px 2px;} #infoLoading{padding:10px;color:#b9b9b9;font-size:10px;}</style> <div id="loadingZone"><div id="loadingSms">LOADING</div><div id="infoProgress">0%</div><br class="clear" /><div id="loadingBar"><div id="progressBar">&nbsp;</div></div><div id="infoLoading"></div></div>';
 
 	document.getElementById(layoutContainer).innerHTML = loaderDiv;
 
-	mainFileLoader.addFile(globalBaseUrl + "/cache-file.raw/css?files=dojocss,dhtmlxcss",'link');
-	mainFileLoader.addFile(globalBaseUrl + "/cache-file.raw/js?files=chbootstrap,dojojs,dhtmlxjs",'script');
+	mainFileLoader.addFile(globalBaseUrl + "/cache-file.raw/css?files=dojocss,dhtmlxcss","link");
+	mainFileLoader.addFile(globalBaseUrl + "/cache-file.raw/js?files=chbootstrap,dojojs,dhtmlxjs","script");
 	mainFileLoader.run();
-}
+};
 
 
 function mainControllerClass() {
@@ -217,38 +197,44 @@ mainControllerClass.prototype.setActivePatient = function (personId) {
 	if (typeof initMainToolbar == 'function') {
 		initMainToolbar(null,personId);
 	}
+	/*var evt = document.createEvent("Events");
+	evt.initEvent('activePatientChanged',true,true);
+	document.dispatchEvent(evt);*/
 };
 mainControllerClass.prototype.getActivePatient = function() {
 	return this.personId;
-}
+};
+mainControllerClass.prototype.refreshActivePatient = function() {
+	return this.setActivePatient(this.personId);
+};
 
 mainControllerClass.prototype.setActiveRoom = function (roomId) {
 	this.roomId = roomId;
-}
+};
 mainControllerClass.prototype.getActiveRoom = function() {
 	return this.roomId;
-}
+};
 
 mainControllerClass.prototype.setActiveBuilding = function (buildingId) {
 	this.buildingId = buildingId;
-}
+};
 mainControllerClass.prototype.getActiveBuilding = function() {
 	return this.buildingId;
-}
+};
 
 mainControllerClass.prototype.setActivePractice = function (practiceId) {
 	this.practiceId = practiceId;
-}
+};
 mainControllerClass.prototype.getActivePractice = function() {
 	return this.practiceId;
-}
+};
 
 mainControllerClass.prototype.setActiveVisit = function (visitId) {
 	this.visitId = visitId;
-}
+};
 mainControllerClass.prototype.getActiveVisit = function() {
 	return this.visitId;
-}
+};
 
 mainControllerClass.prototype.popupLoginWindow = function() {
 	winSP = dhxWins.createWindow('windowLoginId',60,10,400,250);
@@ -267,23 +253,23 @@ mainControllerClass.prototype.popupLoginWindow = function() {
 		clearTimeout(globalLogoutTimer);
 		globalLogoutTimer = null;
 	}
-}
+};
 mainControllerClass.prototype.startTimer = function() {
 	var second = 1000;
 	var minute = 60 * second;
-	var interval = 5 * minute;
+	//var interval = 5 * minute;
 	var interval = globalTimerTimeout * second;
 	if (globalLogoutTimer) {
 		clearTimeout(globalLogoutTimer);
 	}
 	interval = 360000000;
 	globalLogoutTimer = setTimeout("mainController.forcedLogout()",interval);
-}
+};
 mainControllerClass.prototype.forcedLogout = function() {
 	dojo.xhrGet({
 		url: globalBaseUrl + '/logout.raw',
 		content: {
-			noRedirection: 1,
+			noRedirection: 1
 		},
 		handleAs: "text",
 		load: function(data,ioArgs) {
@@ -296,21 +282,21 @@ mainControllerClass.prototype.forcedLogout = function() {
 			return response;
 		}
 	});
-}
+};
 mainControllerClass.prototype.isForcedLogout = function() {
 	return globalForceLogout;
-}
+};
 mainControllerClass.prototype.attachPageActivityListener = function() {
 	dojo.connect(dojo,"xhrGet",null,function(args){ mainController.startTimer(); });
 	dojo.connect(dojo,"xhrPost",null,function(args){ mainController.startTimer(); });
-}
+};
 
 
 function barcodeControllerClass () {
 	this.codeDelimiter = '';
 	this.bufferCode = false;
 	this.keyBuffer = '';
-	this.cacheMacros = new Array();
+	this.cacheMacros = [];
 	window.captureEvents(Event.KEYPRESS);
 }
 barcodeControllerClass.prototype.runMacro = function(cacheIndex) {
@@ -359,7 +345,7 @@ barcodeControllerClass.prototype.triggerAction = function(bcString) {
                         alert('err: ' + er);
                 }
         });
-}
+};
 barcodeControllerClass.prototype.pressed = function (e) {
   	//alert("Key pressed! ASCII-value: " + e.which);
 	if (this.bufferCode) {
@@ -386,12 +372,14 @@ barcodeControllerClass.prototype.pressed = function (e) {
 	}
 
 	if (this.codeDelimiter == '~!!#') {
-		if (this.bufferCode == true) { 
+		if (this.bufferCode === true) { 
 			this.bufferCode = false; 
 			this.codeDelimiter = '';
 			bcString = this.keyBuffer;
 			this.keyBuffer = '';
-			if (bcString.length >= 4) bcString = bcString.substr(0,(bcString.length-4));
+			if (bcString.length >= 4) {
+				bcString = bcString.substr(0,(bcString.length-4));
+			}
 			this.triggerAction(bcString);
 		}
 		else { 
@@ -399,7 +387,7 @@ barcodeControllerClass.prototype.pressed = function (e) {
 			//document.getElementById('status').value +=  'bufferOn\n';
 		}
 	}
-}
+};
 
 
 
@@ -436,7 +424,7 @@ function varDump(obj) {
 
 function DrawingClass(surface,width,height,contentSpace) {
 
-	this.cache = new Array();
+	this.cache = [];
 	this.penColor = "black";
 	this.zIndex = 0;
 	this.lineStroke = {width:2};
@@ -453,17 +441,19 @@ function DrawingClass(surface,width,height,contentSpace) {
 	this.cursor = "crosshair";
 
 	// data/properties to be dumped
-	this.lines = new Array();
+	this.lines = [];
 	this.imageSrc = null;
-	this.annotations = new Array();
-	this.defaultLines = new Array();
-	this.defaultAnnotations = new Array();
+	this.annotations = [];
+	this.annotationBoxes = [];
+	this.defaultLines = [];
+	this.defaultAnnotations = [];
 
 	this.isMouseDown = false;
 	this.isMouseUp = false;
 	this.isMouseMove = false;
 	this.action = 'draw';
 	this.isAnnotationOpen = false;
+	this.annotationOpen = null;
 
 	this.annotationValue = '';
 
@@ -501,7 +491,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 		surface.style.height = height;
 		this.oImage = this.oSurface.createImage({width:width,height:height,src:src});
 		this.oCanvas = this.oImage.getEventSource();
-		this.oCanvas.setAttribute('id',"imageId");
+		this.oCanvas.setAttribute("id","imageId");
 		this.setImageCursor("crosshair");
 
 		var method = this;
@@ -530,12 +520,13 @@ function DrawingClass(surface,width,height,contentSpace) {
 	this.loadImage = function(src) {
 		var oImg = new Image();
 		oImg.src = src;
+		oImg.style.position = "absolute";
 
 		var method = this;
 		// set up event handlers for the Image object
-		oImg.onload = function() { method.onImageLoad(this); }
-		oImg.onerror = function() { method.onImageError(this); }
-		oImg.onabort = function() { method.onImageAbort(this); }
+		oImg.onload = function() { method.onImageLoad(this); };
+		oImg.onerror = function() { method.onImageError(this); };
+		oImg.onabort = function() { method.onImageAbort(this); };
 	};
 
 	this.onMouseDown = function(evt) {
@@ -679,43 +670,43 @@ function DrawingClass(surface,width,height,contentSpace) {
 		}
 		oDiv.appendChild(oAnnotation);
 
-		var oInput = document.createElement('br');
-		oDiv.appendChild(oInput);
+		var oBreakInput = document.createElement('br');
+		oDiv.appendChild(oBreakInput);
 
-		var oInput = document.createElement('input');
-		oInput.setAttribute('type','button');
-		oInput.setAttribute('value','Save');
-		oInput.onclick = function(evt) { method.saveAnnotation(divContainer); };
-		oDiv.appendChild(oInput);
+		var oSaveInput = document.createElement('input');
+		oSaveInput.setAttribute('type','button');
+		oSaveInput.setAttribute('value','Save');
+		oSaveInput.onclick = function(evt) { method.saveAnnotation(divContainer); };
+		oDiv.appendChild(oSaveInput);
 
-		var oInput = document.createElement('input');
-		oInput.setAttribute('type','button');
-		oInput.setAttribute('value','Cancel');
-		oInput.onclick = function(evt) { method.cancelAnnotation(divContainer); };
-		oDiv.appendChild(oInput);
+		var oCancelInput = document.createElement('input');
+		oCancelInput.setAttribute('type','button');
+		oCancelInput.setAttribute('value','Cancel');
+		oCancelInput.onclick = function(evt) { method.cancelAnnotation(divContainer); };
+		oDiv.appendChild(oCancelInput);
 
-		var oInput = document.createElement('input');
-		oInput.setAttribute('type','button');
-		oInput.setAttribute('value','Delete');
+		var oDeleteInput = document.createElement('input');
+		oDeleteInput.setAttribute('type','button');
+		oDeleteInput.setAttribute('value','Delete');
 		if (oAnnotation.value.length == 0) {
-			oInput.style.visibility = "hidden";
+			oDeleteInput.style.visibility = "hidden";
 		}
 		else {
-			oInput.style.visibility = "visible";
+			oDeleteInput.style.visibility = "visible";
 		}
-		oInput.onclick = function(evt) { method.deleteAnnotation(divContainer); };
-		oDiv.appendChild(oInput);
+		oDeleteInput.onclick = function(evt) { method.deleteAnnotation(divContainer); };
+		oDiv.appendChild(oDeleteInput);
 
-		var oInput = document.createElement('input');
-		oInput.setAttribute('type','hidden');
-		oInput.setAttribute('name','clinicalNoteAnnotationId');
+		var oIdInput = document.createElement('input');
+		oIdInput.setAttribute('type','hidden');
+		oIdInput.setAttribute('name','clinicalNoteAnnotationId');
 		if (typeof valueId == 'undefined') {
-			oInput.setAttribute('value','0');
+			oIdInput.setAttribute('value','0');
 		}
 		else {
-			oInput.setAttribute('value',valueId);
+			oIdInput.setAttribute('value',valueId);
 		}
-		oDiv.appendChild(oInput);
+		oDiv.appendChild(oIdInput);
 
 		oHref.onclick = function(evt) { method.showAnnotationArea(divContainer); };
 
@@ -729,6 +720,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 		}
 		else {
 			this.isAnnotationOpen = true;
+			this.annotationOpen = divContainer;
 		}
 
 		return oDiv;
@@ -741,6 +733,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 			oAnnotation.childNodes[1].style.zIndex = 9999;
 			oAnnotation.childNodes[1].style.display = "block";
 			this.isAnnotationOpen = true;
+			this.annotationOpen = oAnnotation;
 		}
 	};
 
@@ -761,11 +754,11 @@ function DrawingClass(surface,width,height,contentSpace) {
 				"annotation[clinicalNoteId]": this.clinicalNoteId,
 				"annotation[annotation]": annotationValue,
 				"annotation[xAxis]": xAxis,
-				"annotation[yAxis]": yAxis,
+				"annotation[yAxis]": yAxis
 			},
 			load: function(data) {
 				oAnnotation.childNodes[0].setAttribute("title",annotationValue);
-				oAnnotation.childNodes[1].childNodes[5].value = data.clinicalNoteAnnotationId,
+				oAnnotation.childNodes[1].childNodes[5].value = data.clinicalNoteAnnotationId;
 				oAnnotation.childNodes[1].style.zIndex = 0;
 				// show the delete button
 				oAnnotation.childNodes[1].childNodes[4].style.visibility = "visible";
@@ -803,7 +796,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 			url: this.deleteURL,
 			handleAs: "json",
 			content: {
-				clinicalNoteAnnotationId: oAnnotation.childNodes[1].childNodes[5].value,
+				clinicalNoteAnnotationId: oAnnotation.childNodes[1].childNodes[5].value
 			},
 			load: function(data) {
 				oAnnotation.style.zIndex = 0;
@@ -856,7 +849,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 
 	this.getLines = function() {
 		var ret = "[";
-		var data = new Array();
+		var data = [];
 		var line = null;
 		for (var i in this.lines) {
 			line = this.lines[i].line;
@@ -882,6 +875,63 @@ function DrawingClass(surface,width,height,contentSpace) {
 
 	this.setClinicalNoteId = function(clinicalNoteId) {
 		this.clinicalNoteId = clinicalNoteId;
+	};
+
+	this.printerFriendlyAnnotations = function() {
+		if (this.isAnnotationOpen) {
+			// cancel opened annotation
+			this.cancelAnnotation(this.annotationOpen);
+		}
+		var annotation = null;
+		var annotationValue = "";
+		var box = null;
+		this.annotationBoxes = [];
+		for (var i in this.annotations) {
+			annotation = this.annotations[i];
+			box = annotation.childNodes[0];
+			// backup first
+			this.annotationBoxes[i] = {
+				style:{
+					width:box.style.width,
+					height:box.style.height,
+					overflow:box.style.overflow,
+					border:box.style.border,
+					zIndex:box.style.zIndex
+				},
+				innerHTML:box.innerHTML
+			};
+			annotationValue = annotation.childNodes[1].childNodes[0].value + "";
+			annotationValue = annotationValue.replace(/\n/g,"<br />");
+			box.style.width = "";
+			box.style.height = "";
+			box.style.overflow = "auto";
+			box.style.border = "1px solid rgb(0,255,0)"; // bright green
+			box.style.zIndex = i;
+			box.innerHTML = annotationValue;
+		}
+	};
+
+	this.revertPrinterFriendlyAnnotations = function() {
+		if (this.isAnnotationOpen) {
+			// cancel opened annotation
+			this.cancelAnnotation(this.annotationOpen);
+		}
+		var annotation = null;
+		var annotationValue = "";
+		var box = null;
+		var backup = null;
+		for (var i in this.annotations) {
+			annotation = this.annotations[i];
+			box = annotation.childNodes[0];
+			// restore
+			backup = this.annotationBoxes[i];
+			box.style.width = backup.style.width;
+			box.style.height = backup.style.height;
+			box.style.overflow = backup.style.overflow;
+			box.style.border = backup.style.border;
+			box.style.zIndex = backup.style.zIndex;
+			box.innerHTML = backup.innerHTML;
+		}
 	};
 
 }
@@ -927,8 +977,8 @@ visitSelectorClass.prototype.oWindow = null;
 visitSelectorClass.prototype.oAccordion = null;
 visitSelectorClass.prototype.oVisitDetailsTabbar = null;
 visitSelectorClass.prototype.cacheAddSelectVisit = null;
-visitSelectorClass.prototype.accordionCacheContent = new Array();
-visitSelectorClass.prototype.visitDetailsTabbarCacheContent = new Array();
+visitSelectorClass.prototype.accordionCacheContent = [];
+visitSelectorClass.prototype.visitDetailsTabbarCacheContent = [];
 
 visitSelectorClass.prototype.accordionAddSelectVisitId = "accordionAddSelectVisit";
 visitSelectorClass.prototype.accordionVisitDetailsId = "accordionVisitDetails";
@@ -956,7 +1006,7 @@ visitSelectorClass.prototype.getVisitDetailsTabbar = function() {
 };
 
 visitSelectorClass.prototype.openWindow = function() {
-	if (!mainController.getActivePatient() > 0) {
+	if (mainController.getActivePatient() < 1) {
 		alert('You must select a patient before selecting a visit.');
 		return false;
 	}
@@ -1006,14 +1056,6 @@ visitSelectorClass.prototype.openWindow = function() {
 	this.oVisitDetailsTabbar.addTab(this.tabHsaId,"HSA","95");
 	this.oVisitDetailsTabbar.addTab(this.tabExamsId,"Exams","95");
 
-	this.oVisitDetailsTabbar.hideTab(this.tabVisitTypeId);
-	this.oVisitDetailsTabbar.hideTab(this.tabDiagnosesId);
-	this.oVisitDetailsTabbar.hideTab(this.tabProceduresId);
-	this.oVisitDetailsTabbar.hideTab(this.tabVitalsId);
-	this.oVisitDetailsTabbar.hideTab(this.tabEducationId);
-	this.oVisitDetailsTabbar.hideTab(this.tabHsaId);
-	this.oVisitDetailsTabbar.hideTab(this.tabExamsId);
-
 	this.oVisitDetailsTabbar.setOnSelectHandler(function(id){
 		/*
 		for (var i in thisClass.visitDetailsTabbarCacheContent) {
@@ -1054,7 +1096,7 @@ visitSelectorClass.prototype.openWindow = function() {
 		return true;
 	});
 
-	this.oVisitDetailsTabbar.setTabActive(this.tabImmunizationsId);
+	this.oVisitDetailsTabbar.setTabActive(this.tabVisitTypeId);
 };
 
 visitSelectorClass.prototype.accordionOpen = function(id) {
@@ -1120,7 +1162,7 @@ teamSelectorClass.prototype.getWindow = function() {
 };
 
 teamSelectorClass.prototype.openWindow = function() {
-	if (!mainController.getActivePatient() > 0) {
+	if (mainController.getActivePatient() < 1) {
 		alert('You must select a patient before selecting a care team.');
 		return false;
 	}
@@ -1129,7 +1171,7 @@ teamSelectorClass.prototype.openWindow = function() {
 
 	dhxWins.setImagePath(globalBaseUrl+"/img/");
 	dhxWins.setSkin("clear_silver");
-	this.oWindow = dhxWins.createWindow("windowSelectTeamId",60,10,400,300);
+	this.oWindow = dhxWins.createWindow("windowSelectTeamId",60,10,500,400);
 	this.oWindow.setText("Select Team");
 	this.oWindow.attachURL(globalBaseUrl+"/team-manager.raw/select?patientId="+mainController.getActivePatient(),true);
 	this.oWindow.centerOnScreen();

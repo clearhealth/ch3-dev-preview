@@ -74,10 +74,24 @@ adminServicesGrid.setSkin("xp");
 adminServicesGrid.setInitWidths("*");
 adminServicesGrid.enableDragAndDrop(true);
 adminServicesGrid.init();
+
+function adminServicesGridOnLoaded() {
+	var systemsWarning = dojo.byId("systemsWarning");
+	if (systemsWarning == null) {
+		return;
+	}
+	if (adminServicesGrid.getUserData(adminServicesGrid.getRowId(0),'serviceNominal')) {
+		systemsWarning.style.display = "none";
+	}
+	else {
+		systemsWarning.style.display = "block";
+	}
+}
+
 function adminServicesGridReload() {
 	adminServicesToolbarOnLoaded();
 	adminServicesGrid.clearAll();
-	adminServicesGrid.load('<?=$this->baseUrl?>/admin-services.raw/list-services',null,"json");
+	adminServicesGrid.load('<?=$this->baseUrl?>/admin-services.raw/list-services',adminServicesGridOnLoaded,"json");
 }
 adminServicesGridReload();
 

@@ -52,6 +52,9 @@ if (window.teamSelectorClass) {
 }
 </script>
 
+<?if ($this->authenticated):?>
+<div id="systemsWarning" style="width:100%;background-color:#ECE9D8;text-align:right;color:red;<?=(Zend_Registry::get('memcache')->get(Service::SERVICE_NOMINAL))?'display:none;':''?>"><?=__('Please contact your administrator, services needed for some features are not running. You may experience errors if you continue.')?></div>
+<?endif;?>
 <div id="mainContentLayout">
 <?if ($this->authenticated):?>
 	<script>

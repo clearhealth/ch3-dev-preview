@@ -115,13 +115,21 @@ class ClinicalNotesController extends WebVista_Controller_Action {
                 $json->direct($data);
 	}
 
-	public static function buildJSJumpLink($objectId,$patientId,$objectClass) {
+	public static function buildJSJumpLink($objectId,$signingUserId,$objectClass) {
+		$objectClass = 'Notes'; // temporarily hard code objectClass based on MainController::getMainTabs() definitions
+		$clinicalNote = new ClinicalNote();
+		$clinicalNote->clinicalNoteId = $objectId;
+		$clinicalNote->populate();
+		$patientId = $clinicalNote->personId;
+
 		$js = parent::buildJSJumpLink($objectId,$patientId,$objectClass);
 		$js .= <<<EOL
 
-TabState.setParam({'filter':'byAuthoringPersonId','authoringPersonId':patientId});
-TabState.redrawTab();
-loadTemplatePane(rowId);
+mainTabbar.setOnTabContentLoaded(function(tabId){
+	TabState.setParam({'filter':'byLast100','personId':patientId});
+	TabState.redrawTab(objectId);
+	loadTemplatePane(objectId);
+});
 
 EOL;
 		return $js;

@@ -14,25 +14,25 @@
 
         function onMenuItemSelect(itemId,itemValue) {
                 switch(itemId) {
-			case 'all_review___sign_changes':
-                		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-                		dhxWins.setSkin('clear_silver');
-                		winES = dhxWins.createWindow('windowESignId',60,10,450,450);
-                		winES.setText('Review / Sign Documents');
-                		winES.attachURL('<?=$this->baseUrl?>/e-sign.raw',true);
-                		//winES.setModal(true);
-                		winES.centerOnScreen();
+			case 'All_review___sign_changes':
+				windowReviewSignDocuments();
 				break;
-			case 'all_add_vitals':
+			case 'All_add_vitals':
 				windowAddVitals();
 				break;
-			case 'all_quit':
+			case 'All_quit':
 				if (confirm('<?=__("Are you sure you want to logout of the application, unsaved data will be lost?")?>')) {
                                 	window.location="<?=$this->baseUrl?>/logout";
 				}
 				break;
-			case 'all_select_patient':
+			case 'All_select_patient':
 				windowSelectPatient();
+				break;
+			case 'All_change_password':
+				globalCreateWindow("winChangePasswordId",new Array(),"<?=$this->baseUrl?>/admin-users.raw/change-password","<?=__('Change Password')?>",200,200);
+				break;
+			case 'All_edit_signing_key':
+				globalCreateWindow("winEditSigningKeyId",new Array(),"<?=$this->baseUrl?>/admin-users.raw/edit-signing-key","<?=__('Edit Signing Key')?>",200,200);
 				break;
                         default:
                                 //alert("Button "+itemId+" was pressed "+itemValue);
@@ -49,20 +49,47 @@ function windowAddVitals(jsCallback) {
 	if (jsCallback == undefined) {
 		jsCallback = '';
 	}
-	winVitals = dhxWins.createWindow('windowAddVitalSignsId',60,10,500,300);
+	winVitals = dhxWins.createWindow('windowAddVitalSignsId',60,10,600,400);
 	winVitals.setText('<?=__('Add Vitals')?>');
-	winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?patientId='+patientId+'&jsCallback='+jsCallback,true);
+	winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?personId='+patientId+'&jsCallback='+jsCallback,true);
 	winVitals.centerOnScreen();
 }
 
-function windowSelectPatient() {
-                dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-                dhxWins.setSkin('clear_silver');
-                winSP = dhxWins.createWindow('windowSelectPatientId',60,10,800,575);
-                winSP.setText('Select Patient');
-                winSP.attachURL('<?=$this->baseUrl?>/patient-select.raw',true);
-                //winSP.setModal(true);
-                winSP.centerOnScreen();
+function windowReviewSignDocuments() {
+	return globalCreateWindow("windowESignId",new Array(),"<?=$this->baseUrl?>/e-sign.raw","<?=__('Review / Sign Documents')?>",450,450);
+}
+
+function windowSelectPatient(byPass) {
+	var patientId = mainController.getActivePatient();
+	if (!byPass && patientId != 0) {
+		dojo.xhrGet({
+			url: globalBaseUrl + '/e-sign.raw/count-unsigned',
+			handleAs: "json",
+			load: function(data,ioArgs) {
+				if (data.counter > 0) {
+					var localWin = windowReviewSignDocuments();
+					localWin.attachEvent("onClose",function(win){ windowSelectPatient(true); return true; });
+				}
+				else {
+					windowSelectPatient(true);
+				}
+				return data;
+			},
+			error: function(response, ioArgs) {
+				console.error("HTTP status code: ", ioArgs.xhr.status);
+				return response;
+			}
+		});
+	}
+	else {
+		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
+		dhxWins.setSkin('clear_silver');
+		winSP = dhxWins.createWindow('windowSelectPatientId',60,10,800,650);
+		winSP.setText('Select Patient');
+		winSP.attachURL('<?=$this->baseUrl?>/patient-select.raw',true);
+		//winSP.setModal(true);
+		winSP.centerOnScreen();
+	}
 }
 function closeWindowSelectPatient() {
 	winSP.close();
@@ -83,7 +110,85 @@ function windowPatientDetails() {
 	winPD.centerOnScreen();
 }
 
+var globAlerts = new Array();
+function executeJumpLinkAlert(id) {
+	for (var i in globAlerts) {
+		if (globAlerts[i].id == id) {
+			var jsCode = globAlerts[i].jumpLink;
+			var objects = globAlerts[i].others;
+			var arrObj = objects.split(":");
+			jsCode += "\njumpLink"+arrObj[0]+"('"+arrObj[1]+"','"+arrObj[2]+"');";
+			eval(jsCode);
+			break;
+		}
+	}
+}
+
+function processAlertNext() {
+	var processAlertItemsSelect = dojo.byId("processAlertItems");
+	if (processAlertItemsSelect.options.length > 1) {
+		var prevSelected = false;
+		for (var i in processAlertItemsSelect.options) {
+			if (processAlertItemsSelect.options[i].selected) {
+				prevSelected = true;
+			}
+			if (!processAlertItemsSelect.options[i].selected && prevSelected) {
+				processAlertItemsSelect.options[i].selected = true;
+				executeJumpLinkAlert(processAlertItemsSelect.options[i].value);
+				break;
+			}
+		}
+		if (!prevSelected) {
+			windowReviewSignDocuments();
+		}
+	}
+	else {
+		windowReviewSignDocuments();
+	}
+}
+
+function globalCreateWindow(winId,params,url,winText,width,height) {
+	var winCW = dhxWins.createWindow(winId,60,10,width,height);
+	winCW.setText(winText);
+	winCW.attachURL(url+'?'+params.join("&"),true);
+	winCW.centerOnScreen();
+	return winCW;
+}
+
+function openHealthStatusAlerts() {
+	visitSelector.openWindow();
+	visitSelector.oAccordion.openItem(visitSelector.accordionVisitDetailsId);
+	visitSelector.accordionOpen(visitSelector.accordionVisitDetailsId);
+	visitSelector.oVisitDetailsTabbar.setTabActive(visitSelector.tabHsaId);
+}
+
+function processAlertForward() {
+	processAlertNext(); // temporarily set an alias of processAlertNext
+}
+
+function processStop() {
+	var mainProcessingBar = dojo.byId("mainProcessingBar");
+	mainProcessingBar.style.display = "none";
+}
+
+function openPostings() {
+	var params = new Array();
+	var patientId = mainController.getActivePatient();
+	params.push("personId="+patientId);
+	globalCreateWindow("winPatientAllergiesId",params,"<?=$this->baseUrl?>/allergies.raw","<?=__('Patient Postings')?>",600,350);
+}
 </script>
+
+<div id="mainProcessingBar" style="background-color:#ECE9D8;border:thin solid darkGrey;width:99.9%;display:none;">
+<?=__('Processing Alert')?>: <select id="processAlertItems" style="width:50%;" onChange="executeJumpLinkAlert(this.options[this.selectedIndex].value)">
+</select>
+<input type="button" id="processNextId" onclick="processAlertNext()" value="<?=__('Next')?>" />
+<input type="button" id="processRenewId" value="<?=__('Renew')?>" />
+<input type="button" id="processForwardId" onclick="processAlertForward()" value="<?=__('Forward')?>" />
+<input type="button" id="processRemoveId" value="<?=__('Remove')?>" disabled="disabled" />
+<input type="button" id="processStopId" onclick="processStop()" value="<?=__('Stop')?>" />
+</div>
+
 <div id="mainToolbar" style="width:99.9%;" ></div>
 <script>
         function initMainToolbar(loadAction,personId) {
@@ -100,13 +205,21 @@ function windowPatientDetails() {
     function onToolbarClick(itemId) {
         switch (itemId) {
                 case "tbSelectPatient":
-                        windowPatientDetails();
+			if (mainController.getActivePatient() > 0) {
+                        	windowPatientDetails();
+			}
+			else {
+                        	windowSelectPatient();
+			}
                         break;
                 case "tbSelectVisit":
                         visitSelector.openWindow();
                         break;
 		case "tbSelectTeam":
 			teamSelector.openWindow();
+			break;
+		case "tbAlerts":
+			// do nothing
 			break;
                 default:
                         alert("Button "+itemId + " was pressed");
@@ -123,6 +236,7 @@ function windowPatientDetails() {
     mainTabbar.setSkinColors('#FFFFFF,#FFFACD');
 
 function setActiveTab(activeTab) {
+	mainTabbar.setOnTabContentLoaded(null);
 	dojo.xhrPost ({
 		url: '<?=$this->baseUrl?>/main.raw/set-active-tab',
 		handleAs: 'json',

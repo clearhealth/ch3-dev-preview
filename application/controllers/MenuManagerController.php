@@ -37,24 +37,22 @@ class MenuManagerController extends WebVista_Controller_Action {
 		if (isset($this->_session->messages)) {
 			$this->view->messages = $this->_session->messages;
 		}
-		$menuId = $this->_getParam('menuId');
-		//if ((int)$menuId === 0 && substr($menuId,0,11) != 'newMenuItem') {
-		//	$msg = __("Root menu id cannot be modified.");
-		//	throw new Exception($msg);
-		//}
+		$menuId = (int)$this->_getParam('menuId');
+		$enumerationId = (int)$this->_getParam('enumerationId');
 		$objMenu = new MenuItem();
-		$objMenu->menuId = $menuId;
-		$objMenu->populate();
-		$objForm = new WebVista_Form(array('name' => 'menu-item'));
-		$objForm->setAction(Zend_Registry::get('baseUrl') . "menu-manager.raw/edit-process");
-		$objForm->loadORM($objMenu, "MenuItem");
-		$objForm->setWindow('windowEditMenuId');
-		$this->view->form = $objForm;
+		if ($menuId !== 0) {
+			$objMenu->menuId = $menuId;
+			$objMenu->populate();
+		}
 
 		if (!strlen($objMenu->type) > 0) {
 			$objMenu->type = 'freeform';
 		}
-		$this->view->mainTabs = $this->getMainTabs();
+		$mainTabs = array();
+		foreach ($this->getMainTabs() as $tabName=>$url) {
+			$mainTabs[$tabName] = $tabName;
+		}
+		$this->view->mainTabs = $mainTabs;
 		$this->view->types = array('freeform', 'report', 'form', 'submenu');
 
 		$data['report'] = array();
@@ -92,6 +90,14 @@ class MenuManagerController extends WebVista_Controller_Action {
 		}
 
 		$this->view->data = $data;
+
+		$objForm = new WebVista_Form(array('name' => 'menu-item'));
+		$objForm->setAction(Zend_Registry::get('baseUrl') . "menu-manager.raw/edit-process");
+		$objForm->loadORM($objMenu, "MenuItem");
+		$objForm->setWindow('windowEditMenuId');
+		$this->view->form = $objForm;
+		$this->view->enumerationId = $enumerationId;
+
 		$this->render();
 	}
 
@@ -187,57 +193,73 @@ class MenuManagerController extends WebVista_Controller_Action {
     }
 
     function editProcessAction() {
-        $menuParams = $this->_getParam('menuItem');
-        $menuId = (int)$menuParams['menuId'];
-        /*if ($menuId === 0 && substr($menuParams['menuId'],0,11) != 'newMenuItem') {
-            $msg = __("Invalid menu id.");
-            throw new Exception($msg);
-	}*/
-        $menuParams['menuId'] = (int)$menuParams['menuId'];
-        $objMenu = new MenuItem();
-        $objMenu->menuId = $menuId;
-        $objMenu->populate();
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$menuParams = $this->_getParam('menuItem');
+		$menuId = (int)$menuParams['menuId'];
+		$origMenuId = $menuId;
+		$menuParams['menuId'] = $menuId;
+		$objMenu = new MenuItem();
+		if ($menuId !== 0) {
+			$objMenu->menuId = $menuId;
+			$objMenu->populate();
+		}
 
-        $menuParams['action'] = '';
-        if (isset($menuParams['type'])) {
-            switch ($menuParams['type']) {
-                case 'freeform':
-                    if ($this->_getParam('typefreeform') !== NULL) {
-                        $menuParams['action'] = $this->_getParam('typefreeform');
-                    }
-                    break;
-                case 'report':
-                    if ($this->_getParam('typereport') !== NULL) {
-                        $x = explode('-', $this->_getParam('typereport'));
-                        $x[0] = (int)$x[0];
-                        $x[1] = (int)$x[1];
-                        $menuParams['action'] = "Report/report?reportId={$x[0]}&templateId={$x[1]}";
-                    }
-                    break;
-                case 'form':
-                    if ($this->_getParam('typeform') !== NULL) {
-                        $typeForm = (int)$this->_getParam('typeform');
-                        $menuParams['action'] = "Form/fillout?formId={$typeForm}";
-                    }
-                    break;
-            }
-        }
+		$menuParams['action'] = '';
+		if (isset($menuParams['type'])) {
+			switch ($menuParams['type']) {
+				case 'freeform':
+					if ($this->_getParam('typefreeform') !== NULL) {
+						$menuParams['action'] = $this->_getParam('typefreeform');
+					}
+					break;
+				case 'report':
+					if ($this->_getParam('typereport') !== NULL) {
+						$x = explode('-', $this->_getParam('typereport'));
+						$x[0] = (int)$x[0];
+						$x[1] = (int)$x[1];
+						$menuParams['action'] = "Report/report?reportId={$x[0]}&templateId={$x[1]}";
+					}
+					break;
+				case 'form':
+					if ($this->_getParam('typeform') !== NULL) {
+						$typeForm = (int)$this->_getParam('typeform');
+						$menuParams['action'] = "Form/fillout?formId={$typeForm}";
+					}
+					break;
+			}
+		}
 
-        $menuParams['active'] = (int)$this->_getParam('active');
-        if ($this->_getParam('chSiteSection') !== NULL) {
-            $menuParams['siteSection'] = $this->_getParam('chSiteSection');
-        }
-        $menuParams['parentId'] = (int)$menuParams['parentId'];
+		$menuParams['active'] = (int)$this->_getParam('active');
+		if ($this->_getParam('chSiteSection') !== NULL) {
+			$menuParams['siteSection'] = $this->_getParam('chSiteSection');
+		}
+		$menuParams['parentId'] = (int)$menuParams['parentId'];
 
-        $objMenu->populateWithArray($menuParams);
-        $objMenu->persist();
-        $msg = __("Record Saved for Menu: " . ucfirst($objMenu->title));
-        $data = array();
-        $data['msg'] = $msg;
-        $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-        $json->suppressExit = true;
-        $json->direct($data);
-    }
+		$objMenu->populateWithArray($menuParams);
+
+		if ($enumerationId !== 0) {
+			// update its parent
+			$enumerationsClosure = new EnumerationsClosure();
+			$objMenu->parentId = $enumerationsClosure->getParentById($enumerationId);
+		}
+
+		$objMenu->persist();
+
+		if ($menuId === 0 && $enumerationId !== 0) {
+			$enumeration = new Enumeration();
+			$enumeration->enumerationId = $enumerationId;
+			$enumeration->populate();
+			$enumeration->ormId = $objMenu->menuId;
+			$enumeration->persist();
+		}
+
+		$msg = __("Record Saved for Menu: " . ucfirst($objMenu->title));
+		$data = array();
+		$data['msg'] = $msg;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
 
     /**
      * Default action to dispatch

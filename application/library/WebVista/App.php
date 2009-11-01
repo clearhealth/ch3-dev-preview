@@ -68,6 +68,8 @@ class WebVista {
 		require_once('User.php');
 		require_once('Person.php');
 		require_once('Zend/Session.php');
+		require_once('WebVista/Session/SaveHandler.php');
+		Zend_Session::setSaveHandler(new WebVista_Session_SaveHandler());
 		Zend_Session::start();
 		require_once 'Zend/Loader.php';
 		Zend_Loader::registerAutoLoad();
@@ -102,7 +104,11 @@ class WebVista {
 	
 	protected function _setupDb() {
 		try {
-			$dbAdapter = Zend_Db::factory(Zend_Registry::get('config')->database);
+			$dbConfig = Zend_Registry::get('config')->database;
+			//$dbConfig->driver_options = array();
+			//$dbConfig->driver_options[PDO::ATTR_ERRMODE] = PDO::ERRMODE_WARNING;
+	
+			$dbAdapter = Zend_Db::factory($dbConfig);
 			$dbAdapter->query("SET NAMES 'utf8'");
 		}
 		catch (Zend_Exception $e) {
@@ -168,8 +174,11 @@ class WebVista {
                 	}
 		}
 		catch (Exception $e) {
-			Zend_Controller_Front::getInstance()->getResponse()->setRawHeader('HTTP/1.1 500 Server Error');
-			echo $e->getMessage();
+			Zend_Controller_Front::getInstance()->getResponse()->setHttpResponseCode(500);
+			$uniqErrCode = uniqid();
+			echo "There was an error processing your request, it is error number '$uniqErrCode' , contact your adminsitrator for details";
+			trigger_error("Exception error ($uniqErrCode): " . $e->getMessage(), E_USER_NOTICE);
+			
 		}
 		return $this;
 	}

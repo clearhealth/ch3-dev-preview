@@ -28,6 +28,7 @@ class ClinicalNoteTemplate extends WebVista_Model_ORM {
 	protected $template;
 	protected $guid;
 	protected $_table = "clinicalNoteTemplates";
+	protected $_cascadePersist = false;
 	
 	public function __construct() {
 		parent::__construct();

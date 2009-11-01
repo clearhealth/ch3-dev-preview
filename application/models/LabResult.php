@@ -22,7 +22,7 @@
 *****************************************************************************/
 
 
-class LabResult extends WebVista_Model_ORM {
+class LabResult extends WebVista_Model_ORM implements NSDRMethods {
 	protected $lab_result_id;
 	protected $lab_test_id;
 	protected $labTest;
@@ -45,4 +45,28 @@ class LabResult extends WebVista_Model_ORM {
 		parent::__construct();
 		$this->labTest = new LabTest();
 	}
+	public function nsdrPersist($tthis,$context,$data) {
+                return true;
+        }
+
+        public function nsdrPopulate($tthis,$context,$data) {
+                $ret = array();
+                //debug_print_backtrace();
+		$labsIter = new LabsIterator();
+                $filters = array();
+                $filters['patientId'] = key($context);
+		if (isset($context[key($context)]['filters']['description'])) {
+                	$filters['description'] = $context[key($context)]['filters']['description'];
+		}
+                $filters['limit'] = '1';
+                $labsIter->setFilters($filters);
+                $ret = $labsIter->first()->toArray();
+                return $ret;
+        }
+
+        public function nsdrMostRecent($tthis,$context,$data) {
+                $ret = array();
+                return $ret;
+        }
+
 }

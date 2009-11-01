@@ -46,13 +46,13 @@ class CacheFileController extends WebVista_Controller_Action {
 	foreach($explodedFiles as $index) {
 		// skip if key does not exists
 		if (!array_key_exists($index,$cssListFiles)) {
+			$listFiles[] = $index;
 			continue;
                 	//throw new Exception(__("File list does not exist : ") . $index);
 		}
 		$listFiles[] = implode(',',$cssListFiles[$index]);
 	}
 	$str = implode(',',$listFiles);
-
 	$cacheKey = $this->generateCacheKey($mediaType, $str);
 	$this->return304CacheHit($cacheKey);
 
@@ -474,12 +474,10 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxtoolbar';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid';
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
-		//$files['dhtmlxjs'][] = 'dhtmlxgrid_excell_sub_row';
+		$files['dhtmlxjs'][] = 'ch3grid_excell_sub_row';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_drag';
-		//$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';
-		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid';
-		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
+		$files['dhtmlxjs'][] = 'ch3treegrid';
 		$files['dhtmlxjs'][] = 'dhtmlxtree_json';
 		$files['dhtmlxjs'][] = 'dhtmlxlayout';
 		$files['dhtmlxjs'][] = 'dhtmlxaccordion';

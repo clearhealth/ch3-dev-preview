@@ -1,0 +1,333 @@
+<script>
+var chBaseMed24Url = '<?=$this->chBaseMed24Url?>';
+var chBaseMed24DetailUrl = '<?=$this->chBaseMed24DetailUrl?>';
+var currentMedData = null;
+function buildOptions(optionData,optionId,selectedItem) {
+	var opts = dojo.byId(optionId);
+	var selectedIndex = 0;
+	if (opts == undefined) {
+		return;
+	}
+	var i;
+	for(i=opts.options.length-1; i>=0; i--) {
+		opts.remove(i);
+	}
+	for (i=0; i<optionData.length; i++) {
+		var newOpt = document.createElement('option');
+		newOpt.text = optionData[i];
+		newOpt.value = optionData[i];
+		if (optionData[i] == selectedItem) {
+			selectedIndex = i;
+		}
+		try {
+			opts.add(newOpt, null);
+		}
+		catch (e) {
+			opts.add(newOpt);
+		}
+	}
+	opts.selectedIndex = selectedIndex;
+}
+
+function populateDetails(data) {
+	currentMedData = data;
+	//alert(currentMedData.schedule);
+
+	// first item in the dose contains quantity
+	var origDose = data.dose;
+	var dose = data.dose.split(" ");
+	var qty = dose[0];
+	data.dose = dose[1];
+	var optionsDose = data.dose.split(';');
+	optionsDose[0] = data.strength + data.unit + ' ' + optionsDose[0];
+	buildOptions(optionsDose,'options-dose');
+	if (optionsDose[0] != undefined) {
+		dojo.byId('medication-dose').value = optionsDose[0];
+	}
+
+	var optionsRoute = data.route.split(';');
+	buildOptions(optionsRoute,'options-route');
+	if (optionsRoute[0] != undefined) {
+		dojo.byId('medication-route').value = optionsRoute[0];
+	}
+
+	var optionsSchedule = new Array('<?=implode('\',\'',$this->scheduleOptions)?>');
+	buildOptions(optionsSchedule,'options-schedule',currentMedData.schedule);
+	if (optionsSchedule[0] != undefined) {
+		dojo.byId('medication-schedule').value = optionsSchedule[0];
+	}
+	dojo.byId('medication-directions').value = data.directions;
+
+	dojo.byId("displayLabel").disabled = true;
+	if (data.has_xml_label != 'false') {
+		// enable label button
+		dojo.byId("displayLabel").disabled = false;
+	}
+	var packsize = data.packsize.split(';');
+	quantity.setValue(packsize[0]);
+
+	dojo.byId('medication-directions').value = "take " + qty + " " + dojo.byId('medication-dose').value + " by " + dojo.byId('medication-route').value + " route X 1 dose";
+	generateDescription();
+	dojo.byId('medication-medicationId').value = data.pkey;
+}
+function prescribeMedication() {
+	if (!dojo.byId('medication-medicationId').value > 0) {
+		alert("<?=__("You must have a medication selected to prescribe")?>");
+		return false;
+	}
+	else if (dojo.byId('medication-transmit-print').checked == false 
+		&& !dojo.byId('medication-pharmacyId').value.length > 0) {
+		alert("<?=__("The patient does not have a default pharmacy set and no pharmacy was selected. You must select a pharmacy to ePrescribe or fax")?>.");
+		return false;
+	}
+
+	//currentMedData.md5	
+	        //check interactions with patients existing prescriptions
+        var interactionMsg = null;
+        dojo.xhrGet ({
+                url: '<?=$this->baseUrl?>/chmed.raw/ajax-list-interactions?personId=' + mainController.getActivePatient() + '&md5=' + currentMedData.md5,
+                handleAs: 'json',
+                load: function(responseObject, ioArgs) {
+			responseObject = responseObject.rows;
+                        if (responseObject.length == 0) {
+                          transmitMedPost();
+                        }
+                        else {
+                          interactionMsg = 'A medication already prescribed for this patient, ' + currentMedData.tradename + '/' + currentMedData.fda_drugname +  ' may have dangerous interactions, click OK to override: \n';
+                          for (i=0;i<responseObject.length;i++) {
+                                interactionMsg += responseObject[i].data[0] + '/' + responseObject[i].data[1] + ': ' + responseObject[i].data[2] + '\n';
+                          }
+                          if (confirm(interactionMsg)) {
+                                transmitMedPost();
+                          }
+                        }
+                },
+                error: function (er) { alert(er) }
+        });
+}
+
+function transmitMedPost() {
+        dojo.xhrPost ({
+                url: '<?=$this->baseUrl?>/medications.raw/process-add-medication',
+                form: 'addMedicationForm',
+                load: function (data) {
+                        reloadMedicationGrid();
+                },
+                error: function (er) {
+                        alert('err: ' + er);
+                }
+            });
+}
+
+function getCHMedDetails(arg) {
+	var tradename = arg;
+	var pkey = mscb.selectedKey;
+	dojo.xhrPost ({
+		url: chBaseMed24DetailUrl,
+		content: {
+			'': pkey
+		},
+		handleAs: 'json',
+		load: function (data) {
+			populateDetails(data);
+		},
+		error: function (er) {
+			alert('err: ' + er);
+		}
+	});
+}
+
+  function drugDetailsWindow() {
+        var pkey = mscb.selectedKey;
+        var labelUrl = '';
+        if (currentMedData.externalUrl != null && currentMedData.externalUrl.length > 0) {
+                labelUrl = currentMedData.externalUrl;
+                return true;
+        }
+        else if (currentMedData.hasLabel > 0) {
+                pkey = currentMedData.pkey;
+		if (currentMedData.labelId != null) {
+			pkey = currentMedData.labelId;
+		}
+                labelUrl = '<?=$this->baseUrl?>/chmed.raw/basemed-24-label?pkey=' + pkey;
+        }
+        winDrugDetails = dhxWins.createWindow('windowAddColumn',60,10,800,600);
+        winDrugDetails.setText('<?=__('Display Details/Drug Label')?>');
+        drugDetailsAccordion = winDrugDetails.attachAccordion();
+        drugDetailsAccordion.skin = 'dhx_blue';
+        drugDetailsAccordion.setIconsPath("<?=$this->baseUrl?>/img/");
+        drugDetailsAccordion.addItem("drugLabel","Drug Label");
+        drugDetailsAccordion.cells('drugLabel').attachURL(labelUrl);
+        drugDetailsAccordion.addItem("drugInteractions","Interactions");
+        interGrid = drugDetailsAccordion.cells("drugInteractions").attachGrid();
+        interGrid.setImagePath("<?=$this->baseUrl?>/img/");
+        interGrid.setHeader('Tradename,FDA Name,Level');
+        interGrid.setInitWidths("*,*,*");
+        interGrid.setColAlign("left,left,left");
+        interGrid.setColTypes("ro");
+        interGrid.setSkin("xp");
+        interGrid.init();
+        interGrid.load('<?=$this->baseUrl?>/chmed.raw/ajax-list-interactions?md5=' + currentMedData.md5,"json");
+        drugDetailsAccordion.cells('drugLabel').open();
+        winDrugDetails.centerOnScreen();
+}
+
+
+</script>
+
+<style>
+input {
+	width: 145px;
+}
+</style>
+
+<form id="addMedicationForm" method="post" action="<?=$this->baseUrl?>/medications.raw/process-add-medication">
+
+<div style="width:490px;">
+<?if ($this->message) :?>
+<div style="background-color:PaleGreen; width:100%;">
+<?=$this->message?>
+</div>
+<?endif;?>
+<?=$this->form->renderOpen()?>
+<fieldset style="width:490px;"><legend><?=__("Medication Information")?></legend>
+
+<div style="margin-left:10px;">
+<?foreach ($this->form->getErrorMessages() as $error) {?>
+<?=$error?>
+<?}?>
+</div>
+<div id="medicationSelectAutoCompleteDiv"></div>
+<br style="clear:left;" />
+<input id="displayLabel" type="button" value="<?=__('Display Details/Drug Label')?>" style="width:475px; font-size:9pt;" onClick="drugDetailsWindow();" disabled="disabled" />
+<script>
+if (mscb != undefined) {
+	mscb.destroyRecursive();
+	mscb = null;
+}
+var msac = new custom.MedicationSelectAutoComplete({url:chBaseMed24Url,requestMethod:"post",doClientPaging:true},'medicationSelectAutoComplete');
+//var msac = new custom.MedicationSelectAutoComplete({url:'<?=$this->baseUrl?>/medications.raw/auto-complete',requestMethod:"post"},'medicationSelectAutoComplete');
+var mscb = new custom.MedicationSelectComboBox({name:"medication[tradename]",value:'<?=(isset($this->medication))?$this->medication->description:''?>',autocomplete:false,store:msac,hasDownArrow:false},"medicationSelectAutoCompleteDiv");
+// change combobox width
+mscb.domNode.style.width = "470px";
+
+dojo.connect(mscb,"onChange",'getCHMedDetails');
+//dojo.connect(mscb,"onValueChanged",'getCHMedDetails');
+
+//varDump(msac);
+//varDump(mscb);
+
+function changeOptionsSelected(optionsId,optionId) {
+	var opts = dojo.byId(optionsId);
+	if (opts == undefined) {
+		return;
+	}
+	var opt = dojo.byId(optionId);
+	if (opt == undefined) {
+		return;
+	}
+	var i;
+	var selectedVal = '';
+	for(i=opts.options.length-1; i>=0; i--) {
+		if (opts.options[i].selected) {
+			if (selectedVal != '') {
+				selectedVal += ', ';
+			}
+			selectedVal += opts.options[i].text;
+		}
+	}
+	if (selectedVal != '') {
+		opt.value = selectedVal;
+	}
+	generateDescription();
+}
+
+function generateDescription() {
+	var description = '';
+	description += currentMedData.tradename + ' ' + currentMedData.strength + currentMedData.unit + ' ' + currentMedData.dose;
+	description += ' [RXN:' + currentMedData.rxnorm + ']';
+	dojo.byId('medication-description').value = description;
+
+}
+
+function selectPharmacyPopup() {
+	winSelectPharmacy = dhxWins.createWindow('windowSelectPharmacy',60,10,810,410);
+        winSelectPharmacy.setText('<?=__('Select Pharmacy')?>');
+        winSelectPharmacy.attachURL('<?=$this->baseUrl?>/medications.raw/select-pharmacy?personId='+mainController.getActivePatient(),true);
+        winSelectPharmacy.centerOnScreen();
+}
+</script>
+<div class="formRow" style="padding-top:4px;">
+        <dt style="line-height:20px;"><label><?=__("Dose")?></label></dt>
+        <?=$this->form->doseInput()?>
+<br />	<select id="options-dose" multiple="multiple" style="width:150px;font-size:8pt;height:65px;" onClick="changeOptionsSelected('options-dose','medication-dose');"></select>
+</div>
+<div class="formRow" style="padding-top:4px;">
+        <dt style="line-height:20px;"><label><?=__("Route")?></label></dt>
+        <?=$this->form->routeInput()?>
+<br />	<select id="options-route" multiple="multiple" style="width:150px;font-size:8pt;height:65px;" onClick="changeOptionsSelected('options-route','medication-route');"></select>
+</div>
+<div class="formRow" style="padding-top:4px;">
+        <dt style="line-height:20px;"><label><?=__("Schedule")?>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<!--<input type="checkbox" id="medication-prn" name="medication[prn]" value="1" style="display:inline;padding:0;margin:0;"/>&nbsp;<?=__('PRN')?>--></label></dt>
+        <input type="text" id="medication-schedule" name="medication[schedule]" value="" style="width:150px;" />
+<br />	<select id="options-schedule"  multiple="multiple" style="width:150px;font-size:8pt;height:65px;" onClick="changeOptionsSelected('options-schedule','medication-schedule');">
+</select>
+</div>
+<br style="clear:left;" />
+<div style="float:right;">
+<div class="formRow" style="padding-top:4px; float:left;">
+        <?=__($this->form->comment->renderLabel())?>
+        <textarea id="medication-comment" name="medication[comment]" style="width:250px;height:50px;margin-right:25px;margin-bottom:10px;"></textarea>
+</div>
+</div>
+<div class="formRow" style="padding-top:4px;">
+        <?=__($this->form->quantity->renderLabel())?>
+	<div id="medication-quantity" style="width:70px;"></div>
+</div>
+<div class="formRow" style="padding-top:4px;">
+        <?=__($this->form->refills->renderLabel())?>
+	<div id="medication-refills" style="width:70px;"></div>
+<script>
+	if (quantity != undefined) {
+		quantity.destroyRecursive();
+		quantity = null;
+	}
+	var quantity = new dijit.form.NumberSpinner({value:0,constraints:{min:0,places:0},maxlength:2,style:"width:70px;",name:"medication[quantity]"},dojo.byId("medication-quantity"));
+	if (refills != undefined) {
+		refills.destroyRecursive();
+		refills = null;
+	}
+	var refills = new dijit.form.NumberSpinner({value:0,constraints:{min:0,places:0},maxlength:2,style:"width:50px;",name:"medication[refills]"},dojo.byId("medication-refills"));
+</script>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="margin-top:-40px;width:250px;">
+        <?=__($this->form->transmit->renderLabel())?>
+        <input type="radio" id="medication-transmit-print" name="medication[transmit]" value="Print" style='width:15px;' /> Print
+        <input type="radio" id="medication-transmit-fax" name="medication[transmit]" value="Fax" style='width:15px;' /> Fax
+        <input type="radio" id="medication-transmit-eprescribe" name="medication[transmit]" checked="checked" value="ePrescribe" style='width:15px;' /> <a href="javascript:void(0);" onclick="selectPharmacyPopup();">ePrescribe</a>
+</div>
+
+<hr style="clear:both;" />
+<div class="formRow" style="padding-top:4px;">
+        <label><?=__("Description")?></label>
+        <input type="text" id="medication-description" name="medication[description]" style="width:475px; font-size:6pt;" />
+</div>
+<div class="formRow" style="padding-top:4px;">
+        <?=__($this->form->directions->renderLabel())?>
+        <textarea id="medication-directions" name="medication[directions]" style="width:475px;height:50px;"></textarea>
+</div>
+<br />
+<br style="clear:left;" />
+<div style="margin-top:10px;">
+	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Prescribe')?>"  onClick="prescribeMedication();" />
+	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Sign & Prescribe')?>" onClick="prescribeSignMedication();" />
+	<input type="button" value="<?=__('Cancel')?>" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" onClick="closeNewMedicationWindow()" />
+</div>
+</fieldset>
+</div>
+<input type="hidden" id="medication-medicationId" name="medication[medicationId]" value="<?=$this->medication->medicationId?>" />
+<input type="hidden" id="medication-prescriberPersonId" name="medication[prescriberPersonId]" value="" />
+<input type="hidden" id="medication-personId" name="medication[personId]" value="<?=$this->medication->personId?>" />
+<input type="hidden" id="medication-pharmacyId" name="medication[pharmacyId]" value="<?=$this->medication->pharmacyId?>" />
+</form>

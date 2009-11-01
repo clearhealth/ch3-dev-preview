@@ -44,6 +44,9 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 			$this->vitalSignValues[] = $vitalSignValue;
 		}
 	}
+	function getVitalSignValues() {
+		return $this->vitalSignValues;
+	}
 	
 	function setVitalSignGroupId($id) {
 		$this->vitalSignGroupId = (int)$id;
@@ -129,6 +132,10 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 			$dbSelect->where("personId = ?",(int)$data['personId']);
 		}
 		else {
+			if (is_array($context) && isset($context['*']['filters'])) {
+				list($k,$v) = each($context['*']['filters']);
+				$context = $k;
+			}
 			$dbSelect->where("personId = ?",(int)$context);
 		}
 		$dbJoinSelect = $db->select()
@@ -141,6 +148,19 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 			}
 		}
 		return $ret;
+	}
+
+	static public function getMostRecentVitalsForPatientId($personId) {
+		$personId = (int)$personId;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('vitalSignGroups')
+				->joinUsing('vitalSignValues','vitalSignGroupId')
+				->joinLeft('user','user.user_id = vitalSignGroups.enteringUserId')
+				->joinLeft('person','person.person_id = user.person_id')
+				->where('vitalSignGroups.personId = ' . (int)$personId)
+				->where("vitalSignGroups.vitalSignGroupId = (select vitalSignGroups.vitalSignGroupId from vitalSignGroups where personId = " . (int)$personId . " order by vitalSignGroups.dateTime DESC limit 1)");
+		return $db->query($sqlSelect)->fetchAll();
 	}
 
 }

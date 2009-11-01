@@ -1,8 +1,9 @@
 /* MAIN OBJ */
 div.dhx_acc_base_dhx_blue {
 	overflow: hidden;
-	background-color: #D3E2E5;
+	background-color: #DDDDDD;
 	/*
+	background-color: #D3E2E5;
 	border-top: #609BCA 1px solid;
 	border-left: #609BCA 1px solid;
 	border-right: #C2D9EB 1px solid;
@@ -23,13 +24,13 @@ div.dhx_acc_item_hidden_dhx_blue {
 /* label */
 div.dhx_acc_item_dhx_blue div.dhx_acc_item_label_dhx_blue {
 	position: relative;
-	color: #055A78;
+	color: #000;
 	font-family: Tahoma;
 	font-size: 12px;
 	font-weight: normal;
 	height: 22px;
 	line-height: 20px;
-	border: #C2D5DC 1px solid;
+	border: #CCCCCC 1px solid;
 	vertical-align: middle;
 	overflow: hidden;
 	background-image: url("../imgs/dhxaccord_dhx_blue/dhtmlxaccordion_bg.png");
@@ -53,7 +54,7 @@ div.dhx_acc_item_dhx_blue div.dhx_acc_item_content_opened_dhx_blue {
 	awidth: 100%;
 	overflow: hidden;
 	position: relative;
-	aborder-bottom: #C2D9EB 1px solid;
+	aborder-bottom: #CCCCCC 1px solid;
 	amargin-top: 1px;
 	margin-top: 1px;
 }
@@ -74,7 +75,7 @@ div.dhx_acc_item_dhx_blue div.dhtmlxWindowMainContent {
 /* inner window */
 div.dhx_acc_item_dhx_blue div.dhx_acc_item_content_opened_dhx_blue div.dhtmlxWindowMainContent {
 	background-color: #FFFFFF;
-	border: 1px solid #C2D5DC;
+	border: 1px solid #CCCCCC;
 }
 .dhxAccordLabelIEFix_dhx_blue {
 	height: 24px;

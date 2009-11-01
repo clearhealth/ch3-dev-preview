@@ -131,7 +131,7 @@ class WebVista_Form extends Zend_Form {
 		if ($this->getWindow() && $this->_windowAction == Webvista_Form::WINDOW_RELOAD) {
 			$loadFunction = <<<EOS
 if (window.postSubmit{$this->getId()}) {
-                var retval = postSubmit{$this->getId()}();
+                var retval = postSubmit{$this->getId()}(data);
                 if (retval === false) return false;
         }
 	dhxWins.window('{$this->getWindow()}').attachHTMLString(data);

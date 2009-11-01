@@ -22,7 +22,13 @@ foreach ($xml as $table) {
 		$tableName = (string)$structure->attributes()->name;
 		if (isset($tables[$tableName])) {
 			echo "Table: " . $tableName . " found, checking fields...\n";
-			checkFields($tableName,$structure);
+			$retval = checkFields($tableName,$structure);
+			if ($retval > 0) {
+				echo $retval . " alter statements generated.\n";
+			}
+			else {
+				echo "Confirmed fields match.\n";
+			}
 		}
 		else {
 			echo "Table: " . $tableName . " was not found, generating create sql\n";
@@ -47,7 +53,7 @@ foreach ($xml as $table) {
 					if (!isset($keys[$xmlKeyName])) $keys[$xmlKeyName] = array(); 
 					$keys[$xmlKeyName][] = (string)$field->attributes()->Column_name;
 				}
-				var_dump($field);
+				//var_dump($field);
 			}
 			foreach ($keys as $keyName => $keyData) {
 				$sql .= "\t$keyName (`" . implode('`,`',$keyData) . "`),\n";
@@ -61,6 +67,7 @@ foreach ($xml as $table) {
 fclose($f);
 
 function checkFields($tableName,$structure) {
+	$changes = 0;
 	global $f;
 	$sql = "show columns from $tableName";
 	$res = mysql_query($sql);
@@ -77,9 +84,11 @@ function checkFields($tableName,$structure) {
 				$sql = "ALTER TABLE `$tableName` ADD `$xmlFieldName` " . (string)$fieldData->attributes()->Type . 
 (($fieldData->attributes()->Null == "NO") ? " NOT NULL " : " NULL ") . ";\n";
 				fwrite($f, $sql);
+				$changes++;
 			}
 		}
 		//var_dump($objType);
 		//var_dump($field);
 	}
+	return $changes;
 }

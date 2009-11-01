@@ -37,6 +37,15 @@ class LabResultsController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
+	public function testCalcAction() {
+		$personId = $this->_getParam('personId');
+		$calcLabs = new CalcLabs();
+		$calcLabs->_patientId = $personId;
+		$result = $calcLabs->calculateGFRResult();
+		var_dump($result);
+		exit;
+	}
+
 	/**
 	 * Results in JSON format
 	 */
@@ -45,9 +54,15 @@ class LabResultsController extends WebVista_Controller_Action {
 		$labsIterator = new LabsIterator();
 		$filters = array();
 		$filters['patientId'] = (int)$this->_getParam('patientId');
+		$showCalcLabs = (boolean)$this->_getParam('showCalcLabs',false);
 		$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
 		$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
 		$filters['limit'] = (int)$this->_getParam('limit');
+		$calcLabsArray = array();
+		if (true) {
+			$calcLabs = new CalcLabs();
+			$calcLabsArray = $calcLabs->getAllCalcLabsArray($filters['patientId']);
+		}
 		$selectedLabTests = $this->_getParam('selectedLabTests',0);
 		if ($selectedLabTests) {
 			$filters['selectedLabTests'] = $this->_session->selectedLabTests;
@@ -74,12 +89,13 @@ class LabResultsController extends WebVista_Controller_Action {
 			$tmpArr[] = date('Y-m-d',strtotime($lab->observationTime)).'::'.$tmpValue;
 			$labs[$lab->labResultId] = $tmpArr;
 		}
-		$data = array();
+		
+		$labs = array_merge_recursive($calcLabsArray,$labs);
+		//$rows = $this->_toJsonArray($labs);
 		$rows = $this->_toJsonArray($labs);
-		$data['rows'] = $rows;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$json->direct($data);
+		$json->direct(array("rows" => $rows));
 	}
 
 	/**

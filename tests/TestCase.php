@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	TestCase.php
+*       TestCase.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 /**
@@ -29,19 +29,61 @@ require_once 'PHPUnit/Framework/TestCase.php';
 class TestCase extends PHPUnit_Framework_TestCase {
 	// workaround for error: PDOException: You cannot serialize or unserialize PDO instances
 	protected $backupGlobals = false;
+
 	protected $_autoLoggedIn = true;
+	protected $_objects = array();
 
 	public function setUp() {
 		$this->_setUpEnv();
 		$this->_setUpDB();
 		$this->_setUpCache();
 		$this->_setUpACL();
+		$this->testPrepare();
+	}
+
+	protected function _initSequenceTables() {
+		$db = Zend_Registry::get('dbAdapter');
+		$seqTableNames = array(Zend_Registry::get('config')->orm->sequence->table,
+				   Zend_Registry::get('config')->audit->sequence->table);
+
+		foreach ($seqTableNames as $tableName) {
+			$id = $db->fetchOne('SELECT id FROM ' . $tableName);
+			if (!strlen($id) > 0) {
+				$db->insert($tableName,array('id'=>1));
+			}
+		}
+	}
+
+	public function testPrepare() {
+		$this->_initSequenceTables();
+		// test audit first
+		$audit = new Audit();
+		$audit->_ormPersist = true;
+		$audit->objectClass = 'StdClass';
+		$audit->persist();
+		$this->assertTrue(($audit->auditId > 0),'Audit: Failed to persist');
+		if ($audit->auditId > 0) {
+			$audit->setPersistMode(WebVista_Model_ORM::DELETE);
+			$audit->persist();
+		}
+
+		$auditValue = new AuditValue();
+		$auditValue->_ormPersist = true;
+		$auditValue->key = 'Key';
+		$auditValue->value = 'Value';
+		$auditValue->persist();
+		$this->assertTrue(($auditValue->auditValueId > 0),'AuditValue: Failed to persist');
+		if ($auditValue->auditValueId > 0) {
+			$auditValue->setPersistMode(WebVista_Model_ORM::DELETE);
+			$auditValue->persist();
+		}
 		if ($this->_autoLoggedIn) {
 			$this->_setupAutoLogin();
 		}
 	}
 
 	private function _setUpEnv() {
+		error_reporting(E_ALL | E_STRICT);
 		try {
 			date_default_timezone_set(TEST_DATE_TIMEZONE);
 		}
@@ -68,6 +110,19 @@ class TestCase extends PHPUnit_Framework_TestCase {
 		$user = new User();
 		$user->username = TEST_LOGIN_USERNAME;
 		$user->populateWithUsername();
+		if (!$user->userId > 0) {
+			$person = new Person();
+			$person->_shouldAudit = false;
+			$person->last_name = 'Administrator';
+			$person->first_name = 'ClearHealth';
+			$person->middle_name = 'U';
+			$person->persist();
+
+			$user->_shouldAudit = false;
+			$user->person = $person;
+			$user->password = TEST_LOGIN_PASSWORD;
+			$user->persist();
+		}
 		Zend_Auth::getInstance()->getStorage()->write($user);
 	}
 
@@ -99,4 +154,20 @@ class TestCase extends PHPUnit_Framework_TestCase {
 		}
 		Zend_Registry::set('acl',$acl);
 	}
+
+	public function tearDown() {
+		parent::tearDown();
+		$this->_cleanUpObjects($this->_objects);
+	}
+
+	protected function _cleanUpObjects(Array $objects) {
+		foreach ($objects as $object) {
+			if (!$object instanceof ORM) {
+				continue;
+			}
+			$object->setPersistMode(WebVista_Model_ORM::DELETE);
+			$object->persist();
+		}
+	}
+
 }

@@ -1,0 +1,142 @@
+<style>
+.insuranceProgram {
+        margin: 0em 0.1em;
+        border:1px solid #b3b3b3;
+        line-height: normal;
+        font-size: 100%;
+        width: 32em;
+}
+</style>
+
+
+<div style="width:100%;">
+
+<?if ($this->message) :?>
+<div style="background-color:PaleGreen; width:100%;">
+<?=$this->message?>
+</div>
+<?endif;?>
+
+<?=$this->form->renderOpen()?>
+
+<div style="margin-left:10px;">
+<?foreach ($this->form->getErrorMessages() as $error) {?>
+<?=$error?>
+<?}?>
+</div>
+
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->insuranceProgramId->renderLabel()?>
+	<?=$this->formSelect('insurer[insuranceProgramId]',$this->form->insuranceProgramId->getValue(),array('id'=>'insurer-insuranceProgramId','class'=>'insuranceProgram'),$this->insurancePrograms);?>
+</div>
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->groupName->renderLabel()?>
+	<?$this->form->groupName->setAttrib('class','insuranceProgram')?>
+	<?=$this->form->groupNameInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->groupNumber->renderLabel()?>
+	<?$this->form->groupNumber->setAttrib('class','insuranceProgram')?>
+	<?=$this->form->groupNumberInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->effectiveStart->renderLabel()?>
+	<?$this->form->effectiveStart->setAttrib('class','insuranceProgram')?>
+	<?=$this->form->effectiveStartInput()?>
+	<script>
+	var dateStartBox = dijit.byId("insurer-effectiveStart");
+	if (dateStartBox != undefined) {
+		dateStartBox.destroyRecursive();
+		dateStartBox = null;
+	}
+
+	dateStartBox = new dijit.form.DateTextBox({name:"insurer[effectiveStart]",constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId("insurer-effectiveStart"));
+	<?if($this->form->effectiveStart->getValue()):
+		$dateStartValue = date('Y-m-d',strtotime($this->form->effectiveStart->getValue()));
+		$x = explode('-',$dateStartValue);?>
+		var onsetDate = new Date();
+		onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+		dateStartBox.setValue(onsetDate);
+	<?endif?>
+	</script>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->effectiveEnd->renderLabel()?>
+	<?$this->form->effectiveStart->setAttrib('class','insuranceProgram')?>
+	<?=$this->form->effectiveEndInput()?>
+	<script>
+	var dateEndBox = dijit.byId("insurer-effectiveEnd");
+	if (dateEndBox != undefined) {
+		dateEndBox.destroyRecursive();
+		dateEndBox = null;
+	}
+
+	dateEndBox = new dijit.form.DateTextBox({name:"insurer[effectiveEnd]",constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId("insurer-effectiveEnd"));
+	<?if($this->form->effectiveEnd->getValue()):
+		$dateEndValue = date('Y-m-d',strtotime($this->form->effectiveEnd->getValue()));
+		$x = explode('-',$dateEndValue);?>
+		var onsetDate = new Date();
+		onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+		dateEndBox.setValue(onsetDate);
+	<?endif?>
+	</script>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->assigning->renderLabel()?>
+	<?=$this->formSelect('insurer[assigning]',$this->form->assigning->getValue(),array('id'=>'insurer-assigning','class'=>'insuranceProgram'),$this->assigning);?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->copay->renderLabel()?>
+	<?$this->form->copay->setAttrib('class','insuranceProgram')?>
+	<?=$this->form->copayInput()?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->subscriberId->renderLabel()?>
+	<?=$this->formSelect('insurer[subscriberId]',$this->form->subscriberId->getValue(),array('id'=>'insurer-subscriberId','class'=>'insuranceProgram'),$this->subscribers);?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->form->active->renderLabel()?>
+	<input type="checkbox" name="activeInput" id="activeInput" value="<?=$this->form->active->getValue()?>" helper="formText"<?=($this->form->active->getValue())?' checked="checked"':''?> />
+	<?=$this->form->activeInput('FormHidden')?>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:4px;">
+	<?=$this->formHidden('id',$this->form->insuredRelationshipId->getValue())?>
+	<?=$this->form->personIdInput('FormHidden')?>
+	<?=$this->form->insuredRelationshipIdInput('FormHidden')?>
+	<?=$this->form->okInput()?>
+	<?=$this->formButton('btnCancel',__('Cancel'),array('onclick'=>'dhxWins.window("winEditInsurerId").close()'))?>
+</div>
+
+<script>
+function preSubmiteditinsurer() {
+	var activeInput = dojo.byId("activeInput");
+	var activeHiddenInput = dojo.byId("insurer-active");
+	var val = 0;
+	if (activeInput.checked) {
+		val = 1;
+	}
+	activeHiddenInput.value = val;
+	activeInput.checked = false;
+	return true;
+}
+
+function postSubmiteditinsurer(data) {
+	pdInsurersGridReload();
+	dhxWins.window("winEditInsurerId").close();
+	return false;
+}
+</script>
+
+<?=$this->form->renderClose()?>
+
+</div>
+
+</div>

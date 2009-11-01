@@ -63,7 +63,7 @@ class Menu {
 		$enumeration = new Enumeration();
 		$dbSelect = $db->select()->from(array('e'=>$enumeration->_table))
 			       ->join(array('ec'=>'enumerationsClosure'),'e.enumerationId = ec.descendant')
-			       ->join(array('m'=>'mainmenu'),'m.title = e.name',array('menuId','title','siteSection'))
+			       ->join(array('m'=>'mainmenu'),'m.menuId = e.ormId',array('menuId','title','siteSection'))
 			       ->where('ec.ancestor = ?',(int)$enumerationId)
 			       ->where('ec.ancestor != ec.descendant')
 			       ->where('ec.depth = 1')

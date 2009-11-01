@@ -91,8 +91,7 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		foreach ($parents as $child) {
 			$tmp = array();
 			$tmp['id'] = $child['enumerationId'];
-			$prettyName = preg_replace('/([A-Z]{1})/',' \1',$child['name']);
-			$tmp['data'][] = $prettyName;
+			$tmp['data'][] = preg_replace('/([A-Z]{1})/',' \1',$child['name']);
 			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');

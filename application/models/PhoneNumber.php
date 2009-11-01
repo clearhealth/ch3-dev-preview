@@ -32,9 +32,17 @@ class PhoneNumber extends WebVista_Model_ORM {
 	protected $active;
 	protected $_table = "number";
 	protected $_primaryKeys = array('number_id');
+	protected $_legacyORMNaming = true;
 	
-	public function __construct() {
-		parent::__construct();
+	public function getIteratorByPatientId($patientId = null) {
+		if ($patientId === null) {
+			$patientId = $this->personId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('person_id = ?',(int)$patientId);
+		return $this->getIterator($sqlSelect);
 	}
 
 	public function getPhoneNumberId() {

@@ -1,0 +1,195 @@
+<div id="educationContainer" style="width:100%;height:100%;overflow:auto;">
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="education-section"><?=__("Patient Education Section")?></label></dt>
+			<div id="educationSectionListContainer" style="float:left;width:250px;height:100px;"></div><br />
+			<input type="button" value="<?=__('Other Education Topic...')?>" style="float:right;" onClick="openEducationLookupWindow()" />
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="education-section"><?=__("Section Name")?></label></dt>
+			<div id="educationSectionNameListContainer" style="float:left;width:490px;height:120px;"></div>
+		</div>
+		<script>
+		function openEducationLookupWindow() {
+			var params = new Array();
+			params.push("callback=educationAddOthers");
+			globalCreateWindow("winLookupEducationId",params,"<?=$this->baseUrl?>/educations.raw/lookup","<?=__('Other Education Topics')?>",400,400);
+		}
+
+		function educationAddOthers(code,data) {
+			if (educationListGrid.doesRowExist(code)) {
+				alert("<?=__('Selected topic already exists')?>");
+				return;
+			}
+			educationAddToList(code,data);
+		}
+
+		var educationSectionListGrid = new dhtmlXGridObject('educationSectionListContainer');
+		educationSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		educationSectionListGrid.setHeader("");
+		educationSectionListGrid.setNoHeader(true);
+		educationSectionListGrid.setInitWidths("*");
+		educationSectionListGrid.setSkin("xp");
+		educationSectionListGrid.init();
+		educationSectionListGrid.load("<?=$this->baseUrl?>/educations.raw/list","json");
+		educationSectionListGrid.attachEvent("onRowSelect",educationSectionListOnRowSelected);
+		function educationSectionListOnRowSelected(rowId,cellIndex) {
+			educationSectionNameListGrid.clearAll();
+			educationSectionNameListGrid.load("<?=$this->baseUrl?>/educations.raw/list-section?section="+rowId,educationOnSectionNameLoaded,"json");
+		}
+
+		function educationOnSectionNameLoaded() {
+			educationListGrid.forEachRow(function(rowId){ if (educationSectionNameListGrid.doesRowExist(rowId)){ educationSectionNameListGrid.cells(rowId,0).setChecked(true);} });
+		}
+
+		var educationSectionNameListGrid = new dhtmlXGridObject("educationSectionNameListContainer");
+		educationSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		educationSectionNameListGrid.setHeader(",,");
+		educationSectionNameListGrid.setNoHeader(true);
+		educationSectionNameListGrid.setInitWidths("20,*,120");
+		educationSectionNameListGrid.setColTypes("ch,ro,ro");
+		educationSectionNameListGrid.setColAlign("right,left,left");
+		educationSectionNameListGrid.setSkin("xp");
+		educationSectionNameListGrid.init();
+		educationSectionNameListGrid.attachEvent("onCheck",educationSectionNameOnChecked);
+
+		function educationAddToList(id,data) {
+			educationListGrid.addRow(id,","+data+",");
+		}
+
+		function educationSectionNameOnChecked(rowId,cellIndex,state) {
+			if (state) { // add to education list
+				educationListGrid.addRow(rowId,",,,");
+				educationListGrid.cells(rowId,4).setValue(educationSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+			}
+			else { // remove from education list
+				educationRemoveSelected(rowId);
+			}
+		}
+		</script>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<div id="educationListContainer" style="float:left;width:70%;height:150px"></div>
+		<script>
+		var educationListGrid = new dhtmlXGridObject("educationListContainer");
+		educationListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		educationListGrid.setHeader("<?=__('Level of Understanding')?>,<?=__('Selected Patient Educations')?>,,");
+		educationListGrid.setInitWidths("*,*,0,0");
+		educationListGrid.setColTypes("ro,ro,ro,ro");
+		educationListGrid.setSkin("xp");
+		educationListGrid.init();
+		educationListGrid.load("<?=$this->baseUrl?>/educations.raw/list-patient-educations?patientId="+mainController.getActivePatient(),null,"json");
+
+		function educationListOnRowSelected(rowId,cellIndex) {
+			var levelSelect = dojo.byId("education-level");
+			levelSelect.disabled = false;
+			var level = educationListGrid.cells(rowId,2).getValue();
+			for (var i in levelSelect.options) {
+				if (levelSelect.options[i].value == level) {
+					levelSelect.options[i].selected = true;
+					break;
+				}
+			}
+
+			var educationComments = dojo.byId("education-comments");
+			educationComments.disabled = false;
+			educationComments.value = educationListGrid.cells(rowId,3).getValue();
+
+			var educationRemove = dojo.byId("educationRemoveId");
+			educationRemove.disabled = false;
+		}
+		educationListGrid.attachEvent("onRowSelect",educationListOnRowSelected);
+
+		function educationRemoveSelected(rowId) {
+			if (!rowId) {
+				rowId = educationListGrid.getSelectedRowId();
+			}
+			if (rowId == null) {
+				return;
+			}
+			educationListGrid.deleteRow(rowId);
+			if (educationSectionNameListGrid.doesRowExist(rowId)) {
+				educationSectionNameListGrid.cells(rowId,0).setChecked(false);
+			}
+
+			var levelSelect = dojo.byId("education-level");
+			levelSelect.disabled = true;
+
+			var educationComments = dojo.byId("education-comments");
+			educationComments.disabled = true;
+
+			var educationRemove = dojo.byId("educationRemoveId");
+			educationRemove.disabled = true;
+		}
+
+		function educationSetLevel(level) {
+			var rowId = educationListGrid.getSelectedRowId();
+			if (rowId == null) {
+				alert('<?=__('No education selected.')?>');
+				return;
+			}
+			var txt = level.text;
+			if (typeof txt == "string") {
+				txt = txt.replace(/,/g, "&#44;");
+			}
+			if (level.value == "") {
+				txt = "";
+			}
+			educationListGrid.cells(rowId,0).setValue(txt);
+			educationListGrid.cells(rowId,2).setValue(level.value);
+		}
+
+		function educationUpdateComment(comment) {
+			var rowId = educationListGrid.getSelectedRowId();
+			if (rowId == null) {
+				return;
+			}
+			educationListGrid.cells(rowId,3).setValue(comment);
+		}
+
+		function saveEducations() {
+			var arrEducation = new Array();
+			arrEducation.push("'patientId': '"+mainController.getActivePatient()+"'");
+			educationListGrid.forEachRow(function(rowId) {
+				arrEducation.push("'education["+rowId+"][level]':'"+educationListGrid.cells(rowId,2).getValue()+"'");
+				arrEducation.push("'education["+rowId+"][education]':'"+educationListGrid.cells(rowId,1).getValue().replace(/\n/g,"")+"'");
+				arrEducation.push("'education["+rowId+"][comments]':'"+educationListGrid.cells(rowId,3).getValue()+"'");
+			});
+
+			var jsCode = "var educationContent = {"+arrEducation.join(",")+"}";
+			eval(jsCode);
+
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/educations.raw/process-patient-educations",
+				handleAs: "json",
+				content: educationContent,
+				load: function (data) {
+					alert(data.msg);
+				},
+				error: function (error) {
+					alert(error);
+					console.error ("Error: ", error);
+				}
+			});
+
+		}
+		</script>
+		<div id="educationRightContainer" style="float:left;margin:10px;">
+			<dt><label for="education-level"><?=__("Level of Understanding")?></label></dt>
+			<?=$this->formSelect('education[level]',null,array('id'=>'education-level','disabled'=>'disabled','onchange'=>'educationSetLevel(this.options[this.selectedIndex])','style'=>'width:150px;'),$this->listLevels)?>
+			<br /><?=$this->formButton('educationRemoveId',__('Remove'),array('id'=>'educationRemoveId','onClick'=>'educationRemoveSelected()','disabled'=>'disabled'))?>
+		</div>
+		<div style="float:left;width:100%;">
+		<br />
+		<?=__("Comments")?>: <?=$this->formText('education[comments]','',array('id'=>'education-comments','onchange'=>'educationUpdateComment(this.value)','style'=>'width:70%','disabled'=>'disabled'))?>
+		</div>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<?=$this->formButton('educationOK',__('OK'),array('onClick'=>'saveEducations()'))?>
+		<?=$this->formButton('educationCancel',__('Cancel'),array('onClick'=>'dhxWins.window("windowSelectVisitId").close()'))?>
+	</div>
+</div>

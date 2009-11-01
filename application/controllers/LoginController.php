@@ -61,6 +61,10 @@ class LoginController extends WebVista_Controller_Action
 
         $result = $auth->authenticate($authAdapter);
 
+		$audit = new Audit();
+		$audit->objectClass = 'Login';
+		$audit->objectId = 0;
+
 	$data = array();
         if ($result->isValid()) {
         	unset($this->_session->messages);
@@ -77,13 +81,21 @@ class LoginController extends WebVista_Controller_Action
 		//$this->_forward('index','main');
 		$data['msg'] = __("Login successful.");
 		$data['code'] = 200;
+		$audit->message = __('user') . ': ' . $_POST['username'] . ' ' . __('login successful');
+		$audit->userId = $user->userId;
         } else {
             $auth->clearIdentity();
             $this->_session->messages = $result->getMessages();
             //$this->_redirect('login');
 		$data['err'] = __("Invalid username/password.");
 		$data['code'] = 404;
+		$audit->message = __('user') . ': ' . $_POST['username'] . ' ' . __('login failed due to bad password');
         }
+
+		$audit->dateTime = date('Y-m-d H:i:s');
+		$audit->_ormPersist = true;
+		$audit->persist();
+
 		header('Content-Type: application/xml;');
 		$this->view->data = $data;
 		$this->completeAction();

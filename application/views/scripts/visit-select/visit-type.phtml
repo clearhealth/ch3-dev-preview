@@ -1,0 +1,178 @@
+
+<div id="visitTypeContainer" style="width:100%;height:100%;overflow:auto;">
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="visitType-visit-type"><?=__("Type of Visit")?></label></dt>
+			<div id="vtVisitTypeListContainer" style="float:left;width:240px;height:140px;"></div>
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="visitType-section-name"><?=__("Section Name")?></label></dt>
+			<div id="vtSectionNameListContainer" style="float:left;width:250px;height:140px;"></div>
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><label for="visitType-modifiers"><?=__("Modifiers")?></label></dt>
+			<div id="vtModifiersListContainer" style="float:left;width:240px;height:140px;"></div>
+		</div>
+		<script>
+		var vtVisitTypeListGrid = new dhtmlXGridObject("vtVisitTypeListContainer");
+		vtVisitTypeListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		vtVisitTypeListGrid.setHeader("");
+		vtVisitTypeListGrid.setNoHeader(true);
+		vtVisitTypeListGrid.setInitWidths("*");
+		vtVisitTypeListGrid.setSkin("xp");
+		vtVisitTypeListGrid.init();
+		vtVisitTypeListGrid.load("<?=$this->baseUrl?>/visit-details.raw/visit-type.json","json");
+		vtVisitTypeListGrid.attachEvent("onRowSelect",vtVisitTypeListOnRowSelected);
+		function vtVisitTypeListOnRowSelected(rowId,cellIndex) {
+			vtSectionNameListGrid.clearAll();
+			vtSectionNameListGrid.load("<?=$this->baseUrl?>/visit-details.raw/visit-section.json?visitType="+rowId,"json");
+		}
+
+		var vtSectionNameListGrid = new dhtmlXGridObject("vtSectionNameListContainer");
+		vtSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		vtSectionNameListGrid.setHeader(",,");
+		vtSectionNameListGrid.setNoHeader(true);
+		vtSectionNameListGrid.setInitWidths("20,*,70");
+		vtSectionNameListGrid.setColTypes("ch,ro,ro");
+		vtSectionNameListGrid.setColAlign("right,left,left");
+		vtSectionNameListGrid.setSkin("xp");
+		vtSectionNameListGrid.init();
+
+		var vtModifiersListGrid = new dhtmlXGridObject("vtModifiersListContainer");
+		vtModifiersListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		vtModifiersListGrid.setHeader("");
+		vtModifiersListGrid.setNoHeader(true);
+		vtModifiersListGrid.setInitWidths("*");
+		vtModifiersListGrid.setSkin("xp");
+		vtModifiersListGrid.init();
+		vtModifiersListGrid.load("<?=$this->baseUrl?>/visit-details.raw/visit-modifiers.json","json");
+		</script>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<div style="float:left;">
+			<dt><label for="visitType-providers"><?=__("Available Providers")?></label></dt>
+			<div id="vtProvidersListContainer" style="float:left;width:300px;height:140px;"></div>
+		</div>
+		<div style="float:left;margin:30px 0 0 10px;">
+			<input type="button" value="<?=__('Add')?>" style="width:130px;" onClick="addToCurrentProviderList()" /><br />
+			<input type="button" value="<?=__('Remove')?>" style="width:130px;" onClick="removeFromCurrentProviderList()" /><br /><br />
+		</div>
+		<div style="float:left;margin-left:10px;">
+			<dt><div style="float:left;"><label for="visitType-current-providers"><?=__("Current Providers")?></label></div><div style="float:right;"><input id="providerPrimaryId" type="checkbox" onClick="setPrimaryProvider(this.checked)" disabled="disabled" /> <?=__('Primary')?></div></dt>
+			<div id="vtCurrentProvidersListContainer" style="float:left;width:300px;height:140px;"></div>
+		</div>
+		<script>
+		function addToCurrentProviderList() {
+			var rowId = vtProvidersListGrid.getSelectedRowId();
+			var ids = rowId.split(",");
+			for (var id in ids) {
+				if (!vtCurrentProvidersListGrid.doesRowExist(ids[id])) {
+					vtCurrentProvidersListGrid.addRow(ids[id],vtProvidersListGrid.cells(ids[id],0).getValue().replace(/,/g, "&#44;")+",");
+				}
+			}
+		}
+
+		function removeFromCurrentProviderList() {
+			vtCurrentProvidersListGrid.deleteSelectedRows();
+			dojo.byId("providerPrimaryId").disabled = true;
+		}
+
+		function setPrimaryProvider(checked) {
+			var rowId = vtCurrentProvidersListGrid.getSelectedRowId();
+			if (rowId == null) {
+				return;
+			}
+			if (!checked) {
+				vtCurrentProvidersListGrid.cells(rowId,1).setValue("");
+				currentPrimaryProviderRowId = null;
+				return;
+			}
+
+			vtCurrentProvidersListGrid.cells(rowId,1).setValue("<?=__('Primary')?>");
+			if (currentPrimaryProviderRowId != null) {
+				vtCurrentProvidersListGrid.cells(currentPrimaryProviderRowId,1).setValue("");
+			}
+			currentPrimaryProviderRowId = rowId;
+		}
+
+		var vtProvidersListGrid = new dhtmlXGridObject("vtProvidersListContainer");
+		vtProvidersListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		vtProvidersListGrid.setHeader("");
+		vtProvidersListGrid.setNoHeader(true);
+		vtProvidersListGrid.setInitWidths("*");
+		vtProvidersListGrid.setSkin("xp");
+		vtProvidersListGrid.enableMultiselect(true);
+		vtProvidersListGrid.init();
+		vtProvidersListGrid.load("<?=$this->baseUrl?>/visit-details.raw/providers.json","json");
+
+		var vtCurrentProvidersListGrid = new dhtmlXGridObject("vtCurrentProvidersListContainer");
+		vtCurrentProvidersListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+		vtCurrentProvidersListGrid.setHeader(",");
+		vtCurrentProvidersListGrid.setNoHeader(true);
+		vtCurrentProvidersListGrid.setInitWidths("*,*");
+		vtCurrentProvidersListGrid.setColTypes("ro,ro");
+		vtCurrentProvidersListGrid.setSkin("xp");
+		vtCurrentProvidersListGrid.enableMultiselect(true);
+
+		function vtCurrentProvidersListGridOnRowSelected(rowId,cellIndex) {
+			dojo.byId("providerPrimaryId").disabled = false;
+			var checked = false;
+			if (vtCurrentProvidersListGrid.cells(rowId,1).getValue() == "<?=__('Primary')?>") {
+				checked = true;
+			}
+			dojo.byId("providerPrimaryId").checked = checked;
+		}
+		vtCurrentProvidersListGrid.attachEvent("onRowSelect",vtCurrentProvidersListGridOnRowSelected);
+		vtCurrentProvidersListGrid.init();
+
+		var currentPrimaryProviderRowId = null;
+		function vtCurrentProvidersListGridOnLoaded() {
+			currentPrimaryProviderRowId = null;
+			vtCurrentProvidersListGrid.forEachRow(function(rowId){
+				if (vtCurrentProvidersListGrid.cells(rowId,1) == "<?=__('Primary')?>") {
+					currentPrimaryProviderRowId = rowId;
+				}
+			});
+			dojo.byId("providerPrimaryId").disabled = true;
+		}
+		vtCurrentProvidersListGrid.load("<?=$this->baseUrl?>/visit-details.raw/list-patient-visit-types?patientId="+mainController.getActivePatient(),vtCurrentProvidersListGridOnLoaded,"json");
+
+		function saveVisitTypes() {
+			var arrVisitTypes = new Array();
+			arrVisitTypes.push("'patientId': '"+mainController.getActivePatient()+"'");
+			var isPrimary = null;
+			vtCurrentProvidersListGrid.forEachRow(function(rowId) {
+				isPrimary = 0;
+				if (vtCurrentProvidersListGrid.cells(rowId,1).getValue() == "<?=__('Primary')?>") {
+					isPrimary = 1;
+				}
+				arrVisitTypes.push("'visitTypes["+rowId+"][isPrimary]':'"+isPrimary+"'");
+			});
+
+			var jsCode = "var visitTypesContent = {"+arrVisitTypes.join(",")+"}";
+			eval(jsCode);
+
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/visit-details.raw/process-patient-visit-types",
+				handleAs: "json",
+				content: visitTypesContent,
+				load: function (data) {
+					alert(data.msg);
+				},
+				error: function (error) {
+					alert(error);
+					console.error ('Error: ', error);
+				}
+			});
+		}
+		</script>
+	</div>
+	<br style="clear:left"/>
+	<br style="clear:left"/>
+	<div class="formRow">
+		<?=$this->formButton('visitTypeOK',__('OK'),array('onClick'=>'saveVisitTypes()'))?>
+		<?=$this->formButton('visitTypeCancel',__('Cancel'),array('onClick'=>'dhxWins.window("windowSelectVisitId").close()'))?>
+	</div>
+</div>

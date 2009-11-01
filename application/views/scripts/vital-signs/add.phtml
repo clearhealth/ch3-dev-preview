@@ -8,6 +8,7 @@
 <legend><?=__("Vitals input template")?>: <?=__("Complete Set")?></legend>
 <?=$this->form->renderOpen()?>
 <?=$this->form->getElement('vitalSignTemplateId')->renderViewHelper()?>
+<?=$this->form->getElement('personId')->renderViewHelper()?>
 <table cellspacing="0" cellpadding="0" id="vitalsTable">
 <thead>
 <th>#</th>
@@ -38,10 +39,11 @@ foreach($this->form->getDisplayGroups() as $displayGroup):?>
 <?=$this->form->okInput()?>
 <script>
 function postSubmitvsaddform() {
-	initMainToolbar(null,mainController.getActivePatient());
+	//initMainToolbar(null,mainController.getActivePatient());
+	mainController.refreshActivePatient();
 	//refreshCurrentTab();
 	<?if($this->jsCallback != ''):?>
-	if ('<?=$this->jsCallback?>' != '' && window.<?=$this->jsCallback?>) {
+	if (window.<?=$this->jsCallback?>) {
 		<?=$this->jsCallback?>();
 	}
 	<?endif;?>

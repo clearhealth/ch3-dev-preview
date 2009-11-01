@@ -24,21 +24,9 @@
 
 class VitalSignsController extends WebVista_Controller_Action {
 
-	protected $_visit;
-	protected $_patient;
 	protected $_form;
 
         public function init() {
-                $this->_session = new Zend_Session_Namespace(__CLASS__);
-                $cprss = new Zend_Session_Namespace('CprsController');
-		if (!isset($this->_session->patientId)) {
-			$this->_session->patientId = $this->_getParam('patientId');
-		}
-		$patient = new Patient();
-		$patient->setPersonId($this->_session->patientId);
-		$patient->populate();
-                $this->_patient = $patient;
-                $this->_visit = $cprss->visit;
         }
 
 	public function indexAction() {
@@ -56,8 +44,32 @@ class VitalSignsController extends WebVista_Controller_Action {
 		}
 		$this->render();
 	}
-	
+	public function listVitalSignsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$vitalSignIter = new VitalSignGroupsIterator();
+                $vitalSignIter->setFilter(array("personId" => $personId));
+		//normally can just use ORMIterator->toJsonArray but vital sign groups are a special case with a nested array
+		$vitalsJsonArray = array();
+		foreach($vitalSignIter as $vitalSignGroup) {
+			foreach($vitalSignGroup->getVitalSignValues() as $vitalValue) {
+				$tmpArray = array();
+				$tmpArray['id'] = $vitalValue->vitalSignValueId;
+				$tmpArray['data'] = array();
+				$tmpArray['data'][] = $vitalSignGroup->dateTime;
+				$tmpArray['data'][] = $vitalValue->vital;
+				$tmpArray['data'][] = $vitalValue->value;
+				$tmpArray['data'][] = $vitalValue->units;
+				$vitalsJsonArray[] = $tmpArray;
+			}
+		}
+		//$vitals = $vitalSignIter->toJsonArray('vitalSignGroupId',array('dateTime','vital','value','units'));
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+                $json->suppressExit = true;
+                $json->direct(array('rows' => $vitalsJsonArray));	
+
+	}
 	public function addAction() {
+		$personId = (int)$this->_getParam('personId');
 		$this->_form = new WebVista_Form(array('name' => 'vs-add-form'));
 		$this->_form->setWindow('windowAddVitalSignsId');
 		$this->_form->setWindowAction(WebVista_Form::WINDOW_CLOSE);
@@ -70,6 +82,9 @@ class VitalSignsController extends WebVista_Controller_Action {
 		$element = $this->_form->createElement("hidden",'vitalSignTemplateId',array('value' => $vitalSignTemplate->vitalSignTemplateId));
                 $element->setBelongsTo('vitalSignGroup');
                 $this->_form->addElement($element);
+		$element = $this->_form->createElement("hidden",'personId',array('value' => $personId));
+                $element->setBelongsTo('vitalSignGroup');
+                $this->_form->addElement($element);
 		$this->view->form = $this->_form;
 		$this->view->jsCallback = $this->_getParam('jsCallback','');
 		$this->render();
@@ -77,13 +92,13 @@ class VitalSignsController extends WebVista_Controller_Action {
 	
 	function processAddAction() {
 		$vitalSignGroup = new VitalSignGroup();
-		$vitalSignGroup->populateWithArray($this->_getParam('vitalSignGroup'));
+		$params = $this->_getParam('vitalSignGroup');
+		trigger_error(print_r($params,true),E_USER_NOTICE);
+		$vitalSignGroup->populateWithArray($params);
 		$vitalSignGroup->dateTime = date('Y-m-d H:i:s');
-		//$vitalSignGroup->visitId = $this->_visit->visitId;
-		$vitalSignGroup->personId = $this->_patient->personId;
+		//$vitalSignGroup->personId = (int)$this->_getParam('personId');
 		$vitalSignGroup->enteringUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
 		$vitalSignGroup->persist();
-		$this->view->action('set-active-patient','cprs',null,array('personId' => $this->_patient->personId));
 	}
 
 	function _buildForm($template) {
@@ -111,9 +126,9 @@ class VitalSignsController extends WebVista_Controller_Action {
                         $this->_form->addElement($element);
                         $elements[] = 'value';
 
-			if ($vital->attributes()->units) {
+			if ((string)$vital->attributes()->units) {
                         	$element = $this->_form->createElement("select","units");
-				$element->addMultiOptions(Enumeration::getEnumArray($vital->attributes()->units,"key","name"));
+				$element->addMultiOptions(Enumeration::getEnumArray((string)$vital->attributes()->units,"key","name"));
 				$element->setBelongsTo('vitalSignGroup[vitalSignValues]['. (string)$vital->attributes()->label.']');
                         	$this->_form->addElement($element);
                         	$elements[] = "units";
@@ -125,25 +140,56 @@ class VitalSignsController extends WebVista_Controller_Action {
 	function listMostRecentAction() {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
-		if (!is_object($this->_patient)) $json->direct(array());
-                $personId = $this->_patient->personId;
+                $personId = (int)$this->_getParam('personId');
                 if (!$personId > 0) $json->direct(array());
-                $db = Zend_Registry::get('dbAdapter');
-                $vsSelect = $db->select()
-                                        ->from('vitalSignGroups')
-                                        ->joinUsing('vitalSignValues','vitalSignGroupId')
-                                        ->where('vitalSignGroups.personId = ' . (int)$personId)
-                                        ->where("vitalSignGroups.vitalSignGroupId = (select vitalSignGroups.vitalSignGroupId from vitalSignGroups where personId = " . (int)$personId . " order by vitalSignGroups.dateTime DESC limit 1)");
-
 
 		//echo $vsSelect->__toString();exit;
                 $vitalSigns = array();
 		//var_dump($db->query($vsSelect)->fetchAll());exit;
-                foreach($db->query($vsSelect)->fetchAll() as $row) {
+                foreach(VitalSignGroup::getMostRecentVitalsForPatientId($personId) as $row) {
                         $vitalSigns[] = array("id" => $row['vitalSignValueId'],"data" => array($row['vital'], '', $row['value'], $row['dateTime']));
                 }
 
                 $json->direct(array("rows" => $vitalSigns));
-
         }
+
+	public function listPatientVitalsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$rows = array();
+		if ($personId > 0) {
+                	foreach(VitalSignGroup::getMostRecentVitalsForPatientId($personId) as $row) {
+				$value = $row['value'];
+				$ussValue = $value;
+				$metricValue = '';
+				if (strlen($row['units']) > 0) {
+					if (strlen($ussValue) > 0) {
+						$ussValue .= ' '.$row['units'];
+					}
+					$ret = VitalSignValue::convertValues($row['vital'],$value,$row['units']);
+					if ($ret !== false) {
+						$ussValue = $ret['uss'];
+						$metricValue = $ret['metric'];
+					}
+				}
+				$tmp = array();
+				$tmp['id'] = $row['vitalSignValueId'];
+				$tmp['data'][] = date('n/j/Y h:i:s A',strtotime($row['dateTime']));
+				$tmp['data'][] = $row['vital'];
+				$tmp['data'][] = $ussValue;
+				$tmp['data'][] = $metricValue;
+				$tmp['data'][] = ''; // to be implemented
+				$tmp['data'][] = $row['last_name'].','.$row['first_name'].' '.$row['middle_name'];
+				$rows[] = $tmp;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
+	}
+
+	public function generateTestEnumDataAction() {
+		Enumeration::generateVitalUnitsEnum();
+		echo 'Done';
+		die;
+	}
 }

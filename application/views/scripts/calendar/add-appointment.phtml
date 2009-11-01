@@ -1,0 +1,271 @@
+<script>
+var listProviders = new Array();
+listProviders.push({value:"0",text:"<?=__('No Provider')?>"});
+<?foreach(Provider::getArray() as $personId => $name):?>
+listProviders.push({value:"<?=$personId?>",text:"<?=$name?>"});
+<?endforeach;?>
+
+var appointmentReasons = new Array();
+<?foreach($this->appointmentReasons as $enumerationId=>$data):?>
+var template<?=$data['ormId']?>Slots = new Array();
+	<?foreach($data['breakdown'] as $slot):?>
+template<?=$data['ormId']?>Slots.push({n:"<?=$slot['n']?>",l:<?=(int)$slot['l']?>,t:"<?=$slot['t']?>"});
+	<?endforeach;?>
+appointmentReasons.push({reasonId:<?=(int)$enumerationId?>,id:<?=(int)$data['ormId']?>,name:"<?=$data['appointmentTemplateName']?>",slots:template<?=$data['ormId']?>Slots});
+<?endforeach;?>
+
+function adjustAppointmentTime(minutes) {
+	if (!minutes || parseInt(minutes) == 0) {
+		return;
+	}
+	var appointmentStart = dojo.byId("appointment-start").value;
+	if (appointmentStart == "") {
+		return;
+	}
+	var asplit = appointmentStart.split(":");
+	if (asplit.length != 2) {
+		return;
+	}
+	var hour = parseInt(asplit[0],10);
+	var minute = parseInt(asplit[1],10);
+	if (hour > 23 || minute > 59) {
+		return;
+	}
+
+	minute += parseInt(minutes);
+	var minMod = minute % 60;
+	var hourDiff = (minute - minMod) / 60;
+	hour += hourDiff;
+	minute = minMod;
+  	if (hour < 10) {
+		hour = "0"+hour;
+	}
+	if (minute < 10) {
+		minute = "0"+minute;
+	}
+
+	var appointmentEnd = dojo.byId("appointment-end");
+	appointmentEnd.value = hour+":"+minute;
+}
+
+var providerSelectIds;
+function appointmentProvidersChanged(reason) {
+	var providersContainer = dojo.byId("providersContainerId");
+	providersContainer.innerHTML = "";
+	providerSelectIds = new Array();
+	if (!reason) {
+		appendProviderSlot("default","<?=__('Provider')?>");
+	}
+	else {
+		if (reason.slots.length > 0) {
+			var name;
+			var length;
+			var type;
+			var timeLength = 0;
+			var ctr = 0;
+			for (var i in reason.slots) {
+				name = reason.slots[i].n;
+				length = reason.slots[i].l;
+				type = reason.slots[i].t;
+				timeLength += length;
+				if (ctr == 0) {
+					appendProviderSlot(i,name);
+				}
+				else {
+					appendProviderSlot(i,name,false);
+				}
+				ctr += 1;
+			}
+			adjustAppointmentTime(timeLength);
+		}
+		else {
+			appendProviderSlot("default","<?=__('Provider')?>");
+		}
+	}
+}
+
+function appendProviderSlot(id,labelText,isSelDisabled,defOptVal) {
+	if (typeof isSelDisabled == "undefined") {
+		isSelDisabled = <?=(isset($this->columnId))?'true':'false'?>;
+	}
+	if (!defOptVal) {
+		defOptVal = "<?=$this->form->providerId->getValue()?>";
+	}
+	var select = document.createElement("select");
+	select.setAttribute("name","appointment[providerId-"+id+"]");
+	select.setAttribute("id","appointment-provider-id-"+id);
+	select.style.width = "325px";
+	providerSelectIds.push("appointment-provider-id-"+id);
+	if (isSelDisabled) {
+		select.setAttribute("disabled","disabled");
+	}
+	var option;
+	var provider;
+	for (var i in listProviders) {
+		provider = listProviders[i];
+		option = document.createElement("option");
+		option.setAttribute("value",provider.value);
+		option.innerHTML = provider.text;
+		if (provider.value == defOptVal) {
+			option.setAttribute("selected","selected");
+		}
+		select.appendChild(option);
+	}
+
+	var label = document.createElement("label");
+	label.htmlFor = "appointment-provider-"+id;
+	label.appendChild(document.createTextNode(labelText));
+
+	var providersContainer = dojo.byId("providersContainerId");
+	if (providersContainer.innerHTML != "") {
+		providersContainer.innerHTML += "<br />";
+	}
+	providersContainer.appendChild(label);
+	providersContainer.appendChild(select);
+}
+
+function appointmentReasonOnChanged() {
+	var reasonSelect = dojo.byId("appointment-reason");
+	var reasonId = reasonSelect.options[reasonSelect.selectedIndex].value;
+	var reason = null;
+	for (var i in appointmentReasons) {
+		if (appointmentReasons[i].reasonId == reasonId) {
+			reason = appointmentReasons[i];
+			break;
+		}
+	}
+	appointmentProvidersChanged(reason);
+}
+
+function enableButtons() {
+	for (var i in providerSelectIds) {
+		dojo.byId(providerSelectIds[i]).disabled = false;
+	}
+	dojo.byId('appointment-room-id').disabled = false;
+}
+
+appointmentReasonOnChanged();
+</script>
+
+<div style="width:100%;">
+
+<div style="float:left;width:70%;">
+<fieldset><legend><?=__("Appointment Information")?></legend>
+<?=$this->form->renderOpen()?>
+<div style="float:left;">
+	<div style="margin-left:10px;width:350px;">
+
+	<div class="formRow">
+	<dt><label for="appointment-reason"><?=__('Reason')?></label></dt>
+	<!--<select id="appointment-reason" name="appointment[reason]" style="width:325px;" <?=(isset($this->columnId))?'disabled':''?>>-->
+	<select id="appointment-reason" name="appointment[reason]" style="width:325px;" onchange="appointmentReasonOnChanged()">
+	<?foreach($this->appointmentReasons as $enumerationId=>$reason):?>
+		<option value="<?=$enumerationId?>" <?if ($enumerationId == $this->form->reason->getValue()): ?>selected="selected"<?endif;?>><?=$reason['name']?></option>
+	<?endforeach;?>
+	</select>
+	</div>
+	<br />
+	<div class="formRow" id="providersContainerId"></div>
+	<br />
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="appointment-room-id"><?=__("Room")?></label></dt>
+	<select id="appointment-room-id"  name="appointment[roomId]" style="width:325px;" <?=(isset($this->columnId))?'disabled':''?>>
+	<option value="0" selected="selected"><?=__('No Room')?></option>
+	<?foreach(Room::getArray() as $roomId => $name):?>
+		<option value="<?=$roomId?>" <?if ($roomId == $this->form->roomId->getValue()):?>selected="selected"<?endif;?>><?=$name?></option>
+	<?endforeach;?>
+	</select>
+	</div>
+
+	<div class="formRow" style="padding-top:4px;">
+        	<?=__($this->form->title->renderLabel())?>
+	        <?=$this->form->titleInput()?>
+	</div>
+
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="appointment-patient"><?=__("Patient")?></label></dt>
+	<div id="patientSelectAutoCompleteDiv"></div>
+<script>
+	var pscb = dijit.byId('patientSelectAutoCompleteDiv');
+	if (pscb != undefined) {
+		pscb.destroyRecursive();
+		pscb = null;
+	}
+	var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
+	pscb = new custom.SelectComboBox({name:"appointment[patient]",value:'<?=$this->patient?>',autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
+	dojo.connect(pscb,"onChange",'getDetails');
+	function getDetails(args) {
+		// don't need args coz it holds the selected value
+		dojo.byId('appointment-patientId').value = pscb.selectedKey;
+	}
+</script>
+	</div>
+
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="appointment-time"><?=__("Time")?></label></dt>
+	<input type="text" id="appointment-start" name="appointment[start]" value="<?=(isset($this->start))?$this->start:''?>" style="width:150px;" /> to 
+	<input type="text" id="appointment-end" name="appointment[end]" value="<?=(isset($this->end))?$this->end:''?>" style="width:150px;" />
+	</div>
+
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="appointment-walkin"></label></dt>
+	<input type="checkbox" id="appointment-walkin" name="appointment[walkin]" <?=($this->form->walkin->getValue())?'checked="checked"':''?> /> Walk in?
+	</div>
+
+<br style="clear:left"/>
+<div style="text-align:right;margin-top:10px;">
+	<input type="hidden" name="columnId" value="<?=(isset($this->columnId))?$this->columnId:''?>" />
+	<input type="hidden" name="appointment[patientId]" id="appointment-patientId" value="<?=$this->form->patientId->getValue()?>" />
+	<input type="hidden" name="rowId" value="<?=(isset($this->rowId))?$this->rowId:''?>" />
+	<input type="hidden" name="appointment[appointmentId]" value="<?=($this->form->appointmentId->getValue())?$this->form->appointmentId->getValue():''?>" />
+	<input type="button" value="<?=__("Cancel")?>" onClick="closeAddAppointmentWindow()" />
+	<input type="button" value="<?=($this->form->appointmentId->getValue())?__('Update Appointment'):__("Make Appointment")?>" onClick="enableButtons(); dojo.xhrPost ({url: '<?=$this->baseUrl?>/calendar.raw/process-add-appointment',form: 'addappointment', handleAs: 'json', load: function (data) { window.applyNewAppointment(data.columnId); }, error: function (er) {alert('err: ' + er)}});" />
+</div>
+
+<div style="margin-top:10px;">
+<?=__('Appointment Created')?>: <?=$this->form->createdDate->getValue()?> <?=__('by')?> <?=$this->form->formCreator->username->getValue()?>
+<br />
+<?=__('Appointment Updated')?>: <?=$this->form->lastChangeDate->getValue()?> <?=__('by')?> <?=$this->form->formLastChange->username->getValue()?>
+</div>
+
+</form>
+</div>
+
+</fieldset>
+</div>
+
+
+<style>
+ul {
+display: inline;
+line-height: normal;
+font-size: 100%;
+}
+</style>
+<div style="text-align:left;float:left;width:28%;margin-left:10px;">
+
+<fieldset><legend><?=__('Patient Details')?></legend>
+	<div class="formRow" style="margin-left:5px;">
+	<ul>
+		<li><?=__('Contact Phones')?>: <?=implode(',',$this->phones)?></li>
+		<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
+	</ul>
+	</div>
+</fieldset>
+
+<fieldset><legend><?=__('Patient Notes')?></legend>
+	<div class="formRow" style="margin-left:5px;">
+<?if (count($this->patientNotes)):?>
+	<ul>
+	<?foreach ($this->patientNotes as $id=>$note):?>
+		<li><?=$note?></li>
+	<?endforeach;?>
+	</ul>
+<?endif;?>
+	</div>
+</fieldset>
+
+</div>
+
+
+</div>

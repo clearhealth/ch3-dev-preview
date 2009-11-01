@@ -31,8 +31,8 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 				       ->from('lab_result')
 				       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id')
 				       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
-				       ->order('lab_result.observation_time DESC');
-			trigger_error($dbSelect->__toString(),E_USER_NOTICE);
+				       ->order('lab_result.observation_time DESC')
+					->where('0');
 		}
 		parent::__construct("LabResult",$dbSelect);
 	}
@@ -72,21 +72,31 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 			       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
 			       ->where('lab_order.patient_id = ?',$filters['patientId'])
 			       ->order('lab_result.observation_time DESC');
-		if (strtotime($filters['dateEnd']) > 100000 && $filters['dateEnd'] != '*') {
-			$dateBegin = date('Y-m-d H:i:s',strtotime($filters['dateBegin']));
-			if ($filters['dateBegin'] == $filters['dateEnd']) {
-				// date range are the same
-				$dateEnd = date('Y-m-d H:i:s',strtotime("+1 day",strtotime($filters['dateEnd'])));
+		foreach ($filters as $filter => $val) {
+			switch($filter) {
+				case 'dateEnd':
+				if (strtotime($val) > 100000 && $val != '*') {
+					$dateBegin = date('Y-m-d H:i:s',strtotime($filters['dateBegin']));
+					if ($filters['dateBegin'] == $val) {
+						// date range are the same
+						$dateEnd = date('Y-m-d H:i:s',strtotime("+1 day",strtotime($filters['dateEnd'])));
+					}
+					else {
+						$dateEnd = date('Y-m-d H:i:s',strtotime($val));
+					}
+					$dbSelect->where("lab_result.observation_time BETWEEN '{$dateBegin}' AND '{$dateEnd}'");
+				}
+				break;
+				case 'description':
+					$dbSelect->where('lab_result.description like ?',$val);
+					break;
+				case 'limit':
+					$dbSelect->limit((int)$val);
+					break;
 			}
-			else {
-				$dateEnd = date('Y-m-d H:i:s',strtotime($filters['dateEnd']));
-			}
-			$dbSelect->where("lab_result.observation_time BETWEEN '{$dateBegin}' AND '{$dateEnd}'");
 		}
-		if ((int)$filters['limit'] > 0) {
-			$dbSelect->limit((int)$filters['limit']);
-		}
-		trigger_error($dbSelect,E_USER_WARNING);
+		//echo $dbSelect->__toString();exit;
+		//trigger_error($dbSelect->__toString(),E_USER_WARNING);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}

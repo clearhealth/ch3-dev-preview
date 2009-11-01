@@ -19,11 +19,15 @@
 			sysObjectsTree.insertNewChild(0,5,'Permissions Templates');
 			sysObjectsTree.insertNewChild(0,6,'Prescriptions');
 			sysObjectsTree.insertNewChild(0,7,'Note Templates');
-			//sysObjectsTree.insertNewChild(0,8,'Formulary Manager');
+			sysObjectsTree.insertNewChild(0,8,'Formulary Manager');
 			sysObjectsTree.insertNewChild(0,9,'Enumeration Manager');
 			sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
 			sysObjectsTree.insertNewChild(0,11,'Services');
-			sysObjectsTree.insertNewChild(0,12,'HL7');
+			sysObjectsTree.insertNewChild(0,12,'HL7 & Data Integration Manager');
+			sysObjectsTree.insertNewChild(0,13,'Data Integration Logs');
+			sysObjectsTree.insertNewChild(0,14,'General Alerts');
+			sysObjectsTree.insertNewChild(0,15,'Health Status Alerts');
+			sysObjectsTree.insertNewChild(0,16,"<?=__('Insurance Manager')?>");
 			sysObjectsTree.closeAllItems();
 
                         adminAccordion.addItem("healthcloud","HealthCloud");
@@ -38,43 +42,52 @@
 
 function onSystemObjectsTreeItemSelect(itemId) {
 	itemName = sysObjectsTree.getItemText(itemId);
-	switch (itemName) {
-		case 'Persons/Users':
+	switch (itemId) {
+		case 1: // Persons/Users
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-persons.raw');
 			break;
-		case 'CHMED Pharmacies':
-			adminLayout.cells("b").setText(itemName);
-			adminLayout.cells("b").attachURL('<?=$this->baseUrl?>/admin-pharmacies');
+		case 2: // Physical Plant
 			break;
-		case 'NSDR Manager':
+		case 3: // NSDR Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/nsdr-manager.raw');
 			break;
-		//case 'Menu Manager':
+		//case 4: //Menu Manager
 		//	changeAdminContainer(itemName,'<?=$this->baseUrl?>/menu-manager.raw');
 		//	break;
-		case 'Permissions Templates':
+		case 5: // Permissions Templates
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/acl.raw');
 			break;
-		case 'Prescriptions':
+		case 6: // Prescriptions
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-prescriptions.raw');
 			break;
-		case 'Note Templates':
+		case 7: // Note Templates
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/clinical-notes-manager.raw');
 			break;
-		case 'Formulary Manager':
+		case 8: // Formulary Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/formulary-manager.raw');
 			break;
-		case 'Enumeration Manager':
+		case 9: // Enumeration Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/enumerations-manager.raw');
 			break;
-		case 'Barcode Manager':
+		case 10: // Barcode Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-barcode.raw');
 			break;
-		case 'Services':
+		case 11: // Services
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-services.raw');
 			break;
-		case 'HL7':
+		case 12: // HL7 & Data Integration Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-hl7.raw');
+			break;
+		case 13: // Data Integration Logs
+			break;
+		case 14: // General Alerts
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/general-alerts.raw');
+			break;
+		case 15: // Health Status Alerts
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/health-status.raw');
+			break;
+		case 16: // Insurance Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/insurance-manager.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');
@@ -82,35 +95,18 @@ function onSystemObjectsTreeItemSelect(itemId) {
 }
 
 function changeAdminContainer(itemName,url) {
-	if (url.substr(url.length-4) == '.raw') {
-		url = url.substr(0,url.length-4);
+	var adminContainerId = 'adminContainerId';
+	var oContainer = dojo.byId(adminContainerId);
+	if (!oContainer) {
+		oContainer = document.createElement('div');
+		oContainer.setAttribute('id',adminContainerId);
 	}
-	adminLayout.cells("b").attachURL(url,true);
-	adminLayout.cells("b").setText(itemName);
-	return;
-
-	var hasAdmin = true;
-	var adminContainerId = 'adminContainer';
-	var adminContainer = dojo.byId(adminContainerId);
-	if (adminContainer == null) {
-		hasAdmin = false;
-		adminContainer = document.createElement('div');
-		adminContainer.setAttribute('id',adminContainerId);
-		adminContainer.style.height = '440px';
-		adminContainer.style.position = 'relative';
-		adminContainer.style.overflow = 'auto';
-	}
-	adminContainer.style.width = adminLayout.cells("b").getWidth() + 'px';
 	dojo.xhrGet({
 		url: url,
 		handleAs: "text",
 		load: function(data,ioArgs) {
-			dojo.setInnerHTML(adminContainer,data);
-			if (!hasAdmin) {
-				var body = document.getElementsByTagName('body').item(0);
-				body.appendChild(adminContainer);
-			}
-			adminLayout.cells("b").attachObject(adminContainerId);
+			dojo.setInnerHTML(oContainer,data);
+			adminLayout.cells("b").attachObject(oContainer);
 			adminLayout.cells("b").setText(itemName);
 			return data;
 		},
@@ -123,10 +119,11 @@ function changeAdminContainer(itemName,url) {
 
 function onHealthCloudTreeItemSelect(itemId) {
 	itemName = healthCloudTree.getItemText(itemId);
-	switch (itemName) {
-		case 'CHMED Pharmacies':
-			adminLayout.cells("b").setText(itemName);
-			adminLayout.cells("b").attachURL('<?=$this->baseUrl?>/admin-pharmacies');
+	switch (itemId) {
+		case 1: // CHMED
+			break;
+		case 2: // CHMED Pharmacies
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/admin-pharmacies.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');

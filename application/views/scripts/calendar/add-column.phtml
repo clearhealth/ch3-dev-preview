@@ -1,0 +1,53 @@
+<div style="float:left;">
+	<form id="addColumnForm" method="post" action="<?=$this->baseUrl?>/calendar.raw/process-add-column">
+	<div style="margin-left:10px;width:350px;">
+	<div class="formRow">
+	<dt><label for="calendar-provider-id"><?=__("Provider")?></label></dt>
+	<select id="calendar-provider-id"  name="calendar[providerId]" style="width:325px;">
+	<option value=""></option>
+        <?foreach(Provider::getArray() as $personId => $name):?>
+                <option value="<?=$personId?>" <?if ($personId == $this->providerId):?>selected="selected"<?endif;?>><?=$name?></option>
+        <?endforeach;?>
+        </select>
+	</div>
+<br />
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="calendar-room-id"><?=__("Room")?></label></dt>
+	<select id="calendar-room-id"  name="calendar[roomId]" style="width:325px;">
+	<?foreach(Room::getArray() as $roomId => $name):?>
+		<option value="<?=$roomId?>" <?if ($roomId == $this->currentRoomId):?>selected="selected"<?endif;?>><?=$name?></option>
+	<?endforeach;?>
+	</select>
+	</div>
+<br />
+	<div class="formRow" style="padding-top:4px;">
+        <dt><label for="calendar-date-filter"><?=__("Filter Date")?></label></dt>
+	<input type="text" id="calendar-date-filter"  name="calendar[dateFilter]" />
+	<script>
+		var dateFilter = dijit.byId('calendar-date-filter');
+		if (dateFilter != undefined) {
+			dateFilter.destroyRecursive();
+			dateFilter = null;
+		}
+		dateFilter = new dijit.form.DateTextBox({name:'calendar[dateFilter]',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('calendar-date-filter'));
+		<?if(!isset($this->data['dateFilter'])) {
+			$dateFilterValue = date('Y-m-d',strtotime('-1 day'));
+		}
+		else {
+			$dateFilterValue = date('Y-m-d',strtotime($this->data['dateFilter']));
+		}
+		$x = explode('-',$dateFilterValue);?>
+		var filterDate = new Date();
+		filterDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
+		dateFilter.setValue(filterDate);
+
+	</script>
+
+	</div>
+<br style="clear:left"/>
+<div style="text-align:right;margin-top:10px;">
+	<input type="button" value="<?=__("Cancel")?>" onClick="closeAddColumnWindow()" />
+	<input type="button" value="<?=__("Add Column")?>" onClick="dojo.xhrPost ({url: '<?=$this->baseUrl?>/calendar.raw/process-add-column',form: 'addColumnForm', handleAs: 'json', load: function (data) { applyNewColumn(data.columnId); }, error: function (er) {alert('err: ' + er)}});" />
+</div>
+</form>
+</div>

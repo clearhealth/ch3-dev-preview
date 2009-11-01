@@ -1,24 +1,24 @@
 <?php
 /*****************************************************************************
-*	DbTablesTest.php
+*       DbTablesTest.php
 *
-*	Author:  ClearHealth Inc. (www.clear-health.com)	2009
-*	
-*	ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
-*	respective logos, icons, and terms are registered trademarks 
-*	of ClearHealth Inc.
+*       Author:  ClearHealth Inc. (www.clear-health.com)        2009
+*       
+*       ClearHealth(TM), HealthCloud(TM), WebVista(TM) and their 
+*       respective logos, icons, and terms are registered trademarks 
+*       of ClearHealth Inc.
 *
-*	Though this software is open source you MAY NOT use our 
-*	trademarks, graphics, logos and icons without explicit permission. 
-*	Derivitive works MUST NOT be primarily identified using our 
-*	trademarks, though statements such as "Based on ClearHealth(TM) 
-*	Technology" or "incoporating ClearHealth(TM) source code" 
-*	are permissible.
+*       Though this software is open source you MAY NOT use our 
+*       trademarks, graphics, logos and icons without explicit permission. 
+*       Derivitive works MUST NOT be primarily identified using our 
+*       trademarks, though statements such as "Based on ClearHealth(TM) 
+*       Technology" or "incoporating ClearHealth(TM) source code" 
+*       are permissible.
 *
-*	This file is licensed under the GPL V3, you can find
-*	a copy of that license by visiting:
-*	http://www.fsf.org/licensing/licenses/gpl.html
-*	
+*       This file is licensed under the GPL V3, you can find
+*       a copy of that license by visiting:
+*       http://www.fsf.org/licensing/licenses/gpl.html
+*       
 *****************************************************************************/
 
 /**
@@ -60,12 +60,14 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'auditValues';
 		$this->_dbTablesList[] = 'audit_log';
 		$this->_dbTablesList[] = 'audit_log_field';
+		$this->_dbTablesList[] = 'barcodeMacros';
 		$this->_dbTablesList[] = 'building_address';
 		$this->_dbTablesList[] = 'building_program_identifier';
 		$this->_dbTablesList[] = 'buildings';
 		$this->_dbTablesList[] = 'category';
 		$this->_dbTablesList[] = 'category_to_document';
 		$this->_dbTablesList[] = 'clearhealth_claim';
+		$this->_dbTablesList[] = 'clinicalNoteAnnotations';
 		$this->_dbTablesList[] = 'clinicalNoteDefinitions';
 		$this->_dbTablesList[] = 'clinicalNoteTemplates';
 		$this->_dbTablesList[] = 'clinicalNotes';
@@ -85,6 +87,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'cronable';
 		$this->_dbTablesList[] = 'dashboardComponent';
 		$this->_dbTablesList[] = 'diagnosisCodesICD';
+		$this->_dbTablesList[] = 'diagnosisCodesSNOMED';
 		$this->_dbTablesList[] = 'document';
 		$this->_dbTablesList[] = 'duplicate_queue';
 		$this->_dbTablesList[] = 'eSignatures';
@@ -97,6 +100,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'enumeration_value';
 		$this->_dbTablesList[] = 'enumeration_value_practice';
 		$this->_dbTablesList[] = 'enumerations';
+		$this->_dbTablesList[] = 'enumerationsClosure';
 		$this->_dbTablesList[] = 'eob_adjustment';
 		$this->_dbTablesList[] = 'event';
 		$this->_dbTablesList[] = 'event_group';
@@ -124,6 +128,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'form_data';
 		$this->_dbTablesList[] = 'form_rule';
 		$this->_dbTablesList[] = 'form_structure';
+		$this->_dbTablesList[] = 'formularyDefault';
 		$this->_dbTablesList[] = 'gacl_acl';
 		$this->_dbTablesList[] = 'gacl_acl_sections';
 		$this->_dbTablesList[] = 'gacl_acl_seq';
@@ -156,6 +161,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'graph_definition';
 		$this->_dbTablesList[] = 'group_occurence';
 		$this->_dbTablesList[] = 'groups';
+		$this->_dbTablesList[] = 'hl7Messages';
 		$this->_dbTablesList[] = 'hl7_message';
 		$this->_dbTablesList[] = 'identifier';
 		$this->_dbTablesList[] = 'import_map';
@@ -197,6 +203,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'participation_program_basic';
 		$this->_dbTablesList[] = 'participation_program_clinic';
 		$this->_dbTablesList[] = 'patient';
+		$this->_dbTablesList[] = 'patientImmunizations';
 		$this->_dbTablesList[] = 'patient_chronic_code';
 		$this->_dbTablesList[] = 'patient_note';
 		$this->_dbTablesList[] = 'patient_payment_plan';
@@ -219,6 +226,9 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'preferences';
 		$this->_dbTablesList[] = 'problemListComments';
 		$this->_dbTablesList[] = 'problemLists';
+		$this->_dbTablesList[] = 'procedureCodeImmunizations';
+		$this->_dbTablesList[] = 'procedureCodesCPT';
+		$this->_dbTablesList[] = 'procedureCodesImmunization';
 		$this->_dbTablesList[] = 'provider';
 		$this->_dbTablesList[] = 'providerDashboardState';
 		$this->_dbTablesList[] = 'provider_to_insurance';
@@ -271,6 +281,7 @@ class Models_DbTablesTest extends TestCase {
 		$this->_dbTablesList[] = 'superbill_data';
 		$this->_dbTablesList[] = 'tags';
 		$this->_dbTablesList[] = 'tags_storables';
+		$this->_dbTablesList[] = 'teamMembers';
 		$this->_dbTablesList[] = 'templatedText';
 		$this->_dbTablesList[] = 'tree';
 		$this->_dbTablesList[] = 'user';
@@ -313,7 +324,9 @@ class Models_DbTablesTest extends TestCase {
 		foreach ($tableExists as $tableName=>$exists) {
 			$this->assertTrue($exists,"Table {$tableName} does not exists.");
 		}
-		$this->assertGreaterThanOrEqual(count($this->_dbTablesList), count($rows),"There are not enough tables in the database. " . count($rows) . " should be more than or equal to: " . count($this->_dbTablesList));
+		$dbTablesListCtr = count($this->_dbTablesList);
+		$rowsCtr = count($rows);
+		$this->assertGreaterThanOrEqual($dbTablesListCtr,$rowsCtr,'There are not enough tables in the database. ' . $rowsCtr . ' should be more than or equal to: ' . $dbTablesListCtr);
 	}
 
 }

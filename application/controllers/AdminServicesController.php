@@ -30,7 +30,7 @@ class AdminServicesController extends WebVista_Controller_Action {
 
 	public function listServicesAction() {
 		$rows = array();
-		$services = $this->_getServices();
+		$services = Service::getServices();
 		foreach ($services as $service) {
 			$tmp = array();
 			$tmp['id'] = $service['id'];
@@ -38,40 +38,13 @@ class AdminServicesController extends WebVista_Controller_Action {
 			$tmp['data'][] = $service['status'];
 			$rows[] = $tmp;
 		}
+
+		$memcache = Zend_Registry::get('memcache');
+		$serviceNominal = $memcache->get(Service::SERVICE_NOMINAL);
+		$rows[0]['userdata']['serviceNominal'] = $serviceNominal;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(array('rows'=>$rows));
-	}
-
-	protected function _getServices() {
-		$services = array();
-
-		$service = array();
-		$id = 'nsdr';
-		$service['id'] = $id;
-		$service['name'] = 'NSDR';
-		$nsdrStatus = NSDR::systemStatus();
-		if ($nsdrStatus === false) {
-			$nsdrStatus = 'stopped';
-		}
-		$service['status'] = ucwords($nsdrStatus);
-		$services[$id] = $service;
-
-		$service = array();
-		$id = 'menu';
-		$service['id'] = $id;
-		$service['name'] = 'Menu';
-		$configItem = new ConfigItem();
-		$configItem->configId = 'enableCache';
-		$configItem->populate();
-		$menuStatus = __('Disable');
-		if ($configItem->value) {
-			$menuStatus = __('Enable');
-		}
-		$service['status'] = $menuStatus;
-		$services[$id] = $service;
-
-		return $services;
 	}
 
 	/**
