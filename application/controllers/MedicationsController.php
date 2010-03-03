@@ -40,7 +40,8 @@ class MedicationsController extends WebVista_Controller_Action {
 		$medication = new Medication();
 		$medication->medicationId = (int)$medicationId;
 		$medication->populate();
-		// set discontinue here...
+		$medication->daysSupply = -1;
+		$medication->dateDiscontinued = date('Y-m-d H:i:s');
 		$medication->persist();
 
 		$data = array();
@@ -55,14 +56,42 @@ class MedicationsController extends WebVista_Controller_Action {
 		$filter = array('patientId'=>$personId);
 		$medicationIterator = new MedicationIterator();
 		$medicationIterator->setFilter($filter);
+		$unsigned = array();
+		$signed = array();
+		$discontinued = array();
 		foreach ($medicationIterator as $medication) {
+			if ($medication->transmit == '') {
+				$discontinued[] = $medication;
+				continue;
+			}
+			if ($medication->eSignatureId > 0) { // signed
+				$signed[] = $medication;
+			}
+			else { // unsigned
+				$unsigned[] = $medication;
+			}
+		}
+		$medications = array_merge($unsigned,$signed,$discontinued);
+		foreach ($medications as $medication) {
+			$expiration = '';
+			if ($medication->daysSupply == -1 && $medication->dateDiscontinued != '0000-00-00 00:00:00') {
+				$expiration = '<font color="#ff0000">'.date('m/d/Y h:i A',strtotime($medication->dateDiscontinued)).'</font>';
+			}
+			else if ($medication->dateBegan != '0000-00-00 00:00:00') {
+				$expiration = date('m/d/Y h:i A',strtotime($medication->expires));
+				$color = '#00ff00'; // green
+				if (strtotime(date('m/d/Y')) >= strtotime(substr($expiration,0,10))) {
+					$color = '#ff0000'; // red
+				}
+				$expiration = '<font color="'.$color.'">'.$expiration.'</font>';
+			}
 			$tmp = array();
 			$tmp['id'] = $medication->medicationId;
 			$tmp['data'][] = '';
 			$tmp['data'][] = $medication->description;
-			$tmp['data'][] = $medication->transmit;
+			$tmp['data'][] = $medication->displayAction;
 			$tmp['data'][] = $medication->displayStatus;
-			$tmp['data'][] = '';
+			$tmp['data'][] = $expiration;
 			$tmp['data'][] = '';
 			$tmp['data'][] = $medication->refillsRemaining;
 			$tmp['data'][] = $medication->comment;
@@ -88,7 +117,20 @@ class MedicationsController extends WebVista_Controller_Action {
 			$this->view->copy = $copy;
 		}
 
-		$this->view->scheduleOptions = $this->getScheduleOptions();
+		$name = Medication::ENUM_ADMIN_SCHED;
+		$enumeration = new Enumeration();
+		$enumeration->populateByEnumerationName($name);
+		$enumerationsClosure = new EnumerationsClosure();
+		$rowset = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		$scheduleOptions = array();
+		$adminSchedules = array();
+		foreach ($rowset as $row) {
+			$scheduleOptions[] = $row->key;
+			$adminSchedules[$row->key] = $row->name;
+		}
+		$this->view->scheduleOptions = $scheduleOptions;
+		$this->view->adminSchedules = $adminSchedules;
+
 		$this->view->chBaseMed24Url = Zend_Registry::get('config')->healthcloud->CHMED->chBaseMed24Url;
 		$this->view->chBaseMed24DetailUrl = Zend_Registry::get('config')->healthcloud->CHMED->chBaseMed24DetailUrl;
 		$this->_form = new WebVista_Form(array('name' => 'new-medication'));
@@ -117,12 +159,44 @@ class MedicationsController extends WebVista_Controller_Action {
 	}
 
 	public function processAddMedicationAction() {
-		$this->editMedicationAction();
-		$med = $this->_getParam('medication');
-		$this->_medication->populateWithArray($med);
+		$personId = (int)$this->_getParam('personId');
+		$medicationId = (int)$this->_getParam('medicationId');
+		$copy = $this->_getParam('copy');
+
+		$patient = new Patient();
+		$patient->personId = $personId;
+		$patient->populate();
+
+		$this->_medication = new Medication();
+		$this->_medication->personId = $personId;
+
+		if ($medicationId > 0) {
+			$this->_medication->medicationId = (int)$medicationId;
+			$this->_medication->populate();
+		}
+		if (!strlen($this->_medication->pharmacyId) > 0) {
+			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
+		}
+
+		if (strlen($copy) > 0) {
+			$this->_medication->medicationId = 0;
+		}
+
+		$params = $this->_getParam('medication');
+		$this->_medication->populateWithArray($params);
+		$this->_medication->datePrescribed = date('Y-m-d H:i:s');
+		$this->_medication->prescriberPersonId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		// daysSupply computation
+		if (method_exists('DrugScheduleDaysSupply',$this->_medication->schedule)) {
+			$methodName = $this->_medication->schedule;
+			$this->_medication->daysSupply = (int)DrugScheduleDaysSupply::$methodName($this->_medication->quantity);
+		}
 		$this->_medication->persist();
-		$this->view->message = __("Record Saved");
-		$this->render('new-medication');
+		$data = array();
+		$data['medicationId'] = $this->_medication->medicationId;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 	/**
@@ -290,11 +364,16 @@ class MedicationsController extends WebVista_Controller_Action {
 	}
 
 	public function getPrescriptionPdfAction() {
-		$medicationId = (int)$this->_getParam('medicationId');
-		$medication = new Medication();
-		$medication->medicationId = $medicationId;
-		$medication->populate();
-		$xmlData =  PdfController::toXML($medication,'Medication',null);
+		$medicationIds = explode(',',$this->_getParam('medicationId',''));
+		$xmlData = '';
+		foreach ($medicationIds as $medicationId) {
+			$medicationId = (int)$medicationId;
+			if (!$medicationId > 0) continue;
+			$medication = new Medication();
+			$medication->medicationId = $medicationId;
+			$medication->populate();
+			$xmlData .=  PdfController::toXML($medication,'Medication',null);
+		}
 		//ff560b50-75d0-11de-8a39-0800200c9a66 is uuid for prescription PDF
 		$this->_forward('pdf-merge-attachment','pdf', null, array('attachmentReferenceId' => 'ff560b50-75d0-11de-8a39-0800200c9a66','xmlData'=>$xmlData));
 	}
@@ -306,13 +385,19 @@ class MedicationsController extends WebVista_Controller_Action {
 	public function processPrintedRxAction() {
 		// transmit
 		// dateTransmitted
-		$medicationId = $this->_getParam('medicationId');
-		$medication = new Medication();
-		$medication->medicationId = $medicationId;
-		$medication->populate();
-		$medication->transmit = 'print';
-		$medication->dateTransmitted = date('Y-m-d H:i:s');
-		$medication->persist();
+		$medicationIds = explode(',',$this->_getParam('medicationId',''));
+		foreach ($medicationIds as $medicationId) {
+			$medicationId = (int)$medicationId;
+			if (!$medicationId > 0) continue;
+			$medication = new Medication();
+			$medication->medicationId = $medicationId;
+			$medication->populate();
+			$medication->transmit = 'Print';
+			$date = date('Y-m-d H:i:s');
+			$medication->dateTransmitted = $date;
+			$medication->dateBegan = $date;
+			$medication->persist();
+		}
 
 		$rows = array();
 		$rows['msg'] = __('Saved successfully.');

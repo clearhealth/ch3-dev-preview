@@ -487,6 +487,8 @@ class NSDR {
 		$namespaces['com.clearhealth.person.middleName'] = array();
 		$namespaces['com.clearhealth.person.gender'] = array();
 		$namespaces['com.clearhealth.person.dataOfBirth'] = array();
+		$namespaces['com.clearhealth.person.problemList'] = array('ORMClass'=>'ProblemList');
+		$namespaces['com.clearhealth.person.vitalSignsGroup'] = array('ORMClass'=>'VitalSignGroup');
 
 		foreach ($namespaces as $namespace=>$val) {
 			$nsdr = clone $nsdrDefinition;

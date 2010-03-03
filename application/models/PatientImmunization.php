@@ -33,8 +33,21 @@ class PatientImmunization extends WebVista_Model_ORM {
 	protected $repeatContraindicated;
 	protected $immunization;
 	protected $comment;
+	protected $dateAdministered;
+	protected $lot;
+	protected $route;
+	protected $site;
 
 	protected $_primaryKeys = array("code");
 	protected $_table = "patientImmunizations";
+
+	const ENUM_PARENT_NAME = 'Immunization Preferences';
+	const ENUM_SERIES_NAME = 'Series';
+	const ENUM_SECTION_NAME = 'Section';
+	const ENUM_SECTION_OTHER_NAME = 'Other';
+	const ENUM_SECTION_COMMON_NAME = 'Common';
+	const ENUM_REACTION_NAME = 'Reaction';
+	const ENUM_BODY_SITE_NAME = 'Body Site';
+	const ENUM_ADMINISTRATION_ROUTE_NAME = 'Administration Route';
 
 }

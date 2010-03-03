@@ -23,21 +23,75 @@
 
 
 class Building extends WebVista_Model_ORM {
-    protected $id;
-    protected $description;
-    protected $name;
-    protected $practice_id;
-    protected $identifier;
-    protected $facility_code_id;
-    protected $phone_number;
-    protected $_table = "buildings";
-    protected $_primaryKeys = array("id");
+	protected $id;
+	protected $description;
+	protected $name;
+	protected $practice_id;
+	protected $practice;
+	protected $identifier;
+	protected $facility_code_id;
+	protected $phone_number;
+	protected $_table = 'buildings';
+	protected $_primaryKeys = array('id');
+	protected $_cascadePopulate = false; // disable to prevent assigning buildingId as practiceId since buildings.id != practices.id
+	protected $_legacyORMNaming = true;
 
-    public function getBuildingId() {
-        return $this->id;
-    }
+	public function __construct() {
+		parent::__construct();
+		$this->practice = new Practice();
+		$this->practice->_cascadePersist = false;
+	}
 
-    public function setBuildingId($id) {
-        $this->id = $id;
-    }
+	public function populate() {
+		parent::populate();
+		$this->practice->populate();
+	}
+
+	public function setPractice_id($val) {
+		$this->setPracticeId($val);
+	}
+
+	public function setPracticeId($val) {
+		$this->practice_id = (int)$val;
+		$this->practice->practiceId = $this->practice_id;
+	}
+
+	public function getBuildingId() {
+		return $this->id;
+	}
+
+	public function setBuilding_id($val) {
+		$this->setBuildingId($val);
+	}
+
+	public function setBuildingId($id) {
+		$this->id = $id;
+	}
+
+	public static function getBuildingArray() {
+		$ret = array();
+		$db = Zend_Registry::get('dbAdapter');
+		$dbSelect = $db->select()
+			 	->from(array('b'=>'buildings'))
+			 	->join(array('p'=>'practices'),'p.id = b.practice_id')
+				->columns(array('b.id AS id',"CONCAT(p.name,'->',b.name) AS name"));
+		$data = $db->fetchAll($dbSelect);
+		foreach ($data as $row) {
+			$ret[$row['id']] = $row['name'];
+		}
+		return $ret;
+	}
+
+	public function ormEditMethod($ormId) {
+		$controller = Zend_Controller_Front::getInstance();
+		$request = $controller->getRequest();
+		$enumerationId = (int)$request->getParam('enumerationId');
+
+		$params = array();
+		$params['enumerationId'] = $enumerationId;
+		$params['id'] = $ormId;
+		$view = Zend_Layout::getMvcInstance()->getView();
+		return $view->action('edit-building','facilities',null,$params);
+	}
+
 }

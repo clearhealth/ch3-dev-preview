@@ -38,6 +38,7 @@ class Models_EnumerationsClosureTest extends Models_TableModels {
 				      'depth'=>1,
 				      'weight'=>10,);
 	protected $_assertMatches = array('weight'=>10);
+	protected $_assertTableName = 'enumerationsClosure'; // value MUST be the same as $_table
 
 }
 

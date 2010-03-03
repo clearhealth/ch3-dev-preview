@@ -18,13 +18,13 @@ var maxDate = null;
 
 function showAbnormalResultsOnly(state) {
 	resultsGrid.forEachRow(function(rowId){
-		if (resultsGrid.cells(rowId,4).getValue().toLowerCase() == "abnormal") {
+		if (resultsGrid.cells(rowId,indexLRAbnormal).getValue().toLowerCase() == "abnormal") {
 			resultsGrid.setRowHidden(rowId,state);
 		}
 	});
 }
 
-var colorList = new Array();
+var colorList = [];
 colorList[colorList.length] = "#FF0000"; // Red
 colorList[colorList.length] = "#008000"; // Green
 colorList[colorList.length] = "#0000FF"; // Blue
@@ -65,12 +65,23 @@ testLayout.setEffect('collapse',true);
 testLayout.setEffect("resize",true);
 
 resultsGrid.setImagePath("<?=$this->baseUrl?>/img/");
-resultsGrid.setHeader('<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,');
-resultsGrid.setInitWidths("*,*,*,*,60,50,0");
-resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro");
+resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,");
+resultsGrid.setInitWidths("120,*,*,*,*,60,50,0");
+resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro");
 resultsGrid.setSkin("xp");
 resultsGrid.init();
-resultsGrid.load('<?=$this->baseUrl?>/lab-results.raw/results.json?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd'),onPostLoad,"json");
+//resultsGrid.load('<?=$this->baseUrl?>/lab-results.raw/results.json?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd'),onPostLoad,"json");
+reloadLabResultsGrid();
+
+var indexLRDate = 0;
+var indexLRTestName = 1;
+var indexLRValue = 2;
+var indexLRUnit = 3;
+var indexLRRefRange = 4;
+var indexLRAbnormal = 5;
+var indexLRStatus = 6;
+var indexLRHidden = 7;
+
 function onPostLoad() {
 	numRows = resultsGrid.getRowsNum();
 	if (numRows <= 0) {
@@ -78,10 +89,10 @@ function onPostLoad() {
 	}
 	var firstRowId = resultsGrid.getRowId(0);
 	var lastRowId = resultsGrid.getRowId(numRows - 1);
-	var userData = resultsGrid.cells2(numRows-1,6).getValue();
+	var userData = resultsGrid.cells2(numRows-1,indexLRHidden).getValue();
 	userData = userData.split("::");
 	minDate = userData[0];
-	userData = resultsGrid.cells2(0,6).getValue();
+	userData = resultsGrid.cells2(0,indexLRHidden).getValue();
 	userData = userData.split("::");
 	maxDate = userData[0];
 
@@ -118,7 +129,7 @@ function resultsOnMenuClicked(itemId,type) {
 function clearChart() {
 	dojo.setInnerHTML(dojo.byId('graphLegend'),'');
 	dojo.setInnerHTML(dojo.byId('graphChart'),'');
-	chartData = new Array();
+	chartData = {};
 }
 
 function addSelectedResultsToChart() {
@@ -128,8 +139,12 @@ function addSelectedResultsToChart() {
 		return;
 	}
 
-	var hAxis = new Array();
-	var vAxis = new Array();
+	if (testLayout.cells("b").isCollapsed()) {
+		testLayout.cells("b").expand();
+	}
+
+	var hAxis = [];
+	var vAxis = [];
 
 	var needRedraw = false;
 	rowIds = rowIds.split(',');
@@ -142,19 +157,19 @@ function addSelectedResultsToChart() {
 
 		needRedraw = true;
 		// retrieve all the results having the same Test Name
-		var testName = resultsGrid.cells(rowId,0).getValue();
+		var testName = resultsGrid.cells(rowId,indexLRTestName).getValue();
 		resultsGrid.forEachRow(function(id){
 			var userData = null;
 			if (hAxis.length <= resultsGrid.getRowsNum()) {
-				userData = resultsGrid.cells(id,6).getValue();
+				userData = resultsGrid.cells(id,indexLRHidden).getValue();
 				userData = userData.split("::");
 				hAxis[hAxis.length] = userData[0];
 				//vAxis[vAxis.length] = userData[1];
 			}
 
-			if (resultsGrid.cells(id,0).getValue() == testName && !(id in chartData)) {
+			if (resultsGrid.cells(id,indexLRTestName).getValue() == testName && !chartData[id]) {
 				if (userData == null) {
-					var userData = resultsGrid.cells(id,6).getValue();
+					var userData = resultsGrid.cells(id,indexLRHidden).getValue();
 					userData = userData.split("::");
 				}
 				chartData[id] = {xTxt:userData[0],yTxt:userData[1],name:testName};
@@ -171,8 +186,8 @@ function addSelectedResultsToChart() {
 	//vAxis.sort(function(a,b){return(a-b);}); // numeric sort in ascending order
 
 	var hasVZero = false;
-	var uniqueNames = new Array('');
-	var itemList = new Array();
+	var uniqueNames = [''];
+	var itemList = [];
 	for (var rowId in chartData) {
 		var name = chartData[rowId].name;
 		var inArray = false;
@@ -235,14 +250,14 @@ function addSelectedResultsToChart() {
 		graphChart = null;
 	}
 
-	var arrPlots = new Array();
-	var defaultSeries = new Array();
+	var arrPlots = [];
+	var defaultSeries = [];
 	defaultSeries[defaultSeries.length] = "{x:0,y:"+(vAxis.length-1)+"}";
 	defaultSeries[defaultSeries.length] = "{x:0,y:0}";
 	defaultSeries[defaultSeries.length] = "{x:"+(hAxis.length-1)+",y:0}";
 	arrPlots[0] = {name:"imaginary",seriesName:"Imaginary Plot",series:defaultSeries};
 
-	var arrSeries = new Array();
+	var arrSeries = [];
 	var xLabel = '';
 	var yLabel = '';
 	var testName = '';
@@ -280,20 +295,20 @@ function addSelectedResultsToChart() {
 				}
 
 				if (!(nameKey in arrPlots)) {
-					arrPlots[nameKey] = {name:"default"+nameKey,seriesName:testName,series:new Array(),};
+					arrPlots[nameKey] = {name:"default"+nameKey,seriesName:testName,series:[],};
 				}
 				arrPlots[nameKey].series[arrPlots[nameKey].series.length] = "{x:"+xIndex+",y:"+yIndex+"}";
 			}
 		}
 	}
 
-	var arrXLabels = new Array();
+	var arrXLabels = [];
 	for (xKey in hAxis) {
 		var tmpTxt = hAxis[xKey].split('-');
 		xTxt = tmpTxt[1] + '/' + tmpTxt[2] + '/' + tmpTxt[0];
 		arrXLabels[arrXLabels.length] = '{value:'+xKey+',text:"'+xTxt+'"}';
 	}
-	var arrYLabels = new Array();
+	var arrYLabels = [];
 	for (yKey in vAxis) {
 		arrYLabels[arrYLabels.length] = '{value:'+yKey+',text:"'+vAxis[yKey]+'"}';
 	}
@@ -307,7 +322,7 @@ function addSelectedResultsToChart() {
 	graphChart = new custom.Chart2D("graphChart");
 
 	var graphLegend = '';
-	var plots = new Array();
+	var plots = [];
 	for (var i in arrPlots) {
 		var plot = arrPlots[i];
 		if (plot.name == "imaginary") {

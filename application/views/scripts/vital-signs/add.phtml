@@ -27,7 +27,11 @@ foreach($this->form->getDisplayGroups() as $displayGroup):?>
 <td><?=$counter++?></td>
 	<?foreach($displayGroup->getElements() as $element):?>
 	<?$element->setAttrib('style','width:90px;')?>
-	<td><?=$element->renderLabel()?></td><td><?=$element->renderViewHelper()?></td>
+	<td><?=$element->renderLabel()?></td>
+	<td><?echo $element->renderViewHelper();
+	if ($element->getDecorator('ScriptTag')) {
+		echo $element->renderScriptTag();
+	}?></td>
 	<?endforeach;?>
 </tr>
 <?endforeach;?>

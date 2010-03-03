@@ -401,6 +401,14 @@ function varDump(obj) {
         alert(out);
 }
 
+function globalCreateWindow(winId,params,url,winText,width,height) {
+	var winCW = dhxWins.createWindow(winId,60,10,width,height);
+	winCW.setText(winText);
+	winCW.attachURL(url+'?'+params.join("&"),true);
+	winCW.centerOnScreen();
+	return winCW;
+}
+
 
 
 
@@ -982,8 +990,8 @@ visitSelectorClass.prototype.visitDetailsTabbarCacheContent = [];
 
 visitSelectorClass.prototype.accordionAddSelectVisitId = "accordionAddSelectVisit";
 visitSelectorClass.prototype.accordionVisitDetailsId = "accordionVisitDetails";
-visitSelectorClass.prototype.accordionReferralVisitsId = "accordionReferralVisits";
-visitSelectorClass.prototype.accordionTelemedVisitsId = "accordionTelemedVisits";
+//visitSelectorClass.prototype.accordionReferralVisitsId = "accordionReferralVisits";
+//visitSelectorClass.prototype.accordionTelemedVisitsId = "accordionTelemedVisits";
 visitSelectorClass.prototype.tabVisitTypeId = "tabVisitType";
 visitSelectorClass.prototype.tabDiagnosesId = "tabDiagnoses";
 visitSelectorClass.prototype.tabProceduresId = "tabProcedures";
@@ -1015,7 +1023,7 @@ visitSelectorClass.prototype.openWindow = function() {
 
 	dhxWins.setImagePath(globalBaseUrl+"/img/");
 	dhxWins.setSkin("clear_silver");
-	this.oWindow = dhxWins.createWindow("windowSelectVisitId",60,10,800,575);
+	this.oWindow = dhxWins.createWindow("windowSelectVisitId",60,10,850,600);
 	this.oWindow.setText("Select Location & Visit");
 	this.oWindow.centerOnScreen();
 
@@ -1034,10 +1042,18 @@ visitSelectorClass.prototype.openWindow = function() {
 	this.oAccordion.setIconsPath(globalBaseUrl+"/img/");
 	this.oAccordion.addItem(this.accordionAddSelectVisitId,"Add/Select Visit");
 	this.oAccordion.addItem(this.accordionVisitDetailsId,"Visit Details");
-	this.oAccordion.addItem(this.accordionReferralVisitsId,"Referral Visits");
-	this.oAccordion.addItem(this.accordionTelemedVisitsId,"Telemedicine Visits");
+	//this.oAccordion.addItem(this.accordionReferralVisitsId,"Referral Visits");
+	//this.oAccordion.addItem(this.accordionTelemedVisitsId,"Telemedicine Visits");
 
 	this.oAccordion.attachEvent("onActive", function(id){ thisClass.accordionOpen(id); });
+	var tthis = this;
+	this.oAccordion.attachEvent("onBeforeActive", function(id){
+		if (id == tthis.accordionVisitDetailsId && !mainController.getActiveVisit() > 0) {
+			alert("No visit selected");
+			return false;
+		}
+		return true;
+	});
 
 	this.oVisitDetailsTabbar = this.oAccordion.cells(this.accordionVisitDetailsId).attachTabbar();
 	this.oAccordion.openItem(this.accordionAddSelectVisitId);

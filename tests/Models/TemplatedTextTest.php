@@ -36,6 +36,7 @@ class Models_TemplatedTextTest extends Models_TableModels {
 	protected $_keyValues = array('name'=>'Test Name',
 				      'template'=>'Test Template',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'templatedText'; // value MUST be the same as $_table
 
 }
 

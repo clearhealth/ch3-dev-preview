@@ -36,6 +36,7 @@ class Models_CompanyNumberTest extends Models_TableModels {
 	protected $_keyValues = array('company_id'=>1234,
 				      'number_id'=>5678,);
 	protected $_assertMatches = array('number_id'=>5678);
+	protected $_assertTableName = 'company_number'; // value MUST be the same as $_table
 
 }
 

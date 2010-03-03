@@ -44,9 +44,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$this->_cn = $cn;
 		$templateId = $cn->clinicalNoteTemplateId;
 		assert("$templateId > 0");
-		$cnTemplate = new ClinicalNoteTemplate();
-		$cnTemplate->clinicalNoteTemplateId = (int)$templateId;
-		$cnTemplate->populate();
+		$cnTemplate = $cn->clinicalNoteDefinition->clinicalNoteTemplate;
 		$this->_form = new WebVista_Form(array('name' => 'cn-template-form'));
                 $this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
 		$cnXML = simplexml_load_string($cnTemplate->template);
@@ -81,7 +79,7 @@ printHtml = '';
 			$signPerson = new Person();
 			$signPerson->personId = $esig->signingUserId;
 			$signPerson->populate();
-			$this->view->signatureInfo = "Signed on: " . $esig->signedDateTime . " by: " . 'Robert Smith MD';
+			$this->view->signatureInfo = "Signed on: " . $esig->signedDateTime . " by: " . '';
 		}
 
 		$formData = array();
@@ -118,6 +116,7 @@ printHtml = '';
 
 
 	protected function _buildForm($xml) {
+		static $_namespaceElements = array();
 		foreach ($xml as $question) {
 			$formName = preg_replace('/[^a-zA-Z0-9]/','',$question->attributes()->label);
 			//var_dump($question->dataPoint);
@@ -144,7 +143,7 @@ printHtml = '';
 					$type = 'drawing';
                                 }
 
-				$elementName = preg_replace('/\./','_',(string)$dataPoint->attributes()->namespace);
+				$elementName = preg_replace('/[-\.]/','_',(string)$dataPoint->attributes()->namespace);
 				$element = $this->_form->createElement($type,$elementName, array('label' => (string)$dataPoint->attributes()->label));
 				if ($this->_form->getElement($elementName) instanceof Zend_Form_Element) {
                                         $element =$this->_form->getElement($elementName);
@@ -162,6 +161,40 @@ printHtml = '';
                                         if ((string)$dataPoint->attributes()->default == true) {
                                                 $element->setValue((string)$dataPoint->attributes()->value);     
                                         }
+					if ((string)$dataPoint->attributes()->type == 'radio') {
+						if ((string)$dataPoint->attributes()->radioGroup) {
+							$radioGroup = preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
+							$innerHTML = '';
+							$elName = 'namespaceData['.$element->getName().']';
+							if (!isset($_namespaceElements[$radioGroup])) {
+								$_namespaceElements[$radioGroup] = true;
+								$innerHTML = '
+var '.$radioGroup.'Members = [];
+function '.$radioGroup.'(name) {
+	var elName = null;
+	var el = null;
+	for (var i = 0; i < '.$radioGroup.'Members.length; i++) {
+		elName = '.$radioGroup.'Members[i];
+		el = document.getElementsByName(elName)[0];
+		if (!el) {
+			continue;
+		}
+		if (el.checked && elName != name) {
+			el.checked = false;
+			break; // there is only on checked element in a group
+		} 
+	}
+}
+';
+							}
+							$innerHTML .= $radioGroup.'Members.push("'.$elName.'");';
+                                        		$element->addDecorator('ScriptTag',array('placement' => 'APPEND','tag' => 'script','innerHTML' => $innerHTML,'noAttribs' => true));
+							$element->setAttrib('onchange',$radioGroup.'("'.$elName.'")');
+						}
+						if ((string)$dataPoint->attributes()->radioGroupDefault && (string)$dataPoint->attributes()->radioGroupDefault == '1') {
+							$element->setAttrib('checked','checked');
+						}
+					}
                                 }
                                 if ((string)$dataPoint->attributes()->type == "checkbox") {
 					$element->AddDecorator('Label', array('placement' => 'APPEND'));

@@ -42,7 +42,9 @@ class PhoneNumber extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('person_id = ?',(int)$patientId);
-		return $this->getIterator($sqlSelect);
+		$iter = $this->getIterator();
+		$iter->setDbSelect($sqlSelect);
+		return $iter;
 	}
 
 	public function getPhoneNumberId() {

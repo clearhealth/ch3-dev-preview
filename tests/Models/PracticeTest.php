@@ -37,6 +37,7 @@ class Models_PracticeTest extends Models_TableModels {
 				      'website'=>'www.clear-health.com',
 				      'identifier'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'practices'; // value MUST be the same as $_table
 
 }
 

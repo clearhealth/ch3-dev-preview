@@ -35,8 +35,8 @@ class Logout extends PHPUnit_Extensions_SeleniumTestCase
 
   function testMyTestCase()
   {
-    $this->clickAt("//td[@id='menuItem_default_file']", "");
-    $this->clickAt("//td[@id='menuItem_default_quit']", "");
+    $this->clickAt("//td[@id='menuItem_All_file']", "");
+    $this->clickAt("//td[@id='menuItem_All_quit']", "");
     for ($second = 0; ; $second++) {
         if ($second >= 60) $this->fail("timeout");
         try {

@@ -2,7 +2,7 @@
 
 function applyLabResults() {
 	dojo.xhrPost ({
-		url: "<?=$this->baseUrl?>/lab-results.raw/session-selected-lab-tests",
+		url: "<?=$this->baseUrl?>/lab-results.raw/session-selected-lab-tests?personId="+mainController.getActivePatient(),
 		form: "labResults",
 		handleAs: "json",
 		load: function (data) {
@@ -24,7 +24,7 @@ function applyLabResults() {
 	<dt><label for="available-lab-tests" class="optional"><?=('Available Lab Tests')?>:</label></dt>
 	<select id="available-lab-tests[]" name="availableLabTests[]" multiple size="7" style="width:100%;">
 	<?foreach ($this->tests as $key=>$val):?>
-		<option value="<?=$val?>"><?=$val?></option>
+		<option value="<?=$key?>"<?=isset($this->selectedLabTests[$key])?' selected="selected"':''?>><?=$val?></option>
 	<?endforeach;?>
 	</select>
 </div>

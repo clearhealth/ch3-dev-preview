@@ -1,4 +1,9 @@
-<div id="allergiesGridId" style="float:left;width:100%;height:300px;overflow:auto;"></div>
+<fieldset><legend><?=__('Allergies')?></legend>
+<div id="allergiesGridId" style="float:left;width:550px;height:200px;overflow:auto;"></div>
+</fieldset>
+<fieldset><legend><?=__('Postings')?></legend>
+<div id="postingsGridId" style="float:left;width:550px;height:200px;overflow:auto;"></div>
+</fieldset>
 <script>
 function allergiesMarkEnteredInError(rowId) {
 	if (!rowId) {
@@ -133,4 +138,139 @@ function allergiesGridReload() {
 }
 
 allergiesGridReload();
+
+
+var postingsColFields = new Array();
+// Note field names, in order based on postingsGrid.setHeader
+postingsColFields.push("priority");
+postingsColFields.push("note_date");
+postingsColFields.push("user_id");
+postingsColFields.push("reason");
+postingsColFields.push("note");
+postingsColFields.push("active");
+
+var postingsGrid = new dhtmlXGridObject("postingsGridId");
+postingsGrid.setImagePath("<?=$this->baseUrl?>/img/");
+postingsGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>,");
+postingsGrid.setInitWidths("60,150,150,150,300,50,0");
+postingsGrid.setColTypes("coro,ed,ro,coro,txt,ro,ro");
+postingsGrid.setSkin("xp");
+
+function postingsGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		switch (cellIndex) {
+			case 3: // reason
+				for (var i in postingsReasons) {
+					var reason = postingsReasons[i];
+					if (reason.data == newValue) {
+						newValue = reason.id;
+						break;
+					}
+				}
+				break;
+		}
+		postingsEdit(rowId,postingsColFields[cellIndex],newValue);
+	}
+	return true;
+}
+postingsGrid.attachEvent("onEditCell",postingsGridOnCellEdited);
+
+function postingsGridReload(showAll) {
+	postingsGrid.clearAll();
+	var url = "<?=$this->baseUrl?>/postings.raw/list?patientId="+mainController.getActivePatient();
+	if (typeof showAll == "undefined") {
+		showAll = postingsMenu.getCheckboxState("showAll");
+	}
+	if (showAll != null && showAll) { // showAll because this is called before check
+		url += "&showAll=1";
+	}
+	postingsGrid.load(url,"json");
+}
+
+for (var i = 1; i <= 5; i++) {
+	postingsGrid.getCombo(0).put(i,i);
+}
+//postingsGrid.getCombo(5).put("<?=__('No')?>","<?=__('No')?>");
+//postingsGrid.getCombo(5).put("<?=__('Yes')?>","<?=__('Yes')?>");
+
+var postingsReasons = new Array();
+<?foreach ($this->reasons as $id=>$reason):?>
+postingsReasons.push({id:"<?=$id?>",data:"<?=$reason?>"});
+postingsGrid.getCombo(3).put("<?=$reason?>","<?=$reason?>");
+<?endforeach;?>
+
+function postingsProcessDone(data) {
+	postingsGridReload();
+}
+
+function postingsEdit(id,field,value,callback) {
+	if (typeof callback == "undefined") {
+		callback = postingsProcessDone;
+	}
+	var content = {
+		personId: mainController.getActivePatient(),
+		orm: "patientNote",
+		id: id,
+		field: field,
+		value: value,
+	};
+	globalProcessGeneric("process-edit-by-field",content,callback);
+}
+
+function postingsMenuOnClicked(menuItemId,type) {
+	switch (menuItemId) {
+		case "newPosting":
+			postingsEdit(0,"posting","1",function(data){
+				postingsProcessDone(data);
+				initMainToolbar(null,mainController.getActivePatient());
+			});
+			break;
+		case "showAll":
+			postingsGridReload();
+			break;
+		case "markDone":
+			var rowId = postingsGrid.getSelectedRowId();
+			if (rowId != null) {
+				postingsEdit(rowId,postingsColFields[5],"0",function(data){
+					postingsProcessDone(data);
+					initMainToolbar(null,mainController.getActivePatient());
+				});
+			}
+			break;
+		default:
+			alert("<?=__('Invalid event')?> "+menuItemId);
+	}
+}
+
+var postingsMenu = new dhtmlXMenuObject(null,"standard");
+postingsMenu.setImagePath("<?=$this->baseUrl?>/img/");
+postingsMenu.renderAsContextMenu();
+postingsMenu.setOpenMode("web");
+postingsMenu.attachEvent("onClick",postingsMenuOnClicked);
+postingsMenu.loadXML("<?=$this->baseUrl?>/postings.raw/get-context-menu");
+postingsMenu.attachEvent("onCheckboxClick",function(id,state,zoneId,caseState) {
+	postingsGridReload(!state);
+	postingsMenu.hideContextMenu();
+	return true;
+});
+
+postingsGrid.objBox.id = postingsGrid.uid();
+postingsMenu.addContextZone(postingsGrid.objBox.id);
+postingsMenu.attachEvent("onContextMenu",function(id) {
+	postingsMenu.forEachItem(function (itemId) { postingsMenu.hideItem(itemId); });
+	var rowId = postingsGrid.getSelectedRowId();
+	postingsMenu.showItem("newPosting");
+	postingsMenu.showItem("showAll");
+	if (rowId != null && postingsGrid.cells(rowId,6).getValue() == "1") {
+		postingsMenu.showItem("markDone");
+	}
+});
+
+dhtmlxEvent(postingsGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble = true;
+	return false;
+});
+
+postingsGrid.init();
+postingsGridReload();
 </script>

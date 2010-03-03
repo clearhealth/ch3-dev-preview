@@ -37,6 +37,7 @@ class Models_InsuredRelationshipTest extends Models_TableModels {
 				      'person_id'=>'Test Username',
 				      'group_name'=>'Test Group Name',);
 	protected $_assertMatches = array('group_name'=>'Test Group Name');
+	protected $_assertTableName = 'insured_relationship'; // value MUST be the same as $_table
 
 }
 

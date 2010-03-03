@@ -38,6 +38,11 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 				inner join event ev on ev.event_id = app.event_id
 				inner join person per on per.person_id = app.provider_id
 				where ev.start between '" . date('Y-m-d',strtotime($this->_date)) ." 00:00:00' and '" . date('Y-m-d',strtotime($this->_date)) . " 23:59:59'  group by app.provider_id order by per.last_name";
+		$sql = "select per.person_id, 
+				CONCAT(per.last_name, ', ', per.first_name, ' ', per.middle_name) as provider 
+				from appointments app
+				inner join person per on per.person_id = app.providerId
+				where app.start between '" . date('Y-m-d',strtotime($this->_date)) ." 00:00:00' and '" . date('Y-m-d',strtotime($this->_date)) . " 23:59:59'  group by app.providerId order by per.last_name";
 		$stmt = $db->query($sql);
 		$providersArray =  array();
 		$providersArray[] = '';
@@ -59,32 +64,35 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 				inner join person per on per.person_id = app.patient_id
 				inner join patient pat on pat.person_id = app.patient_id
 				where  ev.start between '" . date('Y-m-d',strtotime($this->_date)) ." 00:00:00' and '" . date('Y-m-d',strtotime($this->_date)) . " 23:59:59' and  app.provider_id = " . (int)$providerId . " order by ev.start ASC, ev.end ASC";
+                $sql = "select *
+                                from appointments app
+				inner join person per on per.person_id = app.patientId
+				inner join patient pat on pat.person_id = app.patientId
+				where  app.start between '" . date('Y-m-d',strtotime($this->_date)) ." 00:00:00' and '" . date('Y-m-d',strtotime($this->_date)) . " 23:59:59' and  app.providerId = " . (int)$providerId . " order by app.start ASC, app.end ASC";
 		$appointments = array();
 		//trigger_error($sql,E_USER_NOTICE);
 		foreach($db->query($sql)->fetchAll() as $row) {
 			
 			$appTime = date('h:i a',strtotime($row['start'])) . " - " . date('h:i a',strtotime($row['end']));
 			$icon = Zend_Registry::get('baseUrl') . "img/sm-scheduled.png^Schedule";
-			if ($row['appointment_code'] == "CAN" || $row['appointment_code'] =="NS") {
-			$tooltip = ($row['appointment_code'] == "CAN") ? __("Canceled") : __("No Show");	
-			$icon = Zend_Registry::get('baseUrl') . "img/sm-cancelscheduled.png^" . $tooltip;
-				
+			if ($row['appointmentCode'] == "CAN" || $row['appointmentCode'] =="NS") {
+				$tooltip = ($row['appointmentCode'] == "CAN") ? __("Canceled") : __("No Show");	
+				$icon = Zend_Registry::get('baseUrl') . "img/sm-cancelscheduled.png^" . $tooltip;
 			}
-			else if ($row['appointment_code'] == "COM") {
+			else if ($row['appointmentCode'] == "COM") {
 				$icon = Zend_Registry::get('baseUrl') . "img/sm-completed.png^Completed";
 			}
-			else if ($row['appointment_code'] == "CFM") {
+			else if ($row['appointmentCode'] == "CFM") {
 				$icon = Zend_Registry::get('baseUrl') . "img/sm-confirmedscheduled.png^Confirmed";
-	
 			}
 			else if ($row['walkin'] == 1) {
 				$icon = Zend_Registry::get('baseUrl') . "img/sm-notscheduled.png^Walk In";
 			}
 			$arrivedText = ($row['arrived'] > 0) ? "<img src='" . $this->view->baseUrl . "/img/arrived.png' title='" . __("arrived") . "'/> " : "";
 			$patientData = $arrivedText . $row['last_name'] . ", " . $row['first_name'] . " " . substr($row['middle_name'],0,1) . " #" . $row['record_number'];
-			$arrivedFlag = ($row['arrived'] > 0) ? $this->view->baseUrl . "/routing.raw/list-patient-stations?personId=" . $row['patient_id'] : ""; 
+			$arrivedFlag = ($row['arrived'] > 0) ? $this->view->baseUrl . "/routing.raw/list-patient-stations?personId=" . $row['patientId'] : ""; 
                         $appointments[] = array(
-				"id" => $row['appointment_id'],
+				"id" => $row['appointmentId'],
 				"data" => array($row['person_id'],$appTime,$icon,$arrivedFlag,$patientData)
 			);
                 }
@@ -97,11 +105,11 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 		$appointmentId = (int) $this->_getParam('appointmentId');
 		$db = Zend_Registry::get('dbAdapter');
                 $sql = "select *
-				from appointment app
+				from appointments app
 				inner join person per on per.person_id = app.patient_id
 				inner join patient pat on pat.person_id = app.patient_id
                                 where
-                                app.appointment_id = " . (int)$appointmentId ;
+                                app.appointmentId = " . (int)$appointmentId ;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
 		$json->direct($db->query($sql)->fetchAll());
@@ -275,5 +283,12 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 		var_dump($enum);
 		exit;	
 	}*/
+
+	public static function buildJSJumpLink($objectId,$signingUserId,$objectClass) {
+		$objectClass = 'Provider'; // temporarily hard code objectClass based on MainController::getMainTabs() definitions
+		//trigger_error("pip" . $objectId, E_USER_NOTICE);
+		$js = parent::buildJSJumpLink($objectId,$objectId,$objectClass);
+		return $js;
+	}
 
 }

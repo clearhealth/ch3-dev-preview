@@ -7,7 +7,7 @@ function TabStateClass() {
 }
 
 // initialize default date range (2 weeks)
-TabStateClass.prototype.params = {"dateBegin":"<?=date('Y-m-d',strtotime('-2 weeks',time()))?>","dateEnd":"<?=date('Y-m-d')?>","selectedLabTests":0};
+TabStateClass.prototype.params = {"dateBegin":"<?=date('Y-m-d',strtotime('-2 weeks',time()))?>","dateEnd":"<?=date('Y-m-d')?>","selectedLabTests":0,"orderId":0};
 
 TabStateClass.prototype.setParam = function(params) {
 	if (typeof params == "object") {
@@ -47,12 +47,11 @@ dhxWin.setImagePath("<?=$this->baseUrl?>/img/");
 dhxWin.setSkin("clear_silver");
 
 function openSelectLabTestsWindow() {
-	winSelectLabTests = dhxWin.createWindow('windowSelectLabTests',60,10,350,240);
-	winSelectLabTests.setText('<?=('Select Lab Tests')?>');
-	var url = '<?=$this->baseUrl?>/lab-results.raw/select-lab-tests';
-	winSelectLabTests.attachURL(url,true);
-	winSelectLabTests.setModal(true);
-	winSelectLabTests.centerOnScreen();
+	var params = [];
+	params.push("personId="+mainController.getActivePatient());
+	params.push("dateBegin="+TabState.getParam("dateBegin"));
+	params.push("dateEnd="+TabState.getParam("dateEnd"));
+	winSelectLabTests = globalCreateWindow("windowSelectLabTests",params,"<?=$this->baseUrl?>/lab-results.raw/select-lab-tests","<?=__('Select Lab Tests')?>",350,240);
 }
 
 function closeSelectLabTestsWindow() {
@@ -130,6 +129,8 @@ function changeDateRange(advance) {
 		dateBegin = tmpDate;
 	}
 	TabState.setParam({"dateBegin":dateBegin,"dateEnd":dateEnd});
+	TabState.setParam({"selectedLabTests":0});
+	TabState.setParam({"orderId":0});
 }
 
 </script>
@@ -176,7 +177,7 @@ labResultsLeftLayout.cells("a").setHeight("150");
 labResultsLeftLayout.cells("a").fixSize(false,true); 
 var lrepGrid = labResultsLeftLayout.cells("a").attachGrid();
 labResultsLeftLayout.cells("b").hideHeader();
-labResultsLeftLayout.cells("b").setHeight("250");
+labResultsLeftLayout.cells("b").setHeight("200");
 labResultsLeftLayout.cells("b").fixSize(false,true); 
 var drGrid = labResultsLeftLayout.cells("b").attachGrid();
 labResultsLeftLayout.cells("c").hideHeader();
@@ -199,7 +200,8 @@ lrepGrid.setColTypes("ro");
 lrepGrid.setSkin("xp");
 lrepGrid.attachEvent('onRowSelect',onLabReportsRowSelected);
 lrepGrid.init();
-lrepGrid.load('<?=$this->baseUrl?>/lab-results.raw/reports.json',"json");
+lrepGrid.addRow("tests_by_date","<?=__('Tests By Date')?>");
+lrepGrid.addRow("selected_tests_by_date","<?=__('Selected Tests By Date')?>");
 
 function onLabReportsRowSelected(rowId,cellIndex) {
 	patientId = mainController.getActivePatient();
@@ -210,6 +212,7 @@ function onLabReportsRowSelected(rowId,cellIndex) {
 	switch (rowId) {
 		case 'tests_by_date':
 			TabState.setParam({"selectedLabTests":0});
+			TabState.setParam({"orderId":0});
 			redrawLabTestsView();
 			break;
 		case 'selected_tests_by_date':
@@ -233,8 +236,13 @@ function reloadLabResultsGrid() {
 	if (!window.resultsGrid) {
 		return;
 	}
+	var params = "patientId="+mainController.getActivePatient()+"&dateBegin="+TabState.getParam('dateBegin')+"&dateEnd="+TabState.getParam('dateEnd')+"&selectedLabTests="+TabState.getParam('selectedLabTests');
+	var orderId = TabState.getParam('orderId');
+	if (orderId > 0) {
+		params = "orderId="+orderId;
+	}
 	resultsGrid.clearAll();
-	resultsGrid.load('<?=$this->baseUrl?>/lab-results.raw/results.json?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd')+'&selectedLabTests='+TabState.getParam('selectedLabTests'),onPostLoad,"json");
+	resultsGrid.load("<?=$this->baseUrl?>/lab-results.raw/results.json?"+params,onPostLoad,"json");
 	setLabResultLabel();
 }
 
@@ -268,7 +276,15 @@ drGrid.setColTypes("ro");
 drGrid.setSkin("xp");
 drGrid.attachEvent('onRowSelect',onDateRangeRowSelected);
 drGrid.init();
-drGrid.load('<?=$this->baseUrl?>/lab-results.raw/date-range.json',"json");
+drGrid.addRow("date_range","<?=__('Date Range')?>");
+drGrid.addRow("today","<?=__('Today')?>");
+drGrid.addRow("one_week","<?=__('One Week')?>");
+drGrid.addRow("two_weeks","<?=__('Two Weeks')?>");
+drGrid.addRow("one_month","<?=__('One Month')?>");
+drGrid.addRow("six_months","<?=__('Six Months')?>");
+drGrid.addRow("one_year","<?=__('One Year')?>");
+drGrid.addRow("two_years","<?=__('Two Years')?>");
+drGrid.addRow("all_results","<?=__('All Results')?>");
 
 function onDateRangeRowSelected(rowId,cellIndex) {
 	patientId = mainController.getActivePatient();
@@ -331,10 +347,15 @@ loGrid.setHeader('<?=__('Orders')?>');
 loGrid.setInitWidths("*");
 loGrid.setColTypes("ro");
 loGrid.setSkin("xp");
-
+loGrid.attachEvent("onRowSelect",function(rowId,cellIndex){TabState.setParam({"orderId":rowId});reloadLabResultsGrid();});
 loGrid.init();
-loGrid.load('<?=$this->baseUrl?>/lab-results.raw/lab-orders.json',"json");
 
+function loGridReload() {
+	loGrid.clearAll();
+	loGrid.load("<?=$this->baseUrl?>/lab-results.raw/lab-orders.json?personId="+mainController.getActivePatient(),"json");
+}
+
+loGridReload();
 
 function setLabResultLabel() {
 	var rowId = lrepGrid.getSelectedRowId();

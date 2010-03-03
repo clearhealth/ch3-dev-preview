@@ -37,6 +37,7 @@ class Models_ExternalTeamMemberTest extends Models_TableModels {
 				      'practice'=>'Test Practice',
 				      'provider'=>'Test Provider',);
 	protected $_assertMatches = array('provider'=>'Test Provider');
+	protected $_assertTableName = 'externalTeamMembers'; // value MUST be the same as $_table
 
 }
 

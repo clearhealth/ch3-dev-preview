@@ -121,6 +121,8 @@ class TestCase extends PHPUnit_Framework_TestCase {
 			$user->_shouldAudit = false;
 			$user->person = $person;
 			$user->password = TEST_LOGIN_PASSWORD;
+			$user->userId = $person->personId;
+			$user->personId = $person->personId;
 			$user->persist();
 		}
 		Zend_Auth::getInstance()->getStorage()->write($user);

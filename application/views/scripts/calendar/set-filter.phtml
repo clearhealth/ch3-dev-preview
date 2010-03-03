@@ -14,6 +14,7 @@
 	<div class="formRow" style="padding-top:4px;">
         <dt><label for="calendar-room-id"><?=__("Room")?></label></dt>
 	<select id="calendar-room-id"  name="calendar[roomId]" style="width:325px;">
+		<option value=""></option>
 	<?foreach(Room::getArray() as $roomId => $name):?>
 		<option value="<?=$roomId?>" <?if ($roomId == $this->data['roomId']):?>selected="selected"<?endif;?>><?=$name?></option>
 	<?endforeach;?>
@@ -22,28 +23,14 @@
 <br />
 	<div class="formRow" style="padding-top:4px;">
         <dt><label for="calendar-date-filter"><?=__("Date")?></label></dt>
-	<input type="text" id="calendar-date-filter"  name="calendar[dateFilter]" />
-	<script>
-		var dateFilter = dijit.byId('calendar-date-filter');
-		if (dateFilter != undefined) {
-			dateFilter.destroyRecursive();
-			dateFilter = null;
-		}
-		dateFilter = new dijit.form.DateTextBox({name:'calendar[dateFilter]',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('calendar-date-filter'));
-		<?if(!isset($this->data['dateFilter'])) {
-			$dateFilterValue = date('Y-m-d',strtotime('-1 day'));
-		}
-		else {
-			$dateFilterValue = date('Y-m-d',strtotime($this->data['dateFilter']));
-		}
-		$x = explode('-',$dateFilterValue);?>
-		var filterDate = new Date();
-		filterDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-		dateFilter.setValue(filterDate);
-
-	</script>
-
+	<?if(!isset($this->data['dateFilter'])):
+		$dateFilterValue = date('Y-m-d',strtotime('-1 day'));
+	else:
+		$dateFilterValue = date('Y-m-d',strtotime($this->data['dateFilter']));
+	endif;?>
+	<?=$this->formDateText('calendar[dateFilter]',$dateFilterValue,array('id'=>'calendar-date-filter'))?>
 	</div>
+
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">
 	<input type="hidden" id="calendar-filter-state-id" name="calendar[filterStateId]" value="<?=$this->data['filterStateId']?>" />

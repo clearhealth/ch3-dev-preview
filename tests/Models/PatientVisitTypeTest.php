@@ -37,6 +37,7 @@ class Models_PatientVisitTypeTest extends Models_TableModels {
 				      'patientId'=>5678,
 				      'isPrimary'=>1,);
 	protected $_assertMatches = array('isPrimary'=>1);
+	protected $_assertTableName = 'patientVisitTypes'; // value MUST be the same as $_table
 
 }
 

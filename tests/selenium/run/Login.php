@@ -64,15 +64,15 @@ class Login extends PHPUnit_Extensions_SeleniumTestCase
 		for ($second = 0; ; $second++) {
 			if ($second >= 60) $this->fail("timeout");
 			try {
-				if ($this->isVisible("//td[@id='menuItem_default_file']")) break;
+				if ($this->isVisible("//td[@id='menuItem_All_file']")) break;
 			} catch (Exception $e) {}
 			sleep(1);
 		}
 	}
 
 	function _logout() {
-		$this->clickAt("//td[@id='menuItem_default_file']", "");
-		$this->clickAt("//td[@id='menuItem_default_quit']", "");
+		$this->clickAt("//td[@id='menuItem_All_file']", "");
+		$this->clickAt("//td[@id='menuItem_All_quit']", "");
 		for ($second = 0; ; $second++) {
 			if ($second >= 60) $this->fail("timeout");
 			try {

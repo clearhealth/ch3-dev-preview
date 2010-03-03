@@ -37,6 +37,7 @@ class Models_PharmacyTest extends Models_TableModels {
 				      'StoreNumber'=>5678,
 				      'StoreName'=>'Test Store Name',);
 	protected $_assertMatches = array('StoreName'=>'Test Store Name');
+	protected $_assertTableName = 'pharmacies'; // value MUST be the same as $_table
 
 }
 

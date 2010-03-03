@@ -36,6 +36,7 @@ class Models_LabNoteTest extends Models_TableModels {
 	protected $_keyValues = array('lab_test_id'=>1234,
 				      'note'=>'Test Note',);
 	protected $_assertMatches = array('note'=>'Test Note');
+	protected $_assertTableName = 'lab_note'; // value MUST be the same as $_table
 
 }
 

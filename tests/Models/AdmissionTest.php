@@ -39,6 +39,7 @@ class Models_AdmissionTest extends Models_TableModels {
 				      'dateTime'=>'2009-09-23',
 				      'dischargeDateTime'=>'2009-09-23',);
 	protected $_assertMatches = array('personId'=>1234);
+	protected $_assertTableName = 'admissions'; // value MUST be the same as $_table
 
 }
 

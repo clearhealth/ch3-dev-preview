@@ -37,6 +37,7 @@ class Models_PhoneNumberTest extends Models_TableModels {
 				      'name'=>'Test Name',
 				      'type'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'number'; // value MUST be the same as $_table
 
 }
 

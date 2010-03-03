@@ -37,6 +37,7 @@ class Models_ClinicalNoteTemplateTest extends Models_TableModels {
 				      'template'=>'Test Template',
 				      'guid'=>'g-u-i-d',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'clinicalNoteTemplates'; // value MUST be the same as $_table
 
 }
 

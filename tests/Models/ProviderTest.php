@@ -37,6 +37,7 @@ class Models_ProviderTest extends Models_TableModels {
 				      'state_license_number'=>5678910,
 				      'clia_number'=>1112,);
 	protected $_assertMatches = array('state_license_number'=>5678910);
+	protected $_assertTableName = 'provider'; // value MUST be the same as $_table
 
 }
 

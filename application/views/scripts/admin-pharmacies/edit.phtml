@@ -1,0 +1,36 @@
+<?if (strlen($this->pharmacy->pharmacyId) < 2 && $this->addPharmacy == false):?>
+<?=__("No pharmacy is selected, you must select a pharmacy to edit.")?>
+<?else:?>
+<script>
+
+function submitpharmacydetailForm() {
+}
+</script>
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+		<?if ($this->message):?>
+		<div style="background-color:PaleGreen; width:100%;">
+		<?=$this->message?>
+		</div>
+		<?endif;?>
+		<?=$this->form->renderOpen()?>
+		<fieldset><legend><?=__("Pharmacy Information")?></legend>
+		<div style="float:left;width:400px;">
+			<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error) {?>
+			<?=$error?>
+			<?}?>
+			<input type="button" value="<?if (strlen($this->pharmacy->pharmacyId) > 0): echo __("Update Pharmacy");  else: echo __("Add Pharmacy"); endif;?>" onClick="dojo.xhrPost ({url: '<?=$this->baseUrl?>/admin-pharmacies.raw/process-add',form: 'pharmacydetail', handleAs: 'json', load: function (data) { 
+		alert('Pharmacy Added'); 
+		pharmacyEditTabbar.setContentHref('tab_pharmacyDetails','<?=$this->baseUrl?>/admin-pharmacies/edit?pharmacyId=' + data.pharmacyId);
+                pharmacyEditTabbar.setTabActive('tab_pharmacyDetails');
+                pharmacyEditTabbar.forceLoad(pharmacyEditTabbar.getActiveTab());
+}, error: function (er) {alert('err: ' + er)}});" />
+			<?=$this->form?>
+			<div style="text-align:right;">
+			<?=$this->form->okInput('FormButton')?>
+			<!--<input type="submit" />-->
+			</div>
+		</div>
+</div>
+<?endif;?>

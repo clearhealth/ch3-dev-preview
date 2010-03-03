@@ -36,6 +36,8 @@ class Models_BaseMed24Test extends Models_TableModels {
 	protected $_keyValues = array('fda_drugname'=>'FDA IBUPROFIN',
 				      'tradename'=>'IBUPROFIN',);
 	protected $_assertMatches = array('tradename'=>'IBUPROFIN');
+	protected $_assertTableName = 'basemed24'; // value MUST be the same as $_table
+
 
 }
 

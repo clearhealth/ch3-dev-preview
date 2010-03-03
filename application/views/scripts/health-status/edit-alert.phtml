@@ -24,23 +24,6 @@
 	<?=$this->form->dateDue->renderLabel()?>
 	<?$this->form->dateDue->setAttrib('size',35)?>
 	<?=$this->form->dateDueInput()?>
-<script>
-var dateDue = dijit.byId("hsaAlert-dateDue");
-if (dateDue != undefined) {
-	dateDue.destroyRecursive();
-	dateDue = null;
-}
-
-dateDue = new dijit.form.DateTextBox({name:"hsaAlert[dateDue]",constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId("hsaAlert-dateDue"));
-<?if($this->form->dateDue->getValue()):
-	$dateDueValue = date('Y-m-d',strtotime($this->form->dateDue->getValue()));
-	$x = explode('-',$dateDueValue);?>
-	var onsetDate = new Date();
-	onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-	dateDue.setValue(onsetDate);
-<?endif?>
-
-</script>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">

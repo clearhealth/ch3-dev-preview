@@ -36,6 +36,7 @@ class Models_ProcessingErrorTest extends Models_TableModels {
 	protected $_keyValues = array('auditId'=>1234,
 				      'handlerId'=>5678,);
 	protected $_assertMatches = array('handlerId'=>5678);
+	protected $_assertTableName = 'processingErrors'; // value MUST be the same as $_table
 
 }
 

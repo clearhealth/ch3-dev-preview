@@ -36,6 +36,7 @@ class Models_DiagnosisCodesICDTest extends Models_TableModels {
 	protected $_keyValues = array('textShort'=>'Test Text Short',
 				      'textLong'=>'Test Text Long',);
 	protected $_assertMatches = array('textShort'=>'Test Text Short');
+	protected $_assertTableName = 'diagnosisCodesICD'; // value MUST be the same as $_table
 
 }
 

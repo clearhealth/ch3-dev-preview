@@ -37,6 +37,7 @@ class Models_OrderTest extends Models_TableModels {
 				      'dateStart'=>'2009-09-23',
 				      'dateStop'=>'2009-09-24',);
 	protected $_assertMatches = array('providerId'=>1234);
+	protected $_assertTableName = 'orders'; // value MUST be the same as $_table
 
 }
 

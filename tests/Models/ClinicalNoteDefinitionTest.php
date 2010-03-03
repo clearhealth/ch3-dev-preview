@@ -37,6 +37,7 @@ class Models_ClinicalNoteDefinitionTest extends Models_TableModels {
 				      'clinicalNoteTemplateId'=>1234,
 				      'active'=>1,);
 	protected $_assertMatches = array('title'=>'Test Title');
+	protected $_assertTableName = 'clinicalNoteDefinitions'; // value MUST be the same as $_table
 
 }
 

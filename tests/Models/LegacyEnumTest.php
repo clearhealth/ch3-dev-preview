@@ -37,6 +37,7 @@ class Models_LegacyEnumTest extends Models_TableModels {
 				      'guid'=>'g-u-i-d',
 				      'systemName'=>'Test System Name',);
 	protected $_assertMatches = array('systemName'=>'Test System Name');
+	protected $_assertTableName = 'enumeration_value'; // value MUST be the same as $_table
 
 }
 

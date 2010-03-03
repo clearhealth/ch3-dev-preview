@@ -39,6 +39,7 @@ class Models_AddressTest extends Models_TableModels {
 				      'active'=>1,
 				      'line1'=>'ClearHealth St.',);
 	protected $_assertMatches = array('name'=>'Home');
+	protected $_assertTableName = 'address'; // value MUST be the same as $_table
 
 }
 

@@ -38,6 +38,7 @@ class Models_ProblemListTest extends Models_TableModels {
 				      'dateOfOnset'=>'2009-09-23',
 				      'personId'=>1234,);
 	protected $_assertMatches = array('personId'=>1234);
+	protected $_assertTableName = 'problemLists'; // value MUST be the same as $_table
 
 	public function testProblemList() {
 

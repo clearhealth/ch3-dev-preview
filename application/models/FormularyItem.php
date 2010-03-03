@@ -37,6 +37,7 @@ class FormularyItem extends WebVista_Model_ORM {
 	protected $externalUrl;
 	protected $qty;
 	protected $keywords;
+	protected $vaclass;
 	protected $_table = 'formularyDefault';
 	protected $_primaryKeys = array("fullNDC");
 
@@ -407,7 +408,7 @@ trigger_error($sql,E_USER_NOTICE);
 			$db = Zend_Registry::get('dbAdapter');
                 	$dbSelect = $db->select()
 				->from(array('f'=>$this->_table))
-				->join(array('hbm24'=>'hcapi.basemed24'),'hbm24.full_ndc = f.fullNDC');
+				->join(array('hbm24'=>'chmed.basemed24'),'hbm24.full_ndc = f.fullNDC');
 		}
 		return new WebVista_Model_ORMIterator($this,$dbSelect);
 	}
@@ -422,7 +423,7 @@ trigger_error($sql,E_USER_NOTICE);
 		if (is_null($dbSelect)) {
                 	$dbSelect = $db->select()
 				->from(array('f'=>$this->_table))
-				->join(array('hbm24'=>'hcapi.basemed24'),'hbm24.full_ndc = f.fullNDC',array('fda_drugname','dose','strength','rxnorm','tradename'));
+				->join(array('hbm24'=>'chmed.basemed24'),'hbm24.full_ndc = f.fullNDC',array('fda_drugname','dose','strength','rxnorm','tradename'));
 		}
 		return $db->query($dbSelect)->fetchAll();
 	}

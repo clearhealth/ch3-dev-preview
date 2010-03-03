@@ -37,6 +37,7 @@ class Models_PatientStatisticsTest extends Models_TableModels {
 				      'race'=>1,
 				      'income'=>1000,);
 	protected $_assertMatches = array('income'=>1000);
+	protected $_assertTableName = 'patient_statistics'; // value MUST be the same as $_table
 
 }
 

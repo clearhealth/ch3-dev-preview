@@ -65,7 +65,7 @@ class ESignature extends WebVista_Model_ORM {
 
                 $esig->objectId = $object->getDocumentId();
                 $esig->objectClass = get_class($object);
-                $esig->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+                $esig->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
                 $esig->dateTime = date('Y-m-d H:i:s');
                 $esig->persist();
 	}

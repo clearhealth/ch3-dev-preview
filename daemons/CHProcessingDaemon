@@ -1,7 +1,7 @@
 #!/usr/bin/php
 <?php
 /*****************************************************************************
-*       hl7msgd
+*       CHProcessingDaemon
 *
 *       Author:  ClearHealth Inc. (www.clear-health.com)        2009
 *       
@@ -78,6 +78,8 @@ class CHProcessingDaemon extends WebVista {
 			$user->_shouldAudit = false;
 			$user->person = $person;
 			$user->password = $password;
+			$user->userId = $person->personId;
+			$user->personId = $person->personId;
 			$user->persist();
 		}
 		Zend_Auth::getInstance()->getStorage()->write($user);

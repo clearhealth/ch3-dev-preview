@@ -76,6 +76,7 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_DiagnosisCodesAllergyTest');
 		$suite->addTestSuite('Models_DiagnosisCodesICDTest');
 		$suite->addTestSuite('Models_DiagnosisCodesSNOMEDTest');
+		//$suite->addTestSuite('Models_DrugScheduleDaysSupplyTest');
 		$suite->addTestSuite('Models_EnumerationTest');
 		$suite->addTestSuite('Models_EnumerationsClosureTest');
 		$suite->addTestSuite('Models_ESignatureTest');
@@ -114,7 +115,7 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_PatientStatisticsTest');
 		$suite->addTestSuite('Models_PatientVisitTypeTest');
 		$suite->addTestSuite('Models_PersonTest');
-		//$suite->addTestSuite('Models_PharmacyTest');
+		$suite->addTestSuite('Models_PharmacyTest');
 		$suite->addTestSuite('Models_PhoneNumberTest');
 		$suite->addTestSuite('Models_PracticeTest');
 		$suite->addTestSuite('Models_ProblemListCommentTest');
@@ -133,6 +134,7 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_TeamMemberTest');
 		$suite->addTestSuite('Models_TemplatedTextTest');
 		$suite->addTestSuite('Models_TemplateXSLTTest');
+		//$suite->addTestSuite('Models_UpdateFileTest');
 		$suite->addTestSuite('Models_UserTest');
 		$suite->addTestSuite('Models_VisitTest');
 		$suite->addTestSuite('Models_VitalSignGroupTest');

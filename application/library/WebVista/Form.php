@@ -43,8 +43,7 @@ class WebVista_Form extends Zend_Form {
 			}
 			if (!is_object($obj->$field)) {
 				if (preg_match('/^date.*/',$field)) {
-					$element = new Zend_Dojo_Form_Element_DateTextBox($field);
-					$element->setLabel($this->_prettyName($field));
+					$element = $this->createElement('dateText',$field, array('label' => $this->_prettyName($field)));
 				}
 				elseif (preg_match('/.*_id$/',$field)) {
 					$element = $this->createElement('hidden',$field, array('label' => $this->_prettyName($field)));

@@ -31,14 +31,12 @@ $categories['User'] = "User";
 <script>
 
 function enumEditObject(enumerationId) {
-	var winEditORM = dhxWins.createWindow('windowEditORMObjectId',60,10,400,400);
-	winEditORM.setText('<?=__('Edit ORM Object')?>');
-	winEditORM.attachURL('<?=$this->baseUrl?>/generic-edit.raw?enumerationId='+enumerationId,true);
-	//winEditORM.setModal(true);
-	winEditORM.centerOnScreen();
+	var params = [];
+	params.push("enumerationId="+enumerationId);
+	var winEditORM = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/generic-edit.raw","<?=__('Edit ORM Object')?>",400,400);
 }
 
-function enumSingleUpdate(field,id,value,callback) {
+function enumSingleUpdate(field,id,value,cellIndex,grid) {
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/enumerations-manager.raw/process-edit-single-item",
 		handleAs: "json",
@@ -48,9 +46,7 @@ function enumSingleUpdate(field,id,value,callback) {
 			value: value,
 		},
 		load: function (data) {
-			if (typeof callback == 'function') {
-				callback(data);
-			}
+			grid.cells(id,cellIndex).setValue(data);
 		},
 		error: function (error) {
 			alert(error);
@@ -146,26 +142,35 @@ function enumOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 	switch (stage) {
 		case 2:
 			if (newValue != oldValue) {
-				enumSingleUpdate("name",rowId,newValue,enumUpdateListGrid);
+				enumSingleUpdate("name",rowId,newValue,cellIndex,enumListGrid);
 			}
 			break;
 	}
 	return true;
 }
 
-function enumerationEditWindow(enumerationId,parentId) {
-	var additionalArgs = new Array();
+function enumerationEditWindow(enumerationId,parentId,grid,ormClass) {
+	var params = [];
 	if (enumerationId) {
-		additionalArgs.push("enumerationId="+enumerationId);
+		params.push("enumerationId="+enumerationId);
 	}
 	if (parentId) {
-		additionalArgs.push("parentId="+parentId);
+		params.push("parentId="+parentId);
 	}
-	var winEditEnumeration = dhxWins.createWindow('windowEditEnumerationId',60,10,350,420);
-	winEditEnumeration.setText('<?=__('Add/Edit Enumeration')?>');
-	winEditEnumeration.attachURL('<?=$this->baseUrl?>/enumerations-manager.raw/edit?'+additionalArgs.join("&"),true);
-	//winEditEnumeration.setModal(true);
-	winEditEnumeration.centerOnScreen();
+	if (grid) {
+		params.push("grid="+grid);
+	}
+	if (ormClass) {
+		params.push("ormClass="+ormClass);
+	}
+
+	var enumCategorySelect = dojo.byId("enumCategorySelect");
+	var enumCategory = enumCategorySelect.options[enumCategorySelect.selectedIndex].value;
+	if (enumCategory == "select") {
+		enumCategory = "User";
+	}
+	params.push("category="+enumCategory);
+	var winEditEnumeration = globalCreateWindow("windowEditEnumerationId",params,"<?=$this->baseUrl?>/enumerations-manager.raw/edit","<?=__('Add/Edit Enumeration')?>",350,420);
 }
 
 enumUpdateListGrid();

@@ -36,6 +36,7 @@ class Models_ESignatureTest extends Models_TableModels {
 	protected $_keyValues = array('eSignatureParentId'=>123,
 				      'dateTime'=>'2009-09-23',);
 	protected $_assertMatches = array('eSignatureParentId'=>123);
+	protected $_assertTableName = 'eSignatures'; // value MUST be the same as $_table
 
 }
 

@@ -27,6 +27,7 @@ class PatientDiagnosis extends WebVista_Model_ORM {
 	protected $code;
 	protected $patientId;
 	protected $providerId;
+	protected $dateTime;
 	protected $addToProblemList;
 	protected $isPrimary;
 	protected $diagnosis;

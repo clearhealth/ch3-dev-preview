@@ -1,10 +1,6 @@
-<?if (!$this->user->user_id > 0):?>
+<?if (!$this->user->personId > 0):?>
 <?=__("No person is selected, you must select a person to edit.")?>
 <?else:?>
-<script>
-//djConfig.usePlainJson=true;
-//dojo.require("dijit.form.DateTextBox");
-</script>
 <div style="margin-left:auto;margin-right:auto;font-size:9pt;">
 	<div style="float:left;">
 		<?if ($this->message):?>
@@ -26,7 +22,9 @@
 			<?foreach ($this->form->getErrorMessages() as $error) {?>
 			<?=$error?>
 			<?}?>
-			<?=$this->form->user_idInput('FormHidden')?>
+			<?=$this->form->userIdInput('FormHidden')?>
+			<?=$this->form->personIdInput('FormHidden')?>
+			<?=$this->formHidden('personId',$this->form->personId->getValue())?>
 			<div class="formRow">
 			<?=$this->form->username->renderLabel()?>
 			<?=$this->form->usernameInput()?>
@@ -34,6 +32,12 @@
 			<div class="formRow">
 			<?=$this->form->password->renderLabel()?>
 			<?=$this->form->passwordInput()?>
+			</div>
+			<br style="clear:left;" />
+			<br style="clear:left;" />
+			<div class="formRow">
+				<?=$this->form->defaultBuildingId->renderLabel()?>
+				<?=$this->form->defaultBuildingIdInput('FormSelect',array('options'=>Building::getBuildingArray(),'style'=>'width:250px;'))?>
 			</div>
 			</div>
 			<?=$this->form->renderClose()?>

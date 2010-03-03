@@ -37,6 +37,7 @@ class Models_PersonTest extends Models_TableModels {
 				      'first_name'=>'Test First Name',
 				      'middle_name'=>'Test Middle Name',);
 	protected $_assertMatches = array('last_name'=>'Test Last Name');
+	protected $_assertTableName = 'person'; // value MUST be the same as $_table
 
 }
 

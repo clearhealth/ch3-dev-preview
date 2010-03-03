@@ -22,8 +22,8 @@
 *****************************************************************************/
 
 
-class AdminUsersController extends WebVista_Controller_Action
-{
+class AdminUsersController extends WebVista_Controller_Action {
+
 	protected $_form;
 	protected $_user;
 	
@@ -32,10 +32,11 @@ class AdminUsersController extends WebVista_Controller_Action
         	if (isset($this->_session->messages)) {
         	    $this->view->messages = $this->_session->messages;
         	}
-		$this->_form = new WebVista_Form(array('name' => 'person-detail'));
-		$this->_form->setAction(Zend_Registry::get('baseUrl') . "admin-user.raw/edit-process");
+		$this->_form = new WebVista_Form(array('name' => 'user-detail'));
+		$this->_form->setAction(Zend_Registry::get('baseUrl') . "admin-users.raw/edit-process");
 		$this->_user = new User();
 		$this->_user->populateWithPersonId($personId);
+		$this->_user->personId = $personId;
 		$this->_form->loadORM($this->_user, "User");
 		//var_dump($this->_form);
 		$this->view->form = $this->_form;
@@ -43,13 +44,18 @@ class AdminUsersController extends WebVista_Controller_Action
         	$this->render('edit-user');
 	}
 
-	function editProcessAction() {
-		$this->indexAction();
-		//$this->_form->isValid($_POST);
-		$this->user->populateWithArray($_POST['user']);
-		$this->user->persist();
-		$this->view->message = "Record Saved for User: " . ucfirst($this->user->username);
-        	$this->render('index');
+	public function editProcessAction() {
+		$personId = (int)$this->_getParam('personId');
+		$params = $this->_getParam('user');
+		$this->_user = new User();
+		$this->_user->populateWithPersonId($personId);
+		$this->_user->personId = $personId;
+		$this->_user->populateWithArray($params);
+		$this->_user->persist();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$msg = "Record Saved for User: " . ucfirst($this->_user->username);
+		$json->direct($msg);
 	}
 
 	public function changePasswordAction() {
@@ -58,9 +64,10 @@ class AdminUsersController extends WebVista_Controller_Action
 
 	public function processChangePasswordAction() {
 		$params = $this->_getParam('user');
-		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$user = new User();
 		$user->userId = $currentUserId;
+		$user->personId = $currentUserId; // userId and personId are similar
 		$user->populate();
 		if ($params['newPassword'] != $params['confirmNewPassword']) {
 			$ret = __('New password does not match confirmed password.');
@@ -86,7 +93,7 @@ class AdminUsersController extends WebVista_Controller_Action
 	}
 
 	public function editSigningKeyAction() {
-		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$userKey = new UserKey();
 		$userKey->userId = $currentUserId;
 		$userKey->populate();
@@ -110,7 +117,7 @@ class AdminUsersController extends WebVista_Controller_Action
 			$ret = __('New signature must be different from current signature.');
 		}
 		else {
-			$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+			$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 			$userKey = new UserKey();
 			$userKey->userId = $currentUserId;
 			$userKey->populate();
@@ -137,7 +144,7 @@ class AdminUsersController extends WebVista_Controller_Action
 
 	public function validateSigningKeyAction() {
 		$signature = $this->_getParam('signature');
-		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$userKey = new UserKey();
 		$userKey->userId = $currentUserId;
 		$userKey->populate();
@@ -157,6 +164,44 @@ class AdminUsersController extends WebVista_Controller_Action
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
+	}
+
+	public function editLocationAction() {
+		$personId = (int)$this->_getParam('personId');
+		$this->_form = new WebVista_Form(array('name' => 'user'));
+		$this->_form->setAction(Zend_Registry::get('baseUrl').'admin-users.raw/process-edit-location');
+		$this->_user = new User();
+		$this->_user->populateWithPersonId($personId);
+		$this->_user->personId = $personId;
+		$this->_form->loadORM($this->_user,'User');
+		$this->view->form = $this->_form;
+		$this->view->facilityIterator = new FacilityIterator();
+		$this->render('edit-location');
+	}
+
+	public function processEditLocationAction() {
+		$personId = (int)$this->_getParam('personId');
+		$params = $this->_getParam('user');
+		$this->_user = new User();
+		$this->_user->userId = $personId;
+		$this->_user->populateWithPersonId($personId);
+		$this->_user->personId = $personId;
+		$this->_user->populateWithArray($params);
+		$this->_user->persist();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$msg = __('Record Saved');
+		$json->direct($msg);
+	}
+
+	public function processAddAction() {
+		$username = $this->_getParam('username');
+		$user = new User();
+		$user->username = $username;
+		$user->persist();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($user->personId);
 	}
 
 }

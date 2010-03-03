@@ -110,17 +110,18 @@ class ExamsController extends WebVista_Controller_Action {
 		if ($patientId > 0) {
 			$patientExamIterator = new PatientExamIterator();
 			$patientExamIterator->setFilters(array('patientId'=>$patientId));
-			$listResults = $this->_getEnumerationByName(PatientExam::ENUM_RESULT_PARENT_NAME);
+			//$listResults = $this->_getEnumerationByName(PatientExam::ENUM_RESULT_PARENT_NAME);
 			foreach ($patientExamIterator as $exam) {
-				$result = '';
-				if (isset($listResults[$exam->result])) {
-					$result = $listResults[$exam->result];
-				}
+				//$result = '';
+				//if (isset($listResults[$exam->result])) {
+				//	$result = $listResults[$exam->result];
+				//}
 				$tmp = array();
 				$tmp['id'] = $exam->code;
-				$tmp['data'][] = $result;
-				$tmp['data'][] = $exam->exam;
+				$tmp['data'][] = $exam->dateExamined;
 				$tmp['data'][] = $exam->result;
+				$tmp['data'][] = $exam->exam;
+				$tmp['data'][] = $exam->refused;
 				$tmp['data'][] = $exam->comments;
 				$rows[] = $tmp;
 			}
@@ -132,12 +133,32 @@ class ExamsController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generatePatientExamPreferencesEnum();
-		Enumeration::generateExamResultPreferencesEnum();
-		Enumeration::generateExamOtherPreferencesEnum();
-		echo 'Done';
-		die;
+	public function processEditExamAction() {
+		$exams = $this->_getParam('exams');
+		$patientExam = new PatientExam();
+		$patientExam->populateWithArray($exams);
+		$patientExam->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processDeleteExamAction() {
+		$code = $this->_getParam('code');
+		$patientExam = new PatientExam();
+		$patientExam->code = $code;
+		$patientExam->setPersistMode(WebVista_Model_ORM::DELETE);
+		$patientExam->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function examContextMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render();
 	}
 
 }

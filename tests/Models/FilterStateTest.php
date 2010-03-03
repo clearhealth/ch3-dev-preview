@@ -38,6 +38,7 @@ class Models_FilterStateTest extends Models_TableModels {
 				      'roomId'=>456,
 				      'dateFilter'=>'2009-09-23',);
 	protected $_assertMatches = array('tabName'=>'Test Tab Name');
+	protected $_assertTableName = 'filterStates'; // value MUST be the same as $_table
 
 }
 

@@ -417,6 +417,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dojojs'][] = 'form-DateTextBox';
 		$files['dojojs'][] = 'io-iframe';
 		$files['dojojs'][] = 'custom-SelectComboBox';
+		$files['dojojs'][] = 'widget-TimeSpinner';
 
 		$files['dojojs'][] = 'colors';
 		$files['dojojs'][] = 'gfx-_base';
@@ -476,8 +477,10 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
 		$files['dhtmlxjs'][] = 'ch3grid_excell_sub_row';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_drag';
+		$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';
 		$files['dhtmlxjs'][] = 'ch3treegrid';
+		$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
 		$files['dhtmlxjs'][] = 'dhtmlxtree_json';
 		$files['dhtmlxjs'][] = 'dhtmlxlayout';
 		$files['dhtmlxjs'][] = 'dhtmlxaccordion';
@@ -485,6 +488,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxeditor';
 		
 		$files['chbootstrap'][] = 'ch3main';
+		$files['chbootstrap'][] = 'menuActions';
 		return $files;
 	}
 }

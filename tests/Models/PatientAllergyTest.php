@@ -37,6 +37,7 @@ class Models_PatientAllergyTest extends Models_TableModels {
 				      'observerId'=>1,
 				      'causativeAgent'=>'Test Allergy',);
 	protected $_assertMatches = array('causativeAgent'=>'Test Allergy');
+	protected $_assertTableName = 'patientAllergies'; // value MUST be the same as $_table
 
 }
 

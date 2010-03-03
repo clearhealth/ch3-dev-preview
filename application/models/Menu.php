@@ -70,7 +70,7 @@ class Menu {
 			       ->where('e.active = 1')
 			       ->order('ec.weight ASC')
 			       ->order('m.displayOrder ASC');
-
+		trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		if ($rowset = $db->fetchAll($dbSelect)) {
 			$item = null;
 			foreach ($rowset as $row) {

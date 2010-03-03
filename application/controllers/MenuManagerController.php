@@ -415,6 +415,72 @@ class MenuManagerController extends WebVista_Controller_Action {
         return;
     }
 
+	public function processMenuReloadAction() {
+		// clear cache
+		$cache = Zend_Registry::get('cache');
+		$cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG, array('tagMenu'));
+		// check cache config
+		$objConfig = new ConfigItem();
+		$objConfig->configId = 'enableCache';
+		$objConfig->populate();
+		if (!$objConfig->value > 0) {
+			$objConfig->value = 1;
+			$objConfig->persist();
+		}
+
+		$data = true;
+		$basePath = Zend_Registry::get('basePath');
+		$jsActionFile = $basePath.'/js/menuActions.js';
+		if (file_exists($jsActionFile) && !is_writable($jsActionFile) && chmod($basePath.'/js',0777) === false) {
+			$data = __('menuActions.js file is not writable');
+		}
+		else {
+			$menuActions = '';
+			$mainMenu = array();
+			$menuItems = MenuItem::getMenuItems();
+			foreach ($menuItems as $menu) {
+				$idName = preg_replace('/\ |[^A-Za-z]/','_',strtolower($menu['title']));
+				$mainMenu["{$menu['siteSection']}_{$idName}"] = $menu['jsAction'];
+			}
+			$menuActions .= <<<EOL
+function onMainMenuItemSelected(itemId,itemValue) {
+	switch (itemId) {
+EOL;
+			foreach ($mainMenu as $key=>$value) {
+				$menuActions .= <<<EOL
+
+		case "{$key}":
+			{$value}
+			break;
+EOL;
+			}
+			$menuActions .= <<<EOL
+
+	}
+}
+EOL;
+			copy($jsActionFile,$jsActionFile.'.bak');
+			file_put_contents($jsActionFile,$menuActions);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processMenuRevertAction() {
+		$data = true;
+		$basePath = Zend_Registry::get('basePath');
+		$jsActionFile = $basePath.'/js/menuActions.js';
+		if (!file_exists($jsActionFile.'.bak')) {
+			$data = __('No backup menu file');
+		}
+		else {
+			copy($jsActionFile.'.bak',$jsActionFile);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
 
 }
 

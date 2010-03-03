@@ -103,6 +103,11 @@ class DiagnosisController extends WebVista_Controller_Action {
 				$diagnosis['code'] = $code;
 				$diagnosis['patientId'] = $patientId;
 				$patientDiagnosis = new PatientDiagnosis();
+				$patientDiagnosis->code = $code;
+				$patientDiagnosis->populate();
+				if ($patientDiagnosis->dateTime == '0000-00-00 00:00:00') {
+					$diagnosis['dateTime'] = date('Y-m-d H:i:s');
+				}
 				$patientDiagnosis->populateWithArray($diagnosis);
 				$patientDiagnosis->persist();
 			}

@@ -29,6 +29,7 @@ class User extends WebVista_Model_ORM {
 	protected $username;
 	protected $password;
 	protected $default_location_id;
+	protected $defaultBuildingId;
 
 	protected $_table = "user";
 	protected $_primaryKeys = array("user_id");
@@ -37,6 +38,24 @@ class User extends WebVista_Model_ORM {
 	public function __construct() {
 		parent::__construct();
 		$this->person = new Person();
+	}
+
+	public function setPersonId($id) {
+		$this->person_id = (int)$id;
+		$this->user_id = $this->person_id;
+		$this->person->personId = $this->person_id;
+	}
+
+	public function setUserId($id) {
+		$this->setPersonId($id);
+	}
+
+	public function setPerson_id($id) {
+		$this->setPersonId($id);
+	}
+
+	public function setUser_id($id) {
+		$this->setPersonId($id);
 	}
 
 	public function populateWithUsername($username = null) {

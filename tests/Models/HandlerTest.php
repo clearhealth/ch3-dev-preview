@@ -37,6 +37,7 @@ class Models_HandlerTest extends Models_TableModels {
 				      'name'=>'Test Name',
 				      'direction'=>'Test Direction',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'handlers'; // value MUST be the same as $_table
 
 }
 

@@ -37,6 +37,7 @@ class Models_ProcedureCodesImmunizationTest extends Models_TableModels {
 				      'textShort'=>'Test textShort',
 				      'textLong'=>'Test textLong',);
 	protected $_assertMatches = array('textLong'=>'Test textLong');
+	protected $_assertTableName = 'procedureCodesImmunization'; // value MUST be the same as $_table
 
 	public function testPersist() {
 		// nothing to do

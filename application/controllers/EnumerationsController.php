@@ -30,7 +30,7 @@ class EnumerationsController extends WebVista_Controller_Action {
         }
 
 	public function indexAction() {
-		$enumAr = Enumeration::getEnumArray("Gender","key","name");
+		$enumAr = Enumeration::getEnumArray('Gender','enumerationId');
 		var_dump($enumAr);
 		exit;
 		$this->render();

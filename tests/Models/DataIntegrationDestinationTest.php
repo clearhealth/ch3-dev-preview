@@ -39,6 +39,7 @@ class Models_DataIntegrationDestinationTest extends Models_TableModels {
 				      'connectInfo'=>'Test Connect Info',
 				      'handlerType'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'dataIntegrationDestinations'; // value MUST be the same as $_table
 
 }
 

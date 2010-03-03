@@ -1,0 +1,364 @@
+<style>
+div.gridbox_xp table.obj td {
+	border-bottom: 1px solid #eee;
+	border-right: 1px solid #eee;
+}
+button,input,select {
+	margin: 0em 0.1em;
+	border:1px solid #b3b3b3;
+	line-height: normal;
+	font-size: 100%;
+	width: 15em;
+}
+</style>
+
+<div id="vitalSignsToolbarsId">
+	<div id="vitalSignsToolbarId" style="width:100%;border:1px solid Silver;"></div>
+	<div id="vitalSignsFilterId" style="width:100%;height:20px;background-color:#ece9d8;padding:5px;">
+		<div style="float:left;">
+			<label><?=__('Date')?>:</label> <select id="filterDateId" onChange="vitalSignsSetFilterDate(this.options[this.selectedIndex].value)">
+				<?foreach ($this->filterDates as $key=>$value):?>
+				<option value="<?=$key?>"><?=$value?></option>
+				<?endforeach;?>
+				<option value="custom"><?=__('Custom')?></option>
+			</select>
+			<label><?=__('From')?>:</label> <?=$this->formDateText('filterFrom','',array('id'=>'filterFromId','disable'=>true))?>
+			<label><?=__('To')?>:</label> <?=$this->formDateText('filterTo','',array('id'=>'filterToId','disable'=>true))?>
+		</div>
+		<div style="float:right;margin-right:10px;">
+			<label><?=__('Graph')?>:</label> <select id="filterGraphId" onChange="vitalSignsSetFilterGraph(this.options[this.selectedIndex].value)">
+				<option value=""><?=__('None')?></option>
+				<?foreach ($this->filterGraphs as $key=>$value):?>
+				<option value="<?=$key?>"<?=($key == 'temperature-pulse-respiration')?' selected="selected"':''?>><?=$value?></option>
+				<?endforeach;?>
+			</select>
+		</div>
+	</div>
+</div>
+<div style="position:absolute;width:100%;height:480px;">
+	<div id="vitalSignsLayoutId" style="width:100%;height:100%;"></div>
+</div>
+
+<div id="vitalSignsGraphId" style="width:100%;height:200px;">
+	<div id="graphLegendId" style="width:100%;height:20px;overflow:auto;background-color:#ece9d8;padding-top:5px;"><center><label id="vitalSignsLegendLabelId" style="border:1px solid #000;padding:3px;background-color:#fff;">Legend</label></center></div>
+	<div id="graphChartId" style="width:100%;height:170px;overflow:auto;"></div>
+</div>
+
+<script>
+
+var colorList = [];
+colorList[colorList.length] = "#FF0000"; // Red
+colorList[colorList.length] = "#008000"; // Green
+colorList[colorList.length] = "#0000FF"; // Blue
+colorList[colorList.length] = "#FFFF00"; // Yellow
+colorList[colorList.length] = "#FFA500"; // Orange
+colorList[colorList.length] = "#FF4500"; // OrangeRed
+colorList[colorList.length] = "#FFC0CB"; // Pink
+colorList[colorList.length] = "#800080"; // Purple
+colorList[colorList.length] = "#A52A2A"; // Brown
+colorList[colorList.length] = "#00FFFF"; // Cyan
+colorList[colorList.length] = "#D2691E"; // Chocolate
+colorList[colorList.length] = "#FF7F50"; // Coral
+colorList[colorList.length] = "#FFD700"; // Gold
+colorList[colorList.length] = "#FF00FF"; // Fuchsia
+colorList[colorList.length] = "#EE82EE"; // Violet
+colorList[colorList.length] = "#FF00FF"; // Magenta
+colorList[colorList.length] = "#800000"; // Maroon
+
+var graphChart = null;
+var chartData = {};
+var minDate = null;
+var maxDate = null;
+
+function getColor(index) {
+	if (index < 0) {
+		index = 0;
+	}
+	if (index > (colorList.length - 1)) {
+		index = index % (colorList.length - 1);
+	}
+	return colorList[index];
+}
+
+dojo.connect(boxFilterFromId,"onChange","vitalSignsBoxFiltersOnChange");
+dojo.connect(boxFilterToId,"onChange","vitalSignsBoxFiltersOnChange");
+function vitalSignsBoxFiltersOnChange() {
+	vitalSignsSetFilterDate();
+}
+
+function vitalSignsSetFilterDate(filterDate) {
+	if (typeof filterDate == "undefined") {
+		var filterDateSelect = dojo.byId("filterDateId");
+		filterDate = filterDateSelect.options[filterDateSelect.selectedIndex].value;
+	}
+	if (filterDate == "custom") {
+		boxFilterFromId.setDisabled(false);
+		boxFilterToId.setDisabled(false);
+	}
+	else {
+		boxFilterFromId.setDisabled(true);
+		boxFilterToId.setDisabled(true);
+	}
+	vitalSignsLabelGridReload();
+}
+
+var graphFilterList = {
+<?foreach ($this->filterGraphs as $key=>$value):?>
+	"<?=$key?>": "<?=$value?>",
+<?endforeach;?>
+	"systolic": "Systolic",
+	"diastolic": "Diastolic",
+};
+function vitalSignsSetFilterGraph(filterGraph) {
+	if (typeof filterGraph == "undefined") {
+		var filterGraphSelect = dojo.byId("filterGraphId");
+		filterGraph = filterGraphSelect.options[filterGraphSelect.selectedIndex].value;
+	}
+	if (filterGraph == "") {
+		dojo.byId("vitalSignsGraphId").style.display = "none";
+	}
+	else {
+		if (dojo.byId("vitalSignsGraphId").style.display == "none") {
+			dojo.byId("vitalSignsGraphId").style.display = "block";
+		}
+		var filterData = [];
+		var legend = "";
+		var filters = [];
+		var tmpFilters = filterGraph.split("-");
+		for (var i = 0; i < tmpFilters.length; i++) {
+			var filter = tmpFilters[i];
+			if (filter == "bloodPressure") {
+				filters.push(filter+"-systolic");
+				filters.push(filter+"-diastolic");
+			}
+			else {
+				filters.push(filter);
+			}
+		}
+		for (var i = 0; i < filters.length; i++) {
+			var color = getColor(i);
+			var filter = filters[i];
+			var filterIndex = filter;
+			var rowId = filter;
+			var arrFilter = filter.split("-");
+			if (arrFilter.length > 1) {
+				filterIndex = arrFilter[1];
+				rowId = arrFilter[0];
+			}
+			legend += " <font color=\""+color+"\">"+graphFilterList[filterIndex]+"</font> ";
+			if (!vitalSignsLabelGrid.doesRowExist(rowId)) {
+				continue;
+			}
+			filterData[filterIndex] = {"color":color,"filter":filter,"data":[]};
+		}
+		dojo.setInnerHTML(dojo.byId("vitalSignsLegendLabelId"),legend);
+
+		vitalSignsGenerateGraph(filterData);
+	}
+}
+
+function vitalSignsGenerateGraph(filtersData) {
+	dojo.setInnerHTML(dojo.byId("graphChartId"),"");
+	var numCols = vitalSignsLabelGrid.getColumnsNum();
+	if (typeof filtersData != "object" || !(numCols > 1)) {
+		return;
+	}
+	var vAxes = [];
+	var hAxes = [];
+	var vZero = false;
+	var hIndex = 0;
+	var vIndex = 0;
+
+	for (var i in filtersData) {
+		var filter = filtersData[i].filter;
+		var rowId = filter;
+		var arrFilter = rowId.split("-");
+		if (arrFilter.length > 1) {
+			filter = arrFilter[1];
+			rowId = arrFilter[0];
+		}
+		if (!vitalSignsLabelGrid.doesRowExist(rowId)) {
+			continue;
+		}
+		for (var j = 1; j < numCols; j++) {
+			var vitalDate = vitalSignsLabelGrid.cells("dates",j).getValue();
+			var inArray = false;
+			for (var k in hAxes) {
+				if (hAxes[k] == vitalDate) {
+					hIndex = k;
+					inArray = true;
+					break;
+				}
+			}
+			if (!inArray) {
+				hIndex = hAxes.length;
+				hAxes[hIndex] = vitalDate;
+			}
+
+			var value = vitalSignsLabelGrid.cells(rowId,j).getValue();
+			if (value == "") {
+				continue;
+			}
+			// remove metric value if any
+			value = value.replace(/ \(.*\)/i,"");
+
+			if (rowId != filter) {
+				if (rowId == "bloodPressure") {
+					arrValues = value.split("/");
+					if (filter == "systolic") {
+						value = arrValues[0];
+					}
+					else if (filter == "diastolic") {
+						value = arrValues[1];
+					}
+				}
+			}
+
+			inArray = false;
+			for (var k in vAxes) {
+				if (vAxes[k] == value) {
+					vIndex = k;
+					inArray = true;
+					break;
+				}
+			}
+			if (!inArray) {
+				if (value == "0") {
+					vZero = true;
+				}
+				vIndex = vAxes.length;
+				vAxes[vIndex] = value;
+			}
+			filtersData[i].data.push({"date":vitalDate,"value":value,"axis":{"x":hIndex,"y":vIndex}});
+		}
+	}
+
+	if (!vZero) {
+		vAxes.push("0");
+	}
+	vAxes.sort(function(a,b){return(a-b);}); // numeric sort in ascending order
+
+	var vLabels = [];
+	var hLabels = [];
+	for (var i in vAxes) {
+		var vLabel = '{value:"'+i+'",text:"'+vAxes[i]+'"}';
+		vLabels.push(vLabel);
+	}
+	for (var i in hAxes) {
+		var hLabel = '{value:"'+i+'",text:"'+hAxes[i]+'"}';
+		hLabels.push(hLabel);
+	}
+	var arrPlots = [];
+	var defaultSeries = [];
+	defaultSeries[defaultSeries.length] = "{x:0,y:"+(vLabels.length-1)+"}";
+	defaultSeries[defaultSeries.length] = "{x:0,y:0}";
+	defaultSeries[defaultSeries.length] = "{x:"+(hLabels.length-1)+",y:0}";
+	arrPlots[0] = {name:"imaginary",seriesName:"Imaginary Plot",series:defaultSeries,"color":"gray","markers":false};
+
+	for (var i in filtersData) {
+		var filter = filtersData[i];
+		if (!(filter.data.length > 0)) {
+			continue;
+		}
+		var series = [];
+		for (var j in filter.data) {
+			var x = 0;
+			var y = 0;
+			for (var k in hAxes) {
+				if (hAxes[k] == filter.data[j].date) {
+					x = k;
+					break;
+				}
+			}
+			for (var k in vAxes) {
+				if (vAxes[k] == filter.data[j].value) {
+					y = k;
+					break;
+				}
+			}
+			series[series.length] = "{x:"+x+",y:"+y+"}";
+		}
+		var plotIndex = arrPlots.length;
+		arrPlots[plotIndex] = {name:"plot"+i,seriesName:"Plot "+i,series:series,"color":filtersData[i].color,"markers":true};
+	}
+
+	if (graphChart != null) {
+		graphChart.destroy();
+	}
+	graphChart = new custom.Chart2D("graphChartId");
+
+	var plots = [];
+	for (var i in arrPlots) {
+		var plot = arrPlots[i];
+		eval('plots[plots.length] = {name:"'+plot.name+'",seriesName:"'+plot.seriesName+'",series:['+plot.series.join(',')+'],color:"'+plot.color+'",markers:'+plot.markers+'};');
+	}
+	eval('var plotData = {xLabels:['+hLabels.join(',')+'],yLabels:['+vLabels.join(',')+'],plots:plots};');
+	graphChart.createGraph(plotData);
+}
+
+var vitalSignsLayout = new dhtmlXLayoutObject("vitalSignsLayoutId","3E");
+vitalSignsLayout.setEffect("collapse",true);
+vitalSignsLayout.cells("a").hideHeader();
+vitalSignsLayout.cells("a").setHeight(80);
+vitalSignsLayout.cells("a").attachObject(dojo.byId("vitalSignsToolbarsId"));
+vitalSignsLayout.cells("a").fixSize(false,true);
+vitalSignsLayout.cells("b").hideHeader();
+vitalSignsLayout.cells("b").setHeight(200);
+vitalSignsLayout.cells("c").hideHeader();
+vitalSignsLayout.cells("c").setHeight(200);
+vitalSignsLayout.cells("c").attachObject("vitalSignsGraphId");
+
+var vitalSignsLabelGrid = vitalSignsLayout.cells("b").attachGrid();
+vitalSignsLabelGrid.setImagePath("<?=$this->baseUrl?>/img/");
+vitalSignsLabelGrid.setHeader("");
+vitalSignsLabelGrid.setNoHeader(true);
+vitalSignsLabelGrid.setSkin("xp");
+vitalSignsLabelGrid.init();
+
+function vitalSignsLabelGridOnLoaded() {
+	vitalSignsLabelGrid.setColumnColor("#ddd");
+	var rowId = vitalSignsLabelGrid.getRowId(0);
+	if (rowId && vitalSignsLabelGrid.getColumnsNum() > 1) {
+		vitalSignsLabelGrid.setRowColor(rowId,"#ddd")
+	}
+	vitalSignsSetFilterGraph();
+}
+
+function vitalSignsLabelGridReload() {
+	var filterDateSelect = dojo.byId("filterDateId");
+	var filterDate = filterDateSelect.options[filterDateSelect.selectedIndex].value;
+	if (filterDate == "custom") {
+		var filterFrom = dojo.byId("filterFromId").value;
+		var filterTo = dojo.byId("filterToId").value;
+		filterDate = filterFrom + "|" + filterTo;
+	}
+	vitalSignsLabelGrid.clearAll();
+	vitalSignsLabelGrid.loadXML("<?=$this->baseUrl?>/vital-signs.raw/list-xml?personId="+mainController.getActivePatient()+"&filter="+filterDate,vitalSignsLabelGridOnLoaded);
+}
+vitalSignsLabelGridReload();
+dhtmlxEvent(vitalSignsLabelGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+var vitalSignsToolbar = new dhtmlXToolbarObject("vitalSignsToolbarId","ClearSilver");
+vitalSignsToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+function vitalSignsToolbarOnClicked(itemId,itemValue) {
+	switch(itemId) {
+		case "newVitals":
+			windowAddVitals("vitalSignsLabelGridReload");
+			break;
+		case "enteredInError":
+			break;
+		case "pediatricGrowth":
+			break;
+		default:
+			alert("Button "+itemId+" was pressed "+itemValue);
+			break;
+	}
+}
+vitalSignsToolbar.attachEvent("onClick",vitalSignsToolbarOnClicked);
+vitalSignsToolbar.loadXML("<?=$this->baseUrl?>/vital-signs.raw/toolbar-xml")
+
+</script>

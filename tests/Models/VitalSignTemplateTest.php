@@ -35,6 +35,7 @@ class Models_VitalSignTemplateTest extends Models_TableModels {
 
 	protected $_keyValues = array('template'=>'Test Template');
 	protected $_assertMatches = array('template'=>'Test Template');
+	protected $_assertTableName = 'vitalSignTemplates'; // value MUST be the same as $_table
 
 }
 

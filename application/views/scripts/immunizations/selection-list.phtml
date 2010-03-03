@@ -22,15 +22,21 @@ function immunizationsSelectionListSelected() {
 
 var immunizationsSelectionListGrid = new dhtmlXGridObject('immunizationsSelectionListContainer');
 immunizationsSelectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-immunizationsSelectionListGrid.setHeader('<?=__('Description,')?>');
+immunizationsSelectionListGrid.setHeader("<?=__('Description')?>,");
 immunizationsSelectionListGrid.setInitWidths("*,0");
 immunizationsSelectionListGrid.setColAlign("left,right");
-immunizationsSelectionListGrid.setColTypes("ro");
+immunizationsSelectionListGrid.setColTypes("ro,ro");
 immunizationsSelectionListGrid.setSkin("xp");
 immunizationsSelectionListGrid.attachEvent("onRowSelect",immunizationsSelectionListRowSelectHandler);
 immunizationsSelectionListGrid.attachEvent("onRowDblClicked",immunizationsSelectionListRowDoubleClickedHandler);
 immunizationsSelectionListGrid.init();
-immunizationsSelectionListGrid.load("<?=$this->baseUrl?>/immunizations.raw/immunizations-list","json");
+
+<?foreach ($this->lists as $key=>$value):?>
+immunizationsSelectionListGrid.addRow("<?=$key?>","");
+immunizationsSelectionListGrid.cells("<?=$key?>",0).setValue("<?=$value?>");
+immunizationsSelectionListGrid.cells("<?=$key?>",1).setValue("<?=$key?>");
+<?endforeach;?>
+//immunizationsSelectionListGrid.load("<?=$this->baseUrl?>/immunizations.raw/immunizations-list","json");
 
 function immunizationsSelectionListRowSelectHandler(rowId,cellIndex) {
 }

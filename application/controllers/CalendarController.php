@@ -33,6 +33,33 @@ class CalendarController extends WebVista_Controller_Action {
 		$this->_session = new Zend_Session_Namespace(__CLASS__);
 	}
 
+	public function listEventsAction() {
+		$colIndex = $this->_getParam('colIndex');
+		$filterColumns = $this->_session->filter->columns;
+		$columns = array();
+		if (strlen($colIndex) > 0) {
+			$cols = explode(',',$colIndex);
+			foreach ($cols as $col) {
+				if (isset($filterColumns[$col])) {
+					$columns[$col] = $filterColumns[$col];
+				}
+			}
+		}
+		else {
+			$columns = $filterColumns;
+		}
+		$data = array();
+		foreach ($columns as $index => $col) {
+			$data[$index]['events'] = $this->generateEventColumnData($index);
+			$header = $this->_generateColumnHeader($col);
+			$data[$index]['header'] = $header['header'];
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 
     /**
      * Default action to dispatch
@@ -122,8 +149,8 @@ class CalendarController extends WebVista_Controller_Action {
 	public function getColumnHeadersAction() {
 		$rows = array();
 		$filter = $this->getCurrentDisplayFilter();
-		foreach ($filter->columns as $column) {
-			$rows[] = $this->_generateColumnHeader($column);
+		foreach ($filter->columns as $index=>$column) {
+			$rows[$index] = $this->_generateColumnHeader($column);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -132,6 +159,8 @@ class CalendarController extends WebVista_Controller_Action {
 
 	protected function _generateColumnHeader(Array $column) {
 		$data = array();
+		$data['header'] = "{$column['dateFilter']}<br>";
+		$title = $column['dateFilter'];
 		// temporarily set the header as providerId
 		$providerId = $column['providerId'];
 		$roomId = 0;
@@ -144,17 +173,21 @@ class CalendarController extends WebVista_Controller_Action {
 			$provider->populate();
 			$name = $provider->last_name.', '.$provider->first_name;
 			// we simply replace the comma with its html equivalent (&#44;) because this may cause not to render the header
-			$data['header'] = str_replace(',','&#44;',$name);
+			$data['header'] .= str_replace(',','&#44;',$name);
+			$title .= ' -> '.$name;
 		}
 		if ($roomId > 0) {
 			$room = new Room();
 			$room->id = $roomId;
 			$room->populate();
-			$data['header'] .= ' -> '.$room->name;
+			if ($providerId > 0) {
+				//$data['header'] .= '<br>';
+				$data['header'] .= ' - ';
+			}
+			$data['header'] .= $room->name;
+			$title .= ' -> '.$room->name;
 		}
-		if (isset($column['dateFilter'])) {
-			$data['header'] .= " ({$column['dateFilter']})";
-		}
+		$data['header'] = '<label title="'.$title.'">'.$data['header'].'</label>';
 		return $data;
 	}
 
@@ -236,6 +269,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 		$providerIdFrom = $columnFrom['providerId'];
 		$providerIdTo = $columnTo['providerId'];
+		$roomIdTo = $columnTo['roomId'];
 
 		$app = new Appointment();
 		$app->appointmentId = (int)$idFrom;
@@ -263,6 +297,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 		$app->lastChangeDate = date('Y-m-d H:i:s');
 		$app->providerId = $providerIdTo;
+		$app->roomId = $roomIdTo;
 		if (strtolower($isCopy) == 'true') {
 			// zero out appointmentId to act a new copy
 			$app->appointmentId = 0;
@@ -320,6 +355,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$providerId = $calendar['providerId'];
 		$roomId = $calendar['roomId'];
 
+		/*
 		$scheduleEvent = new ScheduleEvent();
 		$scheduleEvent->providerId = $providerId;
 		$scheduleEvent->roomId = $roomId;
@@ -327,6 +363,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$scheduleEvent->start = $filter->date . ' ' . $filter->end;
 		$scheduleEvent->end = $filter->date . ' ' . $filter->start;
 		$scheduleEvent->persist();
+		*/
 
 		$filterState =  new FilterState();
 		if (!isset($calendar['tabName'])) {
@@ -357,7 +394,9 @@ class CalendarController extends WebVista_Controller_Action {
 			$this->view->start = date('H:i', strtotime($appointment->start));
 			$this->view->end = date('H:i', strtotime($appointment->end));
 			foreach ($filter->columns as $index=>$col) {
-				if ($col['providerId'] == $appointment->providerId) {
+				if (($col['providerId'] > 0 && $col['roomId'] > 0 && $col['providerId'] == $appointment->providerId && $col['roomId'] == $appointment->roomId) ||
+				    ($col['providerId'] > 0 && $col['providerId'] == $appointment->providerId) ||
+				    ($col['roomId'] > 0 && $col['roomId'] == $appointment->roomId)) {
 					$this->view->columnId = $index;
 					break;
 				}
@@ -409,14 +448,20 @@ class CalendarController extends WebVista_Controller_Action {
 			$reasons[$ctr++] = $enum->name;
 		}
 
+		/*
 		$patientNotes = array();
 		$patientNote = new PatientNote();
-		$patientNoteIterator = $patientNote->getIteratorByPatientId($appointment->patientId);
+		$patientNoteIterator = $patientNote->getIterator();
+		$filters = array();
+		$filters['patient_id'] = (int)$appointment->patientId;
+		$filters['active'] = 1;
+		$filters['posting'] = 0;
+		$patientNoteIterator->setFilters($filters);
 		foreach ($patientNoteIterator as $row) {
-			if ($row->deprecated) continue;
 			$patientNotes[$row->patientNoteId] = $reasons[$row->reason];
 		}
 		$this->view->patientNotes = $patientNotes;
+		*/
 
 		$phones = array();
 		$phone = new PhoneNumber();
@@ -430,6 +475,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$appointmentReasons = $appointmentTemplate->getAppointmentReasons();
 		$this->view->appointmentReasons = $appointmentReasons;
 
+		$this->view->appointment = $appointment;
 		$this->render('add-appointment');
 	}
 
@@ -473,11 +519,11 @@ class CalendarController extends WebVista_Controller_Action {
 		$app = new Appointment();
 		$app->populateWithArray($appointment);
 		if ($app->appointmentId > 0) {
-			$app->lastChangeId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+			$app->lastChangeId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 			$app->lastChangeDate = date('Y-m-d H:i:s');
 		}
 		else {
-			$app->creatorId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+			$app->creatorId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 			$app->createdDate = date('Y-m-d H:i:s');
 		}
 		//$app->providerId = $appointment['providerId'];
@@ -705,11 +751,14 @@ class CalendarController extends WebVista_Controller_Action {
 		if ($event->roomId > 0 && strlen($event->room->color) > 0) {
 			$color = $event->room->color;
 		}
+		if (substr($color,0,1) != '#') {
+			$color = '#'.$color;
+		}
 		while ($eventTimeStart < $eventTimeEnd) {
 			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
 			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
-			$columnData[$tmpIndex]['style'] = 'background-color:#'.$color.';border-color:lightgrey;';
-
+			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
+			$columnData[$index]['userdata']['title'] = $event->title;
 			$tmpIndex++;
 		}
         }

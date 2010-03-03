@@ -38,6 +38,7 @@ class Models_ClinicalNoteAnnotationTest extends Models_TableModels {
 				      'xAxis'=>100,
 				      'yAxis'=>200,);
 	protected $_assertMatches = array('annotation'=>'Test Annotation');
+	protected $_assertTableName = 'clinicalNoteAnnotations'; // value MUST be the same as $_table
 
 }
 

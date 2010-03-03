@@ -38,6 +38,7 @@ class Models_DataIntegrationDatasourceTest extends Models_TableModels {
 				      'datasource'=>'Test Datasource',
 				      'handlerType'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'dataIntegrationDatasources'; // value MUST be the same as $_table
 
 }
 

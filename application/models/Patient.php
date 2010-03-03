@@ -51,23 +51,40 @@ class Patient extends WebVista_Model_ORM {
 		//$this->phoneNumber = new PhoneNumber();
 	}
 
+	public function setPerson_id($key) {
+		$this->setPersonId($key);
+	}
+
 	function setPersonId($key) {
-		if ($this->person->person_id > 0 && (int)$key != $this->person_id) {
-                        $person = new Person();
-                        unset($this->person);
-                        $this->person = $person;
-                }
-		$this->person_id = (int)$key;
-                $this->person->person_id = (int)$key;
+		$id = (int)$key;
+		if ($id != $this->person_id) { // personId has been changed
+			if ($this->person->personId > 0) {
+				$this->person = new Person();
+			}
+			if ($this->homeAddress->personId > 0) {
+				$this->homeAddress = new Address();
+			}
+			if ($this->billingAddress->personId > 0) {
+				$this->billingAddress = new Address();
+			}
+		}
+		$this->person_id = $id; // person_id MUST be the same name as declared
+		$this->person->personId = $id;
+		$this->homeAddress->personId = $id;
+		$this->billingAddress->personId = $id;
 		//$this->address->personId = (int)$key;
 		//$this->phoneNumber->personId = (int)$key;
 	}
+
 	function __get($key) {
                 if (in_array($key,$this->ORMFields())) {
                         return $this->$key;
                 }
                 elseif (in_array($key,$this->person->ORMFields())) {
                         return $this->person->__get($key);
+                }
+                elseif (!is_null(parent::__get($key))) {
+                        return parent::__get($key);
                 }
                 elseif (!is_null($this->person->__get($key))) {
                         return $this->person->__get($key);
@@ -114,30 +131,43 @@ class Patient extends WebVista_Model_ORM {
 		return $retval;
 	}
 
-	function getBMI() {
+	public function getBMI() {
 		if (count($this->_vitals) == 0) $this->_loadVitals();
-		$weight = 0;
-		$height = 0;
-		$bmi = 0;
-		foreach($this->_vitals as $vital) {
-			if ($vital['vital'] == "height" && $vital['units'] == "CM") {
-				$height = $vital['value']/100;
-			}
-			elseif ($vital['vital'] == "weight") {
-				$weight = $vital['value'];
-			}
+		foreach ($this->_vitals as $vital) {
+			if ($vital['vital'] == 'BMI') return $vital['value'];
 		}
-		if ($height > 0 && $weight > 0) {
-			$bmi = ($weight / ($height * $height));
+
+		return '0.00';
+	}
+
+	public function getBSA() {
+		if (count($this->_vitals) == 0) $this->_loadVitals();
+		foreach ($this->_vitals as $vital) {
+			if ($vital['vital'] == 'BSA') return sprintf('%.2f',$vital['value']);
 		}
-		if (is_numeric($bmi) && $bmi > 0) {
-			return round($bmi,2);
-		}
-		return "0.00";
+
+		return '0.00';
 	}
 
 	function _loadVitals() {
 		$this->_vitals = VitalSignGroup::getBMIVitalsForPatientId($this->personId);
+	}
+
+	public function populateWithMRN($mrn = null) {
+		if ($mrn === null) {
+			$mrn = $this->recordNumber;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('patient','person_id')
+				->where('record_number = ?',$mrn);
+		$ret = false;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$this->personId = $row['person_id'];
+			$this->populate();
+			$ret = true;
+		}
+		return $ret;
 	}
 
 }

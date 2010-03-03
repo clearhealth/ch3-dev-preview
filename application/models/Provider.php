@@ -74,6 +74,9 @@ class Provider extends WebVista_Model_ORM {
 		return $this->person_id;
 	}
 
+	public function setPerson_id($key) {
+		$this->setPersonId($key);
+	}
 
 	function setPersonId($key) {
 		if ($this->person->person_id > 0 && (int)$key != $this->person_id) {

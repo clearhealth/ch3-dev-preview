@@ -37,6 +37,7 @@ class Models_ProblemListCommentTest extends Models_TableModels {
 				      'date'=>'2009-09-23',
 				      'authorId'=>5678,);
 	protected $_assertMatches = array('authorId'=>5678);
+	protected $_assertTableName = 'problemListComments'; // value MUST be the same as $_table
 
 }
 

@@ -37,6 +37,7 @@ class Models_NSDRDefinitionMethodTest extends Models_TableModels {
 				      'methodName'=>'Test Method Name',
 				      'method'=>'Test Method',);
 	protected $_assertMatches = array('methodName'=>'Test Method Name');
+	protected $_assertTableName = 'nsdrDefinitionMethods'; // value MUST be the same as $_table
 
 }
 

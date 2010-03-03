@@ -336,7 +336,7 @@ function pdAppointmentsGridReload() {
 
 function createTemplatesDropdown() {
     dojo.xhrGet ({
-        url: '<?=$this->baseUrl?>/provider-dashboard/get-templates-layout-dropdown',
+        url: '<?=$this->baseUrl?>/provider-dashboard.raw/get-templates-layout-dropdown',
         handleAs: 'json',
         load: function(responseObject, ioArgs){
             buildDropdown(responseObject);

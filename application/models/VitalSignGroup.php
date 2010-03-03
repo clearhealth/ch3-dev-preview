@@ -62,21 +62,39 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 			->from('vitalSignValues', array('vital','value','units'))
 			->where('vitalSignValues.vitalSignValueId = (
 				select vitalSignValueId from vitalSignGroups
-				inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
-				where vitalSignGroups.personId = ' . $personId . '	
-				and vital = "height"
-				and value != ""
-				order by dateTime DESC
-				limit 1)')
+                                inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
+                                where vitalSignGroups.personId = ' . $personId . '      
+                               and vital = "height"
+                               and value != ""
+                               order by dateTime DESC
+                               limit 1)')
 			->orWhere('vitalSignValues.vitalSignValueId = (
 				select vitalSignValueId from vitalSignGroups
-				inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
-				where vitalSignGroups.personId = ' . (int)$personId . '
-				and vital = "weight"
-				and value != ""
-				order by dateTime DESC
-				limit 1)');
-		return $db->query($vitalSelect)->fetchAll();
+                                inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
+                                where vitalSignGroups.personId = ' . $personId . '      
+                               and vital = "BSA"
+                               and value != ""
+                               order by dateTime DESC
+                               limit 1)')
+			->orWhere('vitalSignValues.vitalSignValueId = (
+				select vitalSignValueId from vitalSignGroups
+                                inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
+                                where vitalSignGroups.personId = ' . $personId . '      
+                               and vital = "BMI"
+                               and value != ""
+                               order by dateTime DESC
+                               limit 1)')
+                       ->orWhere('vitalSignValues.vitalSignValueId = (
+                               select vitalSignValueId from vitalSignGroups
+                               inner join vitalSignValues on vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId
+                               where vitalSignGroups.personId = ' . (int)$personId . '
+                               and vital = "weight"
+                                and value != ""
+                                order by dateTime DESC
+                                limit 1)');
+		 $ret = $db->query($vitalSelect)->fetchAll();
+		trigger_error(print_r($ret,true),E_USER_NOTICE);
+		return $ret;
 	}
 
 	public function nsdrPersist($tthis,$context,$data) {
@@ -156,11 +174,41 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 		$sqlSelect = $db->select()
 				->from('vitalSignGroups')
 				->joinUsing('vitalSignValues','vitalSignGroupId')
-				->joinLeft('user','user.user_id = vitalSignGroups.enteringUserId')
+				->joinLeft('user','user.person_id = vitalSignGroups.enteringUserId')
 				->joinLeft('person','person.person_id = user.person_id')
 				->where('vitalSignGroups.personId = ' . (int)$personId)
 				->where("vitalSignGroups.vitalSignGroupId = (select vitalSignGroups.vitalSignGroupId from vitalSignGroups where personId = " . (int)$personId . " order by vitalSignGroups.dateTime DESC limit 1)");
 		return $db->query($sqlSelect)->fetchAll();
+	}
+
+	public static function getVitalsByFilters($filters) {
+		$ret = array();
+		if (!isset($filters['personId']) || !isset($filters['dateBegin']) || !isset($filters['dateEnd'])) {
+			return $ret;
+		}
+		if (!isset($filters['vitalSignTemplateId'])) {
+			$filters['vitalSignTemplateId'] = 1;
+		}
+		$personId = (int)$filters['personId'];
+		$vitalSignTemplateId = (int)$filters['vitalSignTemplateId'];
+		$dateBegin = date('Y-m-d H:i:s',strtotime($filters['dateBegin']));
+		$dateEnd = date('Y-m-d H:i:s',strtotime($filters['dateEnd']));
+		if ($dateBegin == $dateEnd) {
+			$dateEnd = date('Y-m-d 23:59:59',strtotime($dateEnd));
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('vsv'=>'vitalSignValues'),array('vitalSignValueId','vital','value','units'))
+				->join(array('vsg'=>'vitalSignGroups'),'vsg.vitalSignGroupId = vsv.vitalSignGroupId')
+				->where('vsg.personId = ?',$personId)
+				->where('vsg.vitalSignTemplateId = ?',$vitalSignTemplateId)
+				->where("vsg.dateTime BETWEEN '{$dateBegin}' AND '{$dateEnd}'")
+				->order('vsg.dateTime ASC');
+		trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			$ret = $rows;
+		}
+		return $ret;
 	}
 
 }

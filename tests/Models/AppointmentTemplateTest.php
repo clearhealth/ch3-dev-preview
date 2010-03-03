@@ -36,6 +36,7 @@ class Models_AppointmentTemplateTest extends Models_TableModels {
 	protected $_keyValues = array('name'=>'Test Name',
 				      'breakdown'=>'Runny Nose');
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'appointmentTemplates'; // value MUST be the same as $_table
 
 }
 

@@ -17,70 +17,75 @@ service unlisted
 
 ***********************************************************/
 set_time_limit('90');
-file_put_contents("/tmp/connection","smtp connection\n",FILE_APPEND);
-echo "220 clearhealth.local ESMTP\n";
-$loop = 0;
-$data4 = '';
-$loadingData = false;
-$email = '';
-while (true) {
-	$read[] = STDIN;
-	stream_select($read, $write = null, $except = null, $tv = 0);
-	if (count($read)) {
-		$data4 = @fread(STDIN, 32768);
-		$data4 = str_replace("\r\n", "\n", $data4);
-		$data4 = str_replace("\n\r", "\n", $data4);
-		$data4 = str_replace("\r", "\n", $data4);
-		//$data4 = str_replace("\n", '', $data4);
-	}
-	$email .= @$data4;
-//file_put_contents("/tmp/connection","stuff:" . @$data4 . "\n",FILE_APPEND);
-	if (preg_match('/^HELO.*/',@$data4) || preg_match('/^EHLO.*/',@$data4)) {
-		echo "250 clearhealth.local\n";
-		$data4 = '';
-	}
-	elseif (preg_match('/^MAIL FROM.*/',@$data4)) {
-		echo "250 Ok\n";
-		$data4 = '';
-	}
-	elseif (preg_match('/^RCPT TO:.*/',@$data4)) {
-		echo "250 Ok\n";
-		$data4 = '';
-	}
-	elseif (preg_match('/^DATA.*/',@$data4)) {
-		$loadingData = true;
-		echo "354 End data with <CR><LF>.<CR><LF>\n";
-		file_put_contents("/tmp/connection","354 end data" . "\n",FILE_APPEND);
-		$data4 = '';
-	}
-	elseif ($loadingData == true && preg_match('/\.$/',@$data4)) {
-		echo "250 ok 1251934559 qp 9841\n";
-		file_put_contents("/tmp/connection","250 Ok: queued" . "\n",FILE_APPEND);
-		$loadingData = false;
-		$data4 = '';
-	}
-	elseif (preg_match('/^rset.*/',strtolower(@$data4)) || preg_match('/^noop.*/',strtolower(@$data4))) {
-		echo "250 ok\n";
-		file_put_contents("/tmp/connection","rset/noop\n",FILE_APPEND);
-		$data4 = '';
-	}
-	elseif (preg_match('/^quit.*/',strtolower(@$data4))) {
-		echo "221 clearhealth.local\n";
-		$data4 = '';
 
-		file_put_contents("/tmp/emails",$email . "\n\n\n\n",FILE_APPEND);
+
+$appFile = realpath(dirname(__FILE__) . '/../application/models/HandleInboundMessages.php');
+require_once $appFile;
+
+function handleSMTPLog($data) {
+	file_put_contents('/tmp/handle_smtp.log',"\n$data",FILE_APPEND);
+}
+
+function handleSMTPResponse($message) {
+	handleSMTPLog("RESPONSE: $message");
+	fwrite(STDOUT,$message."\n");
+}
+
+handleSMTPLog('START: '.date('c'));
+handleSMTPResponse('220 clearhealth.local ESMTP');
+
+$email = '';
+$loadingData = false;
+
+while ($data = fgets(STDIN)) {
+	$data = str_replace("\r\n","\n",$data);
+	$data = str_replace("\n\r","\n",$data);
+	$data = str_replace("\r","\n",$data);
+
+	handleSMTPLog($data);
+	if (preg_match('/^QUIT.*/',$data)) {
+		handleSMTPResponse('221 clearhealth.local');
+		file_put_contents('/tmp/email.log',$email,FILE_APPEND);
+		$tmpFile = tempnam('/tmp','ch30_email_');
+		file_put_contents($tmpFile,$email."\n\n\n\n");
+
+		$handler = HandleInboundMessages::getInstance();
+		$handler->process($tmpFile);
 		exit;
 	}
-	elseif (false && !$loadingData && strlen($data4) > 0){
-		echo "502 unimplemented (#5.5.1)\n";
-		file_put_contents("/tmp/connection","unimplemented: " . substr(@$data4,0,10) . "\n\n\n",FILE_APPEND);
-		$data4 = '';
+	$fullStop = preg_match('/^\.$/',$data);
+	if ($loadingData && $fullStop) {
+		handleSMTPResponse('250 ok 1251934559 qp 9841');
+		handleSMTPLog('250 Ok: queued');
+		$loadingData = false;
+		$data = '';
 	}
-	else {
-		//echo "250 ok\n";
-		//$data4="";
-	}	
-	//unset($data4);
-	usleep('1000');
-	$loop++;
+	else if (!($loadingData && !$fullStop)) {
+		if (preg_match('/^DATA.*/',$data)) {
+			handleSMTPResponse('354 End data with <CR><LF>.<CR><LF>');
+			handleSMTPLog('354 end data');
+			$loadingData = true;
+			$data = '';
+		}
+		else {
+			handleSMTPResponse('250 Ok');
+			if ($loadingData || preg_match('/^HELO.*/',$data) || preg_match('/^EHLO.*/',$data)) {
+				handleSMTPLog('HELO/EHLO');
+				$data = '';
+			}
+			else if (preg_match('/^RCPT TO:.*/',$data)) {
+				handleSMTPLog('RCPT TO');
+				$data = '';
+			}
+			else if (preg_match('/^MAIL FROM.*/',$data)) {
+				handleSMTPLog('MAIL FROM');
+				$data = '';
+			}
+			else if (preg_match('/^RSET.*/',$data) || preg_match('/^NOOP.*/',$data)) {
+				handleSMTPLog('RSET/NOOP');
+				$data = '';
+			}
+		}
+	}
+	$email .= $data;
 }

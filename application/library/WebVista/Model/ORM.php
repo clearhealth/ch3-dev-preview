@@ -180,7 +180,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 		$stmt = $db->query($sql);
 		$stmt->closeCursor();
 		$this->postPersist();
-		if ($this instanceof Document) {
+		if ($this instanceof Document && $this->signatureNeeded()) {
 			ESignature::createSignatureEntry($this);
 		}
 		if ($this->shouldAudit() && get_class($this) != "Audit" && get_class($this) != "AuditValue") {
@@ -206,7 +206,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 			return false;
 		}
 		$audit->objectId = $obj->$objectIdKey;
-		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$audit->type = $obj->_persistMode;
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->persist();
@@ -500,6 +500,9 @@ class WebVista_Model_ORM implements ORM,Iterator {
 		return $controllerName;
 	}
 */
+	public function signatureNeeded() {
+		return true;
+	}
 }
 
 Interface ORM {

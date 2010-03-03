@@ -44,45 +44,13 @@
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->effectiveStart->renderLabel()?>
 	<?$this->form->effectiveStart->setAttrib('class','insuranceProgram')?>
-	<?=$this->form->effectiveStartInput()?>
-	<script>
-	var dateStartBox = dijit.byId("insurer-effectiveStart");
-	if (dateStartBox != undefined) {
-		dateStartBox.destroyRecursive();
-		dateStartBox = null;
-	}
-
-	dateStartBox = new dijit.form.DateTextBox({name:"insurer[effectiveStart]",constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId("insurer-effectiveStart"));
-	<?if($this->form->effectiveStart->getValue()):
-		$dateStartValue = date('Y-m-d',strtotime($this->form->effectiveStart->getValue()));
-		$x = explode('-',$dateStartValue);?>
-		var onsetDate = new Date();
-		onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-		dateStartBox.setValue(onsetDate);
-	<?endif?>
-	</script>
+	<?=$this->formDateText('insurer[effectiveStart]',$this->form->effectiveStart->getValue(),array('id'=>'insurer-effectiveStart'))?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->effectiveEnd->renderLabel()?>
 	<?$this->form->effectiveStart->setAttrib('class','insuranceProgram')?>
-	<?=$this->form->effectiveEndInput()?>
-	<script>
-	var dateEndBox = dijit.byId("insurer-effectiveEnd");
-	if (dateEndBox != undefined) {
-		dateEndBox.destroyRecursive();
-		dateEndBox = null;
-	}
-
-	dateEndBox = new dijit.form.DateTextBox({name:"insurer[effectiveEnd]",constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId("insurer-effectiveEnd"));
-	<?if($this->form->effectiveEnd->getValue()):
-		$dateEndValue = date('Y-m-d',strtotime($this->form->effectiveEnd->getValue()));
-		$x = explode('-',$dateEndValue);?>
-		var onsetDate = new Date();
-		onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-		dateEndBox.setValue(onsetDate);
-	<?endif?>
-	</script>
+	<?=$this->formDateText('insurer[effectiveEnd]',$this->form->effectiveEnd->getValue(),array('id'=>'insurer-effectiveEnd'))?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">

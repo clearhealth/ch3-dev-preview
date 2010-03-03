@@ -63,11 +63,11 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 				$dbSelect->where('clinicalNotes.eSignatureId = 1'); // is it 1 for signed?
 				break;
 			case 'byAllUserUncosigned': // By All Uncosigned Notes for [user]
-				$dbSelect->where('clinicalNotes.authoringPersonId = ' . (int)Zend_Auth::getInstance()->getIdentity()->userId);
+				$dbSelect->where('clinicalNotes.authoringPersonId = ' . (int)Zend_Auth::getInstance()->getIdentity()->personId);
 				$dbSelect->where('clinicalNotes.eSignatureId = 2'); // is it 2 for uncosigned?
 				break;
 			case 'byAllUserUnsigned': // By All Unsigned Notes for [user]
-				$dbSelect->where('clinicalNotes.authoringPersonId = ' . (int)Zend_Auth::getInstance()->getIdentity()->userId);
+				$dbSelect->where('clinicalNotes.authoringPersonId = ' . (int)Zend_Auth::getInstance()->getIdentity()->personId);
 				$dbSelect->where('clinicalNotes.eSignatureId = 0'); // is it 0 for unsigned?
 				break;
 			case 'byAllAuthorsUnsigned': // By All Unsigned Notes for All Authors

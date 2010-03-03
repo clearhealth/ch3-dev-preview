@@ -37,6 +37,7 @@ class Models_UserTest extends Models_TableModels {
 				      'username'=>'Test Username',
 				      'password'=>'Test Password',);
 	protected $_assertMatches = array('password'=>'Test Password');
+	protected $_assertTableName = 'user'; // value MUST be the same as $_table
 
 }
 

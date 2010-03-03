@@ -163,9 +163,8 @@ div table.dhtmlxToolbarTable_ClearSilver td.itemButton div.itemOver {
 	top: 1px;
 	left: 0px;
 	height: 25px;
-	height= 26px;
 	right: 0px;
-	width= 100%;
+	width: 100%;
 }
 div table.dhtmlxToolbarTable_ClearSilver td.itemButton div.itemPressed {
 	position: absolute;
@@ -178,9 +177,8 @@ div table.dhtmlxToolbarTable_ClearSilver td.itemButton div.itemPressed {
 	top: 1px;
 	left: 0px;
 	height: 25px;
-	height= 26px;
 	right: 0px;
-	width= 100%;
+	width: 100%;
 }
 div table.dhtmlxToolbarTable_ClearSilver td.itemButton div.dhtmlxToolbarButton {
 	position: relative;
@@ -235,9 +233,8 @@ div table.dhtmlxToolbarTable_ClearSilver td.itemButtonSelect div.itemOver {
 	top: 1px;
 	left: 0px;
 	height: 25px;
-	height= 26px;
 	right: 0px;
-	width= 100%;
+	width: 100%;
 }
 div table.dhtmlxToolbarTable_ClearSilver td.itemButtonSelect div.itemPressed {
 	position: absolute;
@@ -250,9 +247,8 @@ div table.dhtmlxToolbarTable_ClearSilver td.itemButtonSelect div.itemPressed {
 	top: 1px;
 	left: 0px;
 	height: 25px;
-	height= 26px;
 	right: 0px;
-	width= 100%;
+	width: 100%;
 }
 div table.dhtmlxToolbarTable_ClearSilver td.itemButtonSelect div.dhtmlxToolbarButtonArrow {
 	position: relative;
@@ -588,4 +584,106 @@ div table.dhtmlxToolbarTable_ClearSilver td.itemSliderVert div.dhtmlxToolbarSlid
 	background-repeat: no-repeat;
 	-moz-user-select: none;
 	cursor: default;
+}
+/* select button arrow */
+td.dhtmlxToolbarArrow {
+	-moz-user-select: none;
+}
+div.dhtmlxToolbarArrow {
+	width: 9px;
+	-moz-user-select: none;
+	background-repeat: no-repeat;
+	background-position: center center;
+}
+table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemDefault div.dhtmlxToolbarArrow {
+	height: 29px;
+	background-image: url("../img/dhtmlxtoolbar/clearsilver/dhtmlxtoolbar_btnarrow.gif");
+}
+table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemOver div.dhtmlxToolbarArrow {
+	height: 29px;
+	background-image: url("../img/dhtmlxtoolbar/clearsilver/dhtmlxtoolbar_btnarrow.gif");
+}
+table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemPressed div.dhtmlxToolbarArrow {
+	height: 29px;
+	background-image: url("../img/dhtmlxtoolbar/clearsilver/dhtmlxtoolbar_btnarrow.gif");
+}
+table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemDisabled div.dhtmlxToolbarArrow {
+	height: 29px;
+	background-image: url("../img/dhtmlxtoolbar/clearsilver/dhtmlxtoolbar_btnarrow_dis.gif");
+}
+/* button select polygon */
+div.dhtmlxToolbarPoly_ClearSilver {
+	position: absolute;
+	margin: 0px;
+	padding: 0px;
+	border-top: #A7C7DF 1px solid;
+	border-left: #A7C7DF 1px solid;
+	border-right: #739DCC 1px solid;
+	border-bottom: #739DCC 1px solid;
+	background-color: #FFF;
+	overflow: hidden;
+	cursor: default;
+}
+div.dhtmlxToolbarPoly_ClearSilver div.buttonItem {
+	position: relative;
+	font-family: Tahoma;
+	font-size: 11px;
+	font-weight: normal;
+	cursor: default;
+	white-space: nowrap;
+	-moz-user-select: none;
+	color: #333333;
+	margin: 0px 0px 0px 0px;
+	padding: 2px 12px 2px 18px;
+}
+div.dhtmlxToolbarPoly_ClearSilver div.buttonItemDis {
+	position: relative;
+	font-family: Tahoma;
+	font-size: 11px;
+	font-weight: normal;
+	cursor: default;
+	white-space: nowrap;
+	-moz-user-select: none;
+	color: #999999;
+	margin: 0px 0px 0px 0px;
+	padding: 2px 12px 2px 18px;
+}
+div.dhtmlxToolbarPoly_ClearSilver div.buttonItemOver {
+	position: relative;
+	font-family: Tahoma;
+	font-size: 11px;
+	font-weight: normal;
+	cursor: default;
+	white-space: nowrap;
+	-moz-user-select: none;
+	color: #333333;
+	background-color: #CCC;
+	margin: 0px 0px 0px 0px;
+	padding: 2px 12px 2px 18px;
+}
+div.dhtmlxToolbarPoly_ClearSilver div.buttonItemSelected {
+	position: relative;
+	font-family: Tahoma;
+	font-size: 11px;
+	font-weight: normal;
+	cursor: default;
+	white-space: nowrap;
+	-moz-user-select: none;
+	color: #333333;
+	/*background-color: #FFEB0F;*/
+	background-color: #D3E2E5;
+	margin: 0px 0px 0px 0px;
+	padding: 2px 12px 2px 18px;
+}
+div.dhtmlxToolbarPoly_ClearSilver div.buttonSeparator {
+	position: relative;
+	border-top: #A7C7DF 1px solid;
+	font-size: 1px;
+}
+div.dhtmlxToolbarPoly_ClearSilver img.buttonImage {
+	position: absolute;
+	width: 12px;
+	height: 12px;
+	top: 2px;
+	margin-left: -16px;
 }

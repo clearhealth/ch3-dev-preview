@@ -1,0 +1,171 @@
+<style>
+div.gridbox_xp table.obj td {
+	border-bottom:thin dashed;
+	border-right:none;
+}
+</style>
+<div id="updateMgrContainerId" style="width:100%;height:100%;">
+	<div id="updateMgrToolbarId" style="width:100%;border:1px solid Silver;"></div>
+	<div id="updateMgrGridId" style="float:left;width:100%;height:380px;overflow:auto;"></div>
+	<div id="updateMgrProgressId" style="display:none;float:left;width:100%;"></div>
+</div>
+<script>
+
+function updateMgrCheck() {
+	dojo.byId("updateMgrGridId").style.display = "none";
+	dojo.byId("updateMgrProgressId").style.display = "block";
+	dojo.byId("updateMgrProgressId").innerHTML = "<?=__('Checking new update')?>...";
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/update-manager.raw/check",
+		handleAs: "json",
+		load: function (response) {
+			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
+			if (response.code == "200") {
+				dojo.byId("updateMgrProgressId").innerHTML += " &nbsp; &nbsp; - <?=__('New updates available')?>: v"+response.msg+"<br />";
+				updateMgrDownload(response.msg);
+			}
+			else {
+				dojo.byId("updateMgrProgressId").innerHTML += response.msg+"<br />";
+				alert(response.msg);
+				dojo.byId("updateMgrGridId").style.display = "block";
+				dojo.byId("updateMgrProgressId").style.display = "none";
+			}
+		},
+		error: function (error) {
+			console.error ("Error: ", error);
+		}
+	});
+}
+
+function updateMgrDownload(msg) {
+	dojo.byId("updateMgrProgressId").innerHTML += "<?=__('Downloading new update')?> (v"+msg+")...";
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/update-manager.raw/download",
+		handleAs: "json",
+		load: function (response) {
+			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
+			if (response === true) {
+				updateMgrGridReload();
+			}
+			else {
+				dojo.byId("updateMgrProgressId").innerHTML += response+"<br />";
+				alert(response);
+			}
+			dojo.byId("updateMgrGridId").style.display = "block";
+			dojo.byId("updateMgrProgressId").style.display = "none";
+		},
+		error: function (error) {
+			console.error ("Error: ", error);
+		}
+	});
+}
+
+function updateMgrApply(id) {
+	var updateMsg = updateMgrGrid.cells(id,0).getValue();
+	dojo.byId("updateMgrProgressId").innerHTML += "<?=__('Applying update')?>: "+updateMsg+"...";
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/update-manager.raw/apply",
+		handleAs: "json",
+		content: {
+			"id": id,
+		},
+		load: function (response) {
+			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
+			if (response !== true) {
+				alert(response);
+			}
+			if (!updateMgrExec()) {
+				dojo.byId("updateMgrGridId").style.display = "block";
+				dojo.byId("updateMgrProgressId").style.display = "none";
+				updateMgrGridReload();
+			}
+		},
+		error: function (error) {
+			console.error ("Error: ", error);
+		}
+	});
+}
+
+function updateMgrExec() {
+	var ret = false;
+	for (var i in updateMgrGrid.rowsAr) {
+		if (updateMgrGrid.rowsAr[i] && updateMgrGrid.rowsAr[i].idd) {
+			var id = updateMgrGrid.rowsAr[i].idd;
+			if (updateMgrGrid.getParentId(id) != 0) {
+				continue;
+			}
+			if (updateMgrGrid.cells(id,1).isChecked()) {
+				updateMgrGrid.cells(id,1).setChecked(false);
+				updateMgrApply(id);
+				ret = true;
+				break;
+			}
+		}
+	}
+	return ret;
+}
+
+var updateMgrToolbar = new dhtmlXToolbarObject("updateMgrToolbarId","ClearSilver");
+updateMgrToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+updateMgrToolbar.attachEvent("onClick",updateMgrToolbarOnClick);
+
+function updateMgrToolbarOnClick(id) {
+	switch (id) {
+		case "check":
+			updateMgrCheck();
+			break;
+		case "apply":
+			dojo.byId("updateMgrGridId").style.display = "none";
+			dojo.byId("updateMgrProgressId").style.display = "block";
+			dojo.byId("updateMgrProgressId").innerHTML = "";
+			updateMgrExec();
+			break;
+		case "refresh":
+			updateMgrGridReload();
+			break;
+	}
+}
+updateMgrToolbar.loadXML("<?=$this->baseUrl?>/update-manager.raw/toolbar");
+
+var updateMgrGrid = new dhtmlXGridObject("updateMgrGridId");
+updateMgrGrid.setImagePath("<?=$this->baseUrl?>/img/");
+updateMgrGrid.setHeader(",<?=__('Apply')?>");
+updateMgrGrid.setInitWidths("*,50");
+updateMgrGrid.setColTypes("tree,ch");
+updateMgrGrid.setSkin("xp");
+updateMgrGrid.init();
+
+var updateMgrHasChecked = false;
+updateMgrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
+	if (cellIndex == 1) {
+		updateMgrToolbar.disableItem("apply");
+		var id;
+		for (var i in updateMgrGrid.rowsAr) {
+			if (updateMgrGrid.rowsAr[i] && updateMgrGrid.rowsAr[i].idd) {
+				id = updateMgrGrid.rowsAr[i].idd;
+				if (updateMgrGrid.cells(id,1).isChecked()) {
+					updateMgrToolbar.enableItem("apply");
+					break;
+				}
+			}
+		}
+	}
+});
+
+function updateMgrGridOnLoaded() {
+	updateMgrGrid.expandAll();
+	updateMgrGrid.forEachRow(function(rowId){
+		var parentId = updateMgrGrid.getParentId(rowId);
+		if (parentId != 0) { // parent
+			updateMgrGrid.cells(rowId,1).cell.innerHTML = "";
+		}
+	});
+	updateMgrToolbar.disableItem("apply");
+}
+function updateMgrGridReload() {
+	updateMgrGrid.clearAll();
+	//updateMgrGrid.load("<?=$this->baseUrl?>/update-manager.raw/list",updateMgrGridOnLoaded,"json");
+	updateMgrGrid.load("<?=$this->baseUrl?>/update-manager.raw/list.xml",updateMgrGridOnLoaded,"xml");
+}
+updateMgrGridReload();
+</script>

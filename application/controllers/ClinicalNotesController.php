@@ -155,7 +155,7 @@ EOL;
 		$personId = (int)$this->_getParam('personId');
 		$this->view->personId = $personId;
 		$this->view->clinicalNoteDefinitions = new ClinicalNoteDefinitionIterator();
-		$this->view->currentPersonId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$this->view->currentPersonId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$this->view->personId = $personId;
 
 		$form = new WebVista_Form(array('name' => 'add-note'));

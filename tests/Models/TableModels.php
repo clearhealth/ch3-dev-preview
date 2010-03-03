@@ -38,6 +38,7 @@ class Models_TableModels extends TestCase {
 	protected $_keyValues = array();
 	protected $_className = null;
 	protected $_assertMatches = array();
+	protected $_assertTableName = null;
 
 	public function setUp() {
 		parent::setUp();
@@ -78,6 +79,10 @@ class Models_TableModels extends TestCase {
 	}
 
 	protected function _postPersist() {
+	}
+
+	public function testTableNameAccess() {
+		$this->assertEquals($this->_obj->_table,$this->_assertTableName,'Failed to access table name');
 	}
 
 	public function testPersist() {

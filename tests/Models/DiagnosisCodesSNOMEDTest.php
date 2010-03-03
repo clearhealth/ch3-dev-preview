@@ -36,6 +36,7 @@ class Models_DiagnosisCodesSNOMEDTest extends Models_TableModels {
 	protected $_keyValues = array('description'=>'Test Description',
 				      'snomedStatus'=>1,);
 	protected $_assertMatches = array('description'=>'Test Description');
+	protected $_assertTableName = 'diagnosisCodesSNOMED'; // value MUST be the same as $_table
 
 }
 

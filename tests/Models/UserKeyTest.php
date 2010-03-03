@@ -48,6 +48,7 @@ class Models_UserKeyTest extends Models_TableModels {
 				      'publicKey'=>'Test Public Key',
 				      'iv'=>'Test IV',);
 	protected $_assertMatches = array('privateKey'=>'Test Private Key');
+	protected $_assertTableName = 'userKeys'; // value MUST be the same as $_table
 
 	protected $_objects = array();
 
@@ -64,7 +65,8 @@ class Models_UserKeyTest extends Models_TableModels {
 		$username = 'guest';
 		$password = 'password';
 		$user = new User();
-		$user->person_id = $person->person_id;
+		$user->userId = $person->personId;
+		$user->personId = $person->personId;
 		$user->username = $username;
 		$user->password = $password;
 		$user->persist();
@@ -88,7 +90,7 @@ class Models_UserKeyTest extends Models_TableModels {
 		$objects['clinicalNote'] = $clinicalNote;
 
 		$eSig = new ESignature();
-		$eSig->signingUserId = $this->_objects['user']->userId;
+		$eSig->signingUserId = $this->_objects['user']->personId;
 		$eSig->objectClass = 'ClinicalNote';
 		$eSig->objectId = $clinicalNote->clinicalNoteId;
 		$eSig->summary = 'Test, One #10026 - Transcription Note **Signed**';
@@ -130,7 +132,7 @@ class Models_UserKeyTest extends Models_TableModels {
 		$objects['clinicalNote'] = $clinicalNote;
 
 		$eSig = new ESignature();
-		$eSig->signingUserId = $this->_objects['user']->userId;
+		$eSig->signingUserId = $this->_objects['user']->personId;
 		$eSig->objectClass = 'ClinicalNote';
 		$eSig->objectId = $clinicalNote->clinicalNoteId;
 		$eSig->summary = 'Test, One #10026 - Transcription Note **Signed**';

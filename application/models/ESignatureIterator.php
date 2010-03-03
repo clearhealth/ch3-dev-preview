@@ -38,6 +38,12 @@ class ESignatureIterator extends WebVista_Model_ORMIterator implements Iterator 
 					 ->order('objectClass')
 					 ->order('dateTime DESC');
 				break;
+			case 'objectId':
+				$dbSelect->where("signedDateTime = '0000-00-00 00:00:00'")
+					 ->where('objectId = ' . (int)$id)
+					 ->order('objectClass')
+					 ->order('dateTime DESC');
+				break;
 			case 'default':
 			default:
 				$dbSelect->where("objectClass = 'ClinicalNote'")

@@ -37,6 +37,7 @@ class Models_LabResultTest extends Models_TableModels {
 				      'value'=>100,
 				      'units'=>'KG',);
 	protected $_assertMatches = array('units'=>'KG');
+	protected $_assertTableName = 'lab_result'; // value MUST be the same as $_table
 
 }
 

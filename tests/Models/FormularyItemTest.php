@@ -37,6 +37,7 @@ class Models_FormularyItemTest extends Models_TableModels {
 				      'comments'=>'Test Comments',
 				      'price'=>100,);
 	protected $_assertMatches = array('directions'=>'Test Directions');
+	protected $_assertTableName = 'formularyDefault'; // value MUST be the same as $_table
 
 	protected function _prePersist() {
 		$this->_obj->_name = 'formularyDefault';

@@ -28,7 +28,15 @@
 class ImmunizationsController extends WebVista_Controller_Action {
 
 	public function selectionListAction() {
+		$id = (int)$this->_getParam('id');
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($id,1);
+		$lists = array();
+		foreach ($enumerationIterator as $enum) {
+			$lists[$enum->key] = $enum->name;
+		}
 		$this->view->jsCallback = $this->_getParam('jsCallback','');
+		$this->view->lists = $lists;
 		$this->render();
 	}
 
@@ -59,6 +67,7 @@ class ImmunizationsController extends WebVista_Controller_Action {
 					$patientImmunization = new PatientImmunization();
 					$immunization['code'] = $code;
 					$immunization['patientId'] = $patientId;
+					trigger_error(print_r($immunization,true),E_USER_NOTICE);
 					$patientImmunization->populateWithArray($immunization);
 					$patientImmunization->persist();
 				}
@@ -86,13 +95,60 @@ class ImmunizationsController extends WebVista_Controller_Action {
 			$filter = array();
 			$filter['patientId'] = $patientId;
 			$patientImmunizationIterator->setFilter($filter);
-			$rows = $patientImmunizationIterator->toJsonArray('code',array('reportedNotAdministered','series','reaction','repeatContraindicated','immunization','comment','reportedNotAdministered','patientReported'));
+			$rows = $patientImmunizationIterator->toJsonArray('code',array('dateAdministered','lot','route','site','series','reaction','immunization','patientReported','comment'));
 		}
 		$data = array();
 		$data['rows'] = $rows;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
+	}
+
+	public function processEditImmunizationAction() {
+		$immunizations = $this->_getParam("immunizations");
+		$patientImmunization = new PatientImmunization();
+		$patientImmunization->populateWithArray($immunizations);
+		$patientImmunization->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processDeleteImmunizationAction() {
+		$code = $this->_getParam('code');
+		$patientImmunization = new PatientImmunization();
+		$patientImmunization->code = $code;
+		$patientImmunization->setPersistMode(WebVista_Model_ORM::DELETE);
+		$patientImmunization->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function immunizationContextMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render();
+	}
+
+	public function listImmunizationSectionNameAction() {
+		$sectionId = (int)$this->_getParam('sectionId');
+		if (!$sectionId > 0) $this->_helper->autoCompleteDojo(array());
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($sectionId,1);
+		$rows = array();
+		foreach ($enumerationIterator as $enum) {
+			$tmp = array();
+			$tmp['id'] = $enum->key;
+			$tmp['data'][] = '';
+			$tmp['data'][] = $enum->name;
+			$tmp['data'][] = '';//$enum->key;
+			$rows[] = $tmp;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows' => $rows),true);
 	}
 
 }

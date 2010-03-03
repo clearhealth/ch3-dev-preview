@@ -37,6 +37,7 @@ class Models_FormTest extends Models_TableModels {
 				      'description'=>'Test Description',
 				      'system_name'=>'Test System Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'form'; // value MUST be the same as $_table
 
 }
 

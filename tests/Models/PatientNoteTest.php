@@ -37,6 +37,7 @@ class Models_PatientNoteTest extends Models_TableModels {
 				      'user_id'=>56789,
 				      'note'=>'Test Note',);
 	protected $_assertMatches = array('note'=>'Test Note');
+	protected $_assertTableName = 'patient_note'; // value MUST be the same as $_table
 
 }
 

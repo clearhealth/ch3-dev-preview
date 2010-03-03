@@ -37,6 +37,7 @@ class Models_PatientImmunizationTest extends Models_TableModels {
 				      'reportedNotAdministered'=>1,
 				      'series'=>'Test Series',);
 	protected $_assertMatches = array('patientId'=>1234);
+	protected $_assertTableName = 'patientImmunizations'; // value MUST be the same as $_table
 
 }
 

@@ -55,20 +55,11 @@ div.gridbox_xp table.obj td {
 			</div>
 			<div class="formRow" style="margin-left:20px;">
 			<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
-			<div style="width:90px;overflow:hidden;"><input type="text" name="patient[person][lastName]" id="dateOfBirthInput" size="10"/></div>
-			<script>
-				var dateOfBirthBox = dijit.byId('dateOfBirthInput');
-                		if (dateOfBirthBox != undefined) {
-                			dateOfBirthBox.destroyRecursive();
-                			dateOfBirthBox = null;
-                		}
-
-				dateOfBirthBox = new dijit.form.DateTextBox({constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('dateOfBirthInput'));
-			</script>
+			<?=$this->form->formPerson->dateOfBirthInput()?>
 			</div>
 			<div class="formRow" style="margin-left:20px;">
 			<?=$this->form->formPerson->gender->renderLabel()?>
-			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray("Gender")))?>
+			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
 			</div>
 			<br class="formRowDivider">
 			<div class="formRow">
@@ -82,24 +73,15 @@ div.gridbox_xp table.obj td {
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray("Marital Status")))?>
+			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->confidentiality->renderLabel()?>
-			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray("Confidentiality")))?>
+			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->signedHipaaDate->renderLabel()?>
-			<div style="width:90px;overflow:hidden;"><input type="text" name="patient[signedHipaaDate]" id="signedHipaaDateInput" size="10"/></div>
-			<script>
-				var signedHipaaDateBox = dijit.byId('singedHipaaDateInput');
-                		if (signedHipaaDateBox != undefined) {
-                			signedHipaaDateBox.destroyRecursive();
-                			signedHipaaDateBox = null;
-                		}
-
-				signedHipaaDateBox = new dijit.form.DateTextBox({constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('signedHipaaDateInput'));
-			</script>
+			<?=$this->formDateText('patient[signedHipaaDate]',$this->form->signedHipaaDate->getValue(),array('id'=>'singedHipaaDateInput'))?>
 			</div>
 					<!--todo duplicate display<b>Marked as Duplicate</b> of<br> brogdon, aletha  #10053<br>
 					<button onclick="window.location = '/index.php/main/Patient/edit/unmarkDuplicate/1042177?process=true'; return false;">Remove Duplicate Mark</button>-->

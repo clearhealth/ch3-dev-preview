@@ -149,6 +149,7 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 		$db = Zend_Registry::get("dbAdapter");
 		$dbSelect = $db->select()->from(array("e"=>"enumerations"))
 			       ->join(array("ec"=>$this->_table),"e.enumerationId = ec.descendant", array())
+			       ->where('e.active = 1')
 			       ->where("ec.ancestor = ?",(int)$enumerationId)
 			       ->order("e.name ASC");
 		if ($depth !== null) {
@@ -163,6 +164,7 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 		$db = Zend_Registry::get("dbAdapter");
 		$dbSelect = $db->select()->from(array("e"=>"enumerations"))
 			       ->join(array("ec"=>$this->_table),"e.enumerationId = ec.ancestor", array())
+			       ->where('e.active = 1')
 			       ->where("ec.descendant = ?",(int)$enumerationId)
 			       ->order("e.name ASC");
 		if ($depth !== null) {
@@ -180,6 +182,12 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 		$enumeration->enumerationId = (int)$enumerationId;
 		$enumeration->setPersistMode(WebVista_Model_ORM::DELETE);
 		$enumeration->persist();
+
+		// delete recursively
+		$enumerationIterator = $this->getAllDescendants($enumeration->enumerationId,1);
+		foreach ($enumerationIterator as $enum) {
+			$this->deleteEnumeration($enum->enumerationId);
+		}
 
 		$db->beginTransaction();
 		try {
@@ -211,18 +219,20 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 			}
 			$enumeration->$key = $value;
 		}
-		// check if parent item has an ormClass and id defined and use that to its child
-		if (strlen($enumParent->ormClass) > 0) {
-			$enumeration->ormClass = $enumParent->ormClass;
-			// we only need to use the parent ormId if child's ormId less than or equal to 0
-			if ($enumeration->ormId <= 0) {
-				// temporarily comment out
-				//$enumeration->ormId = $enumParent->ormId;
+		if (!strlen($enumeration->ormClass) > 0) {
+			// check if parent item has an ormClass and id defined and use that to its child
+			if (strlen($enumParent->ormClass) > 0) {
+				$enumeration->ormClass = $enumParent->ormClass;
+				// we only need to use the parent ormId if child's ormId less than or equal to 0
+				if ($enumeration->ormId <= 0) {
+					// temporarily comment out
+					//$enumeration->ormId = $enumParent->ormId;
+				}
 			}
-			// we only need to use the parent ormEditMethod if child's ormEditMethod not defined
-			if (!strlen($enumeration->ormEditMethod) > 0) {
-				$enumeration->ormEditMethod = $enumParent->ormEditMethod;
-			}
+		}
+		// we only need to use the parent ormEditMethod if child's ormEditMethod not defined
+		if (!strlen($enumeration->ormEditMethod) > 0) {
+			$enumeration->ormEditMethod = $enumParent->ormEditMethod;
 		}
 		$enumeration->persist();
 		$enumerationId = $enumeration->enumerationId;

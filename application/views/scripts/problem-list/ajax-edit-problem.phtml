@@ -83,25 +83,9 @@ if ($this->form->dateOfOnset->getValue()) {
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
         <?=__($this->form->dateOfOnset->renderLabel())?>
-	<input type="text" name="problemList[dateOfOnset]" id="dateOfOnsetInput" />
-	<script>
-		var dateOfOnsetBox = dijit.byId('dateOfOnsetInput');
-		if (dateOfOnsetBox != undefined) {
-			dateOfOnsetBox.destroyRecursive();
-			dateOfOnsetBox = null;
-		}
-
-		dateOfOnsetBox = new dijit.form.DateTextBox({name:'problemList[dateOfOnset]',constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('dateOfOnsetInput'));
-		<?if($this->form->dateOfOnset->getValue()):
-			$dateOfOnsetValue = date('Y-m-d',strtotime($this->form->dateOfOnset->getValue()));
-		else:
-			$dateOfOnsetValue = date('Y-m-d');
-		endif?>
-		<?$x = explode('-',$dateOfOnsetValue);?>
-		var onsetDate = new Date();
-		onsetDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-		dateOfOnsetBox.setValue(onsetDate);
-	</script>
+	<?if(!$this->form->dateOfOnset->getValue())
+		$this->form->dateOfOnset->setValue(date('Y-m-d'));?>
+        <?=$this->form->dateOfOnsetInput()?>
 </div>
 
 <!--

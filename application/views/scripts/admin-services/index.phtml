@@ -60,11 +60,61 @@ function adminServicesToolbarOnClicked(id) {
 		case "tbDisable":
 			adminServicesMenuSettings('disable');
 			break;
+		case "tbMenuReload":
+			adminServicesMenuReload();
+			break;
 		default:
 			alert('<?=__("Invalid event: ")?>'+id);
 	}
 }
 adminServicesToolbar.attachEvent("onClick",adminServicesToolbarOnClicked);
+
+function adminServicesMenuReload() {
+	if (!confirm("<?=__('Reloading the menu can cause problems during live system usage, are you sure you want to continue?')?>")) {
+		return;
+	}
+	dojo.xhrPost({
+		url: globalBaseUrl+"/menu-manager.raw/process-menu-reload",
+		handleAs: "json",
+		content: {
+		},
+		load: function (data) {
+			if (data == true) {
+				adminServicesMenuRevert();
+			}
+			else {
+				alert(data);
+			}
+			adminServicesGridOnLoaded();
+		},
+		error: function (error) {
+			console.error ('Error: ', error);
+		}
+	});
+}
+
+function adminServicesMenuRevert() {
+	if (confirm("<?=__('Please confirm the refresh of the menu was successful in another window, if there is a problem click cancel to revert to the previous setup')?>")) {
+		return;
+	}
+	dojo.xhrPost({
+		url: globalBaseUrl+"/menu-manager.raw/process-menu-revert",
+		handleAs: "json",
+		content: {
+		},
+		load: function (data) {
+			if (data == true) {
+				alert("<?=__('Menu reverted successfully.')?>");
+			}
+			else {
+				alert(data);
+			}
+		},
+		error: function (error) {
+			console.error ('Error: ', error);
+		}
+	});
+}
 
 var adminServicesGrid =  new dhtmlXGridObject("adminServicesGridContainer");
 adminServicesGrid.setImagePath("<?=$this->baseUrl?>/img/");
@@ -104,9 +154,10 @@ function adminServicesOnRowSelected(rowId,cellIndex) {
 			adminServicesToolbar.showItem("tbRestart");
 			break;
 		case "menu":
-			adminServicesToolbar.showItem("tbClear");
-			adminServicesToolbar.showItem("tbEnable");
-			adminServicesToolbar.showItem("tbDisable");
+			adminServicesToolbar.showItem("tbMenuReload");
+			//adminServicesToolbar.showItem("tbClear");
+			//adminServicesToolbar.showItem("tbEnable");
+			//adminServicesToolbar.showItem("tbDisable");
 			break;
 	}
 }

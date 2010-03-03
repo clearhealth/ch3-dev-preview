@@ -79,14 +79,9 @@ if (typeof mainTabbar != "undefined") {
 	// check if tabId exists
 	var tabId = 'tab_{$objectClass}';
 	var tab = mainTabbar._getTabById(tabId);
-	if (tab) {
-		// check if mainController object exists
-		if (typeof mainController != "undefined") {
-			// set active patientId
-			mainController.setActivePatient(patientId);
-		}
-		mainTabbar.setTabActive(tabId); // tabName should be dynamic
-	}
+	// set active patientId
+	mainController.setActivePatient(patientId);
+	mainTabbar.setTabActive(tabId); // tabName should be dynamic
 }
 
 EOL;
@@ -146,6 +141,16 @@ EOL;
 		}
 		header("Content-type: text/xml");
 		return $items;
+	}
+
+	protected function _setORMPersistMode(ORM $orm,$cascadePersist = false) {
+		$fields = $orm->ormFields();
+		foreach($fields as $value) {
+			if ($orm->$value instanceof ORM) {
+				$orm->$value->_cascadePersist = $cascadePersist;
+				$this->_setORMPersistMode($orm->$value,$cascadePersist);
+			}
+		}
 	}
 
 }

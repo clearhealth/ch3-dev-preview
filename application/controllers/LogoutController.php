@@ -29,7 +29,7 @@ class LogoutController extends WebVista_Controller_Action {
 			$identity = Zend_Auth::getInstance()->getIdentity();
 			$audit = new Audit();
 			$audit->objectClass = 'Logout';
-			$audit->userId = (int)$identity->userId;
+			$audit->userId = (int)$identity->personId;
 			$audit->message = __('user') . ': ' . $identity->username . ' ' . __('logged out');
 			$audit->dateTime = date('Y-m-d H:i:s');
 			$audit->_ormPersist = true;

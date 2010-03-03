@@ -37,6 +37,7 @@ class Models_CompanyTest extends Models_TableModels {
 				      'description'=>'Test Description',
 				      'notes'=>'Test Notes',);
 	protected $_assertMatches = array('description'=>'Test Description');
+	protected $_assertTableName = 'company'; // value MUST be the same as $_table
 
 }
 

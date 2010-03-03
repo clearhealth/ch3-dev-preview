@@ -37,6 +37,7 @@ class Models_BuildingProgramIdentifierTest extends Models_TableModels {
 				      'program_id'=>5678,
 				      'identifier'=>'Test Identifier',);
 	protected $_assertMatches = array('identifier'=>'Test Identifier');
+	protected $_assertTableName = 'building_program_identifier'; // value MUST be the same as $_table
 
 }
 

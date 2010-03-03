@@ -37,6 +37,7 @@ class Models_ReportTemplateTest extends Models_TableModels {
 				      'uuid'=>'u-u-i-d',
 				      'name'=>'Test Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'report_templates'; // value MUST be the same as $_table
 
 }
 

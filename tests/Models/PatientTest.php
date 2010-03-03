@@ -38,6 +38,7 @@ class Models_PatientTest extends Models_TableModels {
 				      'signedHipaaDate'=>'2009-09-23',
 				      'teamId'=>'Blue',);
 	protected $_assertMatches = array('teamId'=>'Blue');
+	protected $_assertTableName = 'patient'; // value MUST be the same as $_table
 
 }
 

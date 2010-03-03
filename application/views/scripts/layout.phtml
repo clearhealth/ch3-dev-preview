@@ -9,6 +9,27 @@ var globalDefaultAction = '<?=Zend_Registry::get('config')->user->preferences->d
 var globalLogoutTimer = null;
 var globalForceLogout = false;
 var globalTimerTimeout = '<?=Zend_Registry::get('sessionTimeout')?>';
+
+// used by generic processing like single edit field and deleting
+function globalProcessGeneric(action,content,callback) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/generic-edit.raw/"+action,
+		handleAs: "json",
+		content: content,
+		load: function (data) {
+			if (typeof callback == "function") {
+				callback(data);
+			}
+			else {
+				alert(data);
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error ("Error: ",error);
+		}
+	});
+}
 </script>
 <?=$this->headTitle() ?>
 <?if ($this->authenticated):?>

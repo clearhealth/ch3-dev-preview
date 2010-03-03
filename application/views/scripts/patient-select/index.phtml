@@ -321,7 +321,7 @@
 		  pscb.destroyRecursive();
 		  pscb = null;
 		}
-		  var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
+		  var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select.raw/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
 		  pscb = new custom.PatientSelectComboBox({name:"patientSelectAutoCompleteId",autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
 		dojo.connect(pscb,"_openResultList",'populatePatientList');
 		function patientSelectMultiSelectOnChanged(select) {
@@ -330,7 +330,7 @@
 				return;
 			}
 			dojo.xhrGet({
-				url: '<?=$this->baseUrl?>/patient-select/detail?personId=' + personId,
+				url: '<?=$this->baseUrl?>/patient-select.raw/detail?personId=' + personId,
 				handleAs: 'json',
 				load: loadPatientDetail,
 				error: function (er) {
@@ -341,12 +341,29 @@
 		</script>
 		<select id="patientSelectMultiSelect" multiple="multiple" style="width:100%;height:330px;" onChange="patientSelectMultiSelectOnChanged(this);">
 		</select>
-		<input style="float:right;" type="button" value="<?=__("Select Patient")?>" onClick="mainController.setActiveVisit(0); mainController.setActivePatient(dojo.byId('patientSelectMultiSelect').options[dojo.byId('patientSelectMultiSelect').selectedIndex].value); closeWindowSelectPatient();"/>
+		<input style="float:right;" type="button" value="<?=__("Select Patient")?>" onClick="patientSelectSelected();"/>
 	</div>
 	</div>
 </div>
 
 <script>
+function patientSelectSelected() {
+	var patientId = dojo.byId('patientSelectMultiSelect').options[dojo.byId('patientSelectMultiSelect').selectedIndex].value;
+	dojo.xhrGet({
+		url: "<?=$this->baseUrl?>/patient-select.raw/get-most-recent-visit?personId="+patientId,
+		handleAs: "json",
+		load: function (data) {
+			mainController.setActiveVisit(data);
+			mainController.setActivePatient(patientId);
+			closeWindowSelectPatient();
+		},
+		error: function (error) {
+			alert(error);
+			console.error("Error: ", error);
+		}
+	});
+}
+
 var quicklist = document.getElementsByName("quicklist");
 for (var i = 0; i < quicklist.length; i++) {
 	if (quicklist[i].checked) {
@@ -373,7 +390,7 @@ for (var i = 0; i < quicklist.length; i++) {
 	alGrid = new dhtmlXGridObject('alertsContainer');
 	alGrid.setImagePath("<?=$this->baseUrl?>/img/");
 	alGrid.setHeader("<?=__('Urgency')?>,<?=__('Patient')?>,<?=__('Location')?>,<?=__('Alert Date/Time')?>,<?=__('Message')?>,<?=__('Forwarded By')?>,<?=__('Comment')?>,,");
-	alGrid.setInitWidths("75,125,*,120,250,*,*,0,0");
+	alGrid.setInitWidths("55,125,80,110,*,*,*,0,0");
 	//alGrid.setColAlign("left,left,left,left,left,left,left");
 	alGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro");
 	alGrid.setSkin("xp");
@@ -447,7 +464,15 @@ for (var i = 0; i < quicklist.length; i++) {
 	}
 	function forwardSelectedAlert() {
 		// temporarily call processSelectedAlert
-		processSelectedAlert();
+		//processSelectedAlert();
+		var rowId = alGrid.getSelectedRowId();
+		if (rowId == null) {
+			return;
+		}
+		processAlertForward(rowId,"alertsReload");
+	}
+	function addAlert() {
+		globalCreateWindow("winAddAlertId",new Array(),"<?=$this->baseUrl?>/general-alerts.raw/user-add-alert","<?=__('Add Alert')?>",600,300);
 	}
 	</script>
 	<div style="padding-top:5px;">
@@ -455,5 +480,6 @@ for (var i = 0; i < quicklist.length; i++) {
 		<input type="button" id="processAllId" value="<?=__('Process All')?>" onClick="processAllAlerts()" disabled="disabled" />
 		<input type="button" id="processId" value="<?=__('Process')?>" onClick="processSelectedAlert()" disabled="disabled"/>
 		<input type="button" id="forwardId" value="<?=__('Forward')?>" onClick="forwardSelectedAlert()" disabled="disabled"/>
+		<input type="button" id="addId" value="<?=__('Add')?>" onClick="addAlert()" />
 	</div>
 </div>

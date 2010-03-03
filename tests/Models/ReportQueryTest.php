@@ -37,6 +37,7 @@ class Models_ReportQueryTest extends Models_TableModels {
 				      'uuid'=>'u-u-i-d',
 				      'query'=>'Test Query',);
 	protected $_assertMatches = array('systemName'=>'Test System Name');
+	protected $_assertTableName = 'reportQueries'; // value MUST be the same as $_table
 
 }
 

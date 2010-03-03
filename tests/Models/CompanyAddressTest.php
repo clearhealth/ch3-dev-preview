@@ -37,6 +37,7 @@ class Models_CompanyAddressTest extends Models_TableModels {
 				      'address_id'=>5678,
 				      'address_type'=>1,);
 	protected $_assertMatches = array('address_type'=>1);
+	protected $_assertTableName = 'company_address'; // value MUST be the same as $_table
 
 }
 

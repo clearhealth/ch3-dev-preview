@@ -37,6 +37,7 @@ class Models_DashboardComponentTest extends Models_TableModels {
 				      'systemName'=>'Test System Name',
 				      'content'=>'Test Content',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'dashboardComponent'; // value MUST be the same as $_table
 
 }
 

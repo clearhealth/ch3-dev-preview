@@ -69,4 +69,14 @@ class LabResult extends WebVista_Model_ORM implements NSDRMethods {
                 return $ret;
         }
 
+	public function populateByFilter($key,$val) {
+		$db = Zend_Registry::get('dbAdapter');
+		$dbSelect = $db->select()
+			       ->from($this->_table)
+			       ->where("$key = ?",$val);
+		$retval = $this->populateWithSql($dbSelect->__toString());
+		$this->postPopulate();
+		return $retval;
+	}
+
 }

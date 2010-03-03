@@ -37,6 +37,7 @@ class Models_VitalSignGroupTest extends Models_TableModels {
 				      'dateTime'=>'2009-09-24',
 				      'enteringUserId'=>5678,);
 	protected $_assertMatches = array('enteringUserId'=>5678);
+	protected $_assertTableName = 'vitalSignGroups'; // value MUST be the same as $_table
 
 }
 

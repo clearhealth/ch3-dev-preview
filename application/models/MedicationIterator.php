@@ -24,31 +24,26 @@
  
 class MedicationIterator extends WebVista_Model_ORMIterator implements Iterator {
  
-  public function __construct($dbSelect = null) {
-    parent::__construct("Medication",$dbSelect);
-  }
- 
-  public function current() {
-    $ormObj = new $this->_ormClass();
-    $row = $this->_dbStmt->fetch(null,null,$this->_offset);
-    $ormObj->populateWithArray($row);
-    return $ormObj;
-  }
- 
-  public function setFilter($filters) {
-	$db = Zend_Registry::get('dbAdapter');
-	$dbSelect = $db->select()->from('medications');
-	if (count($filters) == 0) $filters['patientId'] = 0;
-	foreach ($filters as $filter => $value) {
-		switch($filter) {
-		case 'patientId' :
-    		  $dbSelect->where("personId = ?", (int)$value);
-		}
+	public function __construct($dbSelect = null) {
+		parent::__construct('Medication',$dbSelect);
 	}
-
-	$dbSelect->order("medications.datePrescribed DESC");
-	$this->_dbSelect = $dbSelect;
-	trigger_error($this->_dbSelect->__toString(),E_USER_NOTICE);
-	$this->_dbStmt = $db->query($this->_dbSelect);
-  }
+ 
+	public function setFilter($filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$dbSelect = $db->select()
+				->from('medications')
+				//->order('eSignatureId ASC')
+				//->order('transmit DESC')
+				->order('datePrescribed ASC');
+		foreach ($filters as $filter => $value) {
+			switch($filter) {
+				case 'patientId' :
+					$dbSelect->where('personId = ?',(int)$value);
+					break;
+			}
+		}
+		$this->_dbSelect = $dbSelect;
+		trigger_error($this->_dbSelect->__toString(),E_USER_NOTICE);
+		$this->_dbStmt = $db->query($this->_dbSelect);
+	}
 }

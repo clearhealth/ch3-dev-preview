@@ -37,6 +37,7 @@ class Models_PatientDiagnosisTest extends Models_TableModels {
 				      'patientId'=>5678,
 				      'diagnosis'=>'Test Diagnosis',);
 	protected $_assertMatches = array('diagnosis'=>'Test Diagnosis');
+	protected $_assertTableName = 'patientDiagnosis'; // value MUST be the same as $_table
 
 }
 

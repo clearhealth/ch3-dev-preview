@@ -40,6 +40,7 @@ class Models_AuditTest extends Models_TableModels {
 				      'type'=>1,
 				      'dateTime'=>'2009-09-22',);
 	protected $_assertMatches = array('objectClass'=>'Medication');
+	protected $_assertTableName = 'audits'; // value MUST be the same as $_table
 
 }
 

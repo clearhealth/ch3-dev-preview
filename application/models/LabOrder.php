@@ -22,7 +22,7 @@
 *****************************************************************************/
 
 
-class LabOrder extends WebVista_Model_ORM {
+class LabOrder extends WebVista_Model_ORM implements Document {
 	protected $lab_order_id;
 	protected $patient_id;
 	protected $patient;
@@ -33,13 +33,58 @@ class LabOrder extends WebVista_Model_ORM {
 	protected $manual_order_date;
 	protected $encounter_id;
 	protected $external_id;
+	protected $person_id;
+	protected $description;
+	protected $eSignatureId;
 	protected $_table = "lab_order";
 	protected $_primaryKeys = array("lab_order_id");
 	protected $_legacyORMNaming = true;
 	protected $_cascadePersist = false;
 
-	function __construct() {
+	public function __construct() {
 		parent::__construct();
 		$this->patient = new Patient();
+		$this->patient->_cascadePersist = false;
 	}
+
+	public function getIteratorByPersonId($personId = null) {
+		if ($personId === null) {
+			$personId = $this->personId;
+		}
+		$personId = (int)$personId;
+		$db = Zend_Registry::get('dbAdapter');
+		$dbSelect = $db->select()
+				->from($this->_table)
+				->where('person_id = '.$personId.' OR patient_id = '.$personId);
+		return parent::getIterator($dbSelect);
+	}
+
+	public function getSummary() {
+                return $this->description;
+	}
+
+	public function getDocumentId() {
+		return $this->labOrderId;
+	}
+	public function setDocumentId($id) {
+		$this->labOrderId = (int)$id;
+	}
+
+	public function getContent() {
+		return '';
+	}
+
+	public static function getPrettyName() {
+		return 'Lab Results';
+	}
+
+	public static function getControllerName() {
+		return 'LabResultsController';
+	}
+	
+	public function setSigned($eSignatureId) {
+		$this->eSignatureId = (int)$eSignatureId;
+		$this->persist();
+	}
+
 }

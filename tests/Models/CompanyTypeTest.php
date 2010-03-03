@@ -36,6 +36,7 @@ class Models_CompanyTypeTest extends Models_TableModels {
 	protected $_keyValues = array('company_id'=>1234,
 				      'company_type'=>1,);
 	protected $_assertMatches = array('company_type'=>1);
+	protected $_assertTableName = 'company_type'; // value MUST be the same as $_table
 
 }
 

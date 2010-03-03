@@ -77,6 +77,8 @@ class PatientController extends WebVista_Controller_Action {
 		$this->view->form = $this->_form;
 		$this->view->facilityIterator = $facilityIterator;
 		$this->view->reasons = $this->_getReasons();
+
+		$this->view->statesList = Address::getStatesList();
 		$this->render();
 	}
 
@@ -153,8 +155,9 @@ class PatientController extends WebVista_Controller_Action {
 				if ($id === 0) {
 					// defaults for new note
 					$obj->note_date = date('Y-m-d H:i:s');
-					$obj->user_id = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+					$obj->user_id = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 					$obj->priority = 5;
+					$obj->active = 1;
 				}
 				break;
 			default:
@@ -266,8 +269,7 @@ class PatientController extends WebVista_Controller_Action {
 			$tmp['data'][] = $addr->line1;
 			$tmp['data'][] = $addr->line2;
 			$tmp['data'][] = $addr->city;
-			$tmp['data'][] = $addr->region;
-			$tmp['data'][] = $addr->country;
+			//$tmp['data'][] = $addr->region;
 			$tmp['data'][] = $addr->state;
 			$tmp['data'][] = $addr->postal_code;
 			$tmp['data'][] = $addr->notes;
@@ -288,7 +290,12 @@ class PatientController extends WebVista_Controller_Action {
 		$patientId = (int)$this->_getParam('patientId');
 		$rows = array();
 		$patientNote = new PatientNote();
-		$patientNoteIterator = $patientNote->getIteratorByPatientId($patientId);
+		$patientNoteIterator = $patientNote->getIterator();
+		$filters = array();
+		$filters['patient_id'] = $patientId;
+		$filters['active'] = 1;
+		$filters['posting'] = 0;
+		$patientNoteIterator->setFilters($filters);
 		$reasons = $this->_getReasons();
 		foreach ($patientNoteIterator as $note) {
 			$tmp = array();
@@ -298,7 +305,7 @@ class PatientController extends WebVista_Controller_Action {
 			$tmp['data'][] = $note->user->username;
 			$tmp['data'][] = isset($reasons[$note->reason])?$reasons[$note->reason]:'';
 			$tmp['data'][] = $note->note;
-			$tmp['data'][] = ($note->deprecated)?__('Yes'):__('No');
+			$tmp['data'][] = ($note->active)?__('No'):__('Yes');
 			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');

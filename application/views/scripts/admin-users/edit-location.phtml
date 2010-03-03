@@ -1,0 +1,35 @@
+<script>
+function preSubmituser() {
+	var buildingRoom = dojo.byId("building-room-id");
+	var defaultLocationId = dojo.byId("user-defaultLocationId");
+	defaultLocationId.value = buildingRoom.options[buildingRoom.selectedIndex].value;
+	return true;
+}
+</script>
+
+<?$this->facilityIterator->setFilter(array('Building','Room'));
+$buildings = array(''=>'');
+foreach($this->facilityIterator as $facilities):
+$buildings[$facilities['Room']->roomId] = $facilities['Building']->name.'->'.$facilities['Room']->name;
+endforeach?>
+
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+		<fieldset><legend><?=__('Location Information')?></legend>
+		<div style="float:left;width:400px;">
+			<dt><label for="building-room-id"><?=__('Building')?>:</label></dt>
+			<?=$this->formSelect('buildingRoomId',$this->form->defaultLocationId->getValue(),array('id'=>'building-room-id'),$buildings)?>
+			<br style="clear:left;" />
+			<div style="text-align:right;">
+				<?=$this->form->renderOpen()?>
+				<?=$this->form->userIdInput('FormHidden')?>
+				<?=$this->form->personIdInput('FormHidden')?>
+				<?=$this->formHidden('personId',$this->form->personId->getValue())?>
+				<?=$this->form->defaultLocationIdInput('FormHidden')?>
+				<?=$this->form->okInput('FormButton')?>
+				<?=$this->form->renderClose()?>
+			</div>
+		</div>
+		</fieldset>
+	</div>
+</div>

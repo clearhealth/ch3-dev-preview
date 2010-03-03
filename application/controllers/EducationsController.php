@@ -28,14 +28,33 @@
 class EducationsController extends WebVista_Controller_Action {
 
 	public function listAction() {
+		$rows = array();
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName(PatientEducation::ENUM_EDUC_PARENT_NAME);
+
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		foreach ($enumerationIterator as $enum) {
+			if ($enum->name == PatientEducation::ENUM_EDUC_SECTION_NAME) {
+				$iterators = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+				foreach ($iterators as $iter) {
+					if ($iter->name == PatientEducation::ENUM_EDUC_SECTION_OTHER_NAME) continue;
+					$row = array();
+					$row['id'] = $iter->enumerationId;
+					$row['data'][] = $iter->name;
+					$rows[] = $row;
+				}
+				break;
+			}
+		}
                 $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
-                $json->direct(array('rows'=>Enumeration::enumerationToJson(PatientEducation::ENUM_PARENT_NAME)),true);
+                $json->direct(array('rows'=>$rows),true);
         }
 
 	protected function _getEnumerationByName($name) {
 		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName($name);
+		$enumeration->populateByUniqueName($name);
 		$enumerationsClosure = new EnumerationsClosure();
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
 		$ret = array();
@@ -52,7 +71,7 @@ class EducationsController extends WebVista_Controller_Action {
 		$rows = array();
 		foreach ($enumerationIterator as $enum) {
 			$tmp = array();
-			$tmp['id'] = $enum->key;
+			$tmp['id'] = $enum->enumerationId;
 			$tmp['data'][] = '';
 			$tmp['data'][] = $enum->name;
 			$tmp['data'][] = $enum->key;
@@ -110,18 +129,11 @@ class EducationsController extends WebVista_Controller_Action {
 		if ($patientId > 0) {
 			$patientEducationIterator = new PatientEducationIterator();
 			$patientEducationIterator->setFilters(array('patientId'=>$patientId));
-			$listLevels = $this->_getEnumerationByName(PatientEducation::ENUM_LEVEL_PARENT_NAME);
 			foreach ($patientEducationIterator as $education) {
-				$level = '';
-				if (isset($listLevels[$education->level])) {
-					$level = $listLevels[$education->level];
-				}
 				$tmp = array();
 				$tmp['id'] = $education->code;
-				$tmp['data'][] = $level;
-				$tmp['data'][] = $education->education;
 				$tmp['data'][] = $education->level;
-				$tmp['data'][] = $education->comments;
+				$tmp['data'][] = $education->education;
 				$rows[] = $tmp;
 			}
 		}
@@ -132,12 +144,27 @@ class EducationsController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generatePatientEducationPreferencesEnum();
-		Enumeration::generateEducationTopicPreferencesEnum();
-		Enumeration::generateEducationLevelPreferencesEnum();
-		echo 'Done';
-		die;
+	public function processEditEducationAction() {
+		$params = $this->_getParam('education');
+		$patientEducation = new PatientEducation();
+		$patientEducation->populateWithArray($params);
+		$patientEducation->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processDeleteEducationAction() {
+		$code = $this->_getParam('code');
+		$patientImmunization = new PatientEducation();
+		$patientImmunization->code = $code;
+		$patientImmunization->setPersistMode(WebVista_Model_ORM::DELETE);
+		$patientImmunization->persist();
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

@@ -39,6 +39,7 @@ class Models_GenericDataTest extends Models_TableModels {
 				      'name'=>'Test Name',
 				      'value'=>'Test Value',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'genericData'; // value MUST be the same as $_table
 
 }
 

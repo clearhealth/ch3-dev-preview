@@ -37,6 +37,7 @@ class Models_MedicationTest extends Models_TableModels {
 				      'personId'=>1234,
 				      'patientReported'=>1,);
 	protected $_assertMatches = array('hipaaNDC'=>'Test hipaaNDC');
+	protected $_assertTableName = 'medications'; // value MUST be the same as $_table
 
 }
 

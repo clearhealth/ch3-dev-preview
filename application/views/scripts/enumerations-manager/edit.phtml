@@ -49,7 +49,12 @@ endif;?>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->ormClass->renderLabel()?>
-	<?$this->form->ormClass->setAttrib('size',35)?>
+	<?$this->form->ormClass->setAttrib('size',35);
+	if ($this->ormClass !== null) {
+		$this->form->ormClass->setValue($this->ormClass);
+		$this->form->ormClass->setAttrib('readonly',true);
+	}
+	?>
 	<?=$this->form->ormClassInput()?>
 </div>
 <br style="clear:left;" />
@@ -80,8 +85,26 @@ endif;?>
 </fieldset>
 
 <script>
-function postSubmiteditenumeration() {
+function preSubmit<?=$this->form->getId()?>() {
+	dojo.byId("<?=$this->form->ormClass->getId()?>").readOnly = false;
+	return true;
+}
+
+function postSubmit<?=$this->form->getId()?>(data) {
+<?if (strlen($this->grid) > 0 && false):?>
+	var jsonData = dojo.fromJson(data);
+	if (<?=$this->grid?>) {
+		<?=$this->grid?>.addRow(jsonData.id,"",0,jsonData.parentId);
+		for (var i in jsonData.data) {
+			<?=$this->grid?>.cells(jsonData.id,i).setValue(jsonData.data[i]);
+		}
+		if (jsonData.parentId) {
+			<?=$this->grid?>.openItem(jsonData.parentId);
+		}
+	}
+<?else:?>
 	enumUpdateListGrid();
+<?endif;?>
 	dhxWins.window('windowEditEnumerationId').close();
 	return false;
 }

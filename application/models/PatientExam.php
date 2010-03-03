@@ -26,8 +26,10 @@ class PatientExam extends WebVista_Model_ORM {
 
 	protected $code;
 	protected $patientId;
+	protected $dateExamined;
 	protected $result;
 	protected $exam;
+	protected $refused;
 	protected $comments;
 
 	protected $_primaryKeys = array('code','patientId');

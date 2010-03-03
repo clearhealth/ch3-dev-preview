@@ -37,6 +37,7 @@ class Models_HealthStatusHandlerTest extends Models_TableModels {
 				      'name'=>'Health Status Handler',
 				      'timeframe'=>'+1 month',);
 	protected $_assertMatches = array('timeframe'=>'+1 month');
+	protected $_assertTableName = 'healthStatusHandlers'; // value MUST be the same as $_table
 
 }
 

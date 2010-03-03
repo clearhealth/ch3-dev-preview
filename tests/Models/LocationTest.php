@@ -35,6 +35,7 @@ class Models_LocationTest extends Models_TableModels {
 
 	protected $_keyValues = array('name'=>'Test Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'locations'; // value MUST be the same as $_table
 
 }
 

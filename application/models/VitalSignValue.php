@@ -98,7 +98,7 @@ class VitalSignValue extends WebVista_Model_ORM {
 	}
 
 	public static function convertValues($vital,$value,$unit) {
-		$methodName = 'convertValues'.$vital;
+		$methodName = 'convertValues'.ucfirst($vital);
 		$vitalSignValue = new self();
 		if (method_exists($vitalSignValue,$methodName)) {
 			return $vitalSignValue->$methodName($value,$unit);

@@ -15,10 +15,16 @@
         function onMenuItemSelect(itemId,itemValue) {
                 switch(itemId) {
 			case 'All_review___sign_changes':
-				windowReviewSignDocuments();
+				winES = windowReviewSignDocuments();
 				break;
 			case 'All_add_vitals':
 				windowAddVitals();
+				break;
+			case 'All_flow_sheet':
+				window.open('<?=$this->baseUrl?>/reports.raw/flow-sheet-template?reportTemplateId=5&personId=' + mainController.getActivePatient(),'pdfTemplate');
+				break;
+			case 'All_vitals___flowsheet_video':
+				window.open('<?=$this->baseUrl?>/attachments.raw/view-attachment?attachmentId=51561632','helpVideo');
 				break;
 			case 'All_quit':
 				if (confirm('<?=__("Are you sure you want to logout of the application, unsaved data will be lost?")?>')) {
@@ -34,8 +40,15 @@
 			case 'All_edit_signing_key':
 				globalCreateWindow("winEditSigningKeyId",new Array(),"<?=$this->baseUrl?>/admin-users.raw/edit-signing-key","<?=__('Edit Signing Key')?>",200,200);
 				break;
+			case 'All_add_patient':
+				globalCreateWindow("windowNewPatientId",[],"<?=$this->baseUrl?>/patient-new.raw","<?=__('Add Patient')?>",750,600);
+				break;
+			case "All_manage_schedules":
+			case "All_schedule_manager":
+				globalCreateWindow("windowScheduleManagerId",[],"<?=$this->baseUrl?>/schedule-manager.raw","<?=__('Manage Schedules')?>",800,600);
+				break;
                         default:
-                                //alert("Button "+itemId+" was pressed "+itemValue);
+                                alert("Button "+itemId+" was pressed "+itemValue);
                                 break;
                 }
         };
@@ -49,10 +62,10 @@ function windowAddVitals(jsCallback) {
 	if (jsCallback == undefined) {
 		jsCallback = '';
 	}
-	winVitals = dhxWins.createWindow('windowAddVitalSignsId',60,10,600,400);
-	winVitals.setText('<?=__('Add Vitals')?>');
-	winVitals.attachURL('<?=$this->baseUrl?>/vital-signs.raw/add?personId='+patientId+'&jsCallback='+jsCallback,true);
-	winVitals.centerOnScreen();
+	var params = [];
+	params.push("personId="+patientId);
+	params.push("jsCallback="+jsCallback);
+	return globalCreateWindow("windowAddVitalSignsId",params,"<?=$this->baseUrl?>/vital-signs.raw/add","<?=__('Add Vitals')?>",600,400);
 }
 
 function windowReviewSignDocuments() {
@@ -147,12 +160,39 @@ function processAlertNext() {
 	}
 }
 
-function globalCreateWindow(winId,params,url,winText,width,height) {
-	var winCW = dhxWins.createWindow(winId,60,10,width,height);
-	winCW.setText(winText);
-	winCW.attachURL(url+'?'+params.join("&"),true);
-	winCW.centerOnScreen();
-	return winCW;
+function markAlertDone() {
+	var processAlertItemsSelect = dojo.byId("processAlertItems");
+	dojo.xhrGet({
+		url: globalBaseUrl + "/general-alerts.raw/mark-alert-done?generalAlertId=" + processAlertItemsSelect.options[processAlertItemsSelect.selectedIndex].value,
+		handleAs: "json",
+		load: function(data,ioArgs) {
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
+
+	if (processAlertItemsSelect.options.length > 1) {
+		var prevSelected = false;
+		for (var i in processAlertItemsSelect.options) {
+			if (processAlertItemsSelect.options[i].selected) {
+				prevSelected = true;
+			}
+			if (!processAlertItemsSelect.options[i].selected && prevSelected) {
+				processAlertItemsSelect.options[i].selected = true;
+				executeJumpLinkAlert(processAlertItemsSelect.options[i].value);
+				break;
+			}
+		}
+		if (!prevSelected) {
+			windowReviewSignDocuments();
+		}
+	}
+	else {
+		windowReviewSignDocuments();
+	}
 }
 
 function openHealthStatusAlerts() {
@@ -162,8 +202,14 @@ function openHealthStatusAlerts() {
 	visitSelector.oVisitDetailsTabbar.setTabActive(visitSelector.tabHsaId);
 }
 
-function processAlertForward() {
-	processAlertNext(); // temporarily set an alias of processAlertNext
+function processAlertForward(alertId,callback) {
+	//processAlertNext(); // temporarily set an alias of processAlertNext
+	var params = [];
+	params.push("alertId="+alertId);
+	if (callback != undefined) {
+		params.push("jsCallback="+callback);
+	}
+	var winForwardAlert = globalCreateWindow("windowForwardAlertId",params,"<?=$this->baseUrl?>/general-alerts.raw/forward-alert","<?=__('Forward Alert')?>",600,400);
 }
 
 function processStop() {
@@ -175,7 +221,7 @@ function openPostings() {
 	var params = new Array();
 	var patientId = mainController.getActivePatient();
 	params.push("personId="+patientId);
-	globalCreateWindow("winPatientAllergiesId",params,"<?=$this->baseUrl?>/allergies.raw","<?=__('Patient Postings')?>",600,350);
+	globalCreateWindow("winPatientAllergiesId",params,"<?=$this->baseUrl?>/allergies.raw","<?=__('Patient Postings')?>",600,500);
 }
 </script>
 
@@ -183,9 +229,7 @@ function openPostings() {
 <?=__('Processing Alert')?>: <select id="processAlertItems" style="width:50%;" onChange="executeJumpLinkAlert(this.options[this.selectedIndex].value)">
 </select>
 <input type="button" id="processNextId" onclick="processAlertNext()" value="<?=__('Next')?>" />
-<input type="button" id="processRenewId" value="<?=__('Renew')?>" />
-<input type="button" id="processForwardId" onclick="processAlertForward()" value="<?=__('Forward')?>" />
-<input type="button" id="processRemoveId" value="<?=__('Remove')?>" disabled="disabled" />
+<input type="button" id="processMarkDone" value="<?=__('Done')?>" onclick="markAlertDone()" />
 <input type="button" id="processStopId" onclick="processStop()" value="<?=__('Stop')?>" />
 </div>
 
@@ -266,7 +310,7 @@ function mainTabbarClick(id) {
         switch(id) {
 	<?foreach ($this->mainTabs as $tabName => $tab):?>
 	case 'tab_<?=$tabName?>':
-		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports" || $tabName == "Admin"):?>
+		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports" || $tabName == "Admin" || $tabName == 'Messaging'):?>
                 dojo.byId('mainToolbar').style.display = 'none';
                 <?else:?>
                 dojo.byId('mainToolbar').style.display = 'block';

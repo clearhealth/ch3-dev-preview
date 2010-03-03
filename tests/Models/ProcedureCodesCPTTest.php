@@ -37,6 +37,7 @@ class Models_ProcedureCodesCPTTest extends Models_TableModels {
 				      'textShort'=>'Test textShort',
 				      'textLong'=>'Test textLong',);
 	protected $_assertMatches = array('textShort'=>'Test textShort');
+	protected $_assertTableName = 'procedureCodesCPT'; // value MUST be the same as $_table
 
 	public function testPersist() {
 		// nothing to do

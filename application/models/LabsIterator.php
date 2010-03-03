@@ -28,7 +28,7 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 		if ($dbSelect === null) {
 			$db = Zend_Registry::get('dbAdapter');
 			$dbSelect = $db->select()
-				       ->from('lab_result')
+				       ->from('lab_result',"description as description2")
 				       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id')
 				       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
 				       ->order('lab_result.observation_time DESC')
@@ -70,10 +70,15 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 			       ->from('lab_result')
 			       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id',$labTestCols)
 			       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
-			       ->where('lab_order.patient_id = ?',$filters['patientId'])
 			       ->order('lab_result.observation_time DESC');
 		foreach ($filters as $filter => $val) {
 			switch($filter) {
+				case 'patientId':
+					$dbSelect->where('lab_order.patient_id = ?',(int)$val);
+					break;
+				case 'orderId':
+					$dbSelect->where('lab_order.lab_order_id = ?',(int)$val);
+					break;
 				case 'dateEnd':
 				if (strtotime($val) > 100000 && $val != '*') {
 					$dateBegin = date('Y-m-d H:i:s',strtotime($filters['dateBegin']));

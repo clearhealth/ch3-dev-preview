@@ -37,6 +37,7 @@ class Models_RoomTest extends Models_TableModels {
 				      'number_seats'=>10,
 				      'name'=>'Test Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'rooms'; // value MUST be the same as $_table
 
 }
 

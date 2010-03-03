@@ -42,12 +42,13 @@ class ESignController extends WebVista_Controller_Action {
 			$multipleSign = 'true';
 		}
 		$this->view->multipleSign = $multipleSign;
+		$this->view->objectId = (int)$this->_getParam('objectId');
 		$this->render();
 	}
 
 	function countUnsignedAction() {
 		$eSignIterator = new ESignatureIterator();
-		$eSignIterator->setFilter((int)Zend_Auth::getInstance()->getIdentity()->userId,'signList');
+		$eSignIterator->setFilter((int)Zend_Auth::getInstance()->getIdentity()->personId,'signList');
 		$counter = 0;
                 foreach($eSignIterator as $row) {
 			$counter++;
@@ -59,7 +60,13 @@ class ESignController extends WebVista_Controller_Action {
 
 	function listItemsAction() {
 		$eSignIterator = new ESignatureIterator();
-		$eSignIterator->setFilter((int)Zend_Auth::getInstance()->getIdentity()->userId,'signList');
+		$objectId = (int)$this->_getParam('objectId');
+		if ($objectId > 0) {
+			$eSignIterator->setFilter($objectId,'objectId');
+		}
+		else {
+			$eSignIterator->setFilter((int)Zend_Auth::getInstance()->getIdentity()->personId,'signList');
+		}
                 //var_dump($db->query($cnSelect)->fetchAll());exit;
 		$baseStr = "<?xml version='1.0' standalone='yes'?><rows></rows>";
 		$xml = new SimpleXMLElement($baseStr);

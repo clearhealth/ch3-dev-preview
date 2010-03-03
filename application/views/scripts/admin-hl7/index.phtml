@@ -16,12 +16,7 @@ div.gridbox_xp table.obj td {
 <script>
 
 function hl7EditWindow(winId,params,url,winText,width,height) {
-	var winEditHL7 = dhxWins.createWindow(winId,60,10,width,height);
-	winEditHL7.setText(winText);
-	winEditHL7.attachURL(url+'?'+params.join("&"),true);
-	winEditHL7.setModal(true);
-	winEditHL7.centerOnScreen();
-	return winEditHL7;
+	return globalCreateWindow(winId,params,url,winText,width,height);
 }
 
 var adminHL7Layout = new dhtmlXLayoutObject("adminHL7LayoutId","6I");

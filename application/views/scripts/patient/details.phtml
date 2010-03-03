@@ -55,7 +55,7 @@ function pdRemove(id,type,callback) {
 </script>
 
 <div style="width:100%;">
-	<div style="float:left;width:50%;">
+	<div style="float:left;width:45%;">
 		<?=$this->form->renderOpen()?>
 		<fieldset><legend><?=__('Patient Information')?></legend>
 		<div style="float:left;">
@@ -83,27 +83,13 @@ function pdRemove(id,type,callback) {
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
 					<?=$this->form->formPerson->dateOfBirthInput()?>
-					<script>
-					var dateOfBirthBox = dijit.byId('patient-person-dateOfBirth');
-	                		if (dateOfBirthBox != undefined) {
-        	        			dateOfBirthBox.destroyRecursive();
-                				dateOfBirthBox = null;
-                			}
-
-					dateOfBirthBox = new dijit.form.DateTextBox({name:'patient[person][dateOfBirth]',constraints:{datePattern:'yyyy-MM-dd'}},dojo.byId('patient-person-dateOfBirth'));
-					<?$dateFilterValue = date('Y-m-d',strtotime($this->data['dateFilter']));
-					$x = explode('-',date('Y-m-d',strtotime($this->form->formPerson->dateOfBirth->getValue())));?>
-					var birthDate = new Date();
-					birthDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-					dateOfBirthBox.setValue(birthDate);
-					</script>
 				</div>
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
 				<div style="float:left;">
 					<?=$this->form->formPerson->gender->renderLabel()?>
-					<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray("Gender")))?>
+					<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->recordNumber->renderLabel()?>
@@ -118,31 +104,18 @@ function pdRemove(id,type,callback) {
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-					<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray("Marital Status")))?>
+					<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
 				</div>
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
 				<div style="float:left;">
 					<?=$this->form->confidentiality->renderLabel()?>
-					<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray("Confidentiality")))?>
+					<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->signedHipaaDate->renderLabel()?>
-					<?=$this->form->signedHipaaDateInput()?>
-					<script>
-					var signedHipaaDateBox = dijit.byId('patient-signedHipaaDate');
-                			if (signedHipaaDateBox != undefined) {
-                				signedHipaaDateBox.destroyRecursive();
-                				signedHipaaDateBox = null;
-	                		}
-
-					signedHipaaDateBox = new dijit.form.DateTextBox({name:'patient[signedHipaaDate]',constraints:{datePattern:'yyyy-MM-dd'}},dojo.byId('patient-signedHipaaDate'));
-					<?$x = explode('-',date('Y-m-d',strtotime($this->form->signedHipaaDate->getValue())));?>
-					var signedDate = new Date();
-					signedDate.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-					signedHipaaDateBox.setValue(signedDate);
-					</script>
+					<?=$this->formDateText('patient[signedHipaaDate]',$this->form->signedHipaaDate->getValue(),array('id'=>'patient-signedHipaaDate'))?>
 				</div>
 			</div>
 			<br class="formRowDivider" />
@@ -201,7 +174,7 @@ function pdRemove(id,type,callback) {
 	</div>
 
 
-	<div style="float:left;width:50%;">
+	<div style="float:left;width:55%;">
 		<fieldset><legend><?=__('Phone numbers')?> (<a href="javascript:patDetailsPhonesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
 			<div id="patDetailsPhonesGridContainer" style="height:150px;"></div>
 		</fieldset>
@@ -212,7 +185,7 @@ function pdRemove(id,type,callback) {
 		var patDetailsPhonesGrid = new dhtmlXGridObject("patDetailsPhonesGridContainer");
 		patDetailsPhonesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 		patDetailsPhonesGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Number')?>,<?=__('Notes')?>,<?=__('Active')?>");
-		patDetailsPhonesGrid.setInitWidths("250,50,100,300,50");
+		patDetailsPhonesGrid.setInitWidths("*,35,*,*,40");
 		patDetailsPhonesGrid.setColTypes("ed,ed,ed,ed,ch");
 		patDetailsPhonesGrid.setSkin("xp");
 		patDetailsPhonesGrid.attachEvent("onEditCell",patDetailsPhonesGridOnCellEdited);
@@ -284,9 +257,9 @@ function pdRemove(id,type,callback) {
 
 		var patDetailsAddrGrid = new dhtmlXGridObject("patDetailsAddrGridContainer");
 		patDetailsAddrGrid.setImagePath("<?=$this->baseUrl?>/img/");
-		patDetailsAddrGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Line1')?>,<?=__('Line2')?>,<?=__('City')?>,<?=__('Region')?>,<?=__('Country')?>,<?=__('State')?>,<?=__('Zip')?>,<?=__('Notes')?>,<?=__('Active')?>");
-		patDetailsAddrGrid.setInitWidths("260,50,120,120,120,120,120,120,100,300,50");
-		patDetailsAddrGrid.setColTypes("ed,ed,ed,ed,ed,ed,ed,ed,ed,ed,ch");
+		patDetailsAddrGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Line1')?>,<?=__('Line2')?>,<?=__('City')?>,<?=__('State')?>,<?=__('Zip')?>,<?=__('Notes')?>,<?=__('Active')?>");
+		patDetailsAddrGrid.setInitWidths("*,35,*,*,*,40,*,*,40");
+		patDetailsAddrGrid.setColTypes("ed,ed,ed,ed,ed,coro,ed,ed,ch");
 		patDetailsAddrGrid.setSkin("xp");
 		patDetailsAddrGrid.attachEvent("onEditCell",patDetailsAddrGridOnCellEdited);
 		patDetailsAddrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
@@ -296,6 +269,12 @@ function pdRemove(id,type,callback) {
 								}
 								patDetailsSingleUpdate(rowId,patDetailsAddrColFields[cellIndex],val,"address",patDetailsAddrGridReload);
 							});
+		// state
+		patDetailsAddrGrid.getCombo(5).put("","");
+		<?foreach ($this->statesList as $key=>$name):?>
+		patDetailsAddrGrid.getCombo(5).put("<?=$key?>","<?=$key?>");
+		<?endforeach;?>
+
 		function patDetailsAddrGridReload() {
 			patDetailsAddrGrid.clearAll();
 			patDetailsAddrGrid.load("<?=$this->baseUrl?>/patient.raw/ajax-list-addresses?patientId=<?=$this->form->personId->getValue()?>","json");
@@ -347,8 +326,7 @@ function pdRemove(id,type,callback) {
 		patDetailsAddrColFields.push("line1");
 		patDetailsAddrColFields.push("line2");
 		patDetailsAddrColFields.push("city");
-		patDetailsAddrColFields.push("region");
-		patDetailsAddrColFields.push("country");
+		//patDetailsAddrColFields.push("region");
 		patDetailsAddrColFields.push("state");
 		patDetailsAddrColFields.push("postal_code");
 		patDetailsAddrColFields.push("notes");
@@ -490,7 +468,7 @@ function pdRemove(id,type,callback) {
 		pdNotesColFields.push("user_id");
 		pdNotesColFields.push("reason");
 		pdNotesColFields.push("note");
-		pdNotesColFields.push("deprecated");
+		pdNotesColFields.push("active");
 
 		function pdNotesGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 			if (stage == 2 && newValue != oldValue) {
@@ -504,12 +482,12 @@ function pdRemove(id,type,callback) {
 							}
 						}
 						break;
-					case 5: // deprecated
+					case 5: // active
 						if (newValue == "<?=__('Yes')?>") {
-							newValue = 1;
+							newValue = 0;
 						}
 						else {
-							newValue = 0;
+							newValue = 1;
 						}
 						break;
 				}

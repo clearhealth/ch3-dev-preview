@@ -30,7 +30,7 @@ class PatientNewController extends WebVista_Controller_Action {
 	protected $_location;
 
 	public function init() {
-		$this->_location = $cprs->location;
+		//$this->_location = $cprs->location;
 	}
 
 	public function indexAction() {
@@ -44,19 +44,17 @@ class PatientNewController extends WebVista_Controller_Action {
 		$this->_phoneNumber = new PhoneNumber();
 		$this->_form->loadORM($this->_patient, "Patient");
 		$this->_form->setWindow('windowNewPatientId');
-		$this->_form->registrationLocationId->setValue($this->_location->locationId);
+		//$this->_form->registrationLocationId->setValue($this->_location->locationId);
 		$this->view->form = $this->_form;
         	$this->render();
 	}
 
 	function addProcessAction() {
 		$this->indexAction();
+		$params = $this->_getParam('patient');
 		//$this->_form->isValid($_POST);
-		$this->_patient->populateWithArray($_POST['patient']);
+		$this->_patient->populateWithArray($params);
 		$this->_patient->persist();
-		$this->_patient->address->persist();
-		$this->_patient->phoneNumber->persist();
-		//$this->_patient->persist();
 		$this->view->message = "Record Saved for Patient: " . ucfirst($this->_patient->firstName) . " " . ucfirst($this->_patient->lastName);
         	$this->render('index');
 	}

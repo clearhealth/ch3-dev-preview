@@ -25,11 +25,15 @@
 class VitalSignsController extends WebVista_Controller_Action {
 
 	protected $_form;
-
-        public function init() {
-        }
+	protected $_filterDates = array('today'=>'TODAY','d-1'=>'T-1','d-2'=>'T-2','d-3'=>'T-3','d-4'=>'T-4','d-5'=>'T-5','d-6'=>'T-6','d-7'=>'T-7','d-15'=>'T-15','d-30'=>'T-30','m-6'=>'Six Months','y-1'=>'One Year','y-2'=>'Two Years','all'=>'All Results');
+	protected $_filterGraphs = array('BMI'=>'BMI','bloodPressure'=>'B/P','bloodPressure-weight'=>'BP/Weight','cg'=>'C/G','cvp'=>'CVP','height'=>'Height','height-weight'=>'Height/Weight','pain'=>'Pain','pulse'=>'Pulse','pulseOxygenation'=>'Pulse Ox.','respiration'=>'Respiration','temperature'=>'Temperature','temperature-pulse-respiration'=>'TPR','weight'=>'Weight');
 
 	public function indexAction() {
+		$this->view->filterDates = $this->_filterDates;
+		$this->view->filterGraphs = $this->_filterGraphs;
+		$this->view->labelKeyValues = $this->getVitalSignsTemplateKeyValue();
+		$this->render('index');
+		return;
 		exit;
 		$pat = new Patient();
 		$pat->personId = 1983;
@@ -44,6 +48,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 		}
 		$this->render();
 	}
+
 	public function listVitalSignsAction() {
 		$personId = (int)$this->_getParam('personId');
 		$vitalSignIter = new VitalSignGroupsIterator();
@@ -97,7 +102,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 		$vitalSignGroup->populateWithArray($params);
 		$vitalSignGroup->dateTime = date('Y-m-d H:i:s');
 		//$vitalSignGroup->personId = (int)$this->_getParam('personId');
-		$vitalSignGroup->enteringUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$vitalSignGroup->enteringUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$vitalSignGroup->persist();
 	}
 
@@ -123,6 +128,12 @@ class VitalSignsController extends WebVista_Controller_Action {
 
                         $element = $this->_form->createElement((string)$vital->attributes()->type,'value', array('label' => (string)$vital->attributes()->label));
 			$element->setBelongsTo('vitalSignGroup[vitalSignValues]['. (string)$vital->attributes()->label.']');
+			$element->clearDecorators();
+			$element->addDecorator('ViewHelper');
+			$element->addDecorator('Label', array('tag' => 'dt'));
+			if ((string)$vital->script) {
+				$element->addDecorator('ScriptTag',array('placement' => 'APPEND','tag' => 'script','innerHTML' => (string)$vital->script,'noAttribs' => true));
+			}
                         $this->_form->addElement($element);
                         $elements[] = 'value';
 
@@ -187,9 +198,133 @@ class VitalSignsController extends WebVista_Controller_Action {
 		$json->direct(array('rows'=>$rows));
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generateVitalUnitsEnum();
-		echo 'Done';
-		die;
+	public function toolbarXmlAction() {
+		header('Content-Type: text/xml');
+		$this->render();
 	}
+
+	public function listXmlAction() {
+		$personId = (int)$this->_getParam('personId');
+		$filter = $this->_getParam('filter');
+
+		$dateToday = date('Y-m-d');
+		$today = strtotime($dateToday);
+		$filterRange = array();
+		$filterRange['begin'] = $dateToday;
+		$filterRange['end'] = date('Y-m-d 23:59:59',$today);
+		switch ($filter) {
+			case 'd-1':
+			case 'd-2':
+			case 'd-3':
+			case 'd-4':
+			case 'd-5':
+			case 'd-6':
+			case 'd-7':
+			case 'd-15':
+			case 'd-30':
+				$filterRange['begin'] = date('Y-m-d',strtotime(substr($filter,1).' days',$today));
+				break;
+			case 'm-6':
+				$filterRange['begin'] = date('Y-m-d',strtotime(substr($filter,1).' months',$today));
+				break;
+			case 'y-1':
+			case 'y-2':
+				$filterRange['begin'] = date('Y-m-d',strtotime(substr($filter,1).' years',$today));
+				break;
+			case 'all':
+				$filterRange['begin'] = date('Y-m-d',strtotime(''));
+				break;
+			default:
+				$x = explode('|',$filter);
+				if (isset($x[1])) {
+					$filterRange['begin'] = date('Y-m-d',strtotime($x[0]));
+					$filterRange['end'] = date('Y-m-d',strtotime($x[1]));
+				}
+				break;
+		}
+		trigger_error(print_r($filterRange,true),E_USER_NOTICE);
+
+		$filters = array();
+		$filters['personId'] = $personId;
+		$filters['dateBegin'] = $filterRange['begin'];
+		$filters['dateEnd'] = $filterRange['end'];
+		$filters['vitalSignTemplateId'] = 1;
+		$results = VitalSignGroup::getVitalsByFilters($filters);
+		$vitals = array();
+		$dates = array();
+		$data = array();
+		foreach ($results as $result) {
+			if (!isset($vitals[$result['vital']])) {
+				$vitals[$result['vital']] = array();
+			}
+			if (!isset($dates[$result['vitalSignGroupId']])) {
+				$dates[$result['vitalSignGroupId']] = date('m/d/Y h:i A',strtotime($result['dateTime']));
+			}
+			$convertedValues = VitalSignValue::convertValues($result['vital'],$result['value'],$result['units']);
+			if ($convertedValues !== false) {
+				trigger_error(print_r($convertedValues,true),E_USER_NOTICE);
+				$x = explode(' ',$convertedValues['uss']);
+				$unit = array_pop($x);
+				$value = implode(' ',$x).' ('.$convertedValues['metric'].')';
+				$vitals[$result['vital']][$result['vitalSignGroupId']] = $value;
+			}
+			else {
+				$vitals[$result['vital']][$result['vitalSignGroupId']] = $result['value'];
+			}
+
+			if (!isset($data[$result['vitalSignGroupId']])) {
+				$data[$result['vitalSignGroupId']] = array();
+			}
+			$data[$result['vitalSignGroupId']][$result['vital']] = $result;
+		}
+
+		$xml = new SimpleXMLElement('<rows />');
+		$head = $xml->addChild('head');
+
+		$column = $head->addChild('column','');
+		$column->addAttribute('type','ro');
+		$column->addAttribute('width','150');
+		$column->addAttribute('color','#ddd');
+
+		if (!empty($dates)) {
+			$row = $xml->addChild('row');
+			$row->addAttribute('id','dates');
+			$row->addChild('cell','');
+			foreach ($dates as $date) {
+				$row->addChild('cell',date('m/d/y h:iA',strtotime($date)));
+				$column = $head->addChild('column','');
+				$column->addAttribute('type','ro');
+				$column->addAttribute('width','130');
+			}
+		}
+		$labelKeyValues = $this->getVitalSignsTemplateKeyValue();
+		foreach ($labelKeyValues as $key=>$value) {
+			$row = $xml->addChild('row');
+			$row->addAttribute('id',$key);
+			$row->addChild('cell',$value);
+			if (isset($vitals[$key])) {
+				foreach ($vitals[$key] as $vital) {
+					$row->addChild('cell',$vital);
+				}
+			}
+		}
+		header('Content-Type: text/xml');
+		$this->view->xmlContents = $xml->asXML();
+		trigger_error($this->view->xmlContents,E_USER_NOTICE);
+		$this->render('list-xml');
+	}
+
+	protected function getVitalSignsTemplateKeyValue($vitalSignTemplateId = 1) {
+		$vitalSignTemplate = new VitalSignTemplate();
+		$vitalSignTemplate->vitalSignTemplateId = $vitalSignTemplateId;
+		$vitalSignTemplate->populate();
+		$template = simplexml_load_string($vitalSignTemplate->template);
+		$vitals = array();
+		foreach ($template as $vital) {
+			$title = (string)$vital->attributes()->title;
+			$vitals[$title] = (string)$vital->attributes()->label;
+		}
+		return $vitals;
+	}
+
 }

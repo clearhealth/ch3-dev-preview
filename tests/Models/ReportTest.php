@@ -37,6 +37,7 @@ class Models_ReportTest extends Models_TableModels {
 				      'name'=>'Test Name',
 				      'systemName'=>'Test System Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'reports'; // value MUST be the same as $_table
 
 	public function testPersist() {
 		// temporarily do nothing

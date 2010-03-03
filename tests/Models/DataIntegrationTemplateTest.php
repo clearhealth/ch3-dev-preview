@@ -38,6 +38,7 @@ class Models_DataIntegrationTemplateTest extends Models_TableModels {
 				      'template'=>'Test Template',
 				      'handlerType'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'dataIntegrationTemplates'; // value MUST be the same as $_table
 
 }
 

@@ -60,27 +60,92 @@ class VisitSelectController extends WebVista_Controller_Action {
 	}
 
 	public function immunizationsAction() {
-		$immunizationName = "Reactions";
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName($immunizationName);
 		$enumerationsClosure = new EnumerationsClosure();
+
+		$othersId = 0;
+		$series = array();
+		$sites = array();
+		$sections = array();
+		$reactions = array();
+		$routes = array();
+		$parentName = PatientImmunization::ENUM_PARENT_NAME;
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName($parentName);
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$this->view->reactions = $enumerationIterator;
+		foreach ($enumerationIterator as $enum) {
+			switch ($enum->name) {
+				case PatientImmunization::ENUM_SERIES_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$series = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_BODY_SITE_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$sites = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_SECTION_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					foreach ($enumIterator as $item) {
+						if ($item->name == PatientImmunization::ENUM_SECTION_OTHER_NAME) {
+							$othersId = $item->enumerationId;
+							continue;
+						}
+						$sections[$item->enumerationId] = $item->name;
+					}
+					break;
+				case PatientImmunization::ENUM_REACTION_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$reactions = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_ADMINISTRATION_ROUTE_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$routes = $enumIterator->toArray('key','name');
+					break;
+			}
+		}
+		$this->view->othersId = $othersId;
+		$this->view->series = $series;
+		$this->view->sites = $sites;
+		$this->view->sections = $sections;
+		$this->view->reactions = $reactions;
+		$this->view->routes = $routes;
 
 		$this->render();
 	}
 
 	public function educationAction() {
-		$name = PatientEducation::ENUM_LEVEL_PARENT_NAME;
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName($name);
 		$enumerationsClosure = new EnumerationsClosure();
+
+		$othersId = 0;
+		$levels = array();
+		$sections = array();
+		$parentName = PatientEducation::ENUM_EDUC_PARENT_NAME;
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName($parentName);
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$listLevels = array(''=>__('(None selected)'));
-		foreach ($enumerationIterator as $enumeration) {
-			$listLevels[$enumeration->key] = $enumeration->name;
+		foreach ($enumerationIterator as $enum) {
+			switch ($enum->name) {
+				case PatientEducation::ENUM_EDUC_LEVEL_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					foreach ($enumIterator as $item) {
+						$levels[$item->enumerationId] = $item->name;
+					}
+					break;
+				case PatientEducation::ENUM_EDUC_SECTION_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					foreach ($enumIterator as $item) {
+						if ($item->name == PatientEducation::ENUM_EDUC_SECTION_OTHER_NAME) {
+							$othersId = $item->enumerationId;
+							continue;
+						}
+						$sections[$item->enumerationId] = $item->name;
+					}
+					break;
+			}
 		}
-		$this->view->listLevels = $listLevels;
+		$this->view->othersId = $othersId;
+		$this->view->levels = $levels;
+		$this->view->sections = $sections;
+
 		$this->render();
 	}
 
@@ -94,7 +159,6 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$enumeration->populateByEnumerationName($name);
 		$enumerationsClosure = new EnumerationsClosure();
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$listResults = array(''=>__('(None selected)'));
 		foreach ($enumerationIterator as $enumeration) {
 			$listResults[$enumeration->key] = $enumeration->name;
 		}
@@ -114,7 +178,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 
 	function processAddVisitAction() {
 		$visitParams = $this->_getParam('visit');
-		$visitParams['created_by_user_id'] = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$visitParams['created_by_user_id'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$visitParams['date_of_treatment'] = date('Y-m-d');
 		$visitParams['timestamp'] = date('Y-m-d h:i:s');
 		$visit = new Visit();

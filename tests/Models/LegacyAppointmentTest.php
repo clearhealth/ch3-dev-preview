@@ -37,6 +37,7 @@ class Models_LegacyAppointmentTest extends Models_TableModels {
 				      'title'=>'Test Title',
 				      'reason'=>'Test Reason',);
 	protected $_assertMatches = array('title'=>'Test Title');
+	protected $_assertTableName = 'appointment'; // value MUST be the same as $_table
 
 }
 

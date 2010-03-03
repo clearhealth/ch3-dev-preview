@@ -24,17 +24,47 @@
 
 class ScheduleEventIterator extends WebVista_Model_ORMIterator {
 
-	public function __construct($dbSelect = null) {
-		parent::__construct("ScheduleEvent",$dbSelect);
+	public function __construct($dbSelect = null,$autoLoad = true) {
+		$this->_ormClass = 'ScheduleEvent';
+		// autoLoad gives an option to query the entire rows which takes time if more data in the table
+		if ($autoLoad) {
+			parent::__construct($this->_ormClass,$dbSelect);
+		}
 	}
 
 	public function current() {
+		$row = $this->_dbStmt->fetch(PDO::FETCH_NUM,null,$this->_offset);
+		if ($this->_offset == 0) {
+			for($i=0,$ctr=count($row);$i<$ctr;$i++) {
+				$this->_columnMeta[$i] = $this->_dbStmt->getColumnMeta($i);
+			}
+		}
+
+		$col = 0;
+		$colMetaLen = count($this->_columnMeta);
 		$ormObj = new $this->_ormClass();
-		$row = $this->_dbStmt->fetch(null,null,$this->_offset);
 		$ormObj->populateWithArray($row);
-		$ormObj->provider->populateWithArray($row);
-		$ormObj->room->populateWithArray($row);
+		$orModels = array();
+		$orModels[] = $ormObj;
+		$orModels[] = $ormObj->provider;
+		$orModels[] = $ormObj->room;
+
+		$columnMeta = $this->_columnMeta;
+		foreach ($orModels as $orm) {
+			$data = array();
+			foreach ($columnMeta as $i=>$meta) {
+				if ($orm->_table == $meta['table']) {
+					$data[$meta['name']] = $row[$i];
+					unset($columnMeta[$i]);
+				}
+			}
+			$orm->populateWithArray($data);
+		}
 		return $ormObj;
+	}
+
+	public function setFilters($filters) {
+		$this->setFilter($filters);
 	}
 
 	public function setFilter($filter) {
@@ -42,9 +72,14 @@ class ScheduleEventIterator extends WebVista_Model_ORMIterator {
 		$dbSelect = $db->select()->from('scheduleEvents');
 		$dbSelect->joinLeft("provider","scheduleEvents.providerId=provider.person_id");
 		$dbSelect->joinLeft("rooms","scheduleEvents.roomId=rooms.id");
-		$dbSelect->where("providerId = ?", $filter['providerId']);
-		$dbSelect->where("start >= ?", $filter['start']);
-		$dbSelect->where("end <= ?", $filter['end']);
+		$dbSelect->where("roomId = ?",(int)$filter['roomId']);
+		$dbSelect->where("providerId = ?",(int)$filter['providerId']);
+		if (isset($filter['start'])) {
+			$dbSelect->where("start >= ?", $filter['start']);
+		}
+		if (isset($filter['end'])) {
+			$dbSelect->where("end <= ?", $filter['end']);
+		}
 		$dbSelect->order("start ASC");
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;

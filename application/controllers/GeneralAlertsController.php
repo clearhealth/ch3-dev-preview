@@ -33,7 +33,7 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 		$team = new TeamMember();
 		$teamId = $team->getTeamByPersonId($personId);
 		$rows = array();
-		if (strlen($teamId) > 0) {
+		if (true) {
 			$alertMsg = new GeneralAlert();
 			$alertMsgIterator = $alertMsg->getIteratorByTeam($teamId);
 			foreach ($alertMsgIterator as $alert) {
@@ -57,8 +57,15 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 				$tmp['data'][] = ''; // location
 				$tmp['data'][] = date('m/d/Y H:i',strtotime($alert->dateTime));
 				$tmp['data'][] = $alert->message;
-				$tmp['data'][] = ''; // forwarded
-				$tmp['data'][] = ''; // comment
+				$forwardedBy = '';
+				if ($alert->forwardedBy > 0) {
+					$person = new Person();
+					$person->personId = (int)$alert->forwardedBy;
+					$person->populate();
+					$forwardedBy = $person->displayName;
+				}
+				$tmp['data'][] = $forwardedBy; // forwarded
+				$tmp['data'][] = $alert->comment; // comment
 				$controllerName = call_user_func($objectClass . "::" . "getControllerName");
 				$jumpLink = call_user_func_array($controllerName . "::" . "buildJSJumpLink",array($alert->objectId,$alert->userId,$objectClass));
 				$js = "function jumpLink{$objectClass}(objectId,patientId) {\n{$jumpLink}\n}";
@@ -169,6 +176,81 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 		GeneralAlertHandler::generateTestData();
 		echo 'Done';
 		die;
+	}
+
+	public function userAddAlertAction() {
+		$this->render();
+	}
+
+	public function processUserAddAlertAction() {
+		$alertData = $this->_getParam('alert');
+		$alertData['dateTime'] = date('Y-m-d H:i:s');
+		$alert = new GeneralAlert();
+		$alert->populateWithArray($alertData);
+		$alert->persist();
+		trigger_error(print_r($alert,true),E_USER_NOTICE);
+		$ret = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function markAlertDoneAction() {
+		$generalAlertId = (int)$this->_getParam('generalAlertId');
+		$alert = new GeneralAlert();
+		$alert->generalAlertId = $generalAlertId;
+		$alert->populate();
+		$alert->status = 'processed';
+		$alert->persist();
+		$ret = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function forwardAlertAction() {
+		$alertId = (int)$this->_getParam('alertId');
+		$alert = new GeneralAlert();
+		$alert->generalAlertId = $alertId;
+		$alert->populate();
+
+		$this->_form = new WebVista_Form(array('name'=>'forwardAlert'));
+		$this->_form->setAction(Zend_Registry::get('baseUrl') . 'general-alerts.raw/process-forward-alert');
+		$this->_form->loadORM($alert,'forwardAlert');
+		$this->_form->setWindow('windowForwardAlertId');
+		$this->view->form = $this->_form;
+
+		$providerIterator = new ProviderIterator();
+		$this->view->providers = $providerIterator->toArray('personId','displayName');
+
+		$this->view->jsCallback = $this->_getParam('jsCallback');
+		$this->render('forward-alert');
+	}
+
+	public function processForwardAlertAction() {
+		$ret = false;
+		$recipients = $this->_getParam('recipients');
+		$alertData = $this->_getParam('forwardAlert');
+		$alertData['dateTime'] = date('Y-m-d H:i:s');
+		$alert = new GeneralAlert();
+		if (isset($alertData['generalAlertId'])) {
+			$alert->generalAlertId = (int)$alertData['generalAlertId'];
+			if ($alert->populate()) {
+				$alert->populateWithArray($alertData);
+				$arrRecipients = explode(',',$recipients);
+				foreach ($arrRecipients as $recipient) {
+					$tmpAlert = clone $alert;
+					$tmpAlert->generalAlertId = 0;
+					$tmpAlert->userId = (int)$recipient;
+					$tmpAlert->forwardedBy = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+					$tmpAlert->persist();
+				}
+				$ret = true;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 }

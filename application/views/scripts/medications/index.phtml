@@ -1,3 +1,12 @@
+<style>
+div.gridbox table.obj tr.rowselected td { /* elements in the selected row */
+	background-color: #ccc;
+}
+div.gridbox table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected { /* element in the selected cell */
+	background-color: #ccc;
+}
+</style>
+
 <script>
 function getActivePatient() {
 	return mainController.getActivePatient();
@@ -16,6 +25,15 @@ chToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 chToolbar.loadXML("<?=$this->baseUrl?>/medications.raw/toolbar");
 
 function onButtonClick(itemId) {
+	var rowIds = mGrid.getSelectedRowId();
+	if (rowIds != null) {
+		var arrRowIds = rowIds.split(",");
+		if (arrRowIds.length > 1) {
+			mGrid.clearSelection();
+			var mostRecentRowId = arrRowIds[(arrRowIds.length - 1)];
+			mGrid.selectRow(mGrid.getRowIndex(mostRecentRowId));
+		}
+	}
 	switch (itemId) {
 		case 'medtbNewMedication':
 			openNewMedicationWindow();
@@ -89,7 +107,12 @@ function cancelMedication() {
 		url: '<?=$this->baseUrl?>/medications.raw/ajax-discontinue-medication?medicationId='+medicationId,
 		handleAs: 'json',
 		load: function (data) {
-			alert(data);
+			if (data.length > 0) {
+				alert(data);
+			}
+			else {
+				loadMedication();
+			}
 		},
 		error: function (er) {
 			alert('err: ' + er);
@@ -141,8 +164,9 @@ function handleMedicationsContextClick(item,rowId) {
 	var medicationId = rowId.split('_');
 	switch (item) {
 		case 'medications_printRx':
-			getPrescriptionPDF(medicationId[0]);
-			updatePrintedRx(medicationId[0]);
+			medicationId = mGrid.getSelectedRowId();
+			getPrescriptionPDF(medicationId);
+			updatePrintedRx(medicationId);
 			break;
 		default:
 			alert(item);
@@ -168,9 +192,10 @@ medcxMenu.loadXML('<?=$this->baseUrl?>/medications.xml/medications-context-menu'
 
 
 var mGrid = new dhtmlXGridObject('medicationContainer');
+mGrid.selMultiRows = true;
 mGrid.setImagePath("<?=$this->baseUrl?>/img/");
 mGrid.setHeader(',Medication,Action,Status,Expires,Last Filled,Refills,Details');
-mGrid.setInitWidths("25,500,70,*,*,*,40,300");
+mGrid.setInitWidths("25,500,70,*,120,*,40,300");
 mGrid.setColAlign("center,left,center,center,center,center,center,center,left");
 mGrid.setColTypes("ro");
 mGrid.setSkin("xp");

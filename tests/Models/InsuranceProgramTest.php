@@ -37,6 +37,7 @@ class Models_InsuranceProgramTest extends Models_TableModels {
 				      'company_id'=>5678,
 				      'name'=>'Test Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'insurance_program'; // value MUST be the same as $_table
 
 }
 

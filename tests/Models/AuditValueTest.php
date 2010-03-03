@@ -39,6 +39,7 @@ class Models_AuditValueTest extends Models_TableModels {
 				      'value'=>'Test Value',
 				      'line1'=>'ClearHealth St.',);
 	protected $_assertMatches = array('auditId'=>1234);
+	protected $_assertTableName = 'auditValues'; // value MUST be the same as $_table
 
 }
 

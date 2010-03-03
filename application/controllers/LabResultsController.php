@@ -50,23 +50,39 @@ class LabResultsController extends WebVista_Controller_Action {
 	 * Results in JSON format
 	 */
 	public function resultsJsonAction() {
+		$selectedLabTests = $this->_getParam('selectedLabTests',0);
+		if ($selectedLabTests) {
+			$rows = $this->_session->selectedLabTests;
+		}
+		else {
+			$filters = array();
+			$orderId = (int)$this->_getParam('orderId');
+			if ($orderId > 0) {
+				$filters['orderId'] = $orderId;
+			}
+			else {
+				$filters['patientId'] = (int)$this->_getParam('patientId');
+				$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
+				$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
+				$filters['limit'] = (int)$this->_getParam('limit');
+			}
+			$rows = $this->_getLabResults($filters);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array("rows" => $rows));
+	}
+
+	protected function _getLabResults($filters) {
 		$labs = array();
-		$labsIterator = new LabsIterator();
-		$filters = array();
-		$filters['patientId'] = (int)$this->_getParam('patientId');
 		$showCalcLabs = (boolean)$this->_getParam('showCalcLabs',false);
-		$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
-		$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
-		$filters['limit'] = (int)$this->_getParam('limit');
 		$calcLabsArray = array();
 		if (true) {
 			$calcLabs = new CalcLabs();
 			$calcLabsArray = $calcLabs->getAllCalcLabsArray($filters['patientId']);
 		}
-		$selectedLabTests = $this->_getParam('selectedLabTests',0);
-		if ($selectedLabTests) {
-			$filters['selectedLabTests'] = $this->_session->selectedLabTests;
-		}
+		$labs = $calcLabsArray;
+		$labsIterator = new LabsIterator();
 		$labsIterator->setFilters($filters);
 		foreach ($labsIterator as $lab) {
 			$tmpArr = array();
@@ -89,13 +105,8 @@ class LabResultsController extends WebVista_Controller_Action {
 			$tmpArr[] = date('Y-m-d',strtotime($lab->observationTime)).'::'.$tmpValue;
 			$labs[$lab->labResultId] = $tmpArr;
 		}
-		
-		$labs = array_merge_recursive($calcLabsArray,$labs);
-		//$rows = $this->_toJsonArray($labs);
 		$rows = $this->_toJsonArray($labs);
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
-		$json->direct(array("rows" => $rows));
+		return $rows;
 	}
 
 	/**
@@ -116,17 +127,22 @@ class LabResultsController extends WebVista_Controller_Action {
 	 * Select Lab Tests
 	 */
 	public function selectLabTestsAction() {
-		$tests = array();
-		$labsIterator = new LabsIterator();
-		foreach ($labsIterator as $lab) {
-			// filter empty service lab test (do not include?)
-			if (!strlen($lab->labTest->service) > 0) {
-				continue;
-			}
-			$tests[$lab->labTest->labTestId] = $lab->labTest->service;
+		$filters = array();
+		$filters['patientId'] = (int)$this->_getParam('personId');
+		$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
+		$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
+		$results = $this->_getLabResults($filters);
+		$rows = array();
+		foreach ($results as $row) {
+			$rows[$row['id']] = $row['data'][1];
 		}
-		asort($tests);
-		$this->view->tests = $tests;
+		$this->view->tests = $rows;
+
+		$selectedLabTests = array();
+		foreach ($this->_session->selectedLabTests as $labTest) {
+			$selectedLabTests[$labTest['id']] = $labTest;
+		}
+		$this->view->selectedLabTests = $selectedLabTests;
 		$this->render();
 	}
 
@@ -135,10 +151,23 @@ class LabResultsController extends WebVista_Controller_Action {
 	 */
 	public function sessionSelectedLabTestsAction() {
 		//$this->_session->selectedLabTests = $this->_getParam("labTests","");
+		$filters = array();
+		$filters['patientId'] = (int)$this->_getParam('personId');
+		$results = $this->_getLabResults($filters);
 		$selectedLabTests = $this->_getParam("availableLabTests","");
-		$this->_session->selectedLabTests = $selectedLabTests;
+		$rows = array();
+		if (is_array($selectedLabTests)) {
+			foreach ($results as $row) {
+				if (in_array($row['id'],$selectedLabTests)) {
+					$rows[] = $row;
+				}
+			}
+		}
+		if (isset($rows[0])) {
+			$this->_session->selectedLabTests = $rows;
+		}
 		$data = array();
-		$data['rows'] = $selectedLabTests;
+		$data['rows'] = $rows;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -195,8 +224,23 @@ class LabResultsController extends WebVista_Controller_Action {
 	 * TODO: to be implemented (currently returns empty JSON)
 	 */
 	public function labOrdersJsonAction() {
+		$personId = (int)$this->_getParam('personId');
+		$filters = array('patientId'=>$personId);
 		$data = array();
-		$data['rows'] = array();
+		$labOrder = new LabOrder();
+		$labsIterator = $labOrder->getIteratorByPersonId($personId);
+		//$labsIterator->setFilters($filters);
+		$labs = array();
+		foreach ($labsIterator as $lab) {
+			$description = $lab->description;
+			if (!strlen($description) > 0) {
+				$description = 'Order provided by '.$lab->orderingProvider;
+			}
+			$labs[$lab->labOrderId] = $description;
+		}
+		$rows = $this->_toJsonArray($labs);
+		$data = array();
+		$data['rows'] = $rows;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -291,4 +335,23 @@ class LabResultsController extends WebVista_Controller_Action {
 	public function menuXmlAction() {
 		$this->render();
 	}
+
+	public static function buildJSJumpLink($objectId,$signingUserId,$objectClass) {
+		$objectClass = 'Labs'; // temporarily hard code objectClass based on MainController::getMainTabs() definitions
+		$labOrder = new LabOrder();
+		$labOrder->labOrderId = $objectId;
+		$labOrder->populate();
+		$patientId = $labOrder->patientId;
+
+		$js = parent::buildJSJumpLink($objectId,$patientId,$objectClass);
+		$js .= <<<EOL
+
+mainTabbar.setOnTabContentLoaded(function(tabId){
+	TabState.setParam({"orderId":objectId});
+});
+
+EOL;
+		return $js;
+	}
+
 }

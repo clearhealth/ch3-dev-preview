@@ -105,8 +105,11 @@ imageDrawing.setDeleteURL('{$currentView->baseUrl}/clinical-notes.raw/process-de
 imageDrawing.setClinicalNoteId('{$clinicalNoteId}');
 
 function transcriptionNotesFormSubmit() {
-	var lines = imageDrawing.getLines();
-	dojo.byId('{$id}').value = lines ;
+	var obj = dojo.byId("{$id}");
+	if (obj) {
+		var lines = imageDrawing.getLines();
+		obj.value = lines ;
+	}
 	return true;
 }
 

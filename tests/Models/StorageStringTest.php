@@ -38,6 +38,7 @@ class Models_StorageStringTest extends Models_TableModels {
 				      'value'=>'Test Value',
 				      'array_index'=>1,);
 	protected $_assertMatches = array('value'=>'Test Value');
+	protected $_assertTableName = 'storage_string'; // value MUST be the same as $_table
 
 	public function testPersist() {
 		// nothing to test just override the parent::testPersist()

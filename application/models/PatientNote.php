@@ -30,10 +30,12 @@ class PatientNote extends WebVista_Model_ORM {
 	protected $user_id;
 	protected $user;
 	protected $priority;
-        protected $note_date;
-        protected $note;
-        protected $deprecated;
-        protected $reason;
+	protected $note_date;
+	protected $note;
+	protected $deprecated;
+	protected $reason;
+	protected $posting;
+	protected $active;
 
 	protected $_primaryKeys = array('patient_note_id');
 	protected $_table = 'patient_note';
@@ -54,12 +56,9 @@ class PatientNote extends WebVista_Model_ORM {
 		if ($patientId === null) {
 			$patientId = $this->patient_id;
 		}
-		$db = Zend_Registry::get('dbAdapter');
-		$dbSelect = $db->select()
-			       ->from($this->_table)
-			       ->where('patient_id = ?',(int)$patientId)
-			       ->order('note_date');
-		return $this->getIterator($dbSelect);
+		$iterator = $this->getIterator();
+		$iterator->setFilters(array('patient_id'=>(int)$patientId,'deprecated'=>0,'posting'=>0));
+		return $iterator;
 	}
 
 }

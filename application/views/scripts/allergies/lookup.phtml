@@ -19,6 +19,9 @@ function selectedAllergiesLookup(rowId) {
 	}
 	<?if($this->jsCallback != ''):?>
 	if (window.<?=$this->jsCallback?>) {
+		var parentId = allergiesLookupGrid.getParentId(rowId);
+		var category = allergiesLookupGrid.cells(parentId,0).getValue();
+		globalSelectedAllergy = {"category":category,"id":rowId};
 		<?=$this->jsCallback?>(allergiesLookupGrid.cells(rowId,0).getValue());
 	}
 	<?endif;?>
@@ -35,10 +38,13 @@ function keyPressInput(e) {
 
 <style>div.gridbox_xp table.obj td {border-bottom: none;border-right:none;}</style>
 
+<div style="margin-bottom:5px;">
 <?=$this->formText('q','',array('id'=>'q','style'=>'width:80%;','onkeypress'=>'keyPressInput(event);'))?>
 <?=$this->formButton('searchLabel',__('Search'),array('id'=>'searchLabel','onClick'=>'allergiesLookup();'))?>
-<br /><br />
-<div id="allergiesLookupGridId" style="width:100%;height:80%;overflow:hidden"></div>
+</div>
+<div style="overflow:auto;">
+	<div id="allergiesLookupGridId" style="width:100%;height:280px;"></div>
+</div>
 
 <div class="formRow">
 	<input type="button" value="<?=__('Select')?>" onClick="selectedAllergiesLookup()" style="width:150px;" />
@@ -49,7 +55,7 @@ var allergiesLookupGrid = new dhtmlXGridObject("allergiesLookupGridId");
 allergiesLookupGrid.setImagePath("<?=$this->baseUrl?>/img/");
 allergiesLookupGrid.setHeader("");
 allergiesLookupGrid.setNoHeader(true);
-allergiesLookupGrid.setInitWidths("*");
+allergiesLookupGrid.setInitWidths("800"); // * does not work here
 allergiesLookupGrid.setColAlign("left");
 allergiesLookupGrid.setColTypes("tree");
 function allergiesLookupGridOnRowDblClicked(rowId,colIndex) {

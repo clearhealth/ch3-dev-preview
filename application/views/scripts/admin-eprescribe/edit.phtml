@@ -1,0 +1,63 @@
+<script>
+function enableEPrescribing() {
+	dojo.xhrGet ({
+		url: "<?=$this->baseUrl?>/admin-eprescribe/add-process?personId="+personId,
+			load: function (data) {
+				refreshCurrentTab();
+			},
+			error: function (er) {
+				errObj = dojo.fromJson(er.responseText);
+		                alert(errObj.error);
+			}
+	});	
+}
+</script>
+<?if ($this->provider && $this->provider->person_id == 0):?>
+<?=__("No person is selected, you must select a person to edit.")?>
+<?else:?>
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+	<div style="float:left;">
+	<?if ($this->message):?>
+		<div style="background-color:PaleGreen; width:100%;">
+		<?=$this->message?>
+		</div>
+	<?endif?>
+		<fieldset><legend><?=__("ePrescribing Information")?></legend>
+	<?if (strlen($this->provider->sureScriptsSPI) == 0):?>
+		ePrescribing service is not enabled for this provider, would you like to enable it? <br /><input type="button" value="Enable ePrescribing" onClick="enableEPrescribing();"/>
+	<?else:?>
+		<?=$this->form->renderOpen()?>
+		<div style="float:left;width:400px;">
+			<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error):?>
+			<?=$error?>
+			<?endforeach?>
+			</div>
+			<?=$this->form->sureScriptsSPI?>
+			<?=$this->form->personIdInput('FormHidden')?>
+			<?=$this->form->renderClose()?>
+			<div style="text-align:right;">
+				<?=$this->form->okInput('FormButton')?>
+			</div>
+		</div>
+<script>
+function preSubmit<?=$this->form->getId()?>() {
+	dojo.xhrPost ({
+		url: "<?=$this->form->getAction()?>",
+		form: "<?=$this->form->getId()?>",
+		handleAs: "json",
+		load: function(data){
+			refreshCurrentTab();
+		},
+		error: function (error) {
+			console.error ("Error: ",error);
+		}
+	});
+	return false;
+}
+</script>
+	<?endif?>
+		</fieldset>
+	</div>
+</div>
+<?endif;?>

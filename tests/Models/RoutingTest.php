@@ -37,6 +37,7 @@ class Models_RoutingTest extends Models_TableModels {
 				      'stationId'=>456,
 				      'appointmentId'=>789,);
 	protected $_assertMatches = array('stationId'=>456);
+	protected $_assertTableName = 'routing'; // value MUST be the same as $_table
 
 }
 

@@ -37,6 +37,7 @@ class Models_GeneralAlertHandlerTest extends Models_TableModels {
 				      'name'=>'General Alert Handler',
 				      'condition'=>1234,);
 	protected $_assertMatches = array('condition'=>1234);
+	protected $_assertTableName = 'generalAlertHandlers'; // value MUST be the same as $_table
 
 }
 

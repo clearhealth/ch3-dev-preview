@@ -126,6 +126,10 @@ function appendProviderSlot(id,labelText,isSelDisabled,defOptVal) {
 
 function appointmentReasonOnChanged() {
 	var reasonSelect = dojo.byId("appointment-reason");
+	if (reasonSelect.selectedIndex < 0) {
+		appointmentProvidersChanged(reason);
+		return;
+	}
 	var reasonId = reasonSelect.options[reasonSelect.selectedIndex].value;
 	var reason = null;
 	for (var i in appointmentReasons) {
@@ -144,12 +148,11 @@ function enableButtons() {
 	dojo.byId('appointment-room-id').disabled = false;
 }
 
-appointmentReasonOnChanged();
 </script>
 
 <div style="width:100%;">
 
-<div style="float:left;width:70%;">
+<div style="float:left;">
 <fieldset><legend><?=__("Appointment Information")?></legend>
 <?=$this->form->renderOpen()?>
 <div style="float:left;">
@@ -242,30 +245,41 @@ line-height: normal;
 font-size: 100%;
 }
 </style>
-<div style="text-align:left;float:left;width:28%;margin-left:10px;">
 
-<fieldset><legend><?=__('Patient Details')?></legend>
-	<div class="formRow" style="margin-left:5px;">
-	<ul>
-		<li><?=__('Contact Phones')?>: <?=implode(',',$this->phones)?></li>
-		<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
-	</ul>
-	</div>
-</fieldset>
-
-<fieldset><legend><?=__('Patient Notes')?></legend>
-	<div class="formRow" style="margin-left:5px;">
-<?if (count($this->patientNotes)):?>
-	<ul>
-	<?foreach ($this->patientNotes as $id=>$note):?>
-		<li><?=$note?></li>
-	<?endforeach;?>
-	</ul>
+<div style="text-align:left;float:left;">
+	<fieldset><legend><?=__('Patient Details')?></legend>
+		<div class="formRow" style="margin-left:5px;">
+<?if($this->appointment->patientId > 0):?>
+		<ul>
+			<li><?=__('Phones')?>: <?=implode(',',$this->phones)?></li>
+			<li><?=__('Name')?>: <?=$this->appointment->patient->displayName?></li>
+			<li><?=__('MRN')?>: <?=$this->appointment->patient->recordNumber?></li>
+			<li><?=__('Age/Sex')?>: <?=$this->appointment->patient->age?> (<?=$this->appointment->patient->displayGender?>)</li>
+			<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
+		</ul>
 <?endif;?>
-	</div>
-</fieldset>
+		</div>
+	</fieldset>
 
+	<fieldset><legend><?=__('Patient Notes')?></legend>
+		<div class="formRow" style="overflow:auto;">
+			<div id="pNotesGridId" style="width:370px;height:150px;"></div>
+		</div>
+	</fieldset>
 </div>
+
+<script>
+var pNotesGrid = new dhtmlXGridObject("pNotesGridId");
+pNotesGrid.setImagePath("<?=$this->baseUrl?>/img/");
+pNotesGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>");
+pNotesGrid.setInitWidths("*,*,*,*,*,0");
+pNotesGrid.setColTypes("ro,ro,ro,ro,ro,ro");
+pNotesGrid.setSkin("xp");
+pNotesGrid.init();
+pNotesGrid.load("<?=$this->baseUrl?>/patient.raw/list-notes?patientId=<?=$this->form->formPatient->personId->getValue()?>","json");
+
+appointmentReasonOnChanged();
+</script>
 
 
 </div>

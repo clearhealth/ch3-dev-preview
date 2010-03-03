@@ -45,6 +45,7 @@ class Models_ClinicalNoteTest extends Models_TableModels {
 				      'locationId'=>1415,
 				      'eSignatureId'=>1617,);
 	protected $_assertMatches = array('personId'=>123);
+	protected $_assertTableName = 'clinicalNotes'; // value MUST be the same as $_table
 
 	public function setUp() {
 		parent::setUp();

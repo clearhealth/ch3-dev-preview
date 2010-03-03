@@ -63,7 +63,14 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	public function getDisplayName() {
 		return $this->last_name . ", " . $this->first_name . " " . $this->middle_name;
 	}
+	public static function getControllerName() {
+		return "ProviderDashboardController";
+	}
 	public function getDisplayGender() {
+		$enumeration = new Enumeration();
+		$enumeration->enumerationId = $this->gender;
+		$enumeration->populate();
+		return $enumeration->name;
 		$gender = "";
 		switch ($this->gender) {
 			case "1":

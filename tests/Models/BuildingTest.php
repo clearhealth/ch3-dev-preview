@@ -36,6 +36,7 @@ class Models_BuildingTest extends Models_TableModels {
 	protected $_keyValues = array('description'=>'Test Building Description',
 				      'name'=>'Clinic',);
 	protected $_assertMatches = array('name'=>'Clinic');
+	protected $_assertTableName = 'buildings'; // value MUST be the same as $_table
 
 }
 

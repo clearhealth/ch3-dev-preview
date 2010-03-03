@@ -44,7 +44,9 @@ class ProblemList extends WebVista_Model_ORM implements NSDRMethods {
 
 	public function __construct() {
 		$this->person = new Person();
+		$this->person->_cascadePersist = false;
 		$this->provider = new Provider();
+		$this->provider->_cascadePersist = false;
 		parent::__construct();
 	}
 

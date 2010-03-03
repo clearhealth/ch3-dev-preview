@@ -36,6 +36,7 @@ class Models_HL7MessageTest extends Models_TableModels {
 	protected $_keyValues = array('message'=>'Test Message',
 				      'type'=>1,);
 	protected $_assertMatches = array('message'=>'Test Message');
+	protected $_assertTableName = 'hl7Messages'; // value MUST be the same as $_table
 
 }
 

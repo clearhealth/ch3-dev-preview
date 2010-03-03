@@ -37,6 +37,7 @@ class Models_AttachmentTest extends Models_TableModels {
 				      'name'=>'Test Attachment',
 				      'dateTime'=>'2009-09-22',);
 	protected $_assertMatches = array('name'=>'Test Attachment');
+	protected $_assertTableName = 'attachments'; // value MUST be the same as $_table
 
 }
 

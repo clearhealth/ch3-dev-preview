@@ -141,7 +141,7 @@ EOL;
 		$audit->objectId = $objects['patient']->person_id;
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->type = WebVista_Model_ORM::REPLACE;
-		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$audit->persist();
 		$objects['audit'] = $audit;
 

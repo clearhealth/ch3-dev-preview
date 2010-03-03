@@ -77,6 +77,7 @@ class ProcessHSA extends ProcessAbstract {
 	}
 
 	protected function _populateHandlers() {
+		$this->_handlers = array();
 		$handler = new HealthStatusHandler();
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()

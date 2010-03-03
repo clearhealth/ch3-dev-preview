@@ -37,6 +37,7 @@ class Models_LabOrderTest extends Models_TableModels {
 				      'type'=>2,
 				      'status'=>1,);
 	protected $_assertMatches = array('patient_id'=>1234);
+	protected $_assertTableName = 'lab_order'; // value MUST be the same as $_table
 
 }
 

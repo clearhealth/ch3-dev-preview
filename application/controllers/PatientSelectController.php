@@ -149,7 +149,7 @@ class PatientSelectController extends WebVista_Controller_Action
 		else {
 			$mostRecent = unserialize($mostRecentRaw);
 		}
-		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		if (!array_key_exists($currentUserId,$mostRecent)) {
 			$mostRecent[$currentUserId] = array();
 		}
@@ -228,4 +228,40 @@ class PatientSelectController extends WebVista_Controller_Action
                 $acj->suppressExit = true;
                 $acj->direct($outputArray);
 	}
+
+	public function getMostRecentVisitAction() {
+		$memcache = Zend_Registry::get('memcache');
+		$personId = (int)$this->_getParam('personId');
+
+		$mostRecentVisit = array();
+		$mostRecentVisitRaw = $memcache->get('mostRecentVisit');
+		if ($mostRecentVisitRaw !== false) {
+			$mostRecentVisit = unserialize($mostRecentVisitRaw);
+		}
+		$recentVisit = 0;
+		if (isset($mostRecentVisit[$personId])) {
+			$recentVisit = $mostRecentVisit[$personId];
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+                $json->suppressExit = true;
+                $json->direct($recentVisit);
+	}
+
+	public function processMostRecentVisitAction() {
+		$memcache = Zend_Registry::get('memcache');
+		$visitId = (int)$this->_getParam('visitId');
+		$personId = (int)$this->_getParam('personId');
+
+		$mostRecentVisit = array();
+		$mostRecentVisitRaw = $memcache->get('mostRecentVisit');
+		if ($mostRecentVisitRaw !== false) {
+			$mostRecentVisit = unserialize($mostRecentVisitRaw);
+		}
+		$mostRecentVisit[$personId] = $visitId;
+		$memcache->set('mostRecentVisit',serialize($mostRecentVisit));
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+                $json->suppressExit = true;
+                $json->direct(true);
+	}
+
 }

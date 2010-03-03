@@ -37,6 +37,7 @@ class Models_VitalSignValueTest extends Models_TableModels {
 				      'unavailable'=>1,
 				      'refused'=>1,);
 	protected $_assertMatches = array('vitalSignGroupId'=>1234);
+	protected $_assertTableName = 'vitalSignValues'; // value MUST be the same as $_table
 
 }
 

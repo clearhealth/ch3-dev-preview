@@ -27,6 +27,7 @@ class ProcessHL7 extends ProcessAbstract {
 	protected $_handlers = array();
 
 	protected function _populateHandlers() {
+		$this->_handlers = array();
 		try {
 			$cacheCodeObjects = Zend_Registry::get('cacheCodeObjects');
 		} catch (Exception $e) {
@@ -74,7 +75,7 @@ class ProcessHL7 extends ProcessAbstract {
 				$processingError->handlerId = $handler->handlerId;
 				$processingError->persist();
 			}
-			$ret &= $result;
+			$ret |= $result;
 		}
 
 		return $ret;

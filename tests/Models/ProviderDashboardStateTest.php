@@ -37,6 +37,7 @@ class Models_ProviderDashboardStateTest extends Models_TableModels {
 				      'facilityId'=>5678,
 				      'name'=>'Test Name',);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'providerDashboardState'; // value MUST be the same as $_table
 
 }
 

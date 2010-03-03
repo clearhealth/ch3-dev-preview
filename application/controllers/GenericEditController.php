@@ -90,5 +90,70 @@ class GenericEditController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
+	public function processEditByFieldAction() {
+		$personId = (int)$this->_getParam("personId");
+		$field = $this->_getParam('field');
+		$value = $this->_getParam('value');
+		$id = (int)$this->_getParam('id');
+		$orm = $this->_getParam('orm');
+		$obj = null;
+		switch ($orm) {
+			case 'patientNote':
+				$obj = new PatientNote();
+				$obj->patient_id = $personId;
+				if ($id > 0) {
+					$obj->patientNoteId = $id;
+					$obj->populate();
+				}
+				else {
+					// defaults for new note
+					$obj->note_date = date('Y-m-d H:i:s');
+					$obj->user_id = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+					$obj->priority = 5;
+					$obj->active = 1;
+					if ($field != 'note') {
+						$obj->note = 'blank';
+					}
+				}
+				break;
+		}
+		$retVal = false;
+		if ($obj !== null && (in_array($field,$obj->ormFields()))) {
+			$obj->$field = $value;
+			$obj->persist();
+			$retVal = true;
+		}
+		if ($retVal) {
+			$data = true;
+		}
+		else {
+			$data = array('error' => __('There was an error attempting to update the selected record.'));
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processDeleteAction() {
+		$id = (int)$this->_getParam('id');
+		$orm = $this->_getParam('orm');
+		$obj = null;
+		switch ($orm) {
+			case 'patientNote':
+				$obj = new PatientNote();
+				$obj->patientNoteId = $id;
+			break;
+		}
+		$ret = false;
+		if ($obj !== null) {
+			$obj->setPersistMode(WebVista_Model_ORM::DELETE);
+			$obj->persist();
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
 }
 

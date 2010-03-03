@@ -127,8 +127,7 @@ function addNewVisit() {
 			mainController.setActiveBuilding(buildingId);
 			mainController.setActivePractice(practiceId);
 
-			mainController.setActiveVisit(data.visitId);
-			initMainToolbar(null,mainController.getActivePatient());
+			visitSelectSetMostRecentVisit(data.visitId);
 			dhxWins.window('windowSelectVisitId').close();
 		},
 		error: function (er) {
@@ -145,8 +144,25 @@ function selectVisit() {
 		return;
 	}
 
-	mainController.setActiveVisit(rowId);
-	initMainToolbar(null,mainController.getActivePatient());
-	dhxWins.window('windowSelectVisitId').close();
+	visitSelectSetMostRecentVisit(rowId);
+}
+
+function visitSelectSetMostRecentVisit(visitId) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/patient-select.raw/process-most-recent-visit",
+		handleAs: "json",
+		content: {
+			"personId": mainController.getActivePatient(),
+			"visitId": visitId,
+		},
+		load: function (data) {
+			mainController.setActiveVisit(visitId);
+			initMainToolbar(null,mainController.getActivePatient());
+			visitSelector.oAccordion.openItem(visitSelector.accordionVisitDetailsId);
+		},
+		error: function (er) {
+			alert('err: ' + er)
+		}
+	});
 }
 </script>

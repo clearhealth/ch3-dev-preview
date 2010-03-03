@@ -37,6 +37,7 @@ class Models_LabTestTest extends Models_TableModels {
 				      'order_num'=>5678,
 				      'filer_order_num'=>91011,);
 	protected $_assertMatches = array('order_num'=>5678);
+	protected $_assertTableName = 'lab_test'; // value MUST be the same as $_table
 
 }
 

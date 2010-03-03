@@ -36,6 +36,7 @@ class Models_HealthStatusHandlerPatientTest extends Models_TableModels {
 	protected $_keyValues = array('healthStatusHandlerId'=>1234,
 				      'personId'=>5678,);
 	protected $_assertMatches = array('healthStatusHandlerId'=>1234);
+	protected $_assertTableName = 'healthStatusHandlerPatients'; // value MUST be the same as $_table
 
 }
 

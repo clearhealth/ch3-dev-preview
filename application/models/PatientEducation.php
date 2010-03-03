@@ -37,4 +37,10 @@ class PatientEducation extends WebVista_Model_ORM {
 	const ENUM_TOPIC_PARENT_NAME = 'Education Topic Preferences';
 	const ENUM_LEVEL_PARENT_NAME = 'Education Level Preferences';
 
+	const ENUM_EDUC_PARENT_NAME = 'Education Preferences';
+	const ENUM_EDUC_SECTION_NAME = 'Section';
+	const ENUM_EDUC_SECTION_OTHER_NAME = 'Other';
+	const ENUM_EDUC_SECTION_COMMON_NAME = 'Common';
+	const ENUM_EDUC_LEVEL_NAME = 'Level';
+
 }

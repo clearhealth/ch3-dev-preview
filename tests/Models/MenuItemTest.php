@@ -37,6 +37,7 @@ class Models_MenuItemTest extends Models_TableModels {
 				      'parentId'=>1234,
 				      'dynamicKey'=>'Test Dynamic Key',);
 	protected $_assertMatches = array('siteSection'=>'Test siteSection');
+	protected $_assertTableName = 'mainmenu'; // value MUST be the same as $_table
 
 }
 

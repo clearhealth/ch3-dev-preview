@@ -52,7 +52,7 @@ class PatientADTController extends WebVista_Controller_Action {
 		}
                 $admit->personId = (int)$personId;
                 $admit->dateTime = date('Y-m-d H:i:s');
-                $admit->admittingUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+                $admit->admittingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
                 $admit->locationId = (int)$this->_location->locationId;
                 $admit->persist();
 		$this->view->action('set-active-patient','cprs',null,array('personId' => $personId));

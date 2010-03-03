@@ -14,6 +14,15 @@ function updateObserved(val) {
 }
 
 function updateCausativeAgent(data) {
+	dojo.byId("reaction-input").style.display = "none";
+	dojo.byId("reaction-select").style.display = "block";
+	var category = globalSelectedAllergy.category;
+	if (category == "<?=__('Drug Class')?>" || category == "<?=__('Specific Drug')?>") {
+		dojo.byId("reaction-input").value = category+" <?=__('Allergy')?>";
+		dojo.byId("reaction-input").style.display = "block";
+		dojo.byId("reaction-select").style.display = "none";
+	}
+	dojo.byId("allergy-drugAllergy").value = globalSelectedAllergy.id;
 	dojo.byId("allergy-causativeAgent").value = data;
 }
 
@@ -69,7 +78,9 @@ function _openLookupAllergy() {
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->reactionType->renderLabel()?>
-	<?=$this->form->reactionTypeInput('FormSelect',array('options' => $this->listReactionTypes,'style'=>'width:300px;'))?>
+	<?=$this->formText('reactionInput',$this->form->reactionType->getValue(),array('id'=>'reaction-input','style'=>'width:300px;display:none;'))?>
+	<?=$this->formSelect('reactionSelect',$this->form->reactionType->getValue(),array('id'=>'reaction-select','style'=>'width:300px;'),$this->listReactionTypes)?>
+	<?=$this->form->reactionTypeInput('FormHidden')?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
@@ -89,7 +100,7 @@ function _openLookupAllergy() {
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->symptoms->renderLabel()?>
-	<?=$this->form->symptomsInput('FormSelect',array('options' => $this->listSymptoms,'multiple'=>true,'style'=>'width:300px;'))?>
+	<?=$this->form->symptomsInput('FormSelect',array('options' => $this->listSymptoms,'multiple'=>true,'style'=>'height:80px;width:300px;'))?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
@@ -106,12 +117,21 @@ function _openLookupAllergy() {
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->patientAllergyIdInput('FormHidden')?>
 	<?=$this->form->patientIdInput('FormHidden')?>
+	<?=$this->form->drugAllergyInput('FormHidden')?>
 	<?=$this->form->okInput()?>
 	<?=$this->formButton('CancelName',__('Cancel'),array('onClick'=>'dhxWins.window("winAddAllergyId").close()'))?>
 </div>
 
 <script>
 function preSubmitadd() {
+	if (dojo.byId("reaction-input").style.display == "block") {
+		var reactionType = dojo.byId("reaction-input").value;
+		dojo.byId("allergy-reactionType").value = reactionType;
+	}
+	else if (dojo.byId("reaction-select").style.display == "block") {
+		var reactionType = dojo.byId("reaction-select").value;
+		dojo.byId("allergy-reactionType").value = reactionType;
+	}
 	var noKnownAllergiesInput = dojo.byId("noKnownAllergiesInput");
 	var val = 0;
 	if (noKnownAllergiesInput.checked) {

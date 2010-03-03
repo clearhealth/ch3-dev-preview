@@ -83,6 +83,7 @@ class Models_HealthStatusAlertTest extends Models_TableModels {
 				      'personId'=>1234,
 				      'handlerId'=>5678,);
 	protected $_assertMatches = array('message'=>'Test Message');
+	protected $_assertTableName = 'healthStatusAlerts'; // value MUST be the same as $_table
 
 	public function testTetanusShots() {
 		$this->_objects = HealthStatusHandler::generateTestTetanus();
@@ -189,7 +190,7 @@ class Models_HealthStatusAlertTest extends Models_TableModels {
 		$audit->objectId = $this->_objects['medication']->medicationId;
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->type = WebVista_Model_ORM::REPLACE;
-		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$audit->persist();
 		$objects['audit'] = $audit;
 

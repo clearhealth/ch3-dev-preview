@@ -56,13 +56,14 @@
 		<field Field="line2" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="city" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="region" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="county" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="state" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="county" Type="char(4)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="state" Type="char(3)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="postal_code" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="notes" Type="text" Null="NO" Key="" Default="" Extra="" />
 		<field Field="person_id" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="type" Type="char(4)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="active" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="practiceId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="address" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="address_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="address" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -590,6 +591,13 @@
 		<key Table="document" Non_unique="1" Key_name="owner" Seq_in_index="1" Column_name="owner" Collation="A" Cardinality="0" Null="YES" Index_type="BTREE" Comment="" />
 		<options Name="document" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="49152" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="drugCodeClass">
+		<field Field="code" Type="varchar(10)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="textShort" Type="varchar(24)" Null="YES" Key="" Extra="" />
+		<field Field="textLong" Type="varchar(255)" Null="YES" Key="" Extra="" />
+		<key Table="drugCodeClass" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="drugCodeClass" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="duplicate_queue">
 		<field Field="duplicate_queue_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="parent_id" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
@@ -597,6 +605,24 @@
 		<key Table="duplicate_queue" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="duplicate_queue_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="duplicate_queue" Non_unique="0" Key_name="child_id" Seq_in_index="1" Column_name="child_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="duplicate_queue" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="eFaxInbounds">
+		<field Field="eFaxInboundId" Type="int(11)" Null="NO" Key="PRI" Extra="" />
+		<field Field="dateRequested" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="requestType" Type="char(15)" Null="NO" Key="" Extra="" />
+		<field Field="accountId" Type="char(10)" Null="NO" Key="" Extra="" />
+		<field Field="numberDialed" Type="char(10)" Null="NO" Key="" Extra="" />
+		<field Field="dateReceived" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="faxName" Type="char(50)" Null="NO" Key="" Extra="" />
+		<field Field="fileType" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="pageCount" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="CSID" Type="char(50)" Null="NO" Key="" Extra="" />
+		<field Field="ANI" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="status" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="MCFID" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="fileContents" Type="text" Null="NO" Key="" Extra="" />
+		<key Table="eFaxInbounds" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="eFaxInboundId" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
+		<options Name="eFaxInbounds" Engine="InnoDB" Version="10" Row_format="Compact" Rows="1" Avg_row_length="16384" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-23 13:18:19" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 529408 kB" />
 	</table_structure>
 	<table_structure name="eSignatures">
 		<field Field="eSignatureId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -1039,16 +1065,9 @@
 		<field Field="externalUrl" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="qty" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="keywords" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="vaclass" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="formularyDefault" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="fullNDC" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="formularyDefault" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:26:07" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
-	</table_structure>
-	<table_structure name="formularyPmc">
-		<field Field="fullNDC" Type="varchar(20)" Null="NO" Key="PRI" Default="" Extra="" />
-		<field Field="directions" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="comments" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="price" Type="float(10,2)" Null="NO" Key="" Default="" Extra="" />
-		<key Table="formularyPmc" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="fullNDC" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
-		<options Name="formularyPmc" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="gacl_acl">
 		<field Field="id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -1305,6 +1324,8 @@
 		<field Field="userId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="objectId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="objectClass" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="forwardedBy" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="comment" Type="text" Null="NO" Key="" Default="" Extra="" />
 		<key Table="generalAlerts" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="generalAlertId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="generalAlerts" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -1434,6 +1455,13 @@
 		<key Table="hl7_message" Non_unique="1" Key_name="control_id" Seq_in_index="1" Column_name="control_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="hl7_message" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="holidays">
+		<field Field="holidayId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="date" Type="date" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="description" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="holidays" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="holidayId" Collation="A" Cardinality="7" Null="" Index_type="BTREE" Comment="" />
+		<options Name="holidays" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="identifier">
 		<field Field="identifier_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="person_id" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
@@ -1521,6 +1549,8 @@
 		<field Field="encounter_id" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="external_id" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />
 		<field Field="person_id" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="description" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="eSignatureId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="lab_order" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="lab_order_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="lab_order" Non_unique="1" Key_name="external_id" Seq_in_index="1" Column_name="external_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="lab_order" Non_unique="1" Key_name="patient_id" Seq_in_index="1" Column_name="patient_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
@@ -1574,6 +1604,7 @@
 		<field Field="type" Type="varchar(20)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="active" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="typeValue" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="jsAction" Type="text" Null="NO" Key="" Default="" Extra="" />
 		<key Table="mainmenu" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="menuId" Collation="A" Cardinality="23" Null="" Index_type="BTREE" Comment="" />
 		<options Name="mainmenu" Engine="InnoDB" Version="10" Row_format="Compact" Rows="23" Avg_row_length="712" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -1605,7 +1636,9 @@
 		<field Field="rxnorm" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="eSignatureId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="pharmacyId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
-		<key Table="medications" Non_unique="1" Key_name="medicationId" Seq_in_index="1" Column_name="medicationId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<field Field="pkey" Type="varchar(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateDiscontinued" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<key Table="medications" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="medicationId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="medications" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="meds_bulk_quantity">
@@ -1744,6 +1777,58 @@
 		<key Table="menu_report" Non_unique="1" Key_name="menu_id" Seq_in_index="1" Column_name="menu_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="menu_report" Non_unique="1" Key_name="report_template_id" Seq_in_index="1" Column_name="report_template_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="menu_report" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="messaging">
+		<field Field="messagingId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="objectId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="objectClass" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="objectType" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="status" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateStatus" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<field Field="note" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<key Table="messaging" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="messagingId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="messaging" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="messagingEPrescribes">
+		<field Field="messagingId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="auditId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="pharmacyId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="resend" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="retries" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="messagingEPrescribes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="messagingId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="messagingEPrescribes" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="messagingInboundFaxes">
+		<field Field="messagingId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="personId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="mrn" Type="varchar(50)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="subject" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<field Field="from" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="to" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="messageId" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="attachmentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="messagingInboundFaxes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="messagingId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="messagingInboundFaxes" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="messagingOutboundFaxes">
+		<field Field="messagingId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="auditId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="transmissionId" Type="char(15)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="docid" Type="varchar(50)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="faxNumber" Type="char(25)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="resend" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="retries" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="finalDisposition" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateCompletion" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="faxStatus" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="faxStatusDescription" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<field Field="faxNum" Type="char(25)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="recipientCSID" Type="char(20)" Null="NO" Key="" Extra="" />
+		<field Field="duration" Type="char(5)" Null="NO" Key="" Extra="" />
+		<field Field="pagesSent" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="numberOfRetries" Type="int(11)" Null="NO" Key="" Extra="" />
+		<key Table="messagingOutboundFaxes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="messagingId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="messagingOutboundFaxes" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="misc_charge">
 		<field Field="misc_charge_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -1906,6 +1991,7 @@
 		<field Field="comments" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="noKnownAllergies" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="enteredInError" Type="tinyint(1)" Null="YES" Key="" Extra="" />
+		<field Field="drugAllergy" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="patientAllergies" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="patientAllergyId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientAllergies" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -1913,6 +1999,7 @@
 		<field Field="code" Type="varchar(10)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="providerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
 		<field Field="addToProblemList" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="isPrimary" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="diagnosis" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
@@ -1934,15 +2021,17 @@
 	<table_structure name="patientExams">
 		<field Field="code" Type="varchar(10)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="dateExamined" Type="date" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="result" Type="varchar(10)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="exam" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="refused" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="comments" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="patientExams" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="patientExams" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientExams" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientImmunizations">
-		<field Field="code" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="code" Type="varchar(10)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="reportedNotAdministered" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="patientReported" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
@@ -1951,6 +2040,10 @@
 		<field Field="repeatContraindicated" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="immunization" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="comment" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateAdministered" Type="date" Null="NO" Key="" Default="" Extra="" />
+		<field Field="lot" Type="varchar(20)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="route" Type="varchar(4)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="site" Type="varchar(4)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="patientImmunizations" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientImmunizations" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -1990,6 +2083,8 @@
 		<field Field="note" Type="text" Null="NO" Key="" Default="" Extra="" />
 		<field Field="deprecated" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="reason" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="posting" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="active" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="patient_note" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="patient_note_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patient_note" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -2157,6 +2252,48 @@
 		<key Table="person_type" Non_unique="1" Key_name="person_id" Seq_in_index="1" Column_name="person_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="person_type" Non_unique="1" Key_name="person_type" Seq_in_index="1" Column_name="person_type" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="person_type" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="pharmacies">
+		<field Field="pharmacyId" Type="varchar(36)" Null="NO" Key="PRI" Extra="" />
+		<field Field="NCPDPID" Type="char(7)" Null="NO" Key="" Extra="" />
+		<field Field="StoreNumber" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="ReferenceNumberAlt1" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="ReferenceNumberAlt1Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="StoreName" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="AddressLine1" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="AddressLine2" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="City" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="State" Type="char(2)" Null="NO" Key="" Extra="" />
+		<field Field="Zip" Type="char(11)" Null="NO" Key="" Extra="" />
+		<field Field="PhonePrimary" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="Fax" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="Email" Type="char(80)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt1" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt1Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt2" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt2Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt3" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt3Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt4" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt4Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt5" Type="char(25)" Null="NO" Key="" Extra="" />
+		<field Field="PhoneAlt5Qualifier" Type="char(3)" Null="NO" Key="" Extra="" />
+		<field Field="ActiveStartTime" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="ActiveEndTime" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="ServiceLevel" Type="char(5)" Null="NO" Key="" Extra="" />
+		<field Field="PartnerAccount" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="LastModifierDate" Type="char(22)" Null="NO" Key="" Extra="" />
+		<field Field="TwentyFourHourFlag" Type="char(1)" Null="NO" Key="" Extra="" />
+		<field Field="CrossStreet" Type="char(35)" Null="NO" Key="" Extra="" />
+		<field Field="RecordChange" Type="char(1)" Null="NO" Key="" Extra="" />
+		<field Field="OldServiceLevel" Type="char(5)" Null="NO" Key="" Extra="" />
+		<field Field="TextServiceLevel" Type="char(100)" Null="NO" Key="" Extra="" />
+		<field Field="TextServiceLevelChange" Type="char(100)" Null="NO" Key="" Extra="" />
+		<field Field="Version" Type="char(5)" Null="NO" Key="" Extra="" />
+		<field Field="NPI" Type="char(10)" Null="NO" Key="" Extra="" />
+		<field Field="preferred" Type="tinyint(4)" Null="NO" Key="" Extra="" />
+		<key Table="pharmacies" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="pharmacyId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="pharmacies" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-12-04 10:19:03" Collation="latin1_swedish_ci" Create_options="" Comment="InnoDB free: 528384 kB" />
 	</table_structure>
 	<table_structure name="practice_address">
 		<field Field="practice_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -2645,10 +2782,19 @@
 		<field Field="scheduleId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="start" Type="datetime" Null="NO" Key="MUL" Default="" Extra="" />
 		<field Field="end" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<field Field="buildingId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="scheduleEvents" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="scheduleEventId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="scheduleEvents" Non_unique="1" Key_name="start" Seq_in_index="1" Column_name="start" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="scheduleEvents" Non_unique="1" Key_name="start" Seq_in_index="2" Column_name="end" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="scheduleEvents" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="scheduleTemplates">
+		<field Field="scheduleTemplateId" Type="int(10)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="name" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<field Field="description" Type="text" Null="NO" Key="" Extra="" />
+		<field Field="template" Type="longtext" Null="NO" Key="" Extra="" />
+		<key Table="scheduleTemplates" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="scheduleTemplateId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="scheduleTemplates" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2010-02-01 3:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="schedule_event">
 		<field Field="event_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -2861,6 +3007,23 @@
 		<key Table="tree" Non_unique="1" Key_name="node_type" Seq_in_index="1" Column_name="node_type" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="tree" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="updateFileBlobs">
+		<field Field="updateFileId" Type="int(11)" Null="NO" Key="PRI" Extra="" />
+		<field Field="data" Type="mediumblob" Null="NO" Key="" Extra="" />
+		<key Table="updateFileBlobs" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="updateFileId" Collation="A" Cardinality="18" Null="" Index_type="BTREE" Comment="" />
+		<options Name="updateFileBlobs" Engine="InnoDB" Version="10" Row_format="Compact" Rows="18" Avg_row_length="146545" Data_length="2637824" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-11 10:11:01" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 527360 kB" />
+	</table_structure>
+	<table_structure name="updateFiles">
+		<field Field="updateFileId" Type="int(11)" Null="NO" Key="PRI" Extra="" />
+		<field Field="name" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Extra="" />
+		<field Field="md5sum" Type="varchar(40)" Null="NO" Key="" Extra="" />
+		<field Field="version" Type="varchar(16)" Null="NO" Key="" Extra="" />
+		<field Field="active" Type="tinyint(4)" Null="NO" Key="" Extra="" />
+		<field Field="description" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<key Table="updateFiles" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="updateFileId" Collation="A" Cardinality="7" Null="" Index_type="BTREE" Comment="" />
+		<options Name="updateFiles" Engine="InnoDB" Version="10" Row_format="Compact" Rows="7" Avg_row_length="2340" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-23 13:18:19" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 527360 kB" />
+	</table_structure>
 	<table_structure name="user">
 		<field Field="user_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="username" Type="varchar(55)" Null="NO" Key="UNI" Default="" Extra="" />
@@ -2870,6 +3033,7 @@
 		<field Field="person_id" Type="int(11)" Null="YES" Key="MUL" Extra="" />
 		<field Field="disabled" Type="enum('yes','no')" Null="NO" Key="" Default="" Extra="" />
 		<field Field="default_location_id" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />
+		<field Field="defaultBuildingId" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />
 		<key Table="user" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="user_id" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
 		<key Table="user" Non_unique="0" Key_name="username" Seq_in_index="1" Column_name="username" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
 		<key Table="user" Non_unique="1" Key_name="person_id" Seq_in_index="1" Column_name="person_id" Collation="A" Cardinality="1" Null="YES" Index_type="BTREE" Comment="" />

@@ -34,6 +34,7 @@ class MenuItem extends WebVista_Model_ORM {
     protected $prefix;
     protected $active;
     protected $type;
+	protected $jsAction;
 
     protected $_table = "mainmenu";
     protected $_primaryKeys = array("menuId");
@@ -74,5 +75,17 @@ class MenuItem extends WebVista_Model_ORM {
 		$params['menuId'] = $ormId;
 		$view = Zend_Layout::getMvcInstance()->getView();
 		return $view->action("edit","menu-manager",null,$params);
+	}
+
+	public static function getMenuItems() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('m'=>'mainmenu'))
+				->join(array('e'=>'enumerations'),'m.menuId = e.ormId')
+				->where('e.active = 1')
+				->order('m.siteSection')
+				->order('m.displayOrder ASC');
+		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		return $db->fetchAll($sqlSelect);
 	}
 }

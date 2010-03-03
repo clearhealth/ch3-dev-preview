@@ -16,6 +16,7 @@ div.bottomInner:hover {
 }
 </style>
 
+<div id="stylesContainerId" style="display:none;height:0px;"><style></style></div>
 <div id="viewDayContainer" style="height:1000px;">
 <div id="timeColumnContainer" style="float:left;width:80px;height:1000px;"></div>
 
@@ -24,6 +25,38 @@ div.bottomInner:hover {
 
 <!-- all user code -->
 <script type="text/javascript">
+function gridObjectsOnMouseOver(colIndex,rowId,cellIndex) {
+	var title = gridObjects[colIndex].getUserData(rowId,"title");
+	if (title && title.length > 0) {
+		gridObjects[colIndex].cells(rowId,cellIndex).cell.title = title;
+	}
+	return false;
+}
+
+var selectDateColumnId = null;
+function calendarLoadEvents(columns) {
+	if (!columns) {
+		columns = [];
+	}
+	columns = columns.join(",");
+	dojo.xhrGet({
+		url: globalBaseUrl + "/calendar.raw/list-events?colIndex="+columns,
+		handleAs: "json",
+		load: function(data) {
+			for (var colIndex in data) {
+				gridObjects[colIndex].clearAll();
+				// we need to change the label of the column header
+				gridObjects[colIndex].setColumnLabel("0",data[colIndex].header);
+				gridObjects[colIndex].parse(data[colIndex].events,function(){ postLoad(colIndex); },"json");
+			}
+			return data;
+		},
+		error: function(response) {
+			console.error("ERROR: ",response);
+			return response;
+		}
+	});
+}
 
 function expandAppointment(appointmentId,obj) {
 	obj.style.height = "100px";
@@ -122,7 +155,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	}
 
 	function openAppointmentWindow(params) {
-		winAddAppointment = dhxWins.createWindow('windowAddColumn',60,10,550,500);
+		winAddAppointment = dhxWins.createWindow('windowAddColumn',60,10,800,500);
 		winAddAppointment.setText('<?=__('Add New Appointment')?>');
 		var url = '<?=$this->baseUrl?>/calendar.raw/add-appointment';
 		if (params != undefined) {
@@ -134,7 +167,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		appAccordion.skin = 'dhx_blue';
 		appAccordion.setIconsPath("<?=$this->baseUrl?>/img/");
 		appAccordion.addItem("appointmentInfo","<?=__('Appointment Information')?>");
-		appAccordion.addItem("pointOfSale","<?=__('Point of Sale')?>");
+		//appAccordion.addItem("pointOfSale","<?=__('Point of Sale')?>");
 		appAccordion.attachEvent("onActive",function(itemId){
 			switch (itemId) {
 				case "appointmentInfo":
@@ -158,7 +191,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	function applyNewAppointment(columnIndex) {
 		closeAddAppointmentWindow();
 		if (columnIndex != undefined || columnIndex != '') {
-			getColumnHeader(columnIndex, true);
+			calendarLoadEvents([columnIndex]);
 		}
 	}
 
@@ -251,7 +284,9 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 
 		gridObjects[columnIndex].enableContextMenu(menuObjects[columnIndex]);
 		gridObjects[columnIndex].attachEvent('onBeforeContextMenu',beforeContextMenuEvent);
-		//getColumnHeader(columnIndex);
+		gridObjects[columnIndex].setHeader("");
+		gridObjects[columnIndex].init();
+		gridObjects[columnIndex].attachEvent("onMouseOver",function(rowId,cellIndex) { return gridObjectsOnMouseOver(columnIndex,rowId,cellIndex); });
 
 		//resizeScheduleContainer();
 
@@ -259,6 +294,8 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			(e||event).cancelBubble=true;
 			return false;
 		});
+
+		dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#eventColumn"+columnIndex+"Container table.hdr td div.hdrcell { height: 30px; }";
 	}
 
 	function keyPressEvent(code,ctrl,shift) {
@@ -288,8 +325,13 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			url: "<?=$this->baseUrl?>/calendar.raw/ajax-set-filter-day?day="+day,
 			handleAs: "json",
 			load: function(response, ioArgs) {
-				for (i in columnIds) {
-					getColumnHeader(i, true);
+				if (selectDateColumnId !== null) {
+					// recreate the affected columns
+					calendarLoadEvents([selectDateColumnId]);
+					selectDateColumnId = null;
+				}
+				else {
+					calendarLoadEvents();
 				}
 				return response;
 			},
@@ -333,6 +375,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	function applyNewColumn(columnId) {
 		// close window before reloading the column
 		createColumn(columnId, true);
+		calendarLoadEvents([columnId]);
 		closeAddColumnWindow();
 	}
 
@@ -376,6 +419,13 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 
 	function menuGridEvent(columnId, menuItemId, type) {
 		switch(menuItemId) {
+			case "new_schedule":
+				// new schedule interface
+				var colIndex = gridObjects[columnId].getColumnId(0);
+				var params = [];
+				params.push("colIndex="+colIndex);
+				globalCreateWindow("winNewScheduleId",params,"<?=$this->baseUrl?>/schedule.raw","<?=__('New Schedule')?>",800,600);
+				break;
 			case 'add_column':
 				// adding column
 				addColumn();
@@ -385,6 +435,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 				break;
 			case 'select_date':
 				// popup date selector on selected row
+				selectDateColumnId = columnId;
 				openCalendar('.rowselected');
 				break;
 			case 'edit_appointment':
@@ -410,7 +461,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 							},
 							handleAs: 'json',
 							load: function(responseObject, ioArgs){
-								getColumnHeader(columnId);
+								calendarLoadEvents([columnId]);
 							},
 							error: function (er) { alert('Error: ' + er) }
 						});
@@ -424,7 +475,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 							},
 							handleAs: 'json',
 							load: function(responseObject, ioArgs){
-								getColumnHeader(columnId);
+								calendarLoadEvents([columnId]);
 							},
 							error: function (er) { alert('Error: ' + er) }
 						});
@@ -441,7 +492,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
 	dhxWins.setSkin("clear_silver");
 
-	var timeColumnHeader = '<a href="javascript:previousDay();" title="[Previous Day]"><</a> <label onclick="openCalendar(\'.dojoCalendar\')" class="dojoCalendar">Time</label> <a href="javascript:nextDay();" title="[Next Day]">></a>';
+	var timeColumnHeader = '<a href="javascript:previousDay();" title="[Previous Day]"><img src="' + globalBaseUrl + '/img/ar_left.gif" height="12" /></a> <label onclick="openCalendar(\'.dojoCalendar\')" class="dojoCalendar">Time</label> <a href="javascript:nextDay();" title="[Next Day]"><img src="' + globalBaseUrl + '/img/ar_right.gif" height="12" /></a>';
 
         timeColumnGrid = new dhtmlXGridObject('timeColumnContainer');
 	timeColumnGrid.enableDragAndDrop(true);
@@ -470,6 +521,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		(e||event).cancelBubble=true;
 		return false;
 	});
+	dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#timeColumnContainer table.hdr td div.hdrcell { height: 30px; }";
 
 	// temporarily placed it here
 	timeColumnGrid.attachEvent("onRowDblClicked",timeDblClickedEvent);
@@ -512,71 +564,20 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		resizeTimeColumnContainer();
 	}
 
-	function getColumnHeaders(reinit) {
-		dojo.xhrGet({
-			url: "<?=$this->baseUrl?>/calendar.raw/get-column-headers",
-			handleAs: "json",
-			load: function(response, ioArgs) {
-				for (var calGridCtr in response) {
-					var data = response[calGridCtr];
-					if (reinit == undefined) {
-						// why setHeader() did not work if it is placed right after init()?
-						// we need to place the init() and load() here, otherwise the setHeader has no effect
-						gridObjects[calGridCtr].setHeader(data.header);
-						gridObjects[calGridCtr].init();
-					}
-					else {
-						gridObjects[calGridCtr].clearAll();
-						// we need to change the label of the column header
-						gridObjects[calGridCtr].setColumnLabel('0',data.header);
-					}
-				}
-				// load column data asynchronously
-				loadColumnData(0);
-				return response;
-			},
-			error: function(response, ioArgs) {
-				console.error("HTTP status code: ", ioArgs.xhr.status);
-				return response;
-			}
-		});
-	}
-
 	function loadColumnData(colIndex) {
 		if (gridObjects[colIndex]) {
 			gridObjects[colIndex].load("<?=$this->baseUrl?>/calendar.raw/ajax-generate-event-column-data?columnIndex="+colIndex,function(){
 					postLoad(colIndex);
-					loadColumnData(colIndex+1); // load column data asynchronously
+					colIndex++;
+					if (columnIds.length != gridObjects.length) {
+						while (!gridObjects[colIndex]) {
+							colIndex++;
+						}
+						loadColumnData(colIndex); // load column data asynchronously
+					}
 				},"json");
 		}
 	}
-
-	function getColumnHeader(columnIndex, reinit) {
-		dojo.xhrGet({
-			url: "<?=$this->baseUrl?>/calendar.raw/ajax-get-column-header?columnIndex="+columnIndex,
-			handleAs: "json",
-			load: function(response, ioArgs) {
-				if (reinit == undefined) {
-					// why setHeader() did not work if it is placed right after init()?
-					// we need to place the init() and load() here, otherwise the setHeader has no effect
-					gridObjects[columnIndex].setHeader(response.header);
-					gridObjects[columnIndex].init();
-				}
-				else {
-					gridObjects[columnIndex].clearAll();
-					// we need to change the label of the column header
-					gridObjects[columnIndex].setColumnLabel('0',response.header);
-				}
-				gridObjects[columnIndex].load("<?=$this->baseUrl?>/calendar.raw/ajax-generate-event-column-data?columnIndex="+columnIndex,function(){ postLoad(columnIndex); },"json");
-				return response;
-			},
-			error: function(response, ioArgs) {
-				console.error("HTTP status code: ", ioArgs.xhr.status);
-				return response;
-			}
-		});
-	}
-
 
 	function dragHandler(idFrom,idTo,gridFrom,gridTo,colIndexFrom,colIndexTo) {
 		// check if data come from ordinary column
@@ -676,10 +677,10 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 							isCopy: appCopy,
 						},
 						load: function (jsData) {
-							getColumnHeader(columnIdTo, true);
+							calendarLoadEvents([columnIdTo]);
 							if (!appCopy) {
 								if (data.existsInOtherColumn) {
-									getColumnHeader(data.columnId,true);
+									calendarLoadEvents([data.columnId]);
 								}
 								resizeTimeColumnContainer();
 							}
@@ -761,8 +762,11 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			},
 			load: function (data) {
 				// recreate the affected columns
-				getColumnHeader(columnIdFrom, true);
-				getColumnHeader(columnIdTo, true);
+				var columns = [columnIdFrom];
+				if (columnIdFrom != columnIdTo) {
+					columns.push(columnIdTo);
+				}
+				calendarLoadEvents(columns);
 			},
 			error: function (error) {
 				alert(error);
@@ -775,7 +779,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		// close window before reloading the column
 		closeFilterWindow(columnIndex);
 		// reload column
-		getColumnHeader(columnIndex, true);
+		calendarLoadEvents([columnIndex]);
 	}
 
 <?foreach ($this->columns as $index => $column):?>
@@ -783,7 +787,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	createColumn('<?=$index?>');
 <?endforeach;?>
 
-	getColumnHeaders();
+	calendarLoadEvents();
 </script>
 
 </div>

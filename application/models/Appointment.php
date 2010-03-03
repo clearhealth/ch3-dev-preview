@@ -49,9 +49,13 @@ class Appointment extends WebVista_Model_ORM {
 	function __construct() {
 		parent::__construct();
 		$this->patient = new Patient();
+		$this->patient->_cascadePersist = false;
 		$this->provider = new Provider();
+		$this->provider->_cascadePersist = false;
 		$this->creator = new User();
+		$this->creator->_cascadePersist = false;
 		$this->lastChange = new User();
+		$this->lastChange->_cascadePersist = false;
 	}
 
 	public function populate() {

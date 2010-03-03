@@ -37,6 +37,7 @@ class Models_TeamMemberTest extends Models_TableModels {
 				      'cosignWithParent'=>1,
 				      'role'=>'Test Role',);
 	protected $_assertMatches = array('role'=>'Test Role');
+	protected $_assertTableName = 'teamMembers'; // value MUST be the same as $_table
 
 }
 

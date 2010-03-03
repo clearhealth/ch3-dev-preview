@@ -38,6 +38,7 @@ class Models_DataIntegrationActionTest extends Models_TableModels {
 				      'action'=>'Test Action',
 				      'handlerType'=>1,);
 	protected $_assertMatches = array('name'=>'Test Name');
+	protected $_assertTableName = 'dataIntegrationActions'; // value MUST be the same as $_table
 
 }
 

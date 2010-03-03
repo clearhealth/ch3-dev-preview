@@ -37,6 +37,7 @@ class Models_ScheduleEventTest extends Models_TableModels {
 				      'scheduleCode'=>'Test Code',
 				      'providerId'=>1234,);
 	protected $_assertMatches = array('title'=>'Test Title');
+	protected $_assertTableName = 'scheduleEvents'; // value MUST be the same as $_table
 
 }
 

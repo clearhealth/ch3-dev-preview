@@ -10,7 +10,11 @@
 	esrdGrid.attachEvent('onRowDblClicked',doubleClickedEvent);
 	esrdGrid.attachEvent('onCheck',onCheckedEvent);
         esrdGrid.init();
-	esrdGrid.load('<?=$this->baseUrl?>/e-sign.raw/list-items',esrdExpand,"xml");
+	function esrdGridReload() {
+		esrdGrid.clearAll();
+		esrdGrid.load("<?=$this->baseUrl?>/e-sign.raw/list-items?objectId=<?=$this->objectId?>",esrdExpand,"xml");
+	}
+	esrdGridReload();
 	function esrdExpand() {
 		esrdGrid.expandAll();
 		if (!<?=$this->multipleSign?>) {
@@ -66,8 +70,7 @@ function preSubmit<?=$this->form->getId()?> () {
 	    url: "<?=$this->baseUrl?>/e-sign.raw/edit-sign-items",
 	    content: {'electronicSignatureIds': dojo.toJson(ids), 'signature':dojo.byId('signature').value },
 	    load: function(data){
-		esrdGrid.clearAll();
-		esrdGrid.load('<?=$this->baseUrl?>/e-sign.raw/list-items',esrdExpand,"xml");
+		esrdGridReload();
 	     },
 	     error: function (error) {
 	        errObj = dojo.fromJson(error.responseText);

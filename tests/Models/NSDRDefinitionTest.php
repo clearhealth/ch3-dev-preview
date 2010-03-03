@@ -54,6 +54,7 @@ class Models_NSDRDefinitionTest extends Models_TableModels {
 				      'aliasFor'=>'com.clearhealth.namespace.test.aliasfor',
 				      'ORMClass'=>'ORMClass',);
 	protected $_assertMatches = array('namespace'=>'com.clearhealth.namespace.test');
+	protected $_assertTableName = 'nsdrDefinitions'; // value MUST be the same as $_table
 
 	protected $_guids = array();
 

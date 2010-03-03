@@ -31,7 +31,7 @@ class PatientImmunizationIterator extends WebVista_Model_ORMIterator implements 
 	public function setFilter(Array $filter) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
-			       ->from("patientImmunizations")
+			       ->from("patientImmunizations",array('code','dateAdministered','lot','route','site','series','reaction','immunization','patientReported','comment'))
 			       ->where("patientId = ?", $filter['patientId']);
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;

@@ -35,6 +35,7 @@ class Models_ConfigItemTest extends Models_TableModels {
 
 	protected $_keyValues = array('value'=>'Test Value',);
 	protected $_assertMatches = array('value'=>'Test Value');
+	protected $_assertTableName = 'config'; // value MUST be the same as $_table
 
 }
 

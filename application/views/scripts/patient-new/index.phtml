@@ -1,8 +1,4 @@
-<script>
-djConfig.usePlainJson=true;
-dojo.require("dijit.form.DateTextBox");
-</script>
-<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+<div style="margin-left:auto;margin-right:auto;">
 	<div style="float:left;">
 		<?if ($this->message) :?>
 		<div style="background-color:PaleGreen; width:100%;">
@@ -23,6 +19,7 @@ dojo.require("dijit.form.DateTextBox");
 			<?foreach ($this->form->getErrorMessages() as $error) {?>
 			<?=$error?>
 			<?}?>
+			<?=$this->form->personIdInput('FormHidden')?>
 			<?=$this->form->formPerson->personIdInput('FormHidden')?>
 			<div class="formRow">
 			<?=$this->form->formPerson->lastName->renderLabel()?>
@@ -45,72 +42,88 @@ dojo.require("dijit.form.DateTextBox");
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
-			<div style="width:90px;overflow:hidden;"><input type="text" name="patient[person][lastName]" id="dateOfBirthInput" size="10"/></div>
-			<script>
-				var dateOfBirthBox = dijit.byId('dateOfBirthInput');
-                		if (dateOfBirthBox != undefined) {
-                			dateOfBirthBox.destroyRecursive();
-                			dateOfBirthBox = null;
-                		}
-
-				dateOfBirthBox = new dijit.form.DateTextBox({constraints: {datePattern:'yyyy-MM-dd'}},dojo.byId('dateOfBirthInput'));
-			</script>
+			<?=$this->form->formPerson->dateOfBirthInput()?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->gender->renderLabel()?>
-			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray("Gender")))?>
+			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray("Marital Status")))?>
+			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->confidentiality->renderLabel()?>
-			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray("Confidentiality")))?>
+			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->active->renderLabel()?>
 			<?=$this->form->formPerson->activeInput('FormCheckbox', array('checked' => 1))?>
 			</div>
 			<br class="formRowDivider">
+			<!--
 			<div class="formRow">
-			<?=$this->form->formPerson->defaultInstitutionId->renderLabel()?>
-			<?=$this->form->formPerson->defaultInstitutionIdInput('FormSelect',array("options" => Location::getLocationArrayByType('INSTITUTION')))?>
-			</div>
-			<div class="formRow">
-			<?=$this->form->registrationLocationId->renderLabel()?>
-			<?=$this->form->registrationLocationIdInput('FormSelect',array("options" => Location::getLocationArrayByType('WARD')))?>
+			<?//=$this->form->formPerson->defaultInstitutionId->renderLabel()?>
+			<?//=$this->form->formPerson->defaultInstitutionIdInput('FormSelect',array("options" => Location::getLocationArrayByType('INSTITUTION')))?>
 			</div>
 			<div class="formRow">
-			<?=$this->form->defaultProviderId->renderLabel()?>
-			<?=$this->form->defaultProviderIdInput('FormSelect',array("options" => Provider::getArray()))?>
+			<?//=$this->form->registrationLocationId->renderLabel()?>
+			<?//=$this->form->registrationLocationIdInput('FormSelect',array("options" => Location::getLocationArrayByType('WARD')))?>
+			</div>
+			-->
+			<div class="formRow">
+			<?=$this->form->defaultProvider->renderLabel()?>
+			<?=$this->form->defaultProviderInput('FormSelect',array("options" => Provider::getArray()))?>
 			</div>
 			</div>
-			<?=$this->form->renderClose()?>
 			</fieldset>
-			<fieldset><legend>Addresses</legend>
+			<fieldset><legend>Home Address</legend>
 			<div class="formRow">
-                        <?=$this->form->formAddress->line1->renderLabel()?>
-                        <?=$this->form->formAddress->line1Input()?>
+                        <?=$this->form->formHomeAddress->line1->renderLabel()?>
+                        <?=$this->form->formHomeAddress->line1Input()?>
                         </div>
 			<div class="formRow">
-                        <?=$this->form->formAddress->line2->renderLabel()?>
-                        <?=$this->form->formAddress->line2Input()?>
+                        <?=$this->form->formHomeAddress->line2->renderLabel()?>
+                        <?=$this->form->formHomeAddress->line2Input()?>
                         </div>
 			<br style="clear:left;"/>
 			<div class="formRow">
-                        <?=$this->form->formAddress->city->renderLabel()?>
-                        <?=$this->form->formAddress->cityInput()?>
+                        <?=$this->form->formHomeAddress->city->renderLabel()?>
+                        <?=$this->form->formHomeAddress->cityInput()?>
                         </div>
 			<div class="formRow">
-                        <?=$this->form->formAddress->state->renderLabel()?>
-                        <?=$this->form->formAddress->stateInput()?>
+                        <?=$this->form->formHomeAddress->state->renderLabel()?>
+                        <?=$this->form->formHomeAddress->stateInput()?>
                         </div>
 			<div class="formRow">
-                        <?=$this->form->formAddress->postalCode->renderLabel()?>
-                        <?=$this->form->formAddress->postalCodeInput()?>
+                        <?=$this->form->formHomeAddress->postalCode->renderLabel()?>
+                        <?=$this->form->formHomeAddress->postalCodeInput()?>
                         </div>
 			</fieldset>
+			<fieldset><legend>Billing Address</legend>
+			<div class="formRow">
+                        <?=$this->form->formBillingAddress->line1->renderLabel()?>
+                        <?=$this->form->formBillingAddress->line1Input()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formBillingAddress->line2->renderLabel()?>
+                        <?=$this->form->formBillingAddress->line2Input()?>
+                        </div>
+			<br style="clear:left;"/>
+			<div class="formRow">
+                        <?=$this->form->formBillingAddress->city->renderLabel()?>
+                        <?=$this->form->formBillingAddress->cityInput()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formBillingAddress->state->renderLabel()?>
+                        <?=$this->form->formBillingAddress->stateInput()?>
+                        </div>
+			<div class="formRow">
+                        <?=$this->form->formBillingAddress->postalCode->renderLabel()?>
+                        <?=$this->form->formBillingAddress->postalCodeInput()?>
+                        </div>
+			</fieldset>
+<?/*
 			<fieldset><legend>Phone Numbers</legend>
 			<div class="formRow">
                         <?=$this->form->formPhoneNumber->name->renderLabel()?>
@@ -121,9 +134,11 @@ dojo.require("dijit.form.DateTextBox");
                         <?=$this->form->formPhoneNumber->numberInput()?>
                         </div>
 			</fieldset>
+*/?>
 			<div style="text-align:right;">
 			<?=$this->form->okInput('FormButton')?>
 			<!--<input type="submit" />-->
 			</div>
+			<?=$this->form->renderClose()?>
 		</div>
 </div>

@@ -1,4 +1,4 @@
-<div id="immunizationsContainer" style="width:100%;height:100%;overflow:auto;">
+<div id="immunizationsContainer" style="width:100%;height:300px;overflow:none;">
 	<div class="formRow">
 		<div style="float:left;">
 			<dt><label for="immunizations-section"><?=__("Immunization Section")?></label></dt>
@@ -9,289 +9,272 @@
 			<dt><label for="immunizations-section"><?=__("Section Name")?></label></dt>
 			<div id="immunizationsSectionNameListContainer" style="float:left;width:490px;height:120px;"></div>
 		</div>
-		<script>
-		function openImmunizationsSelectionListWindow() {
-			var winImmunizationsSelectionList = dhxWins.createWindow('windowImmunizationsSelectionListId',60,10,400,400);
-			winImmunizationsSelectionList.setText('<?=__('Immunization Selection List')?>');
-			winImmunizationsSelectionList.attachURL('<?=$this->baseUrl?>/immunizations.raw/selection-list?jsCallback=selectedImmunization',true);
-			winImmunizationsSelectionList.setModal(true);
-			winImmunizationsSelectionList.centerOnScreen();
-		}
-
-		function selectedImmunization(code,description) {
-			if (immunizationsListGrid.doesRowExist(code)) {
-				alert('<?=__('Selected code already exists: ')?>'+code);
-				return;
-			}
-			description += ''; // forced it to be string
-			description = description.replace(/,/g,"&#44;"); // replace comma with an HTML equivalent value
-			immunizationsListGrid.addRow(code,",,,");
-			immunizationsListGrid.cells(code,4).setValue(description);
-		}
-
-		var immunizationsSectionListGrid = new dhtmlXGridObject('immunizationsSectionListContainer');
-		immunizationsSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-		immunizationsSectionListGrid.setHeader('');
-		immunizationsSectionListGrid.setNoHeader(true);
-		immunizationsSectionListGrid.setInitWidths("*");
-		immunizationsSectionListGrid.setSkin("xp");
-		immunizationsSectionListGrid.init();
-		immunizationsSectionListGrid.load('<?=$this->baseUrl?>/visit-details.raw/immunizations.json',"json");
-		immunizationsSectionListGrid.attachEvent("onRowSelect",immunizationsSectionListOnRowSelected);
-		function immunizationsSectionListOnRowSelected(rowId,cellIndex) {
-			immunizationsSectionNameListGrid.clearAll();
-			immunizationsSectionNameListGrid.load('<?=$this->baseUrl?>/visit-details.raw/immunizations-section.json?immunizations='+rowId+'&personId='+mainController.getActivePatient(),immunizationsOnSectionNameLoaded,"json");
-		}
-
-		function immunizationsOnSectionNameLoaded() {
-			immunizationsListGrid.forEachRow(function(rowId){
-					if (immunizationsSectionNameListGrid.doesRowExist(rowId)){
-						immunizationsSectionNameListGrid.cells(rowId,0).setChecked(true);
-						immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true);
-					}
-				});
-			//immunizationsSectionNameListGrid.forEachRow(function(rowId){ immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true); });
-		}
-
-		var immunizationsSectionNameListGrid = new dhtmlXGridObject('immunizationsSectionNameListContainer');
-		immunizationsSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-		immunizationsSectionNameListGrid.setHeader(',,');
-		immunizationsSectionNameListGrid.setNoHeader(true);
-		immunizationsSectionNameListGrid.setInitWidths("20,*,120");
-		immunizationsSectionNameListGrid.setColTypes("ch,ro,ro");
-		immunizationsSectionNameListGrid.setColAlign("right,left,left");
-		immunizationsSectionNameListGrid.setSkin("xp");
-		immunizationsSectionNameListGrid.init();
-		immunizationsSectionNameListGrid.attachEvent("onCheck",immunizationsSectionNameOnChecked);
-		immunizationsSectionNameListGrid.attachEvent("onRowSelect",immunizationsSectionNameListOnRowSelected);
-		function immunizationsSectionNameListOnRowSelected(rowId,cellIndex) {
-			var id = rowId.split('_');
-			var seriesDrop = dojo.byId('immunizations-series');
-			seriesDrop.options.length = 0;
-			seriesDrop.disabled = true;
-			seriesDrop.options[0] = new Option('(None selected)',0);
-			dojo.xhrGet({
-				url: '<?=$this->baseUrl?>/visit-details.raw/immunizations-series.json?id='+rowId,
-				handleAs: "json",
-				load: function(data,ioArgs) {
-					// update the series dropdown
-					for (var i in data.rows) {
-						var val = data.rows[i];
-						seriesDrop.options[seriesDrop.options.length] = new Option(val.data,val.id);
-						seriesDrop.disabled = false;
-					}
-					//immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(false);
-					return data;
-				},
-				error: function(response, ioArgs) {
-					console.error("HTTP status code: ", ioArgs.xhr.status);
-					return response;
-				}
-			});
-		}
-
-		function immunizationsSectionNameOnChecked(rowId,cellIndex,state) {
-			immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true);
-			immunizationsSectionNameListGrid.selectRow(immunizationsSectionNameListGrid.getRowIndex(rowId),true);
-			if (immunizationsSectionNameListGrid.getSelectedRowId() != rowId) {
-			}
-			if (state) { // add to immunizations list
-				immunizationsListGrid.addRow(rowId,",,,");
-				immunizationsListGrid.cells(rowId,4).setValue(immunizationsSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
-			}
-			else { // remove from immunizations list
-				immunizationsRemoveSelected(rowId);
-			}
-		}
-		</script>
 	</div>
 	<br style="clear:left"/>
-	<br style="clear:left"/>
 	<div class="formRow">
-		<div id="immunizationsListContainer" style="float:left;width:70%;height:150px"></div>
-		<script>
-		var immunizationsListGrid = new dhtmlXGridObject('immunizationsListContainer');
-		immunizationsListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-		immunizationsListGrid.setHeader('<?=__('Rep. NOT Adm.')?>,<?=__('Series')?>,<?=__('Reaction')?>,<?=__('Contra.')?>,<?=__('Selected Immunizations')?>,Comments,Rep. NOT Adm.,Patient Reported');
-		immunizationsListGrid.setInitWidths("100,80,80,60,*,0,0,0");
-		immunizationsListGrid.setColTypes("ch,ro,ro,ch,ro,ro,ro,ro");
-		immunizationsListGrid.setColAlign("right,left,left,left,left,left,left,left");
-		immunizationsListGrid.setSkin("xp");
-		immunizationsListGrid.init();
-		immunizationsListGrid.load('<?=$this->baseUrl?>/immunizations.raw/list-patient-immunizations.json?patientId='+mainController.getActivePatient(),immunizationsOnLoaded,"json");
+		<div id="immunizationsListContainer" style="float:left;width:800px;height:150px"></div>
+	</div>
+</div>
+<script>
+function openImmunizationsSelectionListWindow() {
+	var params = [];
+	params.push("id=<?=$this->othersId?>");
+	params.push("jsCallback=selectedImmunization");
+	var winImmunizationsSelectionList = globalCreateWindow("windowImmunizationsSelectionListId",params,"<?=$this->baseUrl?>/immunizations.raw/selection-list","<?=__('Immunization Selection List')?>",400,400);
+}
 
-		function immunizationsOnLoaded() {
-			disableImmunizationsListControl(true);
-			immunizationsListGrid.forEachRow(function(rowId) {
-					if (immunizationsListGrid.cells(rowId,6).getValue() == '1') {
-						immunizationsListGrid.cells(rowId,0).cell.innerHTML = "";
-					}
-				});
+function selectedImmunization(code,description) {
+	if (immunizationsListGrid.doesRowExist(code)) {
+		alert("<?=__('Selected code already exists: ')?>"+code);
+		return;
+	}
+	description += ""; // forced it to be string
+	description = description.replace(/,/g,"&#44;"); // replace comma with an HTML equivalent value
+	var today = new Date();
+	immunizationsListGrid.addRow(code,today.getFullYear() +"-" + (today.getMonth()+1)+ "-" + today.getDate() + ",,,,,,,,");
+	immunizationsListGrid.cells(code,indexPIMImmunization).setValue(description);
+	immunizationSave(code);
+}
+
+var immunizationsSectionListGrid = new dhtmlXGridObject("immunizationsSectionListContainer");
+immunizationsSectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+immunizationsSectionListGrid.setHeader("");
+immunizationsSectionListGrid.setNoHeader(true);
+immunizationsSectionListGrid.setInitWidths("*");
+immunizationsSectionListGrid.setSkin("xp");
+immunizationsSectionListGrid.init();
+<?foreach ($this->sections as $key=>$value):?>
+immunizationsSectionListGrid.addRow("<?=$key?>","");
+immunizationsSectionListGrid.cells("<?=$key?>",0).setValue("<?=$value?>");
+<?endforeach;?>
+//immunizationsSectionListGrid.load("<?=$this->baseUrl?>/visit-details.raw/immunizations.json","json");
+immunizationsSectionListGrid.attachEvent("onRowSelect",immunizationsSectionListOnRowSelected);
+function immunizationsSectionListOnRowSelected(rowId,cellIndex) {
+	if (rowId == undefined) {
+		rowId = immunizationsSectionListGrid.getSelectedRowId();
+	}
+	if (cellIndex == undefined) {
+		cellIndex = immunizationsSectionListGrid.getSelectedCellIndex();
+	}
+	immunizationsSectionNameListGrid.clearAll();
+	immunizationsSectionNameListGrid.load("<?=$this->baseUrl?>/immunizations.raw/list-immunization-section-name?sectionId="+rowId,immunizationsOnSectionNameLoaded,"json");
+}
+
+function immunizationsOnSectionNameLoaded() {
+	immunizationsListGrid.forEachRow(function(rowId){
+		if (immunizationsSectionNameListGrid.doesRowExist(rowId)){
+			immunizationsSectionNameListGrid.cells(rowId,0).setChecked(true);
+			immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true);
 		}
+	});
+	//immunizationsSectionNameListGrid.forEachRow(function(rowId){ immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true); });
+}
 
-		function immunizationsOnChecked(rowId,cellIndex,state) {
-			immunizationsListGrid.selectRow(immunizationsListGrid.getRowIndex(rowId),true);
-			switch (cellIndex) {
-				case 0: // Reported NOT Administered
-					dojo.byId("immunizations-patientReported").disabled = false;
-					immunizationsListGrid.cells(rowId,6).setValue(1);
-					immunizationsListGrid.cells(rowId,cellIndex).cell.innerHTML = "";
-					break;
-				case 3: // Contra.
-					dojo.byId("immunizations-repeatContra").disabled = false;
-					dojo.byId("immunizations-repeatContra").checked = state;
-					break;
-			}
+var immunizationsSectionNameListGrid = new dhtmlXGridObject("immunizationsSectionNameListContainer");
+immunizationsSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+immunizationsSectionNameListGrid.setHeader(",,");
+immunizationsSectionNameListGrid.setNoHeader(true);
+immunizationsSectionNameListGrid.setInitWidths("20,*,120");
+immunizationsSectionNameListGrid.setColTypes("ch,ro,ro");
+immunizationsSectionNameListGrid.setColAlign("right,left,left");
+immunizationsSectionNameListGrid.setSkin("xp");
+immunizationsSectionNameListGrid.init();
+immunizationsSectionNameListGrid.attachEvent("onCheck",immunizationsSectionNameOnChecked);
+immunizationsSectionNameListGrid.attachEvent("onRowSelect",immunizationsSectionNameListOnRowSelected);
+function immunizationsSectionNameListOnRowSelected(rowId,cellIndex) {
+	var id = rowId.split("_");
+}
+
+function immunizationsSectionNameOnChecked(rowId,cellIndex,state) {
+	immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(true);
+	immunizationsSectionNameListGrid.selectRow(immunizationsSectionNameListGrid.getRowIndex(rowId),true);
+	if (immunizationsSectionNameListGrid.getSelectedRowId() != rowId) {
+	}
+	if (state) { // add to immunizations list
+		today = new Date();
+		immunizationsListGrid.addRow(rowId,today.getFullYear() +"-" + (today.getMonth()+1)+ "-" + today.getDate() + ",,,,,,,,");
+		immunizationsListGrid.cells(rowId,indexPIMImmunization).setValue(immunizationsSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+		immunizationSave(rowId);
+	}
+	else { // remove from immunizations list
+		immunizationRemove(rowId);
+	}
+}
+
+var immunizationsListGrid = new dhtmlXGridObject("immunizationsListContainer");
+immunizationsListGrid.setImagePath("<?=$this->baseUrl?>/img/");
+immunizationsListGrid.setHeader("<?=__('Date')?>,<?=__('Lot')?>,<?=__('Route')?>,<?=__('Site')?>,<?=__('Series')?>,<?=__('Reaction')?>,<?=__('Selected Immunizations')?>,<?=__('PR')?>,<?=__('Comment')?>");
+// defined the index for easy re-indexing in the future
+var indexPIMDate = 0;
+var indexPIMLot = 1;
+var indexPIMRoute = 2;
+var indexPIMSite = 3;
+var indexPIMSeries = 4;
+var indexPIMReaction = 5;
+var indexPIMImmunization = 6;
+var indexPIMPR = 7;
+var indexPIMComment = 8;
+
+immunizationsListGrid.setInitWidths("75,45,80,60,80,85,*,25,0");
+immunizationsListGrid.setColTypes("ed,ed,coro,coro,coro,coro,ro,ch,ro");
+immunizationsListGrid.setColAlign("right,left,left,left,left,left,left,center");
+immunizationsListGrid.setSkin("xp");
+immunizationsListGrid.attachEvent("onEditCell",immunizationsListGridOnEditCell);
+immunizationsListGrid.attachEvent("onCheck",immunizationsListGridOnChecked);
+immunizationsListGrid.attachEvent("onRowSelect",immunizationsListGridOnRowSelected);
+
+var immunizationsListMenu = new dhtmlXMenuObject(null,"standard");
+immunizationsListMenu.setImagePath("<?=$this->baseUrl?>/img/");
+immunizationsListMenu.renderAsContextMenu();
+immunizationsListMenu.setOpenMode("web");
+immunizationsListMenu.loadXML("<?=$this->baseUrl?>/immunizations.raw/immunization-context-menu");
+immunizationsListMenu.attachEvent("onClick",immunizationsListMenuOnClicked);
+function immunizationsListMenuOnClicked(id) {
+	switch (id) {
+		case "remove":
+			immunizationRemove();
+			break;
+	}
+}
+immunizationsListGrid.enableContextMenu(immunizationsListMenu);
+dhtmlxEvent(immunizationsListGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+immunizationsListGrid.getCombo(indexPIMRoute).put("","");
+<?foreach ($this->routes as $key=>$value):?>
+immunizationsListGrid.getCombo(indexPIMRoute).put("<?=$key?>","<?=$value?>");
+<?endforeach;?>
+
+immunizationsListGrid.getCombo(indexPIMSite).put("","");
+<?foreach ($this->sites as $key=>$value):?>
+immunizationsListGrid.getCombo(indexPIMSite).put("<?=$key?>","<?=$value?>");
+<?endforeach;?>
+
+immunizationsListGrid.getCombo(indexPIMSeries).put("","");
+<?foreach ($this->series as $key=>$value):?>
+immunizationsListGrid.getCombo(indexPIMSeries).put("<?=$key?>","<?=$value?>");
+<?endforeach;?>
+
+immunizationsListGrid.getCombo(indexPIMReaction).put("","");
+<?foreach ($this->reactions as $key=>$value):?>
+immunizationsListGrid.getCombo(indexPIMReaction).put("<?=$key?>","<?=$value?>");
+<?endforeach;?>
+
+immunizationsListGrid.init();
+function immunizationsListGridReload() {
+	immunizationsListGrid.clearAll();
+	immunizationsListGrid.load("<?=$this->baseUrl?>/immunizations.raw/list-patient-immunizations.json?patientId="+mainController.getActivePatient(),immunizationsOnLoaded,"json");
+}
+immunizationsListGridReload();
+
+function immunizationsListGridOnRowSelected(rowId,cellIndex) {
+}
+
+function immunizationsListGridOnChecked(rowId,cellIndex,state) {
+	immunizationsListGridOnEditCell(2,rowId,cellIndex,state,!state);
+}
+
+function immunizationsListGridOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		switch (cellIndex) {
+			case indexPIMDate:
+			case indexPIMLot:
+			case indexPIMRoute:
+			case indexPIMSite:
+			case indexPIMSeries:
+			case indexPIMReaction:
+			case indexPIMImmunization:
+			case indexPIMPR:
+			case indexPIMComment:
+				immunizationSave(rowId);
+				break;
 		}
-		immunizationsListGrid.attachEvent("onCheck",immunizationsOnChecked);
+	}
+	return true;
+}
 
-		function disableImmunizationsListControl(disabled) {
-			dojo.byId("immunizations-reaction").disabled = disabled;
-			dojo.byId("immunizations-repeatContra").disabled = disabled;
-			dojo.byId("immunizations-patientReported").disabled = disabled;
-			dojo.byId("immunizationsRemoveSelected").disabled = disabled;
-			dojo.byId("immunizations-comments").disabled = disabled;
-		}
-
-		function immunizationsOnRowSelected(rowId,cellIndex) {
-			disableImmunizationsListControl(false);
-			dojo.byId("immunizations-patientReported").disabled = true;
-			dojo.byId("immunizations-comments").value = immunizationsListGrid.cells(rowId,5).getValue();
-			dojo.byId("immunizations-repeatContra").checked = immunizationsListGrid.cells(rowId,3).isChecked();
-
-			if (immunizationsListGrid.cells(rowId,0).cell.innerHTML == "") {
-				dojo.byId("immunizations-patientReported").disabled = false;
-				var isPatientReported = false;
-				if (immunizationsListGrid.cells(rowId,7).getValue() == '1') {
-					isPatientReported = true;
-				}
-				dojo.byId("immunizations-patientReported").checked = isPatientReported;
-			}
-		}
-		immunizationsListGrid.attachEvent("onRowSelect",immunizationsOnRowSelected);
-
-		function immunizationsRemoveSelected(rowId) {
-			if (!rowId) {
-				rowId = immunizationsListGrid.getSelectedRowId();
-			}
-			if (rowId == null) {
-				return;
-			}
-			immunizationsListGrid.deleteRow(rowId);
-			if (immunizationsSectionNameListGrid.doesRowExist(rowId)) {
+function immunizationRemove(rowId) {
+	if (rowId == undefined) {
+		rowId = immunizationsListGrid.getSelectedRowId();
+	}
+	if (rowId == null) {
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/immunizations.raw/process-delete-immunization",
+		handleAs: "json",
+		content: {
+			"code": rowId,
+		},
+		load: function (data) {
+			immunizationsListGridReload();
+			if (immunizationsSectionNameListGrid.doesRowExist(rowId)){
 				immunizationsSectionNameListGrid.cells(rowId,0).setChecked(false);
 				immunizationsSectionNameListGrid.cells(rowId,0).setDisabled(false);
 			}
-			disableImmunizationsListControl(true);
+		},
+		error: function (error) {
+			alert(error);
+			console.error ("Error: ", error);
 		}
+	});
+}
 
-		function patientReported(mode) {
-			var rowId = immunizationsListGrid.getSelectedRowId();
-			if (rowId == null) {
-				return;
-			}
-			var selectedImmunization = immunizationsListGrid.cells(rowId,4).getValue();
-			var appendedText = " (Pat. Reported)";
-			if (mode) {
-				selectedImmunization += appendedText;
-				immunizationsListGrid.cells(rowId,4).setValue(selectedImmunization);
-			}
-			else {
-				var siLen = selectedImmunization.length;
-				var atLen = appendedText.length;
-				var start = siLen - atLen;
-				if (start >= 0 && selectedImmunization.substr(start,atLen) == appendedText) {
-					var str = selectedImmunization.substr(0,start);
-					immunizationsListGrid.cells(rowId,4).setValue(str);
-				}
-			}
-			var val = 0;
-			if (mode) {
-				val = 1;
-			}
-			immunizationsListGrid.cells(rowId,7).setValue(val);
+function immunizationSave(rowId) {
+	if (rowId == undefined) {
+		rowId = immunizationsListGrid.getSelectedRowId();
+	}
+	if (rowId == null) {
+		return;
+	}
+	var arrImmunizations = [];
+	arrImmunizations.push("'immunizations[code]': '"+rowId+"'");
+	arrImmunizations.push("'immunizations[patientId]': '"+mainController.getActivePatient()+"'");
+	arrImmunizations.push("'immunizations[dateAdministered]': '"+immunizationsListGrid.cells(rowId,indexPIMDate).getValue()+"'");
+	arrImmunizations.push("'immunizations[lot]': '"+immunizationsListGrid.cells(rowId,indexPIMLot).getValue()+"'");
+	arrImmunizations.push("'immunizations[route]': '"+immunizationsListGrid.cells(rowId,indexPIMRoute).getValue()+"'");
+	arrImmunizations.push("'immunizations[site]': '"+immunizationsListGrid.cells(rowId,indexPIMSite).getValue()+"'");
+	arrImmunizations.push("'immunizations[series]': '"+immunizationsListGrid.cells(rowId,indexPIMSeries).getValue()+"'");
+	arrImmunizations.push("'immunizations[reaction]': '"+immunizationsListGrid.cells(rowId,indexPIMReaction).getValue()+"'");
+	arrImmunizations.push("'immunizations[immunization]': '"+immunizationsListGrid.cells(rowId,indexPIMImmunization).getValue().replace(/\n/g," ")+"'");
+	arrImmunizations.push("'immunizations[patientReported]': '"+immunizationsListGrid.cells(rowId,indexPIMPR).getValue()+"'");
+	arrImmunizations.push("'immunizations[comment]': '"+immunizationsListGrid.cells(rowId,indexPIMComment).getValue()+"'");
+
+	eval("var immunizationContent = {"+arrImmunizations.join(",")+"}");
+
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/immunizations.raw/process-edit-immunization",
+		handleAs: "json",
+		content: immunizationContent,
+		load: function (data) {
+			immunizationsListGridReload();
+		},
+		error: function (error) {
+			alert(error);
+			console.error ("Error: ", error);
 		}
+	});
 
-		function immunizationsUpdateComment(comment) {
-			var rowId = immunizationsListGrid.getSelectedRowId();
-			if (rowId == null) {
-				return;
-			}
-			immunizationsListGrid.cells(rowId,5).setValue(comment);
+}
+
+function immunizationsOnLoaded() {
+}
+
+function immunizationsOnChecked(rowId,cellIndex,state) {
+	immunizationsListGrid.selectRow(immunizationsListGrid.getRowIndex(rowId),true);
+}
+immunizationsListGrid.attachEvent("onCheck",immunizationsOnChecked);
+
+function immunizationsOnRowSelected(rowId,cellIndex) {
+	if (immunizationsListGrid.cells(rowId,0).cell.innerHTML == "") {
+		var isPatientReported = false;
+		if (immunizationsListGrid.cells(rowId,7).getValue() == '1') {
+			isPatientReported = true;
 		}
-
-		function repeatContraindicated(mode) {
-			var rowId = immunizationsListGrid.getSelectedRowId();
-			if (rowId == null) {
-				return;
-			}
-			immunizationsListGrid.cells(rowId,3).setChecked(mode);
-		}
-
-		function immunizationsChange(selectBox,cellIndex) {
-			var rowId = immunizationsListGrid.getSelectedRowId();
-			if (rowId == null) {
-				return;
-			}
-			var val = selectBox.options[selectBox.selectedIndex].text;
-			immunizationsListGrid.cells(rowId,cellIndex).setValue(val);
-		}
-
-		function saveImmunizations() {
-			var arrImmunizations = new Array();
-			arrImmunizations.push("'patientId': '"+mainController.getActivePatient()+"'");
-			if (immunizationsListGrid.getRowsNum() > 0) {
-				immunizationsListGrid.forEachRow(function(rowId) {
-						arrImmunizations.push("'immunizations["+rowId+"][series]': '"+immunizationsListGrid.cells(rowId,1).getValue()+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][reaction]': '"+immunizationsListGrid.cells(rowId,2).getValue()+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][repeatContraindicated]': '"+immunizationsListGrid.cells(rowId,3).getValue()+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][immunization]': '"+immunizationsListGrid.cells(rowId,4).getValue().replace(/\n/g," ")+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][comment]': '"+immunizationsListGrid.cells(rowId,5).getValue()+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][reportedNotAdministered]': '"+immunizationsListGrid.cells(rowId,6).getValue()+"'");
-						arrImmunizations.push("'immunizations["+rowId+"][patientReported]': '"+immunizationsListGrid.cells(rowId,7).getValue()+"'");
-					});
-			}
-
-			eval("var immunizationContent = {"+arrImmunizations.join(',')+"}");
-
-			dojo.xhrPost({
-				url: "<?=$this->baseUrl?>/immunizations.raw/process-patient-immunization",
-				handleAs: "json",
-				content: immunizationContent,
-				load: function (data) {
-					alert(data.msg);
-				},
-				error: function (error) {
-					alert(error);
-					console.error ('Error: ', error);
-				}
-			});
-
-		}
-		</script>
-		<div id="immunizationsRightContainer" style="float:left;margin:10px;">
-			<dt><label for="immunizations-series"><?=__("Series")?></label></dt>
-			<select id="immunizations-series" name="immunizations[series]" onchange="immunizationsChange(this,1)" disabled="disabled"><option value="0">(None selected)</option></select>
-			<dt><label for="immunizations-reaction"><?=__("Reaction")?></label></dt>
-			<select id="immunizations-reaction" name="immunizations[reaction]" onchange="immunizationsChange(this,2)" disabled="disabled">
-				<option value="0">(None selected)</option>
-				<?foreach ($this->reactions as $reaction):?>
-				<option value="<?=$reaction->enumerationId?>"><?=$reaction->name?></option>
-				<?endforeach;?>
-			</select>
-			<br /><input type="checkbox" id="immunizations-repeatContra" name="immunizations[repeatContra]" onclick="repeatContraindicated(this.checked)" disabled="disabled" /><?=__('Repeat Contraindicated')?>
-			<br /><input type="checkbox" id="immunizations-patientReported" name="immunizations[patientReported]" onclick="patientReported(this.checked)" disabled="disabled" /><?=__('Patient Reported')?>
-			<br /><input type="button" id="immunizationsRemoveSelected" value="Remove" onclick="immunizationsRemoveSelected()" disabled="disabled" />
-		</div>
-		<div style="float:left;width:100%;">
-		<br />
-		<?=__("Comments")?>: <input type="text" name="immunizations[comments]" id="immunizations-comments" onchange="immunizationsUpdateComment(this.value)" style="width:70%" disabled="disabled" />
-		</div>
-	</div>
-	<br style="clear:left"/>
-	<br style="clear:left"/>
-	<div class="formRow">
-		<input type="button" onclick="saveImmunizations()" value="<?=__('Save')?>" />
-		<input type="button" onclick="dhxWins.window('windowSelectVisitId').close()" value="<?=__('Cancel')?>" />
-	</div>
-</div>
+	}
+}
+immunizationsListGrid.attachEvent("onRowSelect",immunizationsOnRowSelected);
+</script>

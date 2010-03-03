@@ -37,6 +37,7 @@ class Models_VisitTest extends Models_TableModels {
 				      'patient_id'=>1234,
 				      'building_id'=>5678,);
 	protected $_assertMatches = array('patient_id'=>1234);
+	protected $_assertTableName = 'encounter'; // value MUST be the same as $_table
 
 }
 

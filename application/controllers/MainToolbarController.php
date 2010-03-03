@@ -71,7 +71,7 @@ class MainToolbarController extends WebVista_Controller_Action {
 		$this->view->patient = $this->_patient;
 
 		$mostRecentRaw = $memcache->get('mostRecent');
-		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$currentUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$personId = $patient->personId;
 		$teamId = $patient->teamId;
 		if ($mostRecentRaw === false) {
@@ -114,13 +114,29 @@ class MainToolbarController extends WebVista_Controller_Action {
 		}
 
 		// POSTINGS
-		$postings = array();
+		$allergies = array();
 		$patientAllergy = new PatientAllergy();
 		$patientAllergyIterator = $patientAllergy->getIteratorByPatient($personId);
 		foreach ($patientAllergyIterator as $allergy) {
-			$postings[] = $allergy->toArray();
+			if ($allergy->noKnownAllergies) {
+				continue;
+			}
+			$allergies[] = $allergy->toArray();
 		}
-		$this->view->postings = $postings;
+		$this->view->allergies = $allergies;
+
+		$notes = array();
+		$patientNote = new PatientNote();
+		$patientNoteIterator = $patientNote->getIterator();
+		$filters = array();
+		$filters['patient_id'] = $personId;
+		$filters['active'] = 1;
+		$filters['posting'] = 1;
+		$patientNoteIterator->setFilters($filters);
+		foreach ($patientNoteIterator as $note) {
+			$notes[] = $note->toArray();
+		}
+		$this->view->notes = $notes;
 
 		//REMINDERS
 		$ctr = 0;

@@ -37,6 +37,7 @@ class PatientAllergy extends WebVista_Model_ORM {
 	protected $comments;
 	protected $noKnownAllergies;
 	protected $enteredInError;
+	protected $drugAllergy;
 
 	protected $_primaryKeys = array('patientAllergyId');
 	protected $_table = 'patientAllergies';
@@ -49,17 +50,15 @@ class PatientAllergy extends WebVista_Model_ORM {
 		if ($patientId === null) {
 			$patientId = $this->patientId;
 		}
-		$db = Zend_Registry::get("dbAdapter");
-		$sqlSelect = $db->select()
-				->from($this->_table)
-				->where('patientId = ?',(int)$patientId)
-				->where('enteredInError = ?',(int)$enteredInError)
-				->order('dateTimeCreated DESC');
-
+		$filters = array();
+		$filters['patientId'] = (int)$patientId;
+		$filters['enteredInError'] = (int)$enteredInError;
 		if ($noKnownAllergies !== null) {
-			$sqlSelect->where('noKnownAllergies = ?',(int)$noKnownAllergies);
+			$filters['patientId'] = (int)$noKnownAllergies;
 		}
-		return $this->getIterator($sqlSelect);
+		$iterator = new PatientAllergyIterator();
+		$iterator->setFilters($filters);
+		return $iterator;
 	}
 
 }

@@ -67,6 +67,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 				      'urgency'=>'Test Urgency',
 				      'status'=>1,);
 	protected $_assertMatches = array('message'=>'Test Message');
+	protected $_assertTableName = 'generalAlerts'; // value MUST be the same as $_table
 
 	public function testUserLoggedOut() {
 		$this->_objects = GeneralAlertHandler::generateUserLoggedOut();
@@ -80,7 +81,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$audit->objectId = 0;
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->type = WebVista_Model_ORM::REPLACE;
-		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$audit->persist();
 		$objects['audit'] = $audit;
 
@@ -89,7 +90,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$clinicalNote->visitId = 100;
 		$clinicalNote->clinicalNoteDefinitionId = 19;
 		$clinicalNote->dateTime = date('Y-m-d H:i:s');
-		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$clinicalNote->persist();
 		$objects['clinicalNote'] = $clinicalNote;
 
@@ -99,7 +100,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 
 		$eSign->dateTime = date('Y-m-d H:i:s');
 		$eSign->signedDateTime = '0000-00-00 00:00:00';
-		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$eSign->objectId = $clinicalNote->clinicalNoteId;
 		$eSign->objectClass = get_class($clinicalNote);
 		$eSign->summary = ' **Unsigned**';
@@ -136,7 +137,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$clinicalNote->visitId = 100;
 		$clinicalNote->clinicalNoteDefinitionId = 19;
 		$clinicalNote->dateTime = date('Y-m-d H:i:s');
-		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$clinicalNote->persist();
 		$objects['clinicalNote'] = $clinicalNote;
 
@@ -146,7 +147,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 
 		$eSign->dateTime = date('Y-m-d H:i:s');
 		$eSign->signedDateTime = date('Y-m-d H:i:s');
-		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$eSign->objectId = $clinicalNote->clinicalNoteId;
 		$eSign->objectClass = get_class($clinicalNote);
 		$eSign->summary = ' **Unsigned**';
@@ -192,7 +193,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 
 		$eSign->dateTime = date('Y-m-d H:i:s');
 		$eSign->signedDateTime = '0000-00-00 00:00:00';
-		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->userId;
+		$eSign->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$eSign->objectId = $clinicalNote->clinicalNoteId;
 		$eSign->objectClass = get_class($clinicalNote);
 		$eSign->summary = ' **Unsigned**';
