@@ -91,11 +91,11 @@ class AlterTable {
 
 	public function executeSqlChanges() {
 		$dbParams = Zend_Registry::get('config')->database->params;
-		$cmd = 'mysql -f -u '.$dbParams->username;
+		$cmd = 'mysql -f --user='.$dbParams->username;
 		if (strlen($dbParams->password) > 0) {
-			$cmd .= ' -p '.$dbParams->password;
+			$cmd .= ' --password='.$dbParams->password;
 		}
-		$cmd .= ' '.$dbParams->dbname.' < '.$this->_sqlFile;
+		$cmd .= ' --database='.$dbParams->dbname.' < '.$this->_sqlFile;
 		trigger_error('Executing command: '.$cmd,E_USER_NOTICE);
 		return exec($cmd);
 	}
