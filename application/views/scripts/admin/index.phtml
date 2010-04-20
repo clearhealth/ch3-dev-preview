@@ -28,8 +28,10 @@
 			sysObjectsTree.insertNewChild(0,11,'Persons/Users');
 			sysObjectsTree.insertNewChild(0,12,"<?=__('Pharmacy')?>");
 			sysObjectsTree.insertNewChild(0,13,'Prescriptions');
+			sysObjectsTree.insertNewChild(0,22,"<?=__('Reports Manager')?>");
 			sysObjectsTree.insertNewChild(0,14,'Services');
 			sysObjectsTree.insertNewChild(0,15,"<?=__('Update Manager')?>");
+			
 			sysObjectsTree.closeAllItems();
 
                         /*adminAccordion.addItem("healthcloud","HealthCloud");
@@ -91,6 +93,9 @@ function onSystemObjectsTreeItemSelect(itemId) {
 			break;
 		case 15: // Update Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/update-manager.raw');
+			break;
+		case 22: // Reports Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/reports-manager.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');

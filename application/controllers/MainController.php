@@ -79,6 +79,8 @@ class MainController extends WebVista_Controller_Action {
 //        $mainTabs['Order']['hrefMode'] =  'ajax-html';
 //        $mainTabs['Billing']['url']   = '/index.php/minimal/claim/list';
 //        $mainTabs['Billing']['hrefMode'] =  'iframe';
+        $mainTabs['Reports']['url']   = $this->view->baseUrl.'/reports.raw';
+        $mainTabs['Reports']['hrefMode'] =  'ajax-html';
         $mainTabs['Admin']['url']   = $this->view->baseUrl.'/admin.raw';
         $mainTabs['Admin']['hrefMode'] =  'ajax-html';
 //        $mainTabs['Messaging']['url']   = $this->view->baseUrl.'/messaging.raw';

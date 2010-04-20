@@ -23,18 +23,47 @@
 
 
 class ReportQuery extends WebVista_Model_ORM {
+
 	protected $reportQueryId;
-	protected $systemName;
-	protected $uuid;
+	protected $reportBaseId;
+	protected $reportBase;
+	protected $type; // SQL or NSDR
+	protected $displayName;
 	protected $query;
-	protected $filters = array();
+
 	protected $_filters = array();
+
 	protected $_primaryKeys = array('reportQueryId');
-	protected $_table = "reportQueries";
+	protected $_table = 'reportQueries';
 	protected $_data = array();
-	
-	function __construct() {
+
+	const TYPE_SQL = 'SQL';
+	const TYPE_NSDR = 'NSDR';
+
+	public function __construct() {
 		parent::__construct();
+		$this->reportBase = new ReportBase();
+		$this->reportBase->_cascadePersist = false;
+	}
+
+	public function setReportBaseId($id) {
+		$this->reportBaseId = (int)$id;
+		$this->reportBase->reportBaseId = $this->reportBaseId;
+	}
+
+	public function getIteratorByBaseId($baseId = null,$type = null) {
+		if ($baseId === null) {
+			$baseId = (int)$this->reportBaseId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('reportBaseId = ?',(int)$baseId)
+				->order('displayName ASC');
+		if ($type !== null) {
+			$sqlSelect->where('type = ?',$type);
+		}
+		return $this->getIterator($sqlSelect);
 	}
 
 	function execute() {
