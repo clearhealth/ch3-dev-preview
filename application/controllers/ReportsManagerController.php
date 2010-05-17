@@ -89,18 +89,11 @@ class ReportsManagerController extends WebVista_Controller_Action {
 
 	protected function _processEditBase($params) {
 		$isAdd = ($params['reportBaseId'] > 0)?false:true;
-		if (isset($params['filters'])) {
-			$filters = array();
-			foreach ($params['filters'] as $filter) {
-				$oFilter = new StdClass();
-				$oFilter->name = $filter['name'];
-				$oFilter->type = $filter['type'];
-				$oFilter->quotes = $filter['quotes'];
-				$filters[] = $oFilter;
-			}
-			$params['filters'] = serialize($filters);
-		}
 		$reportBase = new ReportBase();
+		if (!$isAdd) {
+			$reportBase->reportBaseId = $params['reportBaseId'];
+			$reportBase->populate();
+		}
 		$reportBase->populateWithArray($params);
 		$reportBase->persist();
 
@@ -193,6 +186,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$filterData = array(
 			'id'=>'',
 			'name'=>'',
+			'defaultValue'=>'',
 			'type'=>'',
 			'options'=>array(),
 			'enumName'=>array('id'=>'','value'=>''),
@@ -202,6 +196,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 			$filterData = array(
 				'id'=>$filter->id,
 				'name'=>$filter->name,
+				'defaultValue'=>$filter->defaultValue,
 				'type'=>$filter->type,
 				'options'=>$filter->options,
 				'enumName'=>$filter->enumName,
@@ -258,6 +253,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$oFilter = new StdClass();
 		$oFilter->id = $params['id'];
 		$oFilter->name = $params['name'];
+		$oFilter->defaultValue = $params['defaultValue'];
 		$oFilter->type = $params['type'];
 		$oFilter->options = $params['options'];
 		$oFilter->enumName = $params['enumName'];
@@ -270,6 +266,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$data['id'] = $oFilter->id;
 		$data['data'] = array();
 		$data['data'][] = $oFilter->name;
+		$data['data'][] = $oFilter->defaultValue;
 		$data['data'][] = $oFilter->type;
 		$data['data'][] = $this->_formatOptions($oFilter->options);
 
@@ -574,6 +571,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 				$row['id'] = $filter->id;
 				$row['data'] = array();
 				$row['data'][] = $filter->name;
+				$row['data'][] = $filter->defaultValue;
 				$row['data'][] = $filter->type;
 				$row['data'][] = $this->_formatOptions($filter->options);
 				$rows[] = $row;

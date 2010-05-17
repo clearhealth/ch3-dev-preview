@@ -66,6 +66,17 @@ class ReportBase extends WebVista_Model_ORM {
 	public function persist() {
 		$db = Zend_Registry::get('dbAdapter');
 		$reportBaseId = (int)$this->reportBaseId;
+		if ($this->_persistMode == self::DELETE) {
+			try {
+				$db->delete($this->_table,'reportBaseId = '.$reportBaseId);
+				$db->delete('reportQueries','reportBaseId = '.$reportBaseId);
+				$db->delete('reportViews','reportBaseId = '.$reportBaseId);
+				return true;
+			}
+			catch (Exception $e) {
+				return false;
+			}
+		}
 		$data = $this->toArray();
 		unset($data['reportFilters']);
 		unset($data['reportQueries']);
@@ -196,7 +207,11 @@ class ReportBase extends WebVista_Model_ORM {
 								foreach ($columnInfo as $index=>$mapping) {
 									$tmp[$mapping->displayName] = $this->_applyTransforms($mapping->transforms,$fetchRow[$index]);
 								}
-								$results[] = $tmp;
+								$tmpResult = array();
+								foreach ($columnDefinitions as $id=>$mapping) { // id, queryId, queryName, resultSetName, displayName, transform
+									$tmpResult[$mapping->displayName] = $tmp[$mapping->displayName];
+								}
+								$results[] = $tmpResult;
 							}
 						}
 						else {
@@ -362,6 +377,9 @@ class ReportBase extends WebVista_Model_ORM {
 							break;
 						}
 					}
+					break;
+				case 'dateFormat':
+					$ret = date($options['format'],strtotime($ret));
 					break;
 				case 'total':
 					break;

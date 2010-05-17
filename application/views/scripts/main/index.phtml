@@ -47,6 +47,9 @@
 			case "All_schedule_manager":
 				globalCreateWindow("windowScheduleManagerId",[],"<?=$this->baseUrl?>/schedule-manager.raw","<?=__('Manage Schedules')?>",800,600);
 				break;
+			case "All_my_preferences":
+				globalCreateWindow("winMyPreferencesId",[],"<?=$this->baseUrl?>/users.raw/preferences","<?=__('My Preferences')?>",400,400);
+				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
                                 break;
@@ -233,7 +236,7 @@ function openPostings() {
 <input type="button" id="processStopId" onclick="processStop()" value="<?=__('Stop')?>" />
 </div>
 
-<div id="mainToolbar" style="width:99.9%;" ></div>
+<div id="mainToolbar" style="width:99.9%;height:65px;"></div>
 <script>
         function initMainToolbar(loadAction,personId) {
 		jsMainToolbar=new dhtmlXToolbarObject('mainToolbar','ClearSilver');
@@ -331,6 +334,20 @@ function mainTabbarClick(id) {
 	mainTabbar.setOnSelectHandler(mainTabbarClick);
 	mainTabbar.setTabActive('tab_<?=$this->activeTab?>');
 
+
+function dhtmlxCatchError(type,desc,erData) {
+	var xmlHttp = erData[0];
+	var responseText = xmlHttp.responseText;
+	var accessDenied = "<?=__('Access denied')?>";
+	if (responseText.indexOf(accessDenied) != -1) {
+		alert(accessDenied);
+	}
+	else {
+		alert(type+": "+desc);
+	}
+	return false;
+}
+dhtmlxError.catchError("ALL",dhtmlxCatchError);
 
     </script>
 </div>

@@ -473,6 +473,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxprotobar';
 		$files['dhtmlxjs'][] = 'dhtmlxmenubar';
 		$files['dhtmlxjs'][] = 'dhtmlxtoolbar';
+		$files['dhtmlxjs'][] = 'ch3toolbar_type';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid';
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
 		$files['dhtmlxjs'][] = 'ch3grid_excell_sub_row';

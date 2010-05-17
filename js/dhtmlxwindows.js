@@ -31,7 +31,7 @@ function dhtmlXWindows() {
 	var that = this;
 	// image manipulation
 	this.pathPrefix = "dhxwins_";
-	this.imagePath = "codebase/imgs/";
+	this.imagePath = globalBaseUrl+"/img/";
 	/**
 	*   @desc: sets path to the directory where used images are located
 	*   @param: path - url to the directory where images are located

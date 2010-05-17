@@ -62,7 +62,7 @@ class Zend_View_Helper_FormDateText extends Zend_View_Helper_FormElement {
 			}
 		}
 		$disabled = ((bool)$disabled)?'true':'false';
-		$style = 'width:80px;';
+		$style = 'width:90px;';
 		if (isset($attribs['style'])) {
 			$style = $attribs['style'];
 		}

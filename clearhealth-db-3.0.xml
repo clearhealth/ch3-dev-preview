@@ -1335,7 +1335,8 @@
 		<field Field="objectClass" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
 		<field Field="name" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="value" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<field Field="value" Type="varchar(50000)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="revisionId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="genericData" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="genericDataId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="genericData" Non_unique="1" Key_name="objectId" Seq_in_index="1" Column_name="objectId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="genericData" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
@@ -2059,6 +2060,21 @@
 		<key Table="patientProcedures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientProcedures" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="patientStatistics">
+		<field Field="personId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<key Table="patientStatistics" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="personId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="patientStatistics" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-05-11 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="patientStatisticsDefinitions">
+		<field Field="patientStatisticsDefinitionId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="guid" Type="char(36)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="name" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="type" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="value" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="active" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="patientStatisticsDefinitions" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientStatisticsDefinitionId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="patientStatisticsDefinitions" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-05-11 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="patientVisitTypes">
 		<field Field="providerId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -2680,6 +2696,49 @@
 		<key Table="reports" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="reports" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="reportBase">
+		<field Field="reportBaseId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="guid" Type="varchar(36)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="displayName" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="systemName" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="filters" Type="longtext" Null="NO" Key="" Default="" Extra="" />
+		<key Table="reportBase" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="reportBaseId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="reportBase" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-03-13 14:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="reportBaseClosures">
+		<field Field="ancestor" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="descendant" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="depth" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="weight" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="reportBaseClosures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="ancestor" Collation="A" Cardinality="431" Null="" Index_type="BTREE" Comment="" />
+		<key Table="reportBaseClosures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="descendant" Collation="A" Cardinality="431" Null="" Index_type="BTREE" Comment="" />
+		<key Table="reportBaseClosures" Non_unique="1" Key_name="descendant" Seq_in_index="1" Column_name="descendant" Collation="A" Cardinality="431" Null="" Index_type="BTREE" Comment="" />
+		<options Name="reportBaseClosures" Engine="InnoDB" Version="10" Row_format="Compact" Rows="431" Avg_row_length="38" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2010-03-15 20:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="reportQueries">
+		<field Field="reportQueryId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="reportBaseId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="type" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="displayName" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="query" Type="longtext" Null="NO" Key="" Default="" Extra="" />
+		<key Table="reportQueries" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="reportQueryId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="reportQueries" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-03-13 14:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="reportViews">
+		<field Field="reportViewId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="reportBaseId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="displayName" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="systemName" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="columnDefinitions" Type="longtext" Null="NO" Key="" Default="" Extra="" />
+		<field Field="customizeColumnNames" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="runQueriesImmediately" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="active" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="viewOrder" Type="int(1)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="showResultsIn" Type="varchar(8)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="showResultsOptions" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<key Table="reportViews" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="reportViewId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="reportViews" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-03-13 14:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="revisions">
 		<field Field="revision_id" Type="int(10) unsigned" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="storable_id" Type="int(10) unsigned" Null="NO" Key="MUL" Default="" Extra="" />
@@ -3021,6 +3080,9 @@
 		<field Field="version" Type="varchar(16)" Null="NO" Key="" Extra="" />
 		<field Field="active" Type="tinyint(4)" Null="NO" Key="" Extra="" />
 		<field Field="description" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<field Field="channelId" Type="int(11)" Null="NO" Key="" Extra="" />
+		<field Field="channel" Type="varchar(255)" Null="NO" Key="" Extra="" />
+		<field Field="license" Type="text" Null="NO" Key="" Extra="" />
 		<key Table="updateFiles" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="updateFileId" Collation="A" Cardinality="7" Null="" Index_type="BTREE" Comment="" />
 		<options Name="updateFiles" Engine="InnoDB" Version="10" Row_format="Compact" Rows="7" Avg_row_length="2340" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-23 13:18:19" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 527360 kB" />
 	</table_structure>
@@ -3034,6 +3096,8 @@
 		<field Field="disabled" Type="enum('yes','no')" Null="NO" Key="" Default="" Extra="" />
 		<field Field="default_location_id" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />
 		<field Field="defaultBuildingId" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />
+		<field Field="permissionTemplateId" Type="varchar(32)" Null="NO" Key="MUL" Default="" Extra="" />
+		<field Field="preferences" Type="text" Null="NO" Key="MUL" Default="" Extra="" />
 		<key Table="user" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="user_id" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
 		<key Table="user" Non_unique="0" Key_name="username" Seq_in_index="1" Column_name="username" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
 		<key Table="user" Non_unique="1" Key_name="person_id" Seq_in_index="1" Column_name="person_id" Collation="A" Cardinality="1" Null="YES" Index_type="BTREE" Comment="" />

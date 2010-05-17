@@ -240,6 +240,7 @@ class ReportView extends WebVista_Model_ORM {
 		$types['regex'] = 'Regex';
 		$types['enumLookup'] = 'Enum Lookup';
 		$types['total'] = 'Total (SUM)';
+		$types['dateFormat'] = 'Date Format';
 		return $types;
 	}
 

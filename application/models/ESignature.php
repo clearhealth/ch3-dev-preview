@@ -105,4 +105,20 @@ class ESignature extends WebVista_Model_ORM {
 		if ($hash === $verifyHash)  return true;
 		throw new Exception('Document verification with signature failed.');
 	}
+
+	public static function retrieveSignatureId($objectClass,$objectId,$signed=true) {
+		$db = Zend_Registry::get('dbAdapter');
+		$esig = new self();
+		$sqlSelect = $db->select()
+				->from($esig->_table)
+				->where('objectClass = ?',$objectClass)
+				->where('objectId = ?',$objectId)
+				->limit(1);
+		if ($signed) {
+			$sqlSelect->where("signature != ''");
+		}
+		$esig->populateWithSql($sqlSelect->__toString());
+		return $esig->eSignatureId;
+	}
+
 }

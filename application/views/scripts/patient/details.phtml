@@ -54,7 +54,7 @@ function pdRemove(id,type,callback) {
 }
 </script>
 
-<div style="width:100%;">
+<div style="width:100%;" id="pdContainerId">
 	<div style="float:left;width:45%;">
 		<?=$this->form->renderOpen()?>
 		<fieldset><legend><?=__('Patient Information')?></legend>
@@ -389,7 +389,7 @@ function pdRemove(id,type,callback) {
 	<br style="clear:left;" />
 	<div style="float:left;width:100%;">
 		<fieldset><legend><?=__('Notes')?> (<a href="javascript:pdNotesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="pdNotesGridId" style="height:150px;"></div>
+			<div id="pdNotesGridId" style="height:100px;"></div>
 		</fieldset>
 		<script>
 		var pdNotesGrid = new dhtmlXGridObject("pdNotesGridId");
@@ -501,7 +501,7 @@ function pdRemove(id,type,callback) {
 	<br style="clear:left;" />
 	<div style="float:left;width:100%;">
 		<fieldset><legend><?=__('Insurers')?> (<a href="javascript:pdInsurersEdit()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="pdInsurersGridId" style="height:150px;"></div>
+			<div id="pdInsurersGridId" style="height:100px;"></div>
 		</fieldset>
 	</div>
 	<script>
@@ -565,4 +565,233 @@ function pdRemove(id,type,callback) {
 	});
 	</script>
 
+
+	<br style="clear:left;" />
+	<div style="float:left;width:100%;">
+		<fieldset><legend><?=__('Patient Statistics')?></legend>
+			<div id="pdStatsGridId" style="height:100px;"></div>
+			<div id="pdStatsContainerId" style="position:absolute;display:none;background-color:Silver;padding:3px;border:1px solid #000;width:200px;">
+				<div style="float:left;width:100%;background-color:#fff;">
+					<fieldset><legend><?=__('Edit Statistics')?></legend>
+					<div id="pdStatsPanelId"></div>
+					<br />
+					<?=$this->formButton('pdStatsOK',__('OK'),array('id'=>'pdStatsOK','class'=>'smallButton','disabled'=>true,'onClick'=>'pdStatsSave()'))?>
+					</fieldset>
+				</div>
+			</div>
+		</fieldset>
+	</div>
 </div>
+
+<script>
+var pdStatsGrid = new dhtmlXGridObject("pdStatsGridId");
+pdStatsGrid.setImagePath("<?=$this->baseUrl?>/img/");
+pdStatsGrid.setHeader("<?=__('Name')?>,<?=__('Value')?>");
+pdStatsGrid.setInitWidths("*,*");
+pdStatsGrid.setColTypes("ro,ro");
+pdStatsGrid.setSkin("xp");
+pdStatsGrid.init();
+function pdStatsGridReload() {
+	pdStatsGrid.clearAll();
+	pdStatsGrid.load("<?=$this->baseUrl?>/patient.raw/list-stats?personId=<?=$this->form->personId->getValue()?>",pdStatsGridOnLoaded,"json");
+}
+pdStatsGridReload();
+
+function pdStatsGridOnLoaded() {
+	pdStatsHidePanel();
+}
+
+function pdStatsEdit(name,value) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/patient.raw/process-edit-stats",
+		handleAs: "json",
+		content: {
+			"personId": "<?=$this->form->personId->getValue()?>",
+			"name": name,
+			"value": value,
+		},
+		load: function (data) {
+			if (!data) {
+				alert("<?=__('Failed to save')?>");
+			}
+			else {
+				pdStatsGridReload();
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error ("Error: ",error);
+		}
+	});
+}
+function pdStatsGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		switch (cellIndex) {
+			case 1:
+				pdStatsEdit(rowId,newValue);
+				break;
+			default:
+				return false;
+		}
+	}
+	return true;
+}
+pdStatsGrid.attachEvent("onEditCell",pdStatsGridOnCellEdited);
+
+dhtmlxEvent(pdStatsGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+var globalPDStatsId = null;
+pdStatsGrid.attachEvent("onRowDblClicked",pdStatsGridOnRowDblClicked);
+function pdStatsGridOnRowDblClicked(rowId,cellIndex) {
+	var obj = pdStatsGrid.cells(rowId,1).cell;
+	var offsetLeft = 0;
+	var offsetTop = 0;
+	if (obj.offsetParent) {
+		var scrollDiff = 0;
+		var gridOffsetHeight = pdStatsGrid.entBox.offsetHeight - pdStatsGrid.hdr.offsetHeight;
+		if (obj.offsetTop > gridOffsetHeight) {
+			scrollDiff = obj.offsetTop - gridOffsetHeight + 100;
+		}
+		while (true) {
+			offsetLeft += obj.offsetLeft;
+			offsetTop += obj.offsetTop;
+			if (!obj.offsetParent) break;
+			obj = obj.offsetParent;
+		}
+		offsetTop -= scrollDiff;
+	}
+	else if (obj.x) {
+		offsetLeft += obj.x;
+		offsetTop += obj.y;
+	}
+	var win = dhxWins.window("<?=$this->form->getWindow()?>");
+	if (win) {
+		var pos = win.getPosition();
+		offsetLeft -= (pos[0] + 6); // left
+		offsetTop -= (pos[1] + 12); // top
+	}
+	offsetLeft -= 340;
+
+	var pdStatsContainer = dojo.byId("pdStatsContainerId");
+	pdStatsContainer.style.display = "";
+	pdStatsContainer.style.left = offsetLeft + "px";
+	pdStatsContainer.style.top = offsetTop + "px";
+
+	var statsValue = pdStatsGrid.cells(rowId,1).getValue();
+	var pdStatsOK = dojo.byId("pdStatsOK");
+	pdStatsOK.disabled = false;
+	var pdStatsPanel = dojo.byId("pdStatsPanelId");
+	pdStatsPanel.innerHTML = "";
+	var options = pdStatsGrid.getUserData(rowId,"options");
+	globalPDStatsId = rowId;
+	switch (pdStatsGrid.getUserData(rowId,"type")) {
+		case "<?=PatientStatisticsDefinition::TYPE_ENUM?>":
+			pdStatsPanel.innerHTML = (<r><![CDATA[
+				<select name="pdStatsTypeEnumId" id="pdStatsTypeEnumId"></select>
+			]]></r>).toString();
+			var enumSelect = dojo.byId("pdStatsTypeEnumId");
+			enumSelect.length = 0;
+			var ctr = 0;
+			var selectedIndex = 0;
+			for (var i in options) {
+				if (options[i].key == statsValue) {
+					selectedIndex = ctr;
+				}
+				enumSelect.options[ctr++] = new Option(options[i].value,options[i].key);
+			}
+			enumSelect.selectedIndex = selectedIndex;
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_INPUT?>":
+			pdStatsPanel.innerHTML = (<r><![CDATA[
+				<input type="text" name="pdStatsTypeInputId" id="pdStatsTypeInputId" />
+			]]></r>).toString();
+			dojo.byId("pdStatsTypeInputId").value = statsValue;
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_CHECKBOX?>":
+			pdStatsPanel.innerHTML = (<r><![CDATA[
+				<input type="checkbox" name="pdStatsTypeCheckboxId" id="pdStatsTypeCheckboxId" />
+			]]></r>).toString();
+			dojo.byId("pdStatsTypeCheckboxId").checked = (statsValue == "1")?true:false;
+			dojo.byId("pdStatsTypeCheckboxId").value = statsValue;
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_DATE?>":
+			pdStatsPanel.innerHTML = (<r><![CDATA[
+				<input type="text" name="pdStatsTypeDateId" id="pdStatsTypeDateId" />
+			]]></r>).toString();
+			pdStatsBuildDatePicker(statsValue);
+			break;
+		default:
+			pdStatsOK.disabled = true;
+			break;
+	}
+}
+
+var pdStatsTypeDate = null;
+function pdStatsBuildDatePicker(value) {
+	pdStatsTypeDate = dijit.byId("pdStatsTypeDateId");
+	if (typeof pdStatsTypeDate != "undefined") {
+		pdStatsTypeDate.destroyRecursive();
+		pdStatsTypeDate = null;
+	}
+	pdStatsTypeDate = new dijit.form.DateTextBox({name:"pdStatsTypeDateId",constraints:{datePattern:"yyyy-MM-dd"},disabled:false,style:"width:90px;"},dojo.byId("pdStatsTypeDateId"));
+	var datetmp = new Date();
+	if (value.length > 0 && value.substr(0,10) != "0000-00-00") {
+		var x = value.split("-");
+		datetmp.setFullYear(x[0],(x[1]-1),x[2].substr(0,2));
+	}
+	pdStatsTypeDate.setValue(datetmp);
+}
+
+function pdStatsDivOnClicked(evt) {
+	var target = evt.target;
+	var isOverlay = false;
+	var parentNode = target;
+	while (parentNode) {
+		if (parentNode.id == "pdStatsContainerId") {
+			isOverlay = true;
+			break;
+		}
+		parentNode = parentNode.parentNode;
+	}
+	if (!isOverlay) {
+		pdStatsHidePanel();
+	}
+}
+dojo.connect(dojo.byId("pdContainerId"),"onclick","pdStatsDivOnClicked");
+
+function pdStatsSave() {
+	if (globalPDStatsId == null) return;
+	var value = "";
+	switch (pdStatsGrid.getUserData(globalPDStatsId,"type")) {
+		case "<?=PatientStatisticsDefinition::TYPE_ENUM?>":
+			var enumSelect = dojo.byId("pdStatsTypeEnumId");
+			value = enumSelect.options[enumSelect.selectedIndex].value;
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_INPUT?>":
+			value = dojo.byId("pdStatsTypeInputId").value;
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_CHECKBOX?>":
+			value = 0;
+			if (dojo.byId("pdStatsTypeCheckboxId").checked) {
+				value = 1;
+			}
+			break;
+		case "<?=PatientStatisticsDefinition::TYPE_DATE?>":
+			var statsValue = pdStatsTypeDate.getValue();
+			value = statsValue.getFullYear()+"-"+(statsValue.getMonth()+1)+"-"+statsValue.getDate();
+			break;
+		default:
+			return;
+	}
+	pdStatsEdit(globalPDStatsId,value);
+}
+
+function pdStatsHidePanel() {
+	globalPDStatsId = null;
+	var pdStatsContainer = dojo.byId("pdStatsContainerId");
+	pdStatsContainer.style.display = "none";
+}
+</script>

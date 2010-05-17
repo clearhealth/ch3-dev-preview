@@ -120,4 +120,40 @@ class NSDRDefinition extends WebVista_Model_ORM {
 			$item->persist();
 		}
 	}
+
+	public function isNamespaceExists($namespace) {
+		$ok = false;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('namespace = ?',$namespace);
+		if ($rows = $db->fetchRow($sqlSelect)) {
+			$ok = true;
+		}
+		return $ok;
+	}
+
+	public function addNamespace($namespace,$ORMClass='',$aliasFor='',$recursive = true) {
+		if ($recursive) {
+			$x = explode('.',$namespace);
+			$ns = array();
+			foreach ($x as $n) {
+				$ns[] = $n;
+				$tmpNamespace = implode('.',$ns);
+				if ($this->isNamespaceExists($tmpNamespace)) {
+					continue;
+				}
+				$this->addNamespace($tmpNamespace,$ORMClass,$aliasFor,false);
+			}
+			return true;
+		}
+		$nsdrDefinition = new self();
+		$nsdrDefinition->namespace = $namespace;
+		$nsdrDefinition->aliasFor = $aliasFor;
+		$nsdrDefinition->ORMClass = $ORMClass;
+		$nsdrDefinition->uuid = NSDR::create_guid(); // random uuid
+		$nsdrDefinition->persist();
+		return true;
+	}
+
 }

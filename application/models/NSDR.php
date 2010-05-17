@@ -328,119 +328,43 @@ class NSDR {
 		return $ret;
 	}
 
-	public static function persist($request) {
-		$memcache = Zend_Registry::get('memcache');
-		if (!is_array($request)) {
-			$request = array($request);
-		}
-
-		$ret = array();
-		$nsdrBase = new NSDRBase();
-		foreach ($request as $index=>$data) {
-			// tokenize request
-			$tokens = explode('::',$index);
-			if (count($tokens) !== 2) {
-				// assign error and continue
-				$ret[$index] = __('Invalid key');
-				continue;
-			}
-			$context = $tokens[0];
-			$namespace = $tokens[1];
-			// use namespace as key
-			$key = $namespace . '[persist()]';
-			// check to see if key exists in memcache
-			$result = $memcache->get($key);
-			if ($result === false) { // key not found
-				$ret[$index] = array('error'=>__('key does not exists in memcached'));
-				continue;
-			}
-			if (!isset($nsdrBase->methods[$key])) {
-				$nsdrBase->methods[$key] = create_function('$tthis,$context,$values',$result);
-			}
-			try {
-				$return = $nsdrBase->methods[$key]($nsdrBase,$context,$data);
-				$memcache->set($index,$return);
-			}
-			catch (Exception $e) {
-				$return = array('error'=>$e->getMessage());
-			}
-			$ret[$index] = $return;
-		}
-		return $ret;
-	}
-
 	public static function systemStart() {
 		$memcache = Zend_Registry::get('memcache');
 		$memcache->set(self::$_statusKey,self::$_states[1]);
-		$tmpItems = array();
-		$tmpAliases = array();
-		// start/load NSDR definitions from data store to memcache
-		$nsdrDefinitionIterator = new NSDRDefinitionIterator();
-		foreach ($nsdrDefinitionIterator as $item) {
-			//trigger_error("NSDR item: " .  $item->namespace, E_USER_NOTICE);
-			// if aliasFor defined, then we need to get its actual methods
-			if (strlen($item->aliasFor) > 0) {
-				// remember the alias name
-				$tmpAliases[] = $item;
-				// skip and use this later
-				continue;
+
+		// By default all NSDR methods will return an empty/false value
+		$methods = array(
+			'persist' => 'return false;',
+			'populate' => 'return "";',
+			'aggregateDisplay' => 'return "";',
+			'aggregateDisplayByLine' => 'return "";',
+		);
+
+		$nsdrDefinition = new NSDRDefinition();
+		$nsdrDefinitionIterator = $nsdrDefinition->getIterator();
+		foreach ($nsdrDefinitionIterator as $row) {
+			$namespaceAlias = null;
+			$ORMClass = null;
+			if (strlen($row->aliasFor) > 0 && $row->isNamespaceExists($row->aliasFor)) { // Alias must check first, alias must be canonical
+				// temporary implemented this way, it can be changed later
+				$namespaceAlias = 'ALIAS:'.$row->aliasFor; // prefix with ALIAS
 			}
-			// hold all items/definitions in a variable to be used by alias in a temporary variable
-			// use the value of namespace as its key for easy retrieval
-			$tmpItems[$item->namespace] = $item;
-
-			if (self::hasORMClass($item)) {
-				$key = $item->namespace;
-				$memcache->set($key,$item->ORMClass);
-				// skip code below... just continue
-				continue;
+			else if (self::hasORMClass($row)) {
+				$ORMClass = 'ORMCLASS:'.$row->ORMClass; // prefix with ORMCLASS
 			}
-
-			// retrieve all the methods
-			$methods = $item->getMethods();
-			// save its methods, it might be reused in alias
-			$tmpItems[$item->namespace]->methods = array();
-			foreach ($methods as $method) {
-				$tmpItems[$item->namespace]->methods[] = $method;
-				// make sure methodName does not contain ()
-				$method->methodName = str_replace('()','',$method->methodName);
-				// key = uuid + namespace
-				//$key = $item->uuid . '::' . $item->namespace . "[{$method->methodName}()]";
-				// key = namespace + method
-				$key = $item->namespace . "[{$method->methodName}()]";
-				// save to memcache
-				//trigger_error($key,E_USER_WARNING);
-				$memcache->set($key,$method->method);
-			}
-
-		}
-		// get the actual value of the alias
-		foreach ($tmpAliases as $alias) {
-			// check if alias exists in temporary item lists
-			if (isset($tmpItems[$alias->aliasFor])) {
-				// get it an save to memcache
-				$item = $tmpItems[$alias->aliasFor];
-
-				// retrieve all the methods
-				$methods = $item->methods;
-				$hasMethods = false;
-				foreach ($methods as $method) {
-					// make sure methodName does not contain ()
-					$method->methodName = str_replace('()','',$method->methodName);
-					// key = uuid + namespace
-					//$key = $item->uuid . '::' . $item->namespace . "[{$method->methodName}()]";
-					// key = namespace + method
-					$key = $alias->namespace . "[{$method->methodName}()]";
-					// save to memcache
-					//trigger_error($key,E_USER_WARNING);
-					$memcache->set($key,$method->method);
-					$hasMethods = true;
+			foreach ($methods as $method=>$value) {
+				$keySuffix = '['.$method.'()]';
+				$key = $row->namespace.$keySuffix;
+				if ($namespaceAlias !== null) {
+					$value = $namespaceAlias.$keySuffix;
 				}
-				if (!$hasMethods) {
-					$memcache->set($alias->namespace,$item->ORMClass);
+				else if ($ORMClass !== null) {
+					$value = $ORMClass; // override $value
 				}
+				$memcache->set($key,$value);
 			}
 		}
+
 		$memcache->set(self::$_statusKey,self::$_states[0]);
 	}
 
@@ -448,8 +372,8 @@ class NSDR {
 		$ret = false;
 		$memcache = Zend_Registry::get('memcache');
 		$memcache->set(self::$_statusKey,self::$_states[3]);
-		$memcache->flush();
-		// TODO: reloads NSDR?
+		self::systemUnload();
+		self::systemStart();
 		$ret = true;
 		$memcache->set(self::$_statusKey,self::$_states[2]);
 		return $ret;
@@ -529,5 +453,6 @@ class NSDR {
 			return $uuid;
 		}
 	}
+
 }
 

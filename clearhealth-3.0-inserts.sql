@@ -1,4 +1,4 @@
-INSERT INTO `user` ( `user_id` , `username` , `password` , `nickname` , `color` , `person_id` , `disabled` , `default_location_id` ) VALUES ('1', 'admin', 'admin', 'adm', '', 0 , 'no', '0');
+INSERT INTO `user` ( `user_id` , `username` , `password` , `nickname` , `color` , `person_id` , `disabled` , `default_location_id` , `permissionTemplateId` ) VALUES ('1', 'admin', 'admin', 'adm', '', 1 , 'no', '0', 'superadmin');
 
 INSERT INTO `config` VALUES ('enableCache', '0');
 

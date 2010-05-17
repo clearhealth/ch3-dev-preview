@@ -42,17 +42,74 @@
 
 <script>
 
-function preSubmitcnTemplate() {
-	return true;
-}
-
-function postSubmitcnTemplate() {
-	// reload all template items
-	cnmTemplateGrid.clearAll();
-	cnmTemplateGrid.load('<?=$this->baseUrl?>/clinical-notes-manager.raw/templates.json',"json");
-	cnmDefinitionGrid.clearAll();
-	cnmToggleButtons(true);
-	dhxWins.window("windowEditTemplateId").close();
+function preSubmit<?=$this->form->getId()?>() {
+	dojo.xhrPost({
+		url: globalBaseUrl+"/clinical-notes-manager.raw/check-namespaces",
+		handleAs: "json",
+		form: "<?=$this->form->getId()?>",
+		load: function(data){
+			if (data.error) {
+				alert(data.error);
+				return;
+			}
+			var autoAdd = false;
+			if (data.namespaces && data.namespaces.length > 0) {
+				var label = "Namespace";
+				var isAre = "is";
+				if (data.namespaces.length > 1) {
+					label = "Namespaces";
+					isAre = "are";
+				}
+				var namespaces = [];
+				for (var i in data.namespaces) {
+					namespaces.push("'"+data.namespaces[i]+"'");
+				}
+				label += " "+namespaces.join(", ");
+				if (data.msg) {
+					label = data.msg+"\n\n"+label;
+				}
+				if (confirm(label+" "+isAre+" not currently defined, add and point to GenericData handler?")) {
+					autoAdd = true;
+				}
+				else {
+					return;
+				}
+			}
+			noteTemplatePostSubmit(autoAdd);
+		},
+		error: function (error) {
+			console.error ("Error: ",error);
+		}
+	});
 	return false;
 }
+function noteTemplatePostSubmit(autoAdd) {
+	dojo.xhrPost({
+		url: "<?=$this->form->getAction()?>",
+		handleAs: "json",
+		form: "<?=$this->form->getId()?>",
+		content: {
+			"autoAdd": (autoAdd)?"1":"0",
+		},
+		load: function(data){
+			if (data.error) {
+				alert(data.error);
+				return;
+			}
+			if (data.msg) {
+				alert(data.msg);
+			}
+			cnmTemplateGrid.clearAll();
+			cnmTemplateGrid.load("<?=$this->baseUrl?>/clinical-notes-manager.raw/templates.json","json");
+			cnmDefinitionGrid.clearAll();
+			cnmToggleButtons(true);
+			dhxWins.window("windowEditTemplateId").close();
+		},
+		error: function (error) {
+			console.error ("Error: ",error);
+		}
+	});
+	return false;
+}
+
 </script>

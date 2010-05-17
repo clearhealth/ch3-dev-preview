@@ -39,9 +39,9 @@ class Zend_View_Helper_FormNumberSpinner extends Zend_View_Helper_FormElement {
 
 		$maxlength = '';
 		if (isset($attribs['maxlength'])) {
-			$maxlength = 'maxlength:'.(int)$attribs['maxlength'];
+			$maxlength = ',maxlength:'.(int)$attribs['maxlength'];
 		}
-		$style = 'width:60px;';
+		$style = 'width:90px;';
 		if (isset($attribs['style'])) {
 			$style = $attribs['style'];
 		}
@@ -76,7 +76,7 @@ if (typeof spin{$varName} != "undefined") {
 	spin{$varName}.destroyRecursive();
 	spin{$varName} = null;
 }
-spin{$varName} = new dijit.form.NumberSpinner({name:"{$sanitized['name']}",value:{$sanitized['value']},constraints:{{$constraints}},disabled:{$disabled},intermediateChanges:true,style:"{$style}",{$maxlength}},dojo.byId("{$sanitized['id']}"));
+spin{$varName} = new dijit.form.NumberSpinner({name:"{$sanitized['name']}",value:{$sanitized['value']},constraints:{{$constraints}},disabled:{$disabled},style:"{$style}"{$maxlength},intermediateChanges:true},dojo.byId("{$sanitized['id']}"));
 </script>
 EOL;
 		return $xhtml;

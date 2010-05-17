@@ -116,7 +116,7 @@ function dhtmlXLayoutObject(base, view, skin) {
 	
 	this.base = base; // (typeof(base)=="object"?base:document.getElementById(base));
 	
-	this.imagePath = "codebase/imgs/";
+	this.imagePath = globalBaseUrl+"/img/";
 	/**
 	*	@desc: set path to images
 	*	@param: path - path on hard disk

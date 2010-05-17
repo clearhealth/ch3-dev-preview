@@ -30,6 +30,9 @@ class User extends WebVista_Model_ORM {
 	protected $password;
 	protected $default_location_id;
 	protected $defaultBuildingId;
+	protected $permissionTemplateId;
+	protected $permissionTemplate;
+	protected $preferences;
 
 	protected $_table = "user";
 	protected $_primaryKeys = array("user_id");
@@ -38,6 +41,13 @@ class User extends WebVista_Model_ORM {
 	public function __construct() {
 		parent::__construct();
 		$this->person = new Person();
+		$this->permissionTemplate = new PermissionTemplate();
+		$this->permissionTemplate->_cascadePersist = false;
+	}
+
+	public function setPermissionTemplateId($id) {
+		$this->permissionTemplateId = $id;
+		$this->permissionTemplate->permissionTemplateId = $this->permissionTemplateId;
 	}
 
 	public function setPersonId($id) {

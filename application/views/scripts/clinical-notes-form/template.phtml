@@ -18,7 +18,7 @@ fieldset {
 </style>
 
 <div style="background-color: whiteSmoke;padding:10px;height:450px;overflow:scroll;">
-<?=$this->signatureInfo?>
+<?='';//$this->signatureInfo?>
 <?=$this->form?>
 <?=$this->form->renderClose(false)?>
 <script>
@@ -31,6 +31,15 @@ function preSubmitcntemplateform() {
 	}
 	return true;
 }
+
+function postSubmit<?=$this->form->getId()?>(data) {
+	changeCNFilterOptions();
+	alert(data);
+	return false;
+}
 </script>
 </div>
+<?foreach ($this->templateRevisions as $key=>$value):?>
+<input type="hidden" name="templateRevisionId[]" value="<?=$key?>|<?=$value?>" />
+<?endforeach;?>
 <iframe id="iframeprint" style="width:0px;height:0px;margin:0;padding:0;position:relative;float:top;border:none;" />

@@ -74,6 +74,7 @@ class PatientController extends WebVista_Controller_Action {
 		$this->_form = new WebVista_Form(array('name' => 'patient-details'));
 		$this->_form->setAction(Zend_Registry::get('baseUrl') . "patient.raw/process-details");
 		$this->_form->loadORM($this->_patient,"Patient");
+		$this->_form->setWindow('windowPatientDetailsId');
 		$this->view->form = $this->_form;
 		$this->view->facilityIterator = $facilityIterator;
 		$this->view->reasons = $this->_getReasons();
@@ -397,24 +398,43 @@ class PatientController extends WebVista_Controller_Action {
 		$this->render('edit-insurer');
 	}
 
-	public function generateEnumReasonsAction() {
-		if (!Enumeration::generateReasonPreferencesEnum()) {
-			echo PatientNote::ENUM_REASON_PARENT_NAME.' already exists.';
-		}
-		else {
-			echo 'Done.';
-		}
-		die;
+	public function processEditStatsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$name = $this->_getParam('name');
+		$value = $this->_getParam('value');
+		$ret = PatientStatisticsDefinition::updatePatientStatistics($personId,$name,$value);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
-	public function generateEnumContactsAction() {
-		if (!Enumeration::generateContactPreferencesEnum()) {
-			echo 'Contact Preferences already exists.';
+	public function listStatsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$psd = new PatientStatisticsDefinition();
+		$stats = PatientStatisticsDefinition::getPatientStatistics($personId);
+		$psdIterator = $psd->getAllActive();
+		$rows = array();
+		foreach ($psdIterator as $row) {
+			$tmp = array();
+			$tmp['id'] = $row->name;
+			$tmp['data'] = array();
+			$tmp['data'][] = GrowthChartBase::prettyName($row->name);
+			$tmp['data'][] = isset($stats[$row->name])?$stats[$row->name]:'';
+			$options = array();
+			if ($row->type == PatientStatisticsDefinition::TYPE_ENUM) {
+				$enumerationClosure = new EnumerationClosure();
+				$paths = $enumerationClosure->generatePaths($row->value);
+				foreach ($paths as $id=>$name) {
+					$options[] = array('key'=>$id,'value'=>$name);
+				}
+			}
+			$tmp['userdata']['type'] = $row->type;
+			$tmp['userdata']['options'] = $options;
+			$rows[] = $tmp;
 		}
-		else {
-			echo 'Done.';
-		}
-		die;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
 	}
 
 }

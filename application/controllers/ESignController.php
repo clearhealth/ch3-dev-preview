@@ -33,7 +33,7 @@ class ESignController extends WebVista_Controller_Action {
 	public function indexAction() {
 		$this->_form = new WebVista_Form(array('name' => 'es-batch-sign-form'));
                 $this->_form->setAction(Zend_Registry::get('baseUrl') . "esign.raw/process-batch");
-		$element = $this->_form->createElement("text","signature", array('label' => "Signature"));
+		$element = $this->_form->createElement("password","signature", array('label' => "Signature"));
                 $this->_form->addElement($element);
 		$this->view->form = $this->_form;
 		$multipleSign = 'false';

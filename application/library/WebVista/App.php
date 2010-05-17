@@ -160,7 +160,8 @@ class WebVista {
 					$loginRequest = new Zend_Controller_Request_Http();
 					$loginRequest->setControllerName('login')
 						->setActionName('index');
-					
+					$view = Zend_Layout::getMvcInstance()->getView();
+					$view->errorMessage = $wae->getMessage();
 					Zend_Controller_Front::getInstance()->getRouter()->removeDefaultRoutes();
 					Zend_Controller_Front::getInstance()->getRouter()->addRoute('default', new Zend_Controller_Router_Route('login/:index'));
                         		Zend_Controller_Front::getInstance()

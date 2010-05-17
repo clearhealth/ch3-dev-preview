@@ -52,7 +52,7 @@ class ReportsController extends WebVista_Controller_Action {
 	public function pdfTemplateAction() {
 		$reportTemplateId = (int)$this->_getParam('reportTemplateId');
 		setlocale(LC_CTYPE, 'en_US');
-		$xmlData =  PdfController::toXML(array(),'Report',null);
+		$xmlData =  PdfController::toXML(array(),'FlowSheet',null);
                 $this->_forward('pdf-merge-attachment','pdf', null, array('attachmentReferenceId' => $reportTemplateId,'xmlData'=>$xmlData));
 	}
 	
@@ -100,6 +100,7 @@ class ReportsController extends WebVista_Controller_Action {
 			$filter = array();
 			$filter['id'] = $reportFilter->id;
 			$filter['name'] = $reportFilter->name;
+			$filter['defaultValue'] = $reportFilter->defaultValue;
 			$filter['type'] = $reportFilter->type;
 			$filter['options'] = $reportFilter->options;
 			if ($reportFilter->type == ReportBase::FILTER_TYPE_ENUM) {
@@ -145,24 +146,33 @@ class ReportsController extends WebVista_Controller_Action {
 
 	public function getResultsAction() {
 		$viewId = (int)$this->_getParam('viewId');
-
-		$baseId = (int)$this->_getParam('baseId');
 		$params = $this->_getAllParams();
-		$filters = array();
+		$filterParams = array();
 		foreach ($params as $key=>$value) {
 			if (substr($key,0,7) != 'filter_') continue;
 			$index = substr($key,7);
 			$x = explode('_',$index);
 			if (!isset($x[1])) continue;
 			$index = str_replace('_','.',$index);
-			$filters[$index] = $value;
+			$filterParams[$index] = $value;
 		}
-		//trigger_error(print_r($this->getRequest()->getUserParams(),true),E_USER_NOTICE);
 
 		$reportView = new ReportView();
 		$reportView->reportViewId = $viewId;
 		$reportView->populate();
 		$reportBase = $reportView->reportBase;
+
+		$filterBase = $reportView->reportBase->unserializedFilters;
+		$filters = array();
+		if ($filterBase !== null) {
+			foreach ($filterBase as $key=>$filter) {
+				$value = $filter->defaultValue;
+				if (isset($filterParams[$key]) && strlen($filterParams[$key]) > 0) {
+					$value = $filterParams[$key];
+				}
+				$filters[$key] = $value;
+			}
+		}
 
 		$data = $reportBase->executeQueries($filters,$reportView);
 		if (strlen($reportView->showResultsIn) <= 0 || $reportView->showResultsIn != 'grid') {

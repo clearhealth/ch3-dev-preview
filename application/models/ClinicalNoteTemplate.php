@@ -23,15 +23,27 @@
 
 
 class ClinicalNoteTemplate extends WebVista_Model_ORM {
+
 	protected $clinicalNoteTemplateId;
 	protected $name;
 	protected $template;
 	protected $guid;
 	protected $_table = "clinicalNoteTemplates";
 	protected $_cascadePersist = false;
-	
-	public function __construct() {
-		parent::__construct();
+
+	public function persist() {
+		$db = Zend_Registry::get('dbAdapter');
+		$clinicalNoteTemplateId = (int)$this->clinicalNoteTemplateId;
+		$data = $this->toArray();
+		if ($clinicalNoteTemplateId > 0) {
+			$ret = $db->update($this->_table,$data,'clinicalNoteTemplateId = '.$clinicalNoteTemplateId);
+		}
+		else {
+			$this->clinicalNoteTemplateId = WebVista_Model_ORM::nextSequenceId();
+			$data['clinicalNoteTemplateId'] = $this->clinicalNoteTemplateId;
+			$ret = $db->insert($this->_table,$data);
+		}
+		return $ret;
 	}
 
 }

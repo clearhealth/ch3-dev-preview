@@ -28,6 +28,21 @@
 class MainController extends WebVista_Controller_Action {
     protected $baseUrl;
 
+	protected $user;
+	protected $xmlPreferences = null;
+
+	public function init() {
+		$auth = Zend_Auth::getInstance();
+		$userId = $auth->getIdentity()->userId;
+		$user = new User();
+		$user->userId = $userId;
+		$user->populate();
+		if (strlen($user->preferences) > 0) {
+			$this->xmlPreferences = new SimpleXMLElement($user->preferences);
+		}
+		$this->user = $user;
+	}
+
     /**
      * Default action to dispatch
      */
@@ -51,50 +66,11 @@ class MainController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-    private function userHasPermissionForTab($tabName) {
-        return true;
-    }
-
-    private function getMainTabs() {
-        $mainTabs = array();
-        $mainTabs['Calendar']['url'] = $this->view->baseUrl.'/calendar.raw';
-        $mainTabs['Calendar']['hrefMode'] =  'ajax-html';
-        $mainTabs['Provider']['url'] = $this->view->baseUrl.'/provider-dashboard.raw';
-        $mainTabs['Provider']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Station']['url'] = $this->view->baseUrl.'/station-dashboard.raw';
-//        $mainTabs['Station']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Patient']['url'] = "/index.php/minimal/PatientDashboard/View?patient_id=' + mainController.getActivePatient() + '";
-//        $mainTabs['Patient']['hrefMode'] =  'iframe';
-        $mainTabs['Medications']['url']   = $this->view->baseUrl.'/medications.raw';
-        $mainTabs['Medications']['hrefMode'] =  'ajax-html';
-        $mainTabs['Problems']['url']   = $this->view->baseUrl.'/problem-list.raw';
-        $mainTabs['Problems']['hrefMode'] =  'ajax-html';
-        $mainTabs['Notes']['url']   = $this->view->baseUrl.'/clinical-notes.raw';
-        $mainTabs['Notes']['hrefMode'] =  'ajax-html';
-		$mainTabs['Vitals']['url']   = $this->view->baseUrl.'/vital-signs.raw';
-		$mainTabs['Vitals']['hrefMode'] =  'ajax-html';
-        $mainTabs['Labs']['url']   = $this->view->baseUrl.'/lab-results.raw';
-        $mainTabs['Labs']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Order']['url']   = $this->view->baseUrl.'/orders.raw';
-//        $mainTabs['Order']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Billing']['url']   = '/index.php/minimal/claim/list';
-//        $mainTabs['Billing']['hrefMode'] =  'iframe';
-        $mainTabs['Reports']['url']   = $this->view->baseUrl.'/reports.raw';
-        $mainTabs['Reports']['hrefMode'] =  'ajax-html';
-        $mainTabs['Admin']['url']   = $this->view->baseUrl.'/admin.raw';
-        $mainTabs['Admin']['hrefMode'] =  'ajax-html';
-//        $mainTabs['Messaging']['url']   = $this->view->baseUrl.'/messaging.raw';
-//        $mainTabs['Messaging']['hrefMode'] =  'ajax-html';
-
-        foreach ($mainTabs as $tabName => $url) {
-            if ($this->userHasPermissionForTab($tabName) === false) {
-                unset($mainTabs[$tabName]);
-            }
-        }
-        return $mainTabs;
-    }
 	private function getActiveTab() {
 		$activeTab = 'Provider';
+		if ($this->xmlPreferences !== null) {
+			$activeTab = (string)$this->xmlPreferences->defaultTab;
+		}
 		Menu::setCurrentlySelectedActivityGroup($activeTab);
 		return $activeTab;
 	}
@@ -104,6 +80,22 @@ class MainController extends WebVista_Controller_Action {
                 }
                 return 0;
         }
+
+	private function getMainTabs() {
+        	$mainTabs = Menu::getMainTabs($this->view->baseUrl);
+
+		if ($this->xmlPreferences !== null) {
+			$tmpTabs = array();
+			foreach ($this->xmlPreferences->tabs as $tab) {
+				$tab = (string)$tab;
+				if (isset($mainTabs[$tab])) {
+					$tmpTabs[$tab] = $mainTabs[$tab];
+				}
+			}
+			$mainTabs = $tmpTabs;
+		}
+		return $mainTabs;
+	}
 
 	public function generateTestDataAction() {
 		// Patient Test Data

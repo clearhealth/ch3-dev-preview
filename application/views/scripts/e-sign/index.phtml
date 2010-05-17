@@ -49,17 +49,39 @@
 			esrdGrid.setCheckedRows(1,state);
 		}
 	}
+	function showHideSignatureText() {
+		if (dojo.byId('signature').type == 'password') {
+			dojo.byId('signature').type = 'text';
+			dojo.byId('showHideSignatureTextLink').innerHTML = '<?=__('Hide Signature');?>';
+		}
+		else if (dojo.byId('signature').type == 'text') {
+			dojo.byId('signature').type = 'password';
+			dojo.byId('showHideSignatureTextLink').innerHTML = '<?=__('Show Signature')?>';
+		}
+	}
+	function enterKeypressSubmit(evt) {
+		if (evt.keyCode === 13) {
+			evt.cancelBubble = true;
+			evt.stopPropagation();
+			evt.preventDefault();
+			return false;
+        	 }
+	}
+
 </script>
 	 
 	<?=$this->form->renderOpen()?>
 <div style="float:right;">
+<?$this->form->signature->setAttrib('onkeypress', 'enterKeypressSubmit(event);');?>
+<?$this->form->signature->setAttrib('onkeyup', 'enterKeypressSubmit(event);');?>
+<?$this->form->signature->setAttrib('onkeydown', 'enterKeypressSubmit(event);');?
 <?=$this->form->getElement('signature')->renderViewHelper()?>
 </div>
 <div style="float:right;padding-right:4px;padding-top:4px;">
 <?=$this->form->signature->renderLabel()?>
 </div>
 <div style="clear:right;text-align:right;">
-<?=$this->form->okInput()?>
+<a id="showHideSignatureTextLink" href="javascript:showHideSignatureText();void(0);">Show Signature</a>&nbsp;&nbsp;&nbsp;&nbsp;<?=$this->form->okInput()?>
 </div>
 <?=$this->form->renderClose()?>
 <input type="hidden" name="signIds" value="" id="e-sign-doc-ids"/>

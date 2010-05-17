@@ -39,9 +39,11 @@ function calcTS() {
         if (!isset($GLOBALS['gts'])) $GLOBALS['gts'] = $ts;
         return $ts-$GLOBALS['gts'];
 }
-function lcfirst($str)  {
-        $str[0] = strtolower($str[0]);
-        return (string)$str;
+if (!function_exists('lcfirst')) {
+	function lcfirst($str)  {
+		$str[0] = strtolower($str[0]);
+		return (string)$str;
+	}
 }
 function __($key) {
 	//$translate = Zend_Registry::get('translate');

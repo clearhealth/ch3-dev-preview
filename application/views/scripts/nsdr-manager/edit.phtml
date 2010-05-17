@@ -153,7 +153,16 @@ function closeMethodWindow() {
 
 
 <script>
-function postSubmitnsdrDefinition() {
+function preSubmit<?=$this->form->getId()?>() {
+	if (dojo.byId("<?=$this->form->namespace->getId()?>").value != "<?=$this->form->namespace->getValue()?>") {
+		var msg = "Changing an NSDR item while the NSDR service is running can have non-deterministic results. You should stop the service before changing an item. Are you sure you want to continue with the change?";
+		if (!confirm(msg)) {
+			return false;
+		}
+	}
+	return true;
+}
+function postSubmit<?=$this->form->getId()?>() {
 	// remove all children on parent items
 	nsdrDataPointsTree.deleteChildItems('<?=$this->parentId?>');
 

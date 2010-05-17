@@ -142,6 +142,8 @@ class NsdrManagerController extends WebVista_Controller_Action {
 		$this->_nsdrDefinition = new NSDRDefinition();
 		$this->_nsdrDefinition->uuid = $uuid;
 		$this->_nsdrDefinition->setPersistMode(WebVista_Model_ORM::DELETE);
+		$this->_nsdrDefinition->populate();
+		NSDR2::removeNamespace($this->_nsdrDefinition->namespace);
 		$this->_nsdrDefinition->persist();
 		$msg = __("Record deleted successfully");
 		$data = array();
@@ -199,14 +201,21 @@ class NsdrManagerController extends WebVista_Controller_Action {
 		if (!strlen($id) > 0) {
 			$this->_nsdrDefinition->uuid = NSDR::create_guid();
 		}
+		else {
+			// remove to NSDR memcache
+			$nsdr = new NSDRDefinition();
+			$nsdr->uuid = $id;
+			$nsdr->populate();
+			NSDR2::removeNamespace($nsdr->namespace);
+		}
 
 		$message = __('Record Saved for NSDR Definition: ' . $this->_nsdrDefinition->namespace);
 		$code = 200;
 		// cannot add method if alias exists (alias must be canonical)
 		if (strlen($this->_nsdrDefinition->aliasFor) > 0) {
 			$nsdr = new NSDRDefinition();
-			$nsdr->uuid = $this->_nsdrDefinition->aliasFor;
-			$nsdr->populate();
+			//$nsdr->uuid = $this->_nsdrDefinition->aliasFor;
+			$nsdr->populateByNamespace($this->_nsdrDefinition->aliasFor);
 			if (strlen($nsdr->namespace) > 0) {
 				if (strlen($nsdr->aliasFor) > 0) {
 					$this->_nsdrDefinition->aliasFor = '';

@@ -1601,7 +1601,7 @@ dhtmlXToolbarObject.prototype._buttonInputObject = function(that, id, data, pos)
 	//
 	this.obj.innerHTML = "<table cellspacing='0' cellpadding='0' class='itemDefault'>"+
 				"<tr>"+
-					"<td valign='middle'"+(this.img!=""?"":" style='display: none;'")+">"+
+					"<td valign='middle'"+(this.img!=""?"":" style='display: none;'")+">"+/*CH hacks start*/"<span>"+(data.getAttribute("text")!=null?data.getAttribute("text"):"")+"</span>"+/*CH hacks end*/
 						"<input class='dhtmlxToolbarInp' type='text' style='width:"+this.obj.w+"px;'"+(data.getAttribute("value")!=null?" value='"+data.getAttribute("value")+"'":"")+">"+
 					"</td>"+
 				"</tr>"+
@@ -1609,7 +1609,7 @@ dhtmlXToolbarObject.prototype._buttonInputObject = function(that, id, data, pos)
 	
 	var th = that;
 	var self = this;
-	this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].onkeydown = function(e) {
+	this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].onkeydown = function(e) {
 		e = e||event;
 		if (e.keyCode == 13) { th.callEvent("onEnter", [self.obj.idd, this.value]); }
 	}
@@ -1617,13 +1617,13 @@ dhtmlXToolbarObject.prototype._buttonInputObject = function(that, id, data, pos)
 	this.tr = that._addObject(this.obj, pos);
 	//
 	this.enableItem = function() {
-		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].disabled = false;
+		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].disabled = false;
 	}
 	this.disableItem = function() {
-		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].disabled = true;
+		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].disabled = true;
 	}
 	this.isEnabled = function() {
-		return (!this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].disabled);
+		return (!this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].disabled);
 	}
 	this.showItem = function() {
 		this.tr.style.display = "";
@@ -1635,14 +1635,14 @@ dhtmlXToolbarObject.prototype._buttonInputObject = function(that, id, data, pos)
 		return (this.tr.style.display != "none");
 	}
 	this.setValue = function(value) {
-		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].value = value;
+		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].value = value;
 	}
 	this.getValue = function() {
-		return this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].value;
+		return this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].value;
 	}
 	this.setWidth = function(width) {
 		this.obj.w = width;
-		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[0].style.width = this.obj.w+"px";
+		this.obj.childNodes[0].childNodes[0].childNodes[0].childNodes[0].childNodes[1].style.width = this.obj.w+"px";
 	}
 	this.getWidth = function() {
 		return this.obj.w;

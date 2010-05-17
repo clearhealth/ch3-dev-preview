@@ -308,5 +308,20 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		die;
 	}
 
+	public function autoCompleteEnumAction() {
+		$match = $this->_getParam('name');
+		$match = preg_replace('/[^a-zA-Z-0-9 >]/','',$match);
+		$strMatch = $match;
+		$matches = array();
+		if (strlen($match) < 3) {
+			$this->_helper->autoCompleteDojo($matches);
+		}
+		$enumerations = EnumerationClosure::searchByLevels($match);
+		foreach ($enumerations as $enumeration) {
+			$matches[$enumeration->enumerationId] = $enumeration->name;
+		}
+		$this->_helper->autoCompleteDojo($matches);
+	}
+
 }
 

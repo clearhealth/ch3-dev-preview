@@ -38,80 +38,157 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 
 	function templateAction() {
 		$clinicalNoteId = $this->_getParam('clinicalNoteId',0);
+		$revisionId = (int)$this->_getParam('revisionId');
 		$cn = new ClinicalNote();
 		$cn->clinicalNoteId = (int)$clinicalNoteId;
 		$cn->populate();
+		if ($revisionId > 0) {
+			$cn->revisionId = $revisionId;
+		}
 		$this->_cn = $cn;
 		$templateId = $cn->clinicalNoteTemplateId;
 		assert("$templateId > 0");
 		$cnTemplate = $cn->clinicalNoteDefinition->clinicalNoteTemplate;
 		$this->_form = new WebVista_Form(array('name' => 'cn-template-form'));
-                $this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
+		$this->_form->setWindow('dummyWindowId');
+		$this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
 		$cnXML = simplexml_load_string($cnTemplate->template);
-		$element = $this->_form->createElement('button','print', array('label' => 'Print'));
-                $element->setAttrib('onclick',"
-printHtml = dojo.byId('mainToolbar').innerHTML; 
-printHtml +=  dojo.byId('cntemplateform').innerHTML;
-dojo.byId('iframeprint').contentWindow.document.body.innerHTML = printHtml;
-dojo.byId('iframeprint').contentWindow.focus();
-dojo.byId('iframeprint').contentWindow.print();
-//dojo.byId('iframeprint').contentWindow.document.body.innerHTML = '';
-printHtml = '';
-");
-                $element->setValue('Print');
 		// pre-register print element to view so that other elements can override particularly the onclick event
-		$this->view->elementPrint = $element;
-                $this->_form->addElement($element);
 		$this->_buildForm($cnXML);
 		$this->_form->addElement($this->_form->createElement('hidden','clinicalNoteId', array('value' => (int)$cn->clinicalNoteId)));
 
+		$formData = array();
+		$this->_form->removeElement('ok');
+		$element = $this->_form->createElement('hidden','clinicalNoteOKId',array('value'=>'OK'));
+		$this->_form->addElement($element);
+
+		if ($revisionId > 0) {
+			//$this->_form->removeElement('ok');
+			$this->_form->removeElement('clinicalNoteOKId');
+		}
+		else {
+			$revisionId = GenericData::getUnsignedRevisionId(get_class($cn),$cn->clinicalNoteId);
+			//$revisionId = $cn->clinicalNoteId;
+		}
+
+		$this->_form->addElement($this->_form->createElement('hidden','revisionId', array('value' => (int)$revisionId)));
+
 		$db = Zend_Registry::get('dbAdapter');
-                $cndSelect = $db->select()
-                        ->from('genericData')
-			->where("objectClass = 'ClinicalNote'")
-			->where("objectId = " . (int)$cn->clinicalNoteId);
-		
-		if ($cn->eSignatureId > 0) {
-			$this->_form->removeElement('ok');
+		$cndSelect = $db->select()
+				->from('genericData')
+				->where("objectClass = 'ClinicalNote'")
+				->where('objectId = ?',(int)$cn->clinicalNoteId);
+		if ($revisionId > 0) {
+			$cndSelect->where('revisionId = ?',$revisionId);
+		}
+		trigger_error($cndSelect->__toString(),E_USER_NOTICE);
+		foreach($db->query($cndSelect)->fetchAll() as $row) {
+			$formData[$row['name']] = $row['value'];
+		}
+
+		$eSignatureId = ESignature::retrieveSignatureId(get_class($cn),$revisionId);
+		if ($eSignatureId > 0) { // On signed notes generic data is shown
+			//$this->_form->removeElement('ok');
+			$this->_form->removeElement('clinicalNoteOKId');
 			$esig = new ESignature();
-			$esig->eSignatureId = $cn->eSignatureId;
+			$esig->eSignatureId = $eSignatureId;
 			$esig->populate();
 			$signPerson = new Person();
 			$signPerson->personId = $esig->signingUserId;
 			$signPerson->populate();
-			$this->view->signatureInfo = "Signed on: " . $esig->signedDateTime . " by: " . '';
+			$person = new Person();
+			$person->personId = $esig->signingUserId;
+			$person->populate();
+			$this->view->signatureInfo = "Signed on: " . $esig->signedDateTime . " by: " . $person->firstName.' '.$person->lastName.' '.$person->suffix;
+			$element = $this->_form->createElement('hidden','clinicalNoteSignatureId',array('value'=>$this->view->signatureInfo));
+			$this->_form->addElement($element);
 		}
-
-		$formData = array();
-		foreach($db->query($cndSelect)->fetchAll() as $row) {
-			$formData[$row['name']] = $row['value'];
+		else { // on unsigned notes NSDR is shown but a warning also needs to appear that says data has changed since last save if generic data != NSDR data
+			if ((string)$cnXML->attributes()->useNSDR && (string)$cnXML->attributes()->useNSDR == 'true') {
+				$nsdrData = ClinicalNote::getNSDRData($cnXML,$cn,$revisionId);
+				if ($formData != $nsdrData) {
+					$msg = __('Data has been changed since last save');
+					$this->_form->addElement($this->_form->createElement('hidden','dataChangedId',array('value'=>$msg)));
+				}
+				$formData = $nsdrData;
+			}
 		}
 		$this->_form->populate($formData);
 
 		$this->view->form = $this->_form;
+
+		$templateRevisions = array();
+		$gdIterator = GenericData::getAllRevisions(get_class($cn),$cn->clinicalNoteId);
+		foreach ($gdIterator as $gd) {
+			$templateRevisions[$gd->revisionId] = $gd->dateTime;
+		}
+		$this->view->templateRevisions = $templateRevisions;
         }
 
 	function processAction() {
+		$clinicalNoteId = (int)$this->_getParam('clinicalNoteId');
+		$revisionId = (int)$this->_getParam('revisionId');
 		$data = $this->_getParam('namespaceData');
 		$saveDate = date('Y-m-d H:i:s');
+
 		$cn = new ClinicalNote();
-		$cn->clinicalNoteId = (int)$this->_getParam('clinicalNoteId');
+		$cn->clinicalNoteId = $clinicalNoteId;
 		$cn->populate();
-		$cn->dateTime = date('Y-m-d H:i:s');
-		$cn->persist();
-		foreach($data as $name => $value) {
+		if (!$revisionId > 0) {
+			$revisionId = GenericData::getUnsignedRevisionId(get_class($cn),$cn->clinicalNoteId);
+		}
+		$eSignatureId = ESignature::retrieveSignatureId(get_class($cn),$revisionId);
+		if ($eSignatureId > 0) {
+			$msg = __('Failed to save. Note is already signed');
+		}
+		else {
+			$cn->dateTime = date('Y-m-d H:i:s');
+			$cn->persist();
+
+                	$msg = __('Data saved.');
+			$template = $cn->clinicalNoteDefinition->clinicalNoteTemplate->template;
+			$xml = simplexml_load_string($template);
+
+			$objectClass = 'ClinicalNote';
+			list($name,$value) = each($data);
 			$gd = new GenericData();
-			$gd->objectClass = "ClinicalNote";
-			$gd->objectId = (int)$this->_getParam('clinicalNoteId');
-			$gd->dateTime = $saveDate;
+			$gd->objectClass = $objectClass;
+			$gd->objectId = $clinicalNoteId;
 			$gd->name = $name;
-			$gd->value = $value;
-			$gd->persist();
+			$rowExists = $gd->doesRowExist(true);
+			$preQueries = null;
+			if ($rowExists) {
+				$revisionId = (int)$gd->revisionId;
+				$preQueries = 'DELETE FROM `'.$gd->_table.'` WHERE `revisionId`='.$revisionId;
+			}
+			else {
+				$revisionId = WebVista_Model_ORM::nextSequenceId();
+			}
+
+			$otm = new WebVista_Model_ORMTransactionManager();
+			foreach($data as $name => $value) {
+				$gd = new GenericData();
+				$gd->objectClass = $objectClass;
+				$gd->objectId = $clinicalNoteId;
+				$gd->dateTime = $saveDate;
+				$gd->name = $name;
+				$gd->value = $value;
+				$gd->revisionId = $revisionId;
+				$otm->addORM($gd);
+			}
+			if (!$otm->persist($preQueries)) {
+				$msg = __('Failed to save.');
+			}
+
+			if ((string)$xml->attributes()->useNSDR && (string)$xml->attributes()->useNSDR == 'true') {
+				if (!ClinicalNote::processNSDRPersist($xml,$cn,$data)) {
+					$msg = __('Failed to save.');
+				}
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-                $json->suppressExit = true;
-
-                $json->direct('Data saved.');
+		$json->suppressExit = true;
+		$json->direct($msg);
 	}
 
 
@@ -143,7 +220,7 @@ printHtml = '';
 					$type = 'drawing';
                                 }
 
-				$elementName = preg_replace('/[-\.]/','_',(string)$dataPoint->attributes()->namespace);
+				$elementName = preg_replace('/[-\.]/','_',NSDR2::extractNamespace((string)$dataPoint->attributes()->namespace));
 				$element = $this->_form->createElement($type,$elementName, array('label' => (string)$dataPoint->attributes()->label));
 				if ($this->_form->getElement($elementName) instanceof Zend_Form_Element) {
                                         $element =$this->_form->getElement($elementName);

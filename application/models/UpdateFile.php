@@ -31,7 +31,9 @@ class UpdateFile extends WebVista_Model_ORM {
 	protected $version;
 	protected $active;
 	protected $description;
-	protected $blob = array();
+	protected $channelId;
+	protected $channel;
+	protected $license;
 
 	protected $_table = 'updateFiles';
 	protected $_primaryKeys = array('updateFileId');
@@ -40,36 +42,18 @@ class UpdateFile extends WebVista_Model_ORM {
 	protected $_tables = array(); // list of all existing tables
 	protected $_changes = array(); // diff results container
 
-	public function __construct() {
-		$this->blob = array();
-	}
+	const USER_CHANNEL_ID = 0;
+	const USER_CHANNEL = 'User Channel';
 
-	public function populate($includeBlob = true) {
-		$ret = parent::populate();
-		if (!$includeBlob) {
-			return $ret;
+	public function persist() {
+		$filename = $this->getUploadFilename();
+		$version = (int)$this->version;
+		if ($version <= 0) {
+			$this->version = $this->getLatestVersion() + 1;
 		}
-		$db = Zend_Registry::get('dbAdapter');
-		$sqlSelect = $db->select()
-				->from('updateFileBlobs')
-				->where('updateFileId = ?',$this->updateFileId);
-		$this->blob = $db->fetchRow($sqlSelect);
-		return $ret;
-	}
-
-	public function persist($includeBlob = true) {
 		$ret = parent::persist();
-		if (!$includeBlob) {
-			return $ret;
-		}
-		if ($this->blob) {
-			$db = Zend_Registry::get('dbAdapter');
-			if ($this->_persistMode === WebVista_Model_ORM::DELETE) {
-				$db->delete('updateFileBlobs','updateFileId='.$this->updateFileId);
-			}
-			else {
-				$db->insert('updateFileBlobs',$this->blob);
-			}
+		if ($ret && $this->_persistMode == self::DELETE && file_exists($filename)) {
+			unlink($filename);
 		}
 		return $ret;
 	}
@@ -77,17 +61,6 @@ class UpdateFile extends WebVista_Model_ORM {
 	public function setUpdateFileId($val) {
 		$updateFileId = (int)$val;
 		$this->updateFileId = $updateFileId;
-		$this->blob['updateFileId'] = $this->updateFileId;
-	}
-
-	public function populateWithArray($array) {
-		parent::populateWithArray($array);
-		$blob = array();
-		if (isset($array['data'])) {
-			$blob['updateFileId'] = $this->updateFileId;
-			$blob['data'] = $array['data'];
-		}
-		$this->blob = $blob;
 	}
 
 	public function getIterator($sqlSelect = null) {
@@ -100,39 +73,15 @@ class UpdateFile extends WebVista_Model_ORM {
 		return parent::getIterator($sqlSelect);
 	}
 
-	public function getIteratorBlob($sqlSelect = null) {
+	public function getIteratorActive($sqlSelect = null) {
 		if ($sqlSelect === null) {
 			$db = Zend_Registry::get('dbAdapter');
 			$sqlSelect = $db->select()
-					->from(array('xf'=>$this->_table))
-					->join(array('xfb'=>'updateFileBlobs'),'xf.updateFileId = xfb.updateFileId')
-					->order('dateTime DESC');
-		}
-		return $this->getIterator($sqlSelect);
-	}
-
-	public function getIteratorActiveBlob($sqlSelect = null) {
-		if ($sqlSelect === null) {
-			$db = Zend_Registry::get('dbAdapter');
-			$sqlSelect = $db->select()
-					->from(array('xf'=>$this->_table))
-					->join(array('xfb'=>'updateFileBlobs'),'xf.updateFileId = xfb.updateFileId')
+					->from($this->_table)
 					->where('active = 1')
+					->order('channel ASC')
 					->order('version DESC');
 		}
-		return $this->getIterator($sqlSelect);
-	}
-
-	public function getIteratorByVersion($version = null) {
-		if ($version === null) {
-			$version = $this->version;
-		}
-		$db = Zend_Registry::get('dbAdapter');
-		$sqlSelect = $db->select()
-				->from(array('xf'=>$this->_table))
-				->join(array('xfb'=>'updateFileBlobs'),'xf.updateFileId = xfb.updateFileId')
-				->where('version > ?',$version)
-				->order('dateTime DESC');
 		return $this->getIterator($sqlSelect);
 	}
 
@@ -140,76 +89,55 @@ class UpdateFile extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from($this->_table)
+				->where('channel = ?',$this->channel)
 				->order('version DESC')
 				->limit(1);
-		$version = '0.0';
+		$version = 0;
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$version = $row['version'];
 		}
 		return $version;
 	}
 
-	public function populateByLatestVersion() {
-		$version = $this->version;
-		if (!strlen($this->version) > 0) {
-			$version = '0.0';
-		}
-		$db = Zend_Registry::get('dbAdapter');
-		$sqlSelect = $db->select()
-				->from(array('xf'=>$this->_table))
-				->join(array('xfb'=>'updateFileBlobs'),'xf.updateFileId = xfb.updateFileId')
-				->where('xf.version > ?',$version)
-				->order('xf.version ASC')
-				->limit(1);
-		$ret = false;
-		if ($row = $db->fetchRow($sqlSelect)) {
-			$this->populateWithArray($row);
-			$ret = true;
-		}
-		return $ret;
+	public function getUploadDir() {
+		$basePath = Zend_Registry::get('basePath');
+		return $basePath . 'tmp/updates/';
 	}
 
-	/*
-	public function extractMetaData($data = null) {
-		if ($data === null) {
-			$data = $this->blob['data'];
-		}
-		$doc = new DOMDocument();
-		$doc->formatOutput = true;
-		if (!$doc->loadXML($data)) {
-			throw new Exception('Generated XML is invalid');
-		}
-		$rootNode = $doc->getElementsByTagName('mysqldump');
-		if ($rootNode->length <= 0) {
-			$node = $doc->createElement('mysqldump');
-			$rootDoc = $doc->appendChild($node);
-		}
-		else {
-			$rootDoc = $rootNode->item(0);
-		}
-		$nodeList = $rootDoc->getElementsByTagName('meta-data');
-		if ($nodeList->length > 0) {
-			$elem = $nodeList->item(0);
-			if ($version = $elem->getAttribute('version')) {
-				$this->version = $version;
-			}
-			$elem->setAttribute('signature','');
-			if ($name = $elem->getAttribute('name')) {
-				$this->name = $name;
-			}
-			if ($md5sum = $elem->getAttribute('md5sum')) {
-				$this->md5sum = $md5sum;
-			}
-			if ($description = $elem->getAttribute('description')) {
-				$this->description = $description;
-			}
-		}
+	public function getUploadFilename() {
+		return $this->getUploadDir().$this->updateFileId.'.xml';
 	}
-	*/
+
+	public function getData() {
+		static $data = null;
+		if ($data !== null) {
+			return $data;
+		}
+		$filename = $this->getUploadFilename();
+		if (file_exists($filename)) {
+			$data = file_get_contents($filename);
+		}
+		return $data;
+	}
+
+	public function getAllVersions() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table,array('MAX(version) AS version','channelId'))
+				->where('channelId != ?',self::USER_CHANNEL_ID)
+				->group('channelId');
+		$versions = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$versions[$row['channelId']] = $row['version'];
+			}
+		}
+		return $versions;
+	}
 
 	public function verify($data = null) {
 		if ($data === null) {
-			$data = $this->blob['data'];
+			$data = file_get_contents($this->getUploadFilename());
 		}
 		$doc = new DOMDocument();
 		$doc->formatOutput = true;
@@ -232,6 +160,12 @@ class UpdateFile extends WebVista_Model_ORM {
 		else {
 			$elem = $nodeList->item(0);
 		}
+		if ($channelId = $elem->getAttribute('channelId')) {
+			$this->channelId = (int)$channelId;
+		}
+		if ($channel = $elem->getAttribute('channel')) {
+			$this->channel = $channel;
+		}
 		$signature = $elem->getAttribute('signature');
 		if ($version = $elem->getAttribute('version')) {
 			$this->version = $version;
@@ -245,6 +179,9 @@ class UpdateFile extends WebVista_Model_ORM {
 		}
 		if ($description = $elem->getAttribute('description')) {
 			$this->description = $description;
+		}
+		if ($license = $elem->getAttribute('license')) {
+			$this->license = $license;
 		}
 		$newData = $doc->saveXML();
 

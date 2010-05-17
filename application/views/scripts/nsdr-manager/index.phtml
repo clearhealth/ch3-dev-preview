@@ -103,7 +103,8 @@ function redrawNSDR(event,id,parentId) {
 	var action = 'edit';
 	if (event == 'delete') {
 		action = 'ajax-delete';
-		var msg = "Deleting "+id+"\n\nAre you sure you want to continue?";
+		//var msg = "Deleting "+id+"\n\nAre you sure you want to continue?";
+		var msg = "Deleting an NSDR item while the NSDR service is running can have non-deterministic results. You should stop the service before deleting an item. Are you sure you want to continue with the delete?";
 		if (!confirm(msg)) {
 			return;
 		}

@@ -46,6 +46,19 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		parent::__construct();
 	}
 
+	public function populateByGuid($guid = null) {
+		if ($guid === null) {
+			$guid = $this->guid;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$dbSelect = $db->select()
+			       ->from($this->_table)
+			       ->where('guid = ?',$guid);
+		$retval = $this->populateWithSql($dbSelect->__toString());
+		$this->postPopulate();
+		return $retval;
+	}
+
 	public function populateByUniqueName($name) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
@@ -193,17 +206,10 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 
 	public static function generateTestData($force = false) {
 		self::generateContactPreferencesEnum($force);
-		self::generateMenuEnum($force);
-		self::generateGenderEnum($force);
-		self::generateMaritalStatusEnum($force);
 		self::generateImmunizationPreferencesEnum($force);
 		self::generateTeamPreferencesEnum($force);
 		self::generateHSAPreferencesEnum($force);
 		self::generateReasonPreferencesEnum($force);
-		self::generateReactionTypePreferencesEnum($force);
-		self::generateSeverityPreferencesEnum($force);
-		self::generateSymptomPreferencesEnum($force);
-		self::generateAppointmentReasonEnum($force);
 		self::generateProcedurePreferencesEnum($force);
 		self::generateEducationPreferencesEnum($force);
 		self::generatePatientEducationPreferencesEnum($force);
@@ -212,20 +218,612 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		self::generatePatientExamPreferencesEnum($force);
 		self::generateExamResultPreferencesEnum($force);
 		self::generateExamOtherPreferencesEnum($force);
-		self::generateVitalUnitsEnum($force);
-		self::generateConfidentialityEnum($force);
 		self::generateMedicationPreferencesEnum($force);
-		self::generateStatesEnum($force);
-		self::generateCountriesEnum($force);
 		self::generateColorPreferencesEnum($force);
 		self::generateFacilitiesEnum($force);
+		self::generateMenuEnum($force);
+		self::generateDemographicsPreferencesEnum($force);
+		self::generateGeographyPreferencesEnum($force);
+		self::generateCalendarPreferencesEnum($force);
+		self::generateClinicalPreferencesEnum($force);		
+	}
+
+	public static function generateDemographicsPreferencesEnum($force = true) {
+		$ret = false;
+		do {
+			$name = 'Demographics';
+			$key = 'DEMOGRAPH';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				'height' => array('key' => 'HT', 'name' => 'Height', 'active' => 1, 'data' => array(
+					'inch' => array('key' => 'IN', 'name' => 'Inches', 'active' => 1),
+					'cm' => array('key' => 'CM', 'name' => 'Centimeter', 'active' => 0),
+				)),
+				'weight' => array('key' => 'WT', 'name' => 'Weight', 'active' => 1, 'data' => array(
+					'pound' => array('key' => 'LB', 'name' => 'Pounds', 'active' => 1),
+					'kg' => array('key' => 'KG', 'name' => 'Kilograms', 'active' => 0),
+				)),
+				'temperature' => array('key' => 'TEMP', 'name' => 'Temperature', 'active' => 1, 'data' => array(
+					'fahrenheit' => array('key' => 'F', 'name' => 'Fahrenheit', 'active' => 1),
+					'celcius' => array('key' => 'C', 'name' => 'Celcius', 'active' => 0),
+				)),
+				'marital' => array('key' => 'MSTATUS', 'name' => 'Marital Status', 'active' => 1, 'data' => array(
+					'accompanied' => array('key' => 'ACCOMP', 'name' => 'Accompanied', 'active' => 1),
+					'divorced' => array('key' => 'DIVORCED', 'name' => 'Divorced', 'active' => 1),
+					'married' => array('key' => 'MARRIED', 'name' => 'Married', 'active' => 1),
+					'notspec' => array('key' => 'NOTSPEC', 'name' => 'Not Specified', 'active' => 1),
+					'separated' => array('key' => 'SEPARATED', 'name' => 'Separated', 'active' => 1),
+					'single' => array('key' => 'SINGLE', 'name' => 'Single', 'active' => 1),
+					'unknown' => array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1),
+					'widowed' => array('key' => 'WIDOWED', 'name' => 'Widowed', 'active' => 1),
+				)),
+				'confidentiality' => array('key' => 'CONFIDENT', 'name' => 'Confidentiality', 'active' => 1, 'data' => array(
+					'nosr' => array('key' => 'NOSR', 'name' => 'No Special Restrictions', 'active' => 1),
+					'basiconfi' => array('key' => 'BASICCONFI', 'name' => 'Basic Confidentiality', 'active' => 1),
+					'familyPlanning' => array('key' => 'FAMILYPLAN', 'name' => 'Family Planning', 'active' => 1),
+					'diseaseCon' => array('key' => 'DISEASECON', 'name' => 'Disease Confidentiality', 'active' => 1),
+					'diseaseFPC' => array('key' => 'DISEASEFPC', 'name' => 'Disease and Family Planning Confidentiality', 'active' => 1),
+					'extremeCon' => array('key' => 'EXTREMECON', 'name' => 'Extreme Confidentiality', 'active' => 1),
+				)),
+				'gender' => array('key' => 'G', 'name' => 'Gender', 'active' => 1, 'data' => array(
+					'male' => array('key' => 'M', 'name' => 'Male', 'active' => 1),
+					'female' => array('key' => 'F', 'name' => 'Female', 'active' => 1),
+					'unknown' => array('key' => 'U', 'name' => 'Unknown', 'active' => 1),
+				)),
+			);
+
+			$level = array();
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array();
+			$data[] = $level;
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateGeographyPreferencesEnum($force = true) {
+		$ret = false;
+		do {
+			$name = 'Geography';
+			$key = 'GEOGRAPH';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enumCountriesList = array(
+				'AFG' => 'Afghanistan',
+				'ALB' => 'Albania',
+				'DZA' => 'Algeria',
+				'ASM' => 'American Samoa',
+				'AND' => 'Andorra',
+				'AGO' => 'Angola',
+				'AIA' => 'Anguilla',
+				'ATA' => 'Antarctica',
+				'ATG' => 'Antigua and Barbuda',
+				'ARG' => 'Argentina',
+				'ARM' => 'Armenia',
+				'ABW' => 'Aruba',
+				'AUS' => 'Australia',
+				'AUT' => 'Austria',
+				'AZE' => 'Azerbaijan',
+				'BHS' => 'Bahamas',
+				'BHR' => 'Bahrain',
+				'BGD' => 'Bangladesh',
+				'BRB' => 'Barbados',
+				'BLR' => 'Belarus',
+				'BEL' => 'Belgium',
+				'BLZ' => 'Belize',
+				'BEN' => 'Benin',
+				'BMU' => 'Bermuda',
+				'BTN' => 'Bhutan',
+				'BOL' => 'Bolivia',
+				'BIH' => 'Bosnia and Herzegovina',
+				'BWA' => 'Botswana',
+				'BVT' => 'Bouvet Island',
+				'BRA' => 'Brazil',
+				'IOT' => 'British Indian Ocean Territory',
+				'BRN' => 'Brunei Darussalam',
+				'BGR' => 'Bulgaria',
+				'BFA' => 'Burkina Faso',
+				'BDI' => 'Burundi',
+				'KHM' => 'Cambodia',
+				'CMR' => 'Cameroon',
+				'CAN' => 'Canada',
+				'CPV' => 'Cape Verde',
+				'CYM' => 'Cayman Islands',
+				'CAF' => 'Central African Republic',
+				'TCD' => 'Chad',
+				'CHL' => 'Chile',
+				'CHN' => 'China',
+				'CXR' => 'Christmas Island',
+				'CCK' => 'Cocos (Keeling) Islands',
+				'COL' => 'Colombia',
+				'COM' => 'Comoros',
+				'COG' => 'Congo',
+				'COD' => 'Congo, the Democratic Republic of the',
+				'COK' => 'Cook Islands',
+				'CRI' => 'Costa Rica',
+				'CIV' => 'Cote D\'Ivoire',
+				'HRV' => 'Croatia',
+				'CUB' => 'Cuba',
+				'CYP' => 'Cyprus',
+				'CZE' => 'Czech Republic',
+				'DNK' => 'Denmark',
+				'DJI' => 'Djibouti',
+				'DMA' => 'Dominica',
+				'DOM' => 'Dominican Republic',
+				'ECU' => 'Ecuador',
+				'EGY' => 'Egypt',
+				'SLV' => 'El Salvador',
+				'GNQ' => 'Equatorial Guinea',
+				'ERI' => 'Eritrea',
+				'EST' => 'Estonia',
+				'ETH' => 'Ethiopia',
+				'FLK' => 'Falkland Islands (Malvinas)',
+				'FRO' => 'Faroe Islands',
+				'FJI' => 'Fiji',
+				'FIN' => 'Finland',
+				'FRA' => 'France',
+				'GUF' => 'French Guiana',
+				'PYF' => 'French Polynesia',
+				'ATF' => 'French Southern Territories',
+				'GAB' => 'Gabon',
+				'GMB' => 'Gambia',
+				'GEO' => 'Georgia',
+				'DEU' => 'Germany',
+				'GHA' => 'Ghana',
+				'GIB' => 'Gibraltar',
+				'GRC' => 'Greece',
+				'GRL' => 'Greenland',
+				'GRD' => 'Grenada',
+				'GLP' => 'Guadeloupe',
+				'GUM' => 'Guam',
+				'GTM' => 'Guatemala',
+				'GIN' => 'Guinea',
+				'GNB' => 'Guinea-Bissau',
+				'GUY' => 'Guyana',
+				'HTI' => 'Haiti',
+				'HMD' => 'Heard Island and Mcdonald Islands',
+				'VAT' => 'Holy See (Vatican City State)',
+				'HND' => 'Honduras',
+				'HKG' => 'Hong Kong',
+				'HUN' => 'Hungary',
+				'ISL' => 'Iceland',
+				'IND' => 'India',
+				'IDN' => 'Indonesia',
+				'IRN' => 'Iran, Islamic Republic of',
+				'IRQ' => 'Iraq',
+				'IRL' => 'Ireland',
+				'ISR' => 'Israel',
+				'ITA' => 'Italy',
+				'JAM' => 'Jamaica',
+				'JPN' => 'Japan',
+				'JOR' => 'Jordan',
+				'KAZ' => 'Kazakhstan',
+				'KEN' => 'Kenya',
+				'KIR' => 'Kiribati',
+				'PRK' => 'Korea, Democratic People\'s Republic of',
+				'KOR' => 'Korea, Republic of',
+				'KWT' => 'Kuwait',
+				'KGZ' => 'Kyrgyzstan',
+				'LAO' => 'Lao People\'s Democratic Republic',
+				'LVA' => 'Latvia',
+				'LBN' => 'Lebanon',
+				'LSO' => 'Lesotho',
+				'LBR' => 'Liberia',
+				'LBY' => 'Libyan Arab Jamahiriya',
+				'LIE' => 'Liechtenstein',
+				'LTU' => 'Lithuania',
+				'LUX' => 'Luxembourg',
+				'MAC' => 'Macao',
+				'MKD' => 'Macedonia, the Former Yugoslav Republic of',
+				'MDG' => 'Madagascar',
+				'MWI' => 'Malawi',
+				'MYS' => 'Malaysia',
+				'MDV' => 'Maldives',
+				'MLI' => 'Mali',
+				'MLT' => 'Malta',
+				'MHL' => 'Marshall Islands',
+				'MTQ' => 'Martinique',
+				'MRT' => 'Mauritania',
+				'MUS' => 'Mauritius',
+				'MYT' => 'Mayotte',
+				'MEX' => 'Mexico',
+				'FSM' => 'Micronesia, Federated States of',
+				'MDA' => 'Moldova, Republic of',
+				'MCO' => 'Monaco',
+				'MNG' => 'Mongolia',
+				'MSR' => 'Montserrat',
+				'MAR' => 'Morocco',
+				'MOZ' => 'Mozambique',
+				'MMR' => 'Myanmar',
+				'NAM' => 'Namibia',
+				'NRU' => 'Nauru',
+				'NPL' => 'Nepal',
+				'NLD' => 'Netherlands',
+				'ANT' => 'Netherlands Antilles',
+				'NCL' => 'New Caledonia',
+				'NZL' => 'New Zealand',
+				'NIC' => 'Nicaragua',
+				'NER' => 'Niger',
+				'NGA' => 'Nigeria',
+				'NIU' => 'Niue',
+				'NFK' => 'Norfolk Island',
+				'MNP' => 'Northern Mariana Islands',
+				'NOR' => 'Norway',
+				'OMN' => 'Oman',
+				'PAK' => 'Pakistan',
+				'PLW' => 'Palau',
+				'PSE' => 'Palestinian Territory, Occupied',
+				'PAN' => 'Panama',
+				'PNG' => 'Papua New Guinea',
+				'PRY' => 'Paraguay',
+				'PER' => 'Peru',
+				'PHL' => 'Philippines',
+				'PCN' => 'Pitcairn',
+				'POL' => 'Poland',
+				'PRT' => 'Portugal',
+				'PRI' => 'Puerto Rico',
+				'QAT' => 'Qatar',
+				'REU' => 'Reunion',
+				'ROM' => 'Romania',
+				'RUS' => 'Russian Federation',
+				'RWA' => 'Rwanda',
+				'SHN' => 'Saint Helena',
+				'KNA' => 'Saint Kitts and Nevis',
+				'LCA' => 'Saint Lucia',
+				'SPM' => 'Saint Pierre and Miquelon',
+				'VCT' => 'Saint Vincent and the Grenadines',
+				'WSM' => 'Samoa',
+				'SMR' => 'San Marino',
+				'STP' => 'Sao Tome and Principe',
+				'SAU' => 'Saudi Arabia',
+				'SEN' => 'Senegal',
+				'SCG' => 'Serbia and Montenegro',
+				'SYC' => 'Seychelles',
+				'SLE' => 'Sierra Leone',
+				'SGP' => 'Singapore',
+				'SVK' => 'Slovakia',
+				'SVN' => 'Slovenia',
+				'SLB' => 'Solomon Islands',
+				'SOM' => 'Somalia',
+				'ZAF' => 'South Africa',
+				'SGS' => 'South Georgia and the South Sandwich Islands',
+				'ESP' => 'Spain',
+				'LKA' => 'Sri Lanka',
+				'SDN' => 'Sudan',
+				'SUR' => 'Suriname',
+				'SJM' => 'Svalbard and Jan Mayen',
+				'SWZ' => 'Swaziland',
+				'SWE' => 'Sweden',
+				'CHE' => 'Switzerland',
+				'SYR' => 'Syrian Arab Republic',
+				'TWN' => 'Taiwan, Province of China',
+				'TJK' => 'Tajikistan',
+				'TZA' => 'Tanzania, United Republic of',
+				'THA' => 'Thailand',
+				'TLS' => 'Timor-Leste',
+				'TGO' => 'Togo',
+				'TKL' => 'Tokelau',
+				'TON' => 'Tonga',
+				'TTO' => 'Trinidad and Tobago',
+				'TUN' => 'Tunisia',
+				'TUR' => 'Turkey',
+				'TKM' => 'Turkmenistan',
+				'TCA' => 'Turks and Caicos Islands',
+				'TUV' => 'Tuvalu',
+				'UGA' => 'Uganda',
+				'UKR' => 'Ukraine',
+				'ARE' => 'United Arab Emirates',
+				'GBR' => 'United Kingdom',
+				'USA' => 'United States',
+				'UMI' => 'United States Minor Outlying Islands',
+				'URY' => 'Uruguay',
+				'UZB' => 'Uzbekistan',
+				'VUT' => 'Vanuatu',
+				'VEN' => 'Venezuela',
+				'VNM' => 'Viet Nam',
+				'VGB' => 'Virgin Islands, British',
+				'VIR' => 'Virgin Islands, U.s.',
+				'WLF' => 'Wallis and Futuna',
+				'ESH' => 'Western Sahara',
+				'YEM' => 'Yemen',
+				'ZMB' => 'Zambia',
+				'ZWE' => 'Zimbabwe',
+			);			
+
+			$enumStatesList = array(
+				'AA' => 'Armed Forces Americas (except Canada)',
+				'AE' => 'Armed Forces Africa',
+				'AE' => 'Armed Forces Canada',
+				'AE' => 'Armed Forces Europe',
+				'AE' => 'Armed Forces Middle East',
+				'AK' => 'Alaska',
+				'AL' => 'Alabama',
+				'AP' => 'Armed Forces Pacific',
+				'AR' => 'Arkansas',
+				'AS' => 'American Samoa',
+				'AZ' => 'Arizona',
+				'CA' => 'California',
+				'CO' => 'Colorado',
+				'CT' => 'Connecticut',
+				'DC' => 'District of Columbia',
+				'DE' => 'Delaware',
+				'FL' => 'Florida',
+				'FM' => 'Federated States of Micronesia',
+				'GA' => 'Georgia',
+				'GU' => 'Guam',
+				'HI' => 'Hawaii',
+				'IA' => 'Iowa',
+				'ID' => 'Idaho',
+				'IL' => 'Illinois',
+				'IN' => 'Indiana',
+				'KS' => 'Kansas',
+				'KY' => 'Kentucky',
+				'LA' => 'Louisiana',
+				'MA' => 'Massachusetts',
+				'MD' => 'Maryland',
+				'ME' => 'Maine',
+				'MH' => 'Marshall Islands',
+				'MI' => 'Michigan',
+				'MN' => 'Minnesota',
+				'MO' => 'Missouri',
+				'MP' => 'Northern Mariana Islands',
+				'MS' => 'Mississippi',
+				'MT' => 'Montana',
+				'NC' => 'North Carolina',
+				'ND' => 'North Dakota',
+				'NE' => 'Nebraska',
+				'NH' => 'New Hampshire',
+				'NJ' => 'New Jersey',
+				'NM' => 'New Mexico',
+				'NV' => 'Nevada',
+				'NY' => 'New York',
+				'OH' => 'Ohio',
+				'OK' => 'Oklahoma',
+				'OR' => 'Oregon',
+				'PA' => 'Pennsylvania',
+				'PR' => 'Puerto Rico',
+				'PW' => 'Palau',
+				'RI' => 'Rhode Island',
+				'SC' => 'South Carolina',
+				'SD' => 'South Dakota',
+				'TN' => 'Tennessee',
+				'TX' => 'Texas',
+				'UT' => 'Utah',
+				'VA' => 'Virginia',
+				'VI' => 'Virgin Islands',
+				'VT' => 'Vermont',
+				'WA' => 'Washington',
+				'WI' => 'Wisconsin',
+				'WV' => 'West Virginia',
+				'WY' => 'Wyoming',
+			);
+
+			// countries
+			$level1 = array();
+			$level1['key'] = 'COUNTRIES';
+			$level1['name']	= 'Countries';
+			foreach ($enumCountriesList as $k=>$v) {
+				$tmp = array();
+				$tmp['key'] = $k;
+				$tmp['name'] = $v;
+				$tmp['active'] = 1;
+				$level1['data'][] = $tmp;
+			}
+
+			// states
+			$level2 = array();
+			$level2['key'] = 'STATES';
+			$level2['name']	= 'States';
+			foreach ($enumStatesList as $k=>$v) {
+				$tmp = array();
+				$tmp['key'] = $k;
+				$tmp['name'] = $v;
+				$tmp['active'] = 1;
+				$level2['data'][] = $tmp;
+			}
+
+			// top level
+			$topLevel = array();
+			$topLevel['key'] = $key;
+			$topLevel['name'] = $name;
+
+			$topLevel['category'] = 'System';
+			$topLevel['active'] = 1;
+			$topLevel['data'] = array();
+			$topLevel['data'][] = $level1;
+			$topLevel['data'][] = $level2;
+
+			$data = array();
+			$data[] = $topLevel;
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateCalendarPreferencesEnum($force = true) {
+		$ret = false;
+		do {
+			$name = 'Calendar';
+			$key = 'CALENDAR';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				'appointment' => array('key' => 'APP_REASON', 'name' => AppointmentTemplate::ENUM_PARENT_NAME, 'active' => 1, 'data' => array(
+					'provider' => array('key' => 'PROVIDER', 'name' => 'Provider', 'active' => 1),
+					'specialist' => array('key' => 'SPECIALIST', 'name' => 'Specialist', 'active' => 1),
+					'medicalPhone' => array('key' => 'MEDPHONE', 'name' => 'Medical Phone', 'active' => 1),
+					'medicalPU' => array('key' => 'MEDPU', 'name' => 'Medication PU', 'active' => 1),
+					'education' => array('key' => 'EDUCATION', 'name' => 'Education', 'active' => 1),
+					'eligibility' => array('key' => 'ELIG', 'name' => 'Eligibility', 'active' => 1),
+					'blockedTime' => array('key' => 'BLOCKTIME', 'name' => 'Blocked Time', 'active' => 1),
+				)),
+			);
+
+			$appointmentTemplate = new AppointmentTemplate();
+			foreach ($enums['appointment']['data'] as $k=>$item) {
+				$appointmentTemplate->appointmentTemplateId = 0;
+				$appointmentTemplate->name = $item['name'];
+				$appointmentTemplate->persist();
+
+				$enums['appointment']['data'][$k]['ormClass'] = 'AppointmentTemplate';
+				$enums['appointment']['data'][$k]['ormEditMethod'] = 'ormEditMethod';
+				$enums['appointment']['data'][$k]['ormId'] = $appointmentTemplate->appointmentTemplateId;
+			}
+
+			// top level
+			$topLevel = array();
+			$topLevel['key'] = $key;
+			$topLevel['name'] = $name;
+			$topLevel['category'] = 'System';
+			$topLevel['active'] = 1;
+			$topLevel['data'] = $enums;
+
+			$data = array();
+			$data[] = $topLevel;
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateClinicalPreferencesEnum($force = true) {
+		$ret = false;
+		do {
+			$name = 'Clinical';
+			$key = 'CLINICAL';
+			$enumeration = new self();
+			$enumeration->populateByEnumerationName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$symptomsList = array(
+				//'CONFUSION','ITCHING,WATERING EYES','HYPOTENSION','DROWSINESS','CHEST PAIN',
+				//'DIARRHEA','HIVES','DRY MOUTH','CHEST PAIN','DIARRHEA',
+				//'HIVES','DRY MOUTH','CHILLS','RASH',
+				'AGITATION','AGRANULOCYTOSIS','ALOPECIA','ANAPHYLAXIS','ANEMIA',
+				'ANOREXIA','ANXIETY','APNEA','APPETITE,INCREASED','ARRHYTHMIA',
+				'ASTHENIA','ASTHMA','ATAXIA','ATHETOSIS','BRACHYCARDIA',
+				'BREAST ENGORGEMENT','BRONCHOSPASM','CARDIAC ARREST','CHEST PAIN','CHILLS',
+				'COMA','CONFUSION','CONGESTION,NASAL','CONJUNCTIVAL CONGESTION','CONSTIPATION',
+				'COUGHING','DEAFNESS','DELERIUM','DELUSION','DEPRESSION',
+				'DEPRESSION,MENTAL','DEPRESSION,POSTICTAL','DERMATITIS','DERMATITIS,CONTACT','DERMATITIS,PHOTOALLERGENIC',
+				'DIAPHORESIS','DIARRHEA','DIPLOPIA','DISTURBED COORDINATION','DIZZINESS',
+				'DREAMING,INCREASED','DROWSINESS','DRY MOUTH','DRY NOSE','DRY THROAT',
+				'DYSPNEA','DYSURIA','ECCHYMOSIS','ECG CHANGES','ECZEMA',
+				'EDEMA','EPIGASTRIC DISTRESS','EPISTAXIS','ERYTHEMA','EUPHORIA',
+				'EXCITATION','EXTRASYSTOLE','FACE FLUSHED','FACIAL DYSKINESIA','FAINTNESS',
+				'FATIGUE','FEELING OF WARMTH','FEVER','GALACTORRHEA','GENERALIZED RASH',
+				'GI REACTION','GLAUCOMA','GYNECOMASTIA','HALLUCINATIONS','HEADACHE',
+				'HEART BLOCK','HEMATURIA','HEMOGLOBIN,INCREASED','HIVES','HYPERSENSITIVITY',
+				'HYPERTENSION','HYPOTENSION','IMPAIRMENT OF ERECTION','IMPOTENCE','INAPPROPRIATE PENILE ERECTION',
+				'INSOMNIA','IRRITABILITY','ITCHING,WATERING EYES','JUNCTIONAL RHYTHM','LABYRINTHITIS,ACUTE',
+				'LACRIMATION','LDH,INCREASED','LETHARGY','LEUKOCYTE COUNT,DECREASED','LIBIDO,DECREASED',
+				'LIBIDO,INCREASED','MIOSIS','MYOCARDIAL INFARCTION','NAUSEA,VOMITING','NERVOUSNESS,AGITATION',
+				'NEUTROPHIL COUNT,DECREASED','NIGHTMARES','OPTIC ATROPHY','ORGASM,INHIBITED','ORONASALPHARYNGEAL IRRITATION',
+				'PAIN,JOINT','PALPITATIONS','PANCYTOPENIA','PARESTHESIA','PARKINSONIAN-LIKE SYNDROME',
+				'PHOTOSENSITIVITY','POSSIBLE REACTION','PRIAPISM','PROLONGED PENILE ERECTION','PRURITIS',
+				'PTOSIS','PURPURA','RALES','RASH','RASH,PAPULAR',
+				'RESPIRATORY DISTRESS','RETROGRADE EJACULATION','RHINITIS','RHINORRHEA','RHONCHUS',
+				'S-T CHANGES,TRANSIENT','SEIZURES','SEIZURES,TONIC-CLONIC','SELF-DEPRECATION','SEVERE RASH',
+				'SHORTNESS OF BREATH','SINUS BRACHYCARDIA','SNEEZING','SOMNOLENCE','SPEECH DISORDER',
+				'SWELLING (NON-SPECIFIC)','SWELLING-EYES','SWELLING-LIPS','SWELLING-THROAT','SYNCOPE',
+				'TACHYCARDIA','THROMBOCYTOPENIA','TREMORS','URINARY FLOW,DELAYED','URINARY FREQUENCY',
+				'URINARY FREQUENCY,INCREASED','URINARY RETENTION','URTICARIA','UVEITIS','VERTIGO',
+				'VISION,BLURRED','VISUAL DISTURBANCES','VOMITING','WEAKNESS','WEIGHT GAIN',
+				'WHEEZING',
+			);
+
+			$enums = array(
+				'allergies' => array('key' => 'ALLERGIES', 'name' => 'Allergies', 'active' => 1, 'data' => array(
+					'symptom' => array('key' => 'SYMPTOM', 'name' => PatientAllergy::ENUM_SYMPTOM_PARENT_NAME, 'active' => 1, 'data' => array()),
+					'severity' => array('key' => 'SEVERITY', 'name' => PatientAllergy::ENUM_SEVERITY_PARENT_NAME, 'active' => 1, 'data' => array(
+						'mild' => array('key' => 'MILD', 'name' => 'Mild', 'active' => 1),
+						'moderate' => array('key' => 'MODERATE', 'name' => 'Moderate', 'active' => 1),
+					)),
+					'reactionType' => array('key' => 'REACTYPE', 'name' => PatientAllergy::ENUM_REACTION_TYPE_PARENT_NAME, 'active' => 1, 'data' => array(
+						'allergy' => array('key' => 'ALLERGY', 'name' => 'Allergy', 'active' => 1),
+						'pharma' => array('key' => 'PHARMA', 'name' => 'Pharmacological', 'active' => 1),
+						'unknown' => array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1),
+						'drugClass' => array('key' => 'DRUGCLASS', 'name' => 'Drug Class Allergy', 'active' => 1),
+						'specDrug' => array('key' => 'SPECDRUG', 'name' => 'Specific Drug Allergy', 'active' => 1),
+					)),
+				)),
+			);
+			// symptoms
+			$ctr = 1;
+			foreach ($symptomsList as $symptom) {
+				$tmp = array();
+				$tmp['key'] = $ctr++;
+				$tmp['name'] = $symptom;
+				$tmp['active'] = 1;
+				$enums['allergies']['symptom']['data'][] = $tmp;
+			}
+
+			$level = array();
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array();
+			$data[] = $level;
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
 	}
 
 	public static function generateContactPreferencesEnum($force = false) {
 		$ret = false;
 		do {
 			$name = 'Contact Preferences';
-			$key = 'CP';
+			$key = 'CONTACT';
 			$enumeration = new self();
 			$enumeration->populateByEnumerationName($name);
 			// check for key existence
@@ -243,34 +841,39 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level1['active'] = 1;
 
 			$level11 = array();
-			$level11['key'] = 'HM';
+			$level11['key'] = 'HOME';
 			$level11['name'] = 'Home';
 			$level11['active'] = 1;
 
 			$level12 = array();
-			$level12['key'] = 'WK';
+			$level12['key'] = 'WORK';
 			$level12['name'] = 'Work';
 			$level12['active'] = 1;
 
 			$level13 = array();
-			$level13['key'] = 'BL';
+			$level13['key'] = 'BILL';
 			$level13['name'] = 'Billing';
 			$level13['active'] = 1;
 
 			$level14 = array();
-			$level14['key'] = 'MB';
+			$level14['key'] = 'MOB';
 			$level14['name'] = 'Mobile';
 			$level14['active'] = 1;
 
 			$level15 = array();
-			$level15['key'] = 'EM';
+			$level15['key'] = 'EMER';
 			$level15['name'] = 'Emergency';
 			$level15['active'] = 1;
 
 			$level16 = array();
-			$level16['key'] = 'FX';
+			$level16['key'] = 'FAX';
 			$level16['name'] = 'Fax';
 			$level16['active'] = 1;
+
+			$level17 = array();
+			$level17['key'] = 'EMPL';
+			$level17['name'] = 'Employer';
+			$level17['active'] = 1;
 
 			$level1['data'] = array();
 			$level1['data'][] = $level11;
@@ -279,6 +882,7 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level1['data'][] = $level14;
 			$level1['data'][] = $level15;
 			$level1['data'][] = $level16;
+			$level1['data'][] = $level17;
 
 			$level2 = array();
 			$level2['key'] = 'AT';
@@ -286,17 +890,17 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level2['active'] = 1;
 
 			$level21 = array();
-			$level21['key'] = 'HM';
+			$level21['key'] = 'HOME';
 			$level21['name'] = 'Home';
 			$level21['active'] = 1;
 
 			$level22 = array();
-			$level22['key'] = 'EMP';
+			$level22['key'] = 'EMPL';
 			$level22['name'] = 'Employer';
 			$level22['active'] = 1;
 
 			$level23 = array();
-			$level23['key'] = 'BL';
+			$level23['key'] = 'BILL';
 			$level23['name'] = 'Billing';
 			$level23['active'] = 1;
 
@@ -306,12 +910,12 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level24['active'] = 1;
 
 			$level25 = array();
-			$level25['key'] = 'MN';
+			$level25['key'] = 'MAIN';
 			$level25['name'] = 'Main';
 			$level25['active'] = 1;
 
 			$level26 = array();
-			$level26['key'] = 'SC';
+			$level26['key'] = 'SEC';
 			$level26['name'] = 'Secondary';
 			$level26['active'] = 1;
 
@@ -344,7 +948,7 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		$ret = false;
 		do {
 			$name = 'Menu';
-			$key = 'M';
+			$key = 'MENU';
 			$enumeration = new self();
 			$enumeration->populateByEnumerationName($name);
 			// check for key existence
@@ -356,81 +960,24 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
 			}
 
-			$level1 = array();
-			$level1['key'] = 'F';
-			$level1['name'] = 'File';
-			$level1['active'] = 1;
-
-			$level11 = array();
-			$level11['key'] = 'AP';
-			$level11['name'] = 'Add Patient';
-			$level11['active'] = 1;
-
-			$level12 = array();
-			$level12['key'] = 'SP';
-			$level12['name'] = 'Select Patient';
-			$level12['active'] = 1;
-
-			$level13 = array();
-			$level13['key'] = 'RSC';
-			$level13['name'] = 'Review / Sign Changes';
-			$level13['active'] = 1;
-
-			$level14 = array();
-			$level14['key'] = 'CP';
-			$level14['name'] = 'Change Password';
-			$level14['active'] = 1;
-
-			$level15 = array();
-			$level15['key'] = 'ESK';
-			$level15['name'] = 'Edit Signing Key';
-			$level15['active'] = 1;
-
-			$level16 = array();
-			$level16['key'] = 'Q';
-			$level16['name'] = 'Quit';
-			$level16['active'] = 1;
-
-			$level1['data'] = array();
-			$level1['data'][] = $level11;
-			$level1['data'][] = $level12;
-			$level1['data'][] = $level13;
-			$level1['data'][] = $level14;
-			$level1['data'][] = $level15;
-			$level1['data'][] = $level16;
-
-			$level2 = array();
-			$level2['key'] = 'A';
-			$level2['name'] = 'Action';
-			$level2['active'] = 1;
-
-			$level21 = array();
-			$level21['key'] = 'AV';
-			$level21['name'] = 'Add Vitals';
-			$level21['active'] = 1;
-
-			$level22 = array();
-			$level22['key'] = 'P';
-			$level22['name'] = 'Print';
-			$level22['active'] = 1;
-
-			$level221 = array();
-			$level221['key'] = 'FS';
-			$level221['name'] = 'Flow Sheet';
-			$level221['active'] = 1;
-
-			$level22['data'] = array();
-			$level22['data'][] = $level221;
-
-			$level23 = array();
-			$level23['key'] = 'manage_schedules';
-			$level23['name'] = 'Manage Schedules';
-			$level23['active'] = 1;
-
-			$level2['data'] = array();
-			$level2['data'][] = $level21;
-			$level2['data'][] = $level22;
-			$level2['data'][] = $level23;
+			$enums = array(
+				'file' => array('key' => 'FILE', 'name' => 'File', 'active' => 1, 'data' => array(
+					'addPatient' => array('key' => 'ADDPATIENT', 'name' => 'Add Patient', 'active' => 1),
+					'selectPatient' => array('key' => 'SELPATIENT', 'name' => 'Select Patient', 'active' => 1),
+					'reviewSignChanges' => array('key' => 'RSC', 'name' => 'Review / Sign Changes', 'active' => 1),
+					'changePassword' => array('key' => 'CHANGEPW', 'name' => 'Change Password', 'active' => 1),
+					'editSigningKey' => array('key' => 'SIGNINGKEY', 'name' => 'Edit Signing Key', 'active' => 1),
+					'myPreferences' => array('key' => 'MYPREF', 'name' => 'My Preferences', 'active' => 1),
+					'quit' => array('key' => 'QUIT', 'name' => 'Quit', 'active' => 1),
+				)),
+				'action' => array('key' => 'ACTION', 'name' => 'Action', 'active' => 1, 'data' => array(
+					'addVitals' => array('key' => 'ADDVITALS', 'name' => 'Add Vitals', 'active' => 1),
+					'print' => array('key' => 'PRINT', 'name' => 'Print', 'active' => 1, 'data' => array(
+						'flowSheet' => array('key' => 'FLOWSHEET', 'name' => 'Flow Sheet', 'active' => 1),
+					)),
+					'manageSchedule' => array('key' => 'MANSCHED', 'name' => 'Manage Schedules', 'active' => 1),
+				)),
+			);
 
 			$level0 = array();
 			$level0['key'] = $key;
@@ -439,11 +986,7 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level0['active'] = 1;
 			$level0['ormClass'] = 'MenuItem';
 			$level0['ormEditMethod'] = 'ormEditMethod';
-
-
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
+			$level0['data'] = $enums;
 
 			$data = array();
 			$data[] = $level0;
@@ -499,75 +1042,6 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 				self::_generateMenuEnumerationTree($enum);
 			}
 		}
-	}
-
-	public static function generateGenderEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Gender';
-			$key = 'G';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$data = array();
-			$tmp = array();
-			$tmp['key'] = $key;
-			$tmp['name'] = $name;
-			$tmp['category'] = 'System';
-			$tmp['active'] = 1;
-			$tmp['data'][] = array('key'=>'M','name'=>'Male','active'=>1);
-			$tmp['data'][] = array('key'=>'F','name'=>'Female','active'=>1);
-			$tmp['data'][] = array('key'=>'U','name'=>'Unknown','active'=>1);
-			$data[] = $tmp;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateMaritalStatusEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Marital Status';
-			$key = 'MStatus';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$data = array();
-			$tmp = array();
-			$tmp['key'] = $key;
-			$tmp['name'] = $name;
-			$tmp['category'] = 'System';
-			$tmp['active'] = 1;
-			$tmp['data'][] = array('key'=>'Accompanied','name'=>'Accompanied','active'=>1);
-			$tmp['data'][] = array('key'=>'Divorced','name'=>'Divorced','active'=>1);
-			$tmp['data'][] = array('key'=>'Married','name'=>'Married','active'=>1);
-			$tmp['data'][] = array('key'=>'NotSpec','name'=>'Not Specified','active'=>1);
-			$tmp['data'][] = array('key'=>'Separated','name'=>'Separated','active'=>1);
-			$tmp['data'][] = array('key'=>'Single','name'=>'Single','active'=>1);
-			$tmp['data'][] = array('key'=>'Unknown','name'=>'Unknown','active'=>1);
-			$tmp['data'][] = array('key'=>'Widowed','name'=>'Widowed','active'=>1);
-			$data[] = $tmp;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
 	}
 
 	public static function generateImmunizationPreferencesEnum($force = false) {
@@ -1022,311 +1496,6 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		return $ret;
 	}
 
-	public static function generateReactionTypePreferencesEnum($force = false) {
-		$ret = false;
-		do {
-			$name = PatientAllergy::ENUM_REACTION_TYPE_PARENT_NAME;
-			$key = 'REACTYPE';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'ALLERGY';
-			$level1['name'] = 'Allergy';
-			$level1['active'] = 1;
-
-			$level2 = array();
-			$level2['key'] = 'PHARMA';
-			$level2['name'] = 'Pharmacological';
-			$level2['active'] = 1;
-
-			$level3 = array();
-			$level3['key'] = 'UK';
-			$level3['name'] = 'Unknown';
-			$level3['active'] = 1;
-
-			$level4 = array();
-			$level4['key'] = 'DrugClass';
-			$level4['name'] = 'Drug Class Allergy';
-			$level4['active'] = 1;
-
-			$level5 = array();
-			$level5['key'] = 'SpecDrug';
-			$level5['name'] = 'Specific Drug Allergy';
-			$level5['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-			$level0['data'][] = $level3;
-			$level0['data'][] = $level4;
-			$level0['data'][] = $level5;
-
-			$data = array();
-			$data[] = $level0;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateSeverityPreferencesEnum($force = false) {
-		$ret = false;
-		do {
-			$name = PatientAllergy::ENUM_SEVERITY_PARENT_NAME;
-			$key = 'SEVERITY';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'MILD';
-			$level1['name'] = 'Mild';
-			$level1['active'] = 1;
-
-			$level2 = array();
-			$level2['key'] = 'MOD';
-			$level2['name'] = 'Moderate';
-			$level2['active'] = 1;
-
-			$level3 = array();
-			$level3['key'] = 'SEVERE';
-			$level3['name'] = 'Severe';
-			$level3['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-			$level0['data'][] = $level3;
-
-			$data = array();
-			$data[] = $level0;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateSymptomPreferencesEnum($force = false) {
-		$ret = false;
-		do {
-			$name = PatientAllergy::ENUM_SYMPTOM_PARENT_NAME;
-			$key = 'SYMPTOM';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$symptomsList = array(
-				//'CONFUSION','ITCHING,WATERING EYES','HYPOTENSION','DROWSINESS','CHEST PAIN',
-				//'DIARRHEA','HIVES','DRY MOUTH','CHEST PAIN','DIARRHEA',
-				//'HIVES','DRY MOUTH','CHILLS','RASH',
-				'AGITATION','AGRANULOCYTOSIS','ALOPECIA','ANAPHYLAXIS','ANEMIA',
-				'ANOREXIA','ANXIETY','APNEA','APPETITE,INCREASED','ARRHYTHMIA',
-				'ASTHENIA','ASTHMA','ATAXIA','ATHETOSIS','BRACHYCARDIA',
-				'BREAST ENGORGEMENT','BRONCHOSPASM','CARDIAC ARREST','CHEST PAIN','CHILLS',
-				'COMA','CONFUSION','CONGESTION,NASAL','CONJUNCTIVAL CONGESTION','CONSTIPATION',
-				'COUGHING','DEAFNESS','DELERIUM','DELUSION','DEPRESSION',
-				'DEPRESSION,MENTAL','DEPRESSION,POSTICTAL','DERMATITIS','DERMATITIS,CONTACT','DERMATITIS,PHOTOALLERGENIC',
-				'DIAPHORESIS','DIARRHEA','DIPLOPIA','DISTURBED COORDINATION','DIZZINESS',
-				'DREAMING,INCREASED','DROWSINESS','DRY MOUTH','DRY NOSE','DRY THROAT',
-				'DYSPNEA','DYSURIA','ECCHYMOSIS','ECG CHANGES','ECZEMA',
-				'EDEMA','EPIGASTRIC DISTRESS','EPISTAXIS','ERYTHEMA','EUPHORIA',
-				'EXCITATION','EXTRASYSTOLE','FACE FLUSHED','FACIAL DYSKINESIA','FAINTNESS',
-				'FATIGUE','FEELING OF WARMTH','FEVER','GALACTORRHEA','GENERALIZED RASH',
-				'GI REACTION','GLAUCOMA','GYNECOMASTIA','HALLUCINATIONS','HEADACHE',
-				'HEART BLOCK','HEMATURIA','HEMOGLOBIN,INCREASED','HIVES','HYPERSENSITIVITY',
-				'HYPERTENSION','HYPOTENSION','IMPAIRMENT OF ERECTION','IMPOTENCE','INAPPROPRIATE PENILE ERECTION',
-				'INSOMNIA','IRRITABILITY','ITCHING,WATERING EYES','JUNCTIONAL RHYTHM','LABYRINTHITIS,ACUTE',
-				'LACRIMATION','LDH,INCREASED','LETHARGY','LEUKOCYTE COUNT,DECREASED','LIBIDO,DECREASED',
-				'LIBIDO,INCREASED','MIOSIS','MYOCARDIAL INFARCTION','NAUSEA,VOMITING','NERVOUSNESS,AGITATION',
-				'NEUTROPHIL COUNT,DECREASED','NIGHTMARES','OPTIC ATROPHY','ORGASM,INHIBITED','ORONASALPHARYNGEAL IRRITATION',
-				'PAIN,JOINT','PALPITATIONS','PANCYTOPENIA','PARESTHESIA','PARKINSONIAN-LIKE SYNDROME',
-				'PHOTOSENSITIVITY','POSSIBLE REACTION','PRIAPISM','PROLONGED PENILE ERECTION','PRURITIS',
-				'PTOSIS','PURPURA','RALES','RASH','RASH,PAPULAR',
-				'RESPIRATORY DISTRESS','RETROGRADE EJACULATION','RHINITIS','RHINORRHEA','RHONCHUS',
-				'S-T CHANGES,TRANSIENT','SEIZURES','SEIZURES,TONIC-CLONIC','SELF-DEPRECATION','SEVERE RASH',
-				'SHORTNESS OF BREATH','SINUS BRACHYCARDIA','SNEEZING','SOMNOLENCE','SPEECH DISORDER',
-				'SWELLING (NON-SPECIFIC)','SWELLING-EYES','SWELLING-LIPS','SWELLING-THROAT','SYNCOPE',
-				'TACHYCARDIA','THROMBOCYTOPENIA','TREMORS','URINARY FLOW,DELAYED','URINARY FREQUENCY',
-				'URINARY FREQUENCY,INCREASED','URINARY RETENTION','URTICARIA','UVEITIS','VERTIGO',
-				'VISION,BLURRED','VISUAL DISTURBANCES','VOMITING','WEAKNESS','WEIGHT GAIN',
-				'WHEEZING',
-			);
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$key = 1;
-			foreach ($symptomsList as $symptom) {
-				$tmp = array();
-				$tmp['key'] = $key++;
-				$tmp['name'] = $symptom;
-				$tmp['active'] = 1;
-				$level0['data'][] = $tmp;
-			}
-
-			$data = array();
-			$data[] = $level0;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateAppointmentReasonEnum($force = false) {
-		$ret = false;
-		do {
-			$name = AppointmentTemplate::ENUM_PARENT_NAME;
-			$key = 'APP_REASON';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$appointmentTemplate = new AppointmentTemplate();
-
-			$level1 = array();
-			$level1['key'] = 'Provider';
-			$level1['name'] = 'Provider';
-			$level1['active'] = 1;
-			$level1['ormClass'] = 'AppointmentTemplate';
-			$level1['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Provider';
-			$appointmentTemplate->persist();
-			$level1['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level2 = array();
-			$level2['key'] = 'Specialist';
-			$level2['name'] = 'Specialist';
-			$level2['active'] = 1;
-			$level2['ormClass'] = 'AppointmentTemplate';
-			$level2['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Specialist';
-			$appointmentTemplate->persist();
-			$level2['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level3 = array();
-			$level3['key'] = 'MedPhone';
-			$level3['name'] = 'Medical Phone';
-			$level3['active'] = 1;
-			$level3['ormClass'] = 'AppointmentTemplate';
-			$level3['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Medical Phone';
-			$appointmentTemplate->persist();
-			$level3['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level4 = array();
-			$level4['key'] = 'MedPU';
-			$level4['name'] = 'Medication PU';
-			$level4['active'] = 1;
-			$level4['ormClass'] = 'AppointmentTemplate';
-			$level4['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Medication PU';
-			$appointmentTemplate->persist();
-			$level4['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level5 = array();
-			$level5['key'] = 'Education';
-			$level5['name'] = 'Education';
-			$level5['active'] = 1;
-			$level5['ormClass'] = 'AppointmentTemplate';
-			$level5['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Education';
-			$appointmentTemplate->persist();
-			$level5['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level6 = array();
-			$level6['key'] = 'Eligibility';
-			$level6['name'] = 'Eligibility';
-			$level6['active'] = 1;
-			$level6['ormClass'] = 'AppointmentTemplate';
-			$level6['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Eligibility';
-			$appointmentTemplate->persist();
-			$level6['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level7 = array();
-			$level7['key'] = 'BlockedTime';
-			$level7['name'] = 'Blocked Time';
-			$level7['active'] = 1;
-			$level7['ormClass'] = 'AppointmentTemplate';
-			$level7['ormEditMethod'] = 'ormEditMethod';
-			$appointmentTemplate->appointmentTemplateId = 0;
-			$appointmentTemplate->name = 'Blocked Time';
-			$appointmentTemplate->persist();
-			$level7['ormId'] = $appointmentTemplate->appointmentTemplateId;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['ormClass'] = 'AppointmentTemplate';
-			$level0['ormEditMethod'] = 'ormEditMethod';
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-			$level0['data'][] = $level3;
-			$level0['data'][] = $level4;
-			$level0['data'][] = $level5;
-			$level0['data'][] = $level6;
-			$level0['data'][] = $level7;
-
-			$data = array();
-			$data[] = $level0;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
 	public static function generateProcedurePreferencesEnum($force = false) {
 		$ret = false;
 		do {
@@ -1394,7 +1563,7 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 						array('key' => 'HFS', 'name' => 'HF SYMPTOMS', 'active' => 1),
 					)),
 					'common' => array('key' => 'common', 'name' => PatientEducation::ENUM_EDUC_SECTION_COMMON_NAME, 'active' => 1, 'data' => array(
-						array('key' => '', 'name' => 'Hypertension', 'active' => 1),
+						array('key' => 'hyper', 'name' => 'Hypertension', 'active' => 1),
 					)),
 				)),
 				'level' => array('key' => 'level', 'name' => PatientEducation::ENUM_EDUC_LEVEL_NAME, 'active' => 1, 'data' => array(
@@ -1699,196 +1868,6 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		return $ret;
 	}
 
-	public static function generateVitalUnitsEnum($force = false) {
-		self::generateVitalUnitHeightEnum();
-		self::generateVitalUnitWeightEnum();
-		self::generateVitalUnitTemperatureEnum();
-	}
-
-	public static function generateVitalUnitHeightEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Height';
-			$key = 'Height';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'IN';
-			$level1['name'] = 'IN';
-			$level1['active'] = 1;
-
-			$level2['key'] = 'CM';
-			$level2['name'] = 'CM';
-			$level2['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-
-			$data = array($level0);
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateVitalUnitWeightEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Weight';
-			$key = 'Weight';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'LB';
-			$level1['name'] = 'LB';
-			$level1['active'] = 1;
-
-			$level2['key'] = 'KG';
-			$level2['name'] = 'KG';
-			$level2['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-
-			$data = array($level0);
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateVitalUnitTemperatureEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Temperature';
-			$key = 'Temper';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'F';
-			$level1['name'] = 'F';
-			$level1['active'] = 1;
-
-			$level2['key'] = 'C';
-			$level2['name'] = 'C';
-			$level2['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-
-			$data = array($level0);
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateConfidentialityEnum($force = false) {
-		$ret = false;
-		do {
-			$name = 'Confidentiality';
-			$key = 'Confident';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$level1 = array();
-			$level1['key'] = 'NoSR';
-			$level1['name'] = 'No Special Restrictions';
-			$level1['active'] = 1;
-
-			$level2['key'] = 'BasicConfi';
-			$level2['name'] = 'Basic Confidentiality';
-			$level2['active'] = 1;
-
-			$level3['key'] = 'FamilyPlan';
-			$level3['name'] = 'Family Planning';
-			$level3['active'] = 1;
-
-			$level4['key'] = 'DiseaseCon';
-			$level4['name'] = 'Disease Confidentiality';
-			$level4['active'] = 1;
-
-			$level5['key'] = 'DiseaseFPC';
-			$level5['name'] = 'Disease and Family Planning Confidentiality';
-			$level5['active'] = 1;
-
-			$level6['key'] = 'ExtremeCon';
-			$level6['name'] = 'Extreme Confidentiality';
-			$level6['active'] = 1;
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			$level0['data'][] = $level1;
-			$level0['data'][] = $level2;
-			$level0['data'][] = $level3;
-			$level0['data'][] = $level4;
-			$level0['data'][] = $level5;
-			$level0['data'][] = $level6;
-
-			$data = array($level0);
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
 	public static function generateMedicationPreferencesEnum($force = false) {
 		$ret = false;
 		do {
@@ -1947,392 +1926,6 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 			$level0['data'][] = $level1;
 
 			$data = array($level0);
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateStatesEnum($force = false) {
-		$ret = false;
-		do {
-			$name = Address::ENUM_STATES_NAME;
-			$key = 'STATES';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$enumList = array(
-				'AA' => 'Armed Forces Americas (except Canada)',
-				'AE' => 'Armed Forces Africa',
-				'AE' => 'Armed Forces Canada',
-				'AE' => 'Armed Forces Europe',
-				'AE' => 'Armed Forces Middle East',
-				'AK' => 'Alaska',
-				'AL' => 'Alabama',
-				'AP' => 'Armed Forces Pacific',
-				'AR' => 'Arkansas',
-				'AS' => 'American Samoa',
-				'AZ' => 'Arizona',
-				'CA' => 'California',
-				'CO' => 'Colorado',
-				'CT' => 'Connecticut',
-				'DC' => 'District of Columbia',
-				'DE' => 'Delaware',
-				'FL' => 'Florida',
-				'FM' => 'Federated States of Micronesia',
-				'GA' => 'Georgia',
-				'GU' => 'Guam',
-				'HI' => 'Hawaii',
-				'IA' => 'Iowa',
-				'ID' => 'Idaho',
-				'IL' => 'Illinois',
-				'IN' => 'Indiana',
-				'KS' => 'Kansas',
-				'KY' => 'Kentucky',
-				'LA' => 'Louisiana',
-				'MA' => 'Massachusetts',
-				'MD' => 'Maryland',
-				'ME' => 'Maine',
-				'MH' => 'Marshall Islands',
-				'MI' => 'Michigan',
-				'MN' => 'Minnesota',
-				'MO' => 'Missouri',
-				'MP' => 'Northern Mariana Islands',
-				'MS' => 'Mississippi',
-				'MT' => 'Montana',
-				'NC' => 'North Carolina',
-				'ND' => 'North Dakota',
-				'NE' => 'Nebraska',
-				'NH' => 'New Hampshire',
-				'NJ' => 'New Jersey',
-				'NM' => 'New Mexico',
-				'NV' => 'Nevada',
-				'NY' => 'New York',
-				'OH' => 'Ohio',
-				'OK' => 'Oklahoma',
-				'OR' => 'Oregon',
-				'PA' => 'Pennsylvania',
-				'PR' => 'Puerto Rico',
-				'PW' => 'Palau',
-				'RI' => 'Rhode Island',
-				'SC' => 'South Carolina',
-				'SD' => 'South Dakota',
-				'TN' => 'Tennessee',
-				'TX' => 'Texas',
-				'UT' => 'Utah',
-				'VA' => 'Virginia',
-				'VI' => 'Virgin Islands',
-				'VT' => 'Vermont',
-				'WA' => 'Washington',
-				'WI' => 'Wisconsin',
-				'WV' => 'West Virginia',
-				'WY' => 'Wyoming',
-			);
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			foreach ($enumList as $k=>$v) {
-				$tmp = array();
-				$tmp['key'] = $k;
-				$tmp['name'] = $v;
-				$tmp['active'] = 1;
-				$level0['data'][] = $tmp;
-			}
-
-			$data = array();
-			$data[] = $level0;
-			self::_saveEnumeration($data);
-			$ret = true;
-		} while(false);
-		return $ret;
-	}
-
-	public static function generateCountriesEnum($force = false) {
-		$ret = false;
-		do {
-			$name = Address::ENUM_COUNTRIES_NAME;
-			$key = 'COUNTRIES';
-			$enumeration = new self();
-			$enumeration->populateByEnumerationName($name);
-			// check for key existence
-			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
-				if (!$force) {
-					break;
-				}
-				$enumerationClosure = new EnumerationsClosure();
-				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
-			}
-
-			$enumList = array(
-				'AFG' => 'Afghanistan',
-				'ALB' => 'Albania',
-				'DZA' => 'Algeria',
-				'ASM' => 'American Samoa',
-				'AND' => 'Andorra',
-				'AGO' => 'Angola',
-				'AIA' => 'Anguilla',
-				'ATA' => 'Antarctica',
-				'ATG' => 'Antigua and Barbuda',
-				'ARG' => 'Argentina',
-				'ARM' => 'Armenia',
-				'ABW' => 'Aruba',
-				'AUS' => 'Australia',
-				'AUT' => 'Austria',
-				'AZE' => 'Azerbaijan',
-				'BHS' => 'Bahamas',
-				'BHR' => 'Bahrain',
-				'BGD' => 'Bangladesh',
-				'BRB' => 'Barbados',
-				'BLR' => 'Belarus',
-				'BEL' => 'Belgium',
-				'BLZ' => 'Belize',
-				'BEN' => 'Benin',
-				'BMU' => 'Bermuda',
-				'BTN' => 'Bhutan',
-				'BOL' => 'Bolivia',
-				'BIH' => 'Bosnia and Herzegovina',
-				'BWA' => 'Botswana',
-				'BVT' => 'Bouvet Island',
-				'BRA' => 'Brazil',
-				'IOT' => 'British Indian Ocean Territory',
-				'BRN' => 'Brunei Darussalam',
-				'BGR' => 'Bulgaria',
-				'BFA' => 'Burkina Faso',
-				'BDI' => 'Burundi',
-				'KHM' => 'Cambodia',
-				'CMR' => 'Cameroon',
-				'CAN' => 'Canada',
-				'CPV' => 'Cape Verde',
-				'CYM' => 'Cayman Islands',
-				'CAF' => 'Central African Republic',
-				'TCD' => 'Chad',
-				'CHL' => 'Chile',
-				'CHN' => 'China',
-				'CXR' => 'Christmas Island',
-				'CCK' => 'Cocos (Keeling) Islands',
-				'COL' => 'Colombia',
-				'COM' => 'Comoros',
-				'COG' => 'Congo',
-				'COD' => 'Congo, the Democratic Republic of the',
-				'COK' => 'Cook Islands',
-				'CRI' => 'Costa Rica',
-				'CIV' => 'Cote D\'Ivoire',
-				'HRV' => 'Croatia',
-				'CUB' => 'Cuba',
-				'CYP' => 'Cyprus',
-				'CZE' => 'Czech Republic',
-				'DNK' => 'Denmark',
-				'DJI' => 'Djibouti',
-				'DMA' => 'Dominica',
-				'DOM' => 'Dominican Republic',
-				'ECU' => 'Ecuador',
-				'EGY' => 'Egypt',
-				'SLV' => 'El Salvador',
-				'GNQ' => 'Equatorial Guinea',
-				'ERI' => 'Eritrea',
-				'EST' => 'Estonia',
-				'ETH' => 'Ethiopia',
-				'FLK' => 'Falkland Islands (Malvinas)',
-				'FRO' => 'Faroe Islands',
-				'FJI' => 'Fiji',
-				'FIN' => 'Finland',
-				'FRA' => 'France',
-				'GUF' => 'French Guiana',
-				'PYF' => 'French Polynesia',
-				'ATF' => 'French Southern Territories',
-				'GAB' => 'Gabon',
-				'GMB' => 'Gambia',
-				'GEO' => 'Georgia',
-				'DEU' => 'Germany',
-				'GHA' => 'Ghana',
-				'GIB' => 'Gibraltar',
-				'GRC' => 'Greece',
-				'GRL' => 'Greenland',
-				'GRD' => 'Grenada',
-				'GLP' => 'Guadeloupe',
-				'GUM' => 'Guam',
-				'GTM' => 'Guatemala',
-				'GIN' => 'Guinea',
-				'GNB' => 'Guinea-Bissau',
-				'GUY' => 'Guyana',
-				'HTI' => 'Haiti',
-				'HMD' => 'Heard Island and Mcdonald Islands',
-				'VAT' => 'Holy See (Vatican City State)',
-				'HND' => 'Honduras',
-				'HKG' => 'Hong Kong',
-				'HUN' => 'Hungary',
-				'ISL' => 'Iceland',
-				'IND' => 'India',
-				'IDN' => 'Indonesia',
-				'IRN' => 'Iran, Islamic Republic of',
-				'IRQ' => 'Iraq',
-				'IRL' => 'Ireland',
-				'ISR' => 'Israel',
-				'ITA' => 'Italy',
-				'JAM' => 'Jamaica',
-				'JPN' => 'Japan',
-				'JOR' => 'Jordan',
-				'KAZ' => 'Kazakhstan',
-				'KEN' => 'Kenya',
-				'KIR' => 'Kiribati',
-				'PRK' => 'Korea, Democratic People\'s Republic of',
-				'KOR' => 'Korea, Republic of',
-				'KWT' => 'Kuwait',
-				'KGZ' => 'Kyrgyzstan',
-				'LAO' => 'Lao People\'s Democratic Republic',
-				'LVA' => 'Latvia',
-				'LBN' => 'Lebanon',
-				'LSO' => 'Lesotho',
-				'LBR' => 'Liberia',
-				'LBY' => 'Libyan Arab Jamahiriya',
-				'LIE' => 'Liechtenstein',
-				'LTU' => 'Lithuania',
-				'LUX' => 'Luxembourg',
-				'MAC' => 'Macao',
-				'MKD' => 'Macedonia, the Former Yugoslav Republic of',
-				'MDG' => 'Madagascar',
-				'MWI' => 'Malawi',
-				'MYS' => 'Malaysia',
-				'MDV' => 'Maldives',
-				'MLI' => 'Mali',
-				'MLT' => 'Malta',
-				'MHL' => 'Marshall Islands',
-				'MTQ' => 'Martinique',
-				'MRT' => 'Mauritania',
-				'MUS' => 'Mauritius',
-				'MYT' => 'Mayotte',
-				'MEX' => 'Mexico',
-				'FSM' => 'Micronesia, Federated States of',
-				'MDA' => 'Moldova, Republic of',
-				'MCO' => 'Monaco',
-				'MNG' => 'Mongolia',
-				'MSR' => 'Montserrat',
-				'MAR' => 'Morocco',
-				'MOZ' => 'Mozambique',
-				'MMR' => 'Myanmar',
-				'NAM' => 'Namibia',
-				'NRU' => 'Nauru',
-				'NPL' => 'Nepal',
-				'NLD' => 'Netherlands',
-				'ANT' => 'Netherlands Antilles',
-				'NCL' => 'New Caledonia',
-				'NZL' => 'New Zealand',
-				'NIC' => 'Nicaragua',
-				'NER' => 'Niger',
-				'NGA' => 'Nigeria',
-				'NIU' => 'Niue',
-				'NFK' => 'Norfolk Island',
-				'MNP' => 'Northern Mariana Islands',
-				'NOR' => 'Norway',
-				'OMN' => 'Oman',
-				'PAK' => 'Pakistan',
-				'PLW' => 'Palau',
-				'PSE' => 'Palestinian Territory, Occupied',
-				'PAN' => 'Panama',
-				'PNG' => 'Papua New Guinea',
-				'PRY' => 'Paraguay',
-				'PER' => 'Peru',
-				'PHL' => 'Philippines',
-				'PCN' => 'Pitcairn',
-				'POL' => 'Poland',
-				'PRT' => 'Portugal',
-				'PRI' => 'Puerto Rico',
-				'QAT' => 'Qatar',
-				'REU' => 'Reunion',
-				'ROM' => 'Romania',
-				'RUS' => 'Russian Federation',
-				'RWA' => 'Rwanda',
-				'SHN' => 'Saint Helena',
-				'KNA' => 'Saint Kitts and Nevis',
-				'LCA' => 'Saint Lucia',
-				'SPM' => 'Saint Pierre and Miquelon',
-				'VCT' => 'Saint Vincent and the Grenadines',
-				'WSM' => 'Samoa',
-				'SMR' => 'San Marino',
-				'STP' => 'Sao Tome and Principe',
-				'SAU' => 'Saudi Arabia',
-				'SEN' => 'Senegal',
-				'SCG' => 'Serbia and Montenegro',
-				'SYC' => 'Seychelles',
-				'SLE' => 'Sierra Leone',
-				'SGP' => 'Singapore',
-				'SVK' => 'Slovakia',
-				'SVN' => 'Slovenia',
-				'SLB' => 'Solomon Islands',
-				'SOM' => 'Somalia',
-				'ZAF' => 'South Africa',
-				'SGS' => 'South Georgia and the South Sandwich Islands',
-				'ESP' => 'Spain',
-				'LKA' => 'Sri Lanka',
-				'SDN' => 'Sudan',
-				'SUR' => 'Suriname',
-				'SJM' => 'Svalbard and Jan Mayen',
-				'SWZ' => 'Swaziland',
-				'SWE' => 'Sweden',
-				'CHE' => 'Switzerland',
-				'SYR' => 'Syrian Arab Republic',
-				'TWN' => 'Taiwan, Province of China',
-				'TJK' => 'Tajikistan',
-				'TZA' => 'Tanzania, United Republic of',
-				'THA' => 'Thailand',
-				'TLS' => 'Timor-Leste',
-				'TGO' => 'Togo',
-				'TKL' => 'Tokelau',
-				'TON' => 'Tonga',
-				'TTO' => 'Trinidad and Tobago',
-				'TUN' => 'Tunisia',
-				'TUR' => 'Turkey',
-				'TKM' => 'Turkmenistan',
-				'TCA' => 'Turks and Caicos Islands',
-				'TUV' => 'Tuvalu',
-				'UGA' => 'Uganda',
-				'UKR' => 'Ukraine',
-				'ARE' => 'United Arab Emirates',
-				'GBR' => 'United Kingdom',
-				'USA' => 'United States',
-				'UMI' => 'United States Minor Outlying Islands',
-				'URY' => 'Uruguay',
-				'UZB' => 'Uzbekistan',
-				'VUT' => 'Vanuatu',
-				'VEN' => 'Venezuela',
-				'VNM' => 'Viet Nam',
-				'VGB' => 'Virgin Islands, British',
-				'VIR' => 'Virgin Islands, U.s.',
-				'WLF' => 'Wallis and Futuna',
-				'ESH' => 'Western Sahara',
-				'YEM' => 'Yemen',
-				'ZMB' => 'Zambia',
-				'ZWE' => 'Zimbabwe',
-			);
-
-			$level0 = array();
-			$level0['key'] = $key;
-			$level0['name'] = $name;
-			$level0['category'] = 'System';
-			$level0['active'] = 1;
-			$level0['data'] = array();
-			foreach ($enumList as $k=>$v) {
-				$tmp = array();
-				$tmp['key'] = $k;
-				$tmp['name'] = $v;
-				$tmp['active'] = 1;
-				$level0['data'][] = $tmp;
-			}
-
-			$data = array();
-			$data[] = $level0;
 			self::_saveEnumeration($data);
 			$ret = true;
 		} while(false);
@@ -2439,12 +2032,13 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		} while(false);
 		return $ret;
 	}
-
+		
 	protected static function _saveEnumeration($data,$parentId=0) {
 		$enumerationsClosure = new EnumerationsClosure();
 		foreach ($data as $item) {
 			$enumerationId = $enumerationsClosure->insertEnumeration($item,$parentId);
 			if (isset($item['data'])) {
+				$item['guid'] = NSDR::create_guid();
 				self::_saveEnumeration($item['data'],$enumerationId);
 			}
 		}
@@ -2456,6 +2050,24 @@ class Enumeration extends WebVista_Model_ORM implements NSDRMethods {
 		$enumerationsClosure = new EnumerationsClosure();
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
 		return $enumerationIterator->toJsonArray('enumerationId',array('name'));
+	}
+
+	public static function checkDuplicates() {
+		$ret = array();
+		$db = Zend_Registry::get('dbAdapter');
+		$enumeration = new self();
+		$enumerationIterator = $enumeration->getIterator();
+		foreach ($enumerationIterator as $enum) {
+			$sqlSelect = $db->select()
+					->from($enumeration->_table,array('COUNT(`key`) AS ctr'))
+					->where('`key` = ?',$enum->key);
+			if ($row = $db->fetchRow($sqlSelect)) {
+				if ($row['ctr'] >= 2) {
+					$ret[] = $enum->key;
+				}
+			}
+		}
+		return $ret;
 	}
 
 }

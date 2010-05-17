@@ -96,8 +96,32 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		return $age;
         }
 	public function nsdrPersist($tthis,$context,$data) {
-		$msg = __('Persist not implemented ORM: Person');
-                throw new Exception($msg);
+		$ret = false;
+		//debug_print_backtrace();
+		$context = (int)$context;
+		if ($context > 0) {
+			$this->personId = $context;
+			$this->populate();
+		}
+
+		$array = array();
+		if (is_array($data) && !array_key_exists(0,$data)) { // assign data to array only if data does not contains an index 0
+			$array = $data;
+		}
+		if (preg_match('/.*'.$this->_nsdrNamespace.'\.([a-zA-Z0-9]+)/',$tthis->_aliasedNamespace,$matches) && isset($matches[1])) {
+			if ($this->_legacyORMNaming == true && strpos($matches[1],'_') === false) {
+				$newKey = strtolower(preg_replace('/([A-Z]{1})/','_\1',$matches[1]));
+				if (strpos($newKey,'_') !== false && in_array($newKey,$this->ORMFields())) {
+					if (is_array($data) && array_key_exists(0,$data)) { // extract only one value, discard the rest
+						$data = $data[0];
+					}
+					$array[$newKey] = $data;
+				}
+			}
+		}
+		$this->populateWithArray($array);
+		$this->persist();
+		return true;
 	}
 	public function nsdrMostRecent($tthis,$context,$data) {
 		$msg = __('Most recent not implemented for this ORM: Person');
@@ -105,28 +129,28 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	}
 
 	public function nsdrPopulate($tthis,$context,$data) {
-                $ret = array();
+		$ret = array();
 		//debug_print_backtrace();
-		$context = key($context);
-                if ((int)$context > 0) {
-                	$this->personId = (int)$context;
-                	if (!$this->populate()) {
-                		//throw error, populate failed with supplied non-zero context
-                		$msg = __('populate failed with supplied non-zero context');
-                		throw new Exception($msg);
-                	}
+		$context = (int)$context;
+		if ($context > 0) {
+			$this->personId = $context;
+			if (!$this->populate()) {
+				//throw error, populate failed with supplied non-zero context
+				$msg = __('populate failed with supplied non-zero context');
+				throw new Exception($msg);
+			}
 			if (preg_match('/.*'.$this->_nsdrNamespace.'\.([a-zA-Z0-9]+)/',$tthis->_aliasedNamespace,$matches)) {
 				if (isset($matches[1]) && $this->$matches[1] !== null) {
 					return $this->$matches[1];
 				}
 				else {
-                			$msg = __('Populate failed, request namespace: ' . $tthis->_aliasedNamespace . " item: '" . $matches[1] . "' could not be answered by this namespace: " . $this->_nsdrNamespace);
-                			throw new Exception($msg);
-
+					$msg = __('Populate failed, request namespace: ' . $tthis->_aliasedNamespace . " item: '" . $matches[1] . "' could not be answered by this namespace: " . $this->_nsdrNamespace);
+					// temporarily comment out... namespace request could be com.clearhealth.person
+					//throw new Exception($msg);
 				}
 			}
-                 	$ret[] = $this->toArray();
-                }
-                return $ret;
+			$ret = $this->toArray();
+		}
+		return $ret;
         }
 }

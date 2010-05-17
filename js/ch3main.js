@@ -237,7 +237,7 @@ mainControllerClass.prototype.getActiveVisit = function() {
 };
 
 mainControllerClass.prototype.popupLoginWindow = function() {
-	winSP = dhxWins.createWindow('windowLoginId',60,10,400,250);
+	winSP = dhxWins.createWindow('windowLoginId',60,10,400,300);
 	winSP.progressOn();
 	winSP.setText('Login');
 	winSP.attachURL(globalBaseUrl + '/login.popup/panel',true);

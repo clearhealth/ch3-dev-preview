@@ -218,16 +218,23 @@ EOL;
                 $json->direct(array('clinicalNoteId' => $clinicalNote->clinicalNoteId));
 	}
 
-	function processEditNoteAction() {
+	public function processEditNoteAction() {
+		$ret = true;
 		$clinicalNote = new ClinicalNote();
-                $clinicalNote->clinicalNoteId = (int)$this->_getParam('clinicalNoteId');
+		$clinicalNote->clinicalNoteId = (int)$this->_getParam('clinicalNoteId');
 		$clinicalNote->populate();
-		$clinicalNote->eSignatureId = 0;
-		$clinicalNote->persist();
+		if ($clinicalNote->eSignatureId > 0) {
+			$clinicalNote->eSignatureId = 0;
+			$revisionId = (int)$this->_getParam('revisionId');
+			GenericData::createRevision(get_class($clinicalNote),$clinicalNote->clinicalNoteId,$revisionId);
+			$clinicalNote->persist();
+		}
+		else {
+			$ret = __('Selected note must be signed first.');
+		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-                $json->suppressExit = true;
-
-                $json->direct(true);
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 	function listNotesAction() {
@@ -256,13 +263,49 @@ EOL;
                 //trigger_error($cnSelect->__toString(),E_USER_NOTICE);
                 //var_dump($db->query($cnSelect)->fetchAll());exit;
 		$notes = array();
-                foreach($clinicalNoteIterator as $row) {
-			$icon = ($row['eSignatureId'] > 0) ? Zend_Registry::get('baseUrl') . "img/sm-signed.png^Signed" : Zend_Registry::get('baseUrl') . "img/sm-editproblem.png^Editing";
-			$notes[] = array("id" => $row['clinicalNoteId'],"data" => array($icon,$row['dateTime'], $row['noteTitle'], $row['last_name'] . ", " . $row['first_name'] . " " . substr($row['middle_name'],0,1), 'Main Clinic->General Care'));
-			//$notes[] = array("id" => $row['clinicalNoteId'],"data" => array($row['dateTime'], $row['noteTitle'], $row['lastName'] . ", " . $row['firstName'] . " " . $row['middleName'], $row['locationName']));
-                }
-                //var_dump($notes);exit;
-                //$matches = array("name1" => $match, "name2" =>"value3");
+                foreach($clinicalNoteIterator as $note) {
+
+			if ($note['eSignatureId'] > 0) {
+				$img = 'sm-signed.png';
+				$alt = 'Signed';
+			}
+			else {
+				$img = 'sm-editproblem.png';
+				$alt = 'Editing';
+			}
+			$icon = '<img src="'.Zend_Registry::get('baseUrl').'img/'.$img.'" alt="'.$alt.'" />';
+
+                        $row = array();
+                        $row['id'] = $note['clinicalNoteId'];
+                        $row['data'][] = '';
+                        $row['data'][] = $icon.' '.$note['dateTime'];
+                        $row['data'][] = $note['noteTitle'];
+                        $row['data'][] = $note['last_name'].', '.$note['first_name'].' '.substr($note['middle_name'],0,1);
+			$row['data'][] = 'Main Clinic->General Care'; // location->room temporarily hardcoded
+
+			$xml = simplexml_load_string($note['template']);
+			$genericData = new GenericData();
+			$filters = array();
+			$filters['objectId'] = $note['clinicalNoteId'];
+			$filters['objectClass'] = 'ClinicalNote';
+			$genericDataIterator = $genericData->getIteratorByFilters($filters);
+			$firstData = false;
+			$childIcon = '<img src="'.Zend_Registry::get('baseUrl').'img/leaf.gif" alt="-" />';
+
+			foreach ($genericDataIterator as $data) {
+				if (!$firstData) {
+					$firstData = true;
+					continue;
+				}
+				$tmp = array();
+				$tmp['id'] = $data->revisionId;
+               	        	$tmp['data'][] = $data->objectId; // '';
+				$tmp['data'][] = '&nbsp; &nbsp; &nbsp;'.$childIcon.' '.date('Y-m-d',strtotime($data->dateTime));
+				$tmp['data'][] = $note['noteTitle'];
+				$row['rows'][] = $tmp;
+			}
+			$notes[] = $row;
+		}
 
 		$acj = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $acj->suppressExit = true;

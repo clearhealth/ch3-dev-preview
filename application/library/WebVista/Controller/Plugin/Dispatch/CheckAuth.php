@@ -21,50 +21,50 @@
 *       
 *****************************************************************************/
 
-class WebVista_Controller_Plugin_Dispatch_CheckAuth extends Zend_Controller_Plugin_Abstract
-{
-    public function preDispatch(Zend_Controller_Request_Abstract $request)
-    {
+class WebVista_Controller_Plugin_Dispatch_CheckAuth extends Zend_Controller_Plugin_Abstract {
+
+	public function preDispatch(Zend_Controller_Request_Abstract $request) {
 		$auth = Zend_Auth::getInstance();
 		$publicPages = array();
 		$publicPages['controllers'] = array('login',);
 		$publicPages['actions'] = array();
 		$controllerName = $request->getControllerName();
 		$actionName = $request->getActionName();
-		if ($auth->hasIdentity() || in_array($controllerName,$publicPages['controllers'])) {
+
+		if (in_array($controllerName,$publicPages['controllers'])) {
 			return true;
 		}
-		if ($actionName != 'index' && $controllerName != 'index' && !isset($_SERVER['PHP_AUTH_USER'])) {
-			header('WWW-Authenticate: Basic realm="Unauthorize Access Prohibited"');
-                	header('HTTP/1.0 401 Unauthorized');
+		PermissionTemplate::auditAccess($controllerName,$actionName);
+		if ($auth->hasIdentity()) {
+			//$permissionTemplateId = $auth->getIdentity()->permissionTemplateId;
+			$userId = $auth->getIdentity()->userId;
+			$user = new User();
+			$user->userId = (int)$auth->getIdentity()->userId;
+			$user->populate();
+			$permissionTemplateId = $user->permissionTemplateId;
+			if ($permissionTemplateId != 'superadmin' && !PermissionTemplate::hasAccess($permissionTemplateId,$controllerName,$actionName)) {
+				$error = __('Access denied');
+				trigger_error($error,E_USER_NOTICE);
+				throw new WebVista_App_AuthException($error);
+			}
+			else {
+				return true;
+			}
 		}
-		if (false && isset($_SERVER['PHP_AUTH_USER'])) {
+
+		if (isset($_SERVER['PHP_AUTH_USER'])) {
 			$_POST['username'] = $_SERVER['PHP_AUTH_USER'];
 			$_POST['password'] = $_SERVER['PHP_AUTH_PW'];
 			$zvah = new Zend_View_Helper_Action();
 			$zvah->action('process','login');
 			if ($auth->hasIdentity() || in_array($controllerName,$publicPages['controllers'])) {
-                        	return true;
-                	}
+				return true;
+			}
 		}
-
+		/*else if ($actionName != 'index' && $controllerName != 'index') {
+			header('WWW-Authenticate: Basic realm="Unauthorize Access Prohibited"');
+			header('HTTP/1.0 401 Unauthorized');
+		}*/
 		throw new WebVista_App_AuthException('You must be authenticated to access the system.');
-
-		$roleId = $auth->getIdentity()->roleId;
-		$acl = WebVista_Acl::getInstance();
- 
-		if (!$acl->hasRole($roleId)) {
-	  	    $error = "Sorry, the requested user role '".$roleId."' does not exist";									
-	  	}
-	  	if (!$acl->has($request->getModuleName().'_'.$request->getControllerName())) {
-			$error = "Sorry, the requested controller '".$request->getControllerName()."' does not exist as an ACL resource";
- 		}
-		if (!$acl->isAllowed($roleId, $request->getModuleName().'_'.$request->getControllerName(), $request->getActionName())) {
-			$error = "Sorry, the page you requested does not exist or you do not have access";
-		}
- 
-		if (isset($error)) {
-			throw new WebVista_App_AuthException('You must be authenticated to access the system.');
-		}
-    }
+	}
 }

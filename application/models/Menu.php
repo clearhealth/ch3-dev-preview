@@ -406,6 +406,39 @@ class Menu {
         }
         return $ret;
     }
+
+	public static function userHasPermissionForTab($tabName) {
+		return true;
+	}
+
+	public static function getMainTabs($baseUrl='') {
+		$mainTabs = array();
+		$mainTabs['Calendar']['url'] = $baseUrl.'/calendar.raw';
+		$mainTabs['Calendar']['hrefMode'] =  'ajax-html';
+		$mainTabs['Provider']['url'] = $baseUrl.'/provider-dashboard.raw';
+		$mainTabs['Provider']['hrefMode'] =  'ajax-html';
+		$mainTabs['Medications']['url']   = $baseUrl.'/medications.raw';
+		$mainTabs['Medications']['hrefMode'] =  'ajax-html';
+		$mainTabs['Problems']['url']   = $baseUrl.'/problem-list.raw';
+		$mainTabs['Problems']['hrefMode'] =  'ajax-html';
+		$mainTabs['Notes']['url']   = $baseUrl.'/clinical-notes.raw';
+		$mainTabs['Notes']['hrefMode'] =  'ajax-html';
+		$mainTabs['Vitals']['url']   = $baseUrl.'/vital-signs.raw';
+		$mainTabs['Vitals']['hrefMode'] =  'ajax-html';
+		$mainTabs['Labs']['url']   = $baseUrl.'/lab-results.raw';
+		$mainTabs['Labs']['hrefMode'] =  'ajax-html';
+		$mainTabs['Reports']['url']   = $baseUrl.'/reports.raw';
+		$mainTabs['Reports']['hrefMode'] =  'ajax-html';
+		$mainTabs['Admin']['url']   = $baseUrl.'/admin.raw';
+		$mainTabs['Admin']['hrefMode'] =  'ajax-html';
+
+		foreach ($mainTabs as $tabName => $url) {
+			if (self::userHasPermissionForTab($tabName) === false) {
+				unset($mainTabs[$tabName]);
+			}
+		}
+		return $mainTabs;
+	}
 }
 
 

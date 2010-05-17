@@ -158,6 +158,7 @@ function visitSelectSetMostRecentVisit(visitId) {
 		load: function (data) {
 			mainController.setActiveVisit(visitId);
 			initMainToolbar(null,mainController.getActivePatient());
+			refreshCurrentTab();
 			visitSelector.oAccordion.openItem(visitSelector.accordionVisitDetailsId);
 		},
 		error: function (er) {

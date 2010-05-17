@@ -91,17 +91,84 @@ class ClinicalNotesManagerController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
+	public function checkNamespacesAction() {
+		$params = $this->_getParam('cnTemplate');
+		$cnTemplate = new ClinicalNoteTemplate();
+		$cnTemplate->populateWithArray($params);
+
+		$data = array();
+		try {
+			$xml = new SimpleXMLElement($cnTemplate->template);
+		}
+		catch (Exception $e) {
+			$data['error'] = $e->getMessage();
+		}
+		if (!isset($data['error']) && (string)$xml->attributes()->useNSDR && (string)$xml->attributes()->useNSDR == 'true') {
+			$namespaceAdd = false;
+			$namespaces = array();
+			$nsdrDefinition = new NSDRDefinition();
+			foreach ($xml as $questions) {
+				foreach($questions as $key=>$item) {
+					$namespace = (string)$item->attributes()->namespace;
+					if ($key != 'dataPoint' || ($namespace && !strlen($namespace) > 0)) {
+						continue;
+					}
+					// extract namespace only
+					$namespace = NSDR2::extractNamespace($namespace);
+					// check if namespace exists then auto-add if does not
+					if (!$nsdrDefinition->isNamespaceExists($namespace)) {
+						$namespaces[] = $namespace;
+					}
+				}
+			}
+			$data['namespaces'] = $namespaces;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 	/**
 	 * Process the modified clinical notes template
 	 */
 	public function processEditTemplateAction() {
 		$params = $this->_getParam('cnTemplate');
+		$autoAdd = (int)$this->_getParam('autoAdd');
 		$cnTemplate = new ClinicalNoteTemplate();
 		$cnTemplate->populateWithArray($params);
 		$cnTemplate->persist();
-		$msg = __("Record saved successfully");
+
 		$data = array();
-		$data['msg'] = $msg;
+		try {
+			$xml = new SimpleXMLElement($cnTemplate->template);
+			$data['msg'] = __('Record saved successfully.');
+		}
+		catch (Exception $e) {
+			$data['error'] = $e->getMessage();
+		}
+		if (!isset($data['error']) && (string)$xml->attributes()->useNSDR && (string)$xml->attributes()->useNSDR == 'true') {
+			$namespaceAdd = false;
+			$namespaces = array();
+			$nsdrDefinition = new NSDRDefinition();
+			foreach ($xml as $questions) {
+				foreach($questions as $key=>$item) {
+					$namespace = (string)$item->attributes()->namespace;
+					if ($key != 'dataPoint' || ($namespace && !strlen($namespace) > 0)) {
+						continue;
+					}
+					// extract namespace only
+					$namespace = NSDR2::extractNamespace($namespace);
+					// check if namespace exists then auto-add if does not
+					if (!$nsdrDefinition->isNamespaceExists($namespace) && $autoAdd) {
+						$nsdrDefinition->addNamespace($namespace,'GenericData');
+						$namespaceAdd = true;
+					}
+				}
+			}
+			if ($namespaceAdd) {
+				$data['msg'] .= "\n\n".__('Please reload NSDR');
+			}
+		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);

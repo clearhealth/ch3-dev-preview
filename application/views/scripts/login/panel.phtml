@@ -36,9 +36,10 @@ function loginResponse(loader) {
 		for(var i=0;i<result.length;i++) {
 			if (result[i].textContent == "200") { // login successful
 				if (window.mainController && mainController.isForcedLogout()) {
-					mainFileLoader.dimension = winSP.getDimension();
+					onLoadingComplete();
+					/*mainFileLoader.dimension = winSP.getDimension();
 					mainFileLoader.onLoadComplete = 'onLoadingComplete';
-					mainFileLoader.render();
+					mainFileLoader.render();*/
 				}
 				else {
 					document.location.href="<?=$this->baseUrl.'/'.Zend_Registry::get('config')->user->preferences->default_action?>";
@@ -58,8 +59,10 @@ function loginResponse(loader) {
 
 function onLoadingComplete() {
 	winSP.close();
+	mainController.startTimer();
+	document.getElementById("mainLayoutContainerId").style.display = "";
 }
-
+document.getElementById("mainLayoutContainerId").style.display = "none";
 </script>
 <div id="loginContainer">
     <div id="systemsWarning" style="padding:2px;border:thin solid darkGrey;color:red;<?=(Zend_Registry::get('memcache')->get(Service::SERVICE_NOMINAL))?'display:none;':''?>"><?=__('Please contact your administrator, services needed for some features are not running. You may experience errors if you continue.')?></div>

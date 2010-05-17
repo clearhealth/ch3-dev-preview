@@ -211,11 +211,12 @@ function reportsGetResults(baseId) {
 							"id": "filter"+name.replace(/[^a-zA-Z\.]/,''),
 							"onChange": "reportsDateFilterOnChanged",
 							"style": "width:80px;",
+							"value": filter.defaultValue,
 						};
 						reportsResultsToolbar.addDatePicker(params,filter.id,ctr++,prettyName,"filter.png","filter.png");
 						break;
 					case "<?=ReportBase::FILTER_TYPE_STRING?>":
-						reportsResultsToolbar.addInputBox("filter_"+filter.id,ctr++,"","80",prettyName);
+						reportsResultsToolbar.addInputBox("filter_"+filter.id,ctr++,filter.defaultValue,"80",prettyName);
 						break;
 					case "<?=ReportBase::FILTER_TYPE_ENUM?>":
 						var opts = [];
@@ -262,8 +263,18 @@ function reportsGetResults(baseId) {
 	});
 }
 
+function reportsLayoutLeftGridHasChildren(rowId) {
+	var ret = false;
+	var row = reportsLayoutLeftGrid._h2.get[rowId];
+	if (row && row.childs.length > 0) {
+		ret = true;
+	}
+	return ret;
+}
+
 function reportsLayoutLeftGridOnRowSelected(rowId,cellIndex) {
-	if (reportsLayoutLeftGrid.hasChildren(rowId)) {
+	//if (reportsLayoutLeftGrid.hasChildren(rowId)) {
+	if (reportsLayoutLeftGridHasChildren(rowId)) {
 		alert("<?=__('Please select a sub-report')?>");
 		return;
 	}
@@ -307,6 +318,7 @@ var indexRVDisplayName = 0;
 var indexRVRunQueriesImmediately = 1;
 var indexRVShowResultsIn = 2;
 function reportsViewsGridOnRowSelected(rowId,cellIndex) {
+	filterValues = {};
 	reportsResultsToolbar.hideItem("executeQueries");
 	if (reportsViewsGrid.cells(rowId,indexRVRunQueriesImmediately).getValue() == 0) {
 		reportsResultsToolbar.showItem("executeQueries");

@@ -30,6 +30,7 @@
 			sysObjectsTree.insertNewChild(0,13,'Prescriptions');
 			sysObjectsTree.insertNewChild(0,22,"<?=__('Reports Manager')?>");
 			sysObjectsTree.insertNewChild(0,14,'Services');
+			sysObjectsTree.insertNewChild(0,23,"<?=__('Statistics Manager')?>");
 			sysObjectsTree.insertNewChild(0,15,"<?=__('Update Manager')?>");
 			
 			sysObjectsTree.closeAllItems();
@@ -96,6 +97,9 @@ function onSystemObjectsTreeItemSelect(itemId) {
 			break;
 		case 22: // Reports Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/reports-manager.raw');
+			break;
+		case 23: // Statistics Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/statistics-manager.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');
