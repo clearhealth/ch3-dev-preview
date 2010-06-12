@@ -63,11 +63,36 @@ function adminServicesToolbarOnClicked(id) {
 		case "tbMenuReload":
 			adminServicesMenuReload();
 			break;
+		case "tbPermissionStart":
+			adminServicesProcessPermission("start");
+			break;
+		case "tbPermissionStop":
+			adminServicesProcessPermission("stop");
+			break;
+		case "tbPermissionReload":
+			adminServicesProcessPermission("reload");
+			break;
 		default:
 			alert('<?=__("Invalid event: ")?>'+id);
 	}
 }
 adminServicesToolbar.attachEvent("onClick",adminServicesToolbarOnClicked);
+
+function adminServicesProcessPermission(service) {
+	dojo.xhrPost({
+		url: globalBaseUrl+"/admin-services.raw/process-permission",
+		handleAs: "json",
+		content: {
+			"service": service,
+		},
+		load: function (data) {
+			adminServicesGridReload();
+		},
+		error: function (error) {
+			console.error ('Error: ', error);
+		}
+	});
+}
 
 function adminServicesMenuReload() {
 	if (!confirm("<?=__('Reloading the menu can cause problems during live system usage, are you sure you want to continue?')?>")) {
@@ -158,6 +183,11 @@ function adminServicesOnRowSelected(rowId,cellIndex) {
 			//adminServicesToolbar.showItem("tbClear");
 			//adminServicesToolbar.showItem("tbEnable");
 			//adminServicesToolbar.showItem("tbDisable");
+			break;
+		case "permissions":
+			adminServicesToolbar.showItem("tbPermissionStart");
+			adminServicesToolbar.showItem("tbPermissionStop");
+			adminServicesToolbar.showItem("tbPermissionReload");
 			break;
 	}
 }
