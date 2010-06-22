@@ -49,9 +49,12 @@ class Service {
 		$id = 'hl7d';
 		$service['id'] = $id;
 		$service['name'] = 'Processing Daemon';
-		$hl7Status = false; // temporarily set to false
+		$hl7Status = true; // temporarily set to false
 		if ($hl7Status === false) {
-			$hl7Status = 'stopped';
+			$hl7Status = 'Stopped';
+		}
+		else {
+			$hl7Status='Started';
 		}
 		$service['status'] = ucwords($hl7Status);
 		$services[$id] = $service;
