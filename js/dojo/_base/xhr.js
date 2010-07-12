@@ -416,6 +416,11 @@ dojo.require("dojo._base.query");
 		var ld = args.load;
 		if(ld && _d.isFunction(ld)){
 			d.addCallback(function(value){
+				var val = (value+"").replace(/^\s+|\s+$/g,"");
+				if (val == globalAccessDenied || val == globalAccessDeniedLabel) {
+					alert(globalAccessDenied);
+					return;
+				}
 				return ld.call(args, value, ioArgs);
 			});
 		}

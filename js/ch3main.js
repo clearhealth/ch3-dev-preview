@@ -237,7 +237,12 @@ mainControllerClass.prototype.getActiveVisit = function() {
 };
 
 mainControllerClass.prototype.popupLoginWindow = function() {
-	winSP = dhxWins.createWindow('windowLoginId',60,10,400,300);
+	if (dhxWins.isWindow("windowLoginId")) {
+		winSP = dhxWins.window("windowLoginId");
+	}
+	else {
+		winSP = dhxWins.createWindow('windowLoginId',60,10,400,300);
+	}
 	winSP.progressOn();
 	winSP.setText('Login');
 	winSP.attachURL(globalBaseUrl + '/login.popup/panel',true);
@@ -401,10 +406,27 @@ function varDump(obj) {
         alert(out);
 }
 
-function globalCreateWindow(winId,params,url,winText,width,height) {
+function globalCreateWindow(winId,params,url,winText,width,height,prop) {
+	if (!prop) {
+		prop = {
+			"attachURL": true,
+			"setModal": false,
+		};
+	}
+	if (dhxWins.isWindow(winId)) {
+		return dhxWins.window(winId);
+	}
 	var winCW = dhxWins.createWindow(winId,60,10,width,height);
 	winCW.setText(winText);
-	winCW.attachURL(url+'?'+params.join("&"),true);
+	if (params.length > 0) {
+		url += "?" + params.join("&");
+	}
+	if (prop.attachURL) {
+		winCW.attachURL(url,true);
+	}
+	if (prop.setModal) {
+		winCW.setModal(true);
+	}
 	winCW.centerOnScreen();
 	return winCW;
 }
@@ -990,8 +1012,8 @@ visitSelectorClass.prototype.visitDetailsTabbarCacheContent = [];
 
 visitSelectorClass.prototype.accordionAddSelectVisitId = "accordionAddSelectVisit";
 visitSelectorClass.prototype.accordionVisitDetailsId = "accordionVisitDetails";
-//visitSelectorClass.prototype.accordionReferralVisitsId = "accordionReferralVisits";
-//visitSelectorClass.prototype.accordionTelemedVisitsId = "accordionTelemedVisits";
+visitSelectorClass.prototype.accordionReferralVisitsId = "accordionReferralVisits";
+visitSelectorClass.prototype.accordionTelemedVisitsId = "accordionTelemedVisits";
 visitSelectorClass.prototype.tabVisitTypeId = "tabVisitType";
 visitSelectorClass.prototype.tabDiagnosesId = "tabDiagnoses";
 visitSelectorClass.prototype.tabProceduresId = "tabProcedures";
@@ -1015,7 +1037,12 @@ visitSelectorClass.prototype.getVisitDetailsTabbar = function() {
 
 visitSelectorClass.prototype.openWindow = function() {
 	if (mainController.getActivePatient() < 1) {
-		alert('You must select a patient before selecting a visit.');
+		if (window.windowSelectPatient && window.visitSelector.openWindow) {
+			windowSelectPatient(true,"visitSelector.openWindow()");
+		}
+		else {
+			alert("You must select a patient before selecting a visit.");
+		}
 		return false;
 	}
 	// local variable reference to this class
@@ -1023,7 +1050,7 @@ visitSelectorClass.prototype.openWindow = function() {
 
 	dhxWins.setImagePath(globalBaseUrl+"/img/");
 	dhxWins.setSkin("clear_silver");
-	this.oWindow = dhxWins.createWindow("windowSelectVisitId",60,10,850,600);
+	this.oWindow = dhxWins.createWindow("windowSelectVisitId",60,10,850,800);
 	this.oWindow.setText("Select Location & Visit");
 	this.oWindow.centerOnScreen();
 
@@ -1042,8 +1069,10 @@ visitSelectorClass.prototype.openWindow = function() {
 	this.oAccordion.setIconsPath(globalBaseUrl+"/img/");
 	this.oAccordion.addItem(this.accordionAddSelectVisitId,"Add/Select Visit");
 	this.oAccordion.addItem(this.accordionVisitDetailsId,"Visit Details");
-	//this.oAccordion.addItem(this.accordionReferralVisitsId,"Referral Visits");
-	//this.oAccordion.addItem(this.accordionTelemedVisitsId,"Telemedicine Visits");
+	this.oAccordion.addItem(this.accordionReferralVisitsId,"Referral Visits");
+	this.oAccordion.hideItem(this.accordionReferralVisitsId);
+	this.oAccordion.addItem(this.accordionTelemedVisitsId,"Telemedicine Visits");
+	this.oAccordion.hideItem(this.accordionTelemedVisitsId);
 
 	this.oAccordion.attachEvent("onActive", function(id){ thisClass.accordionOpen(id); });
 	var tthis = this;
@@ -1056,16 +1085,22 @@ visitSelectorClass.prototype.openWindow = function() {
 	});
 
 	this.oVisitDetailsTabbar = this.oAccordion.cells(this.accordionVisitDetailsId).attachTabbar();
-	this.oAccordion.openItem(this.accordionAddSelectVisitId);
-	this.accordionOpen(this.accordionAddSelectVisitId);
+	if (mainController.getActiveVisit() > 0) {
+		this.oAccordion.openItem(this.accordionVisitDetailsId);
+		this.accordionOpen(this.accordionVisitDetailsId);
+	}
+	else {
+		this.oAccordion.openItem(this.accordionAddSelectVisitId);
+		this.accordionOpen(this.accordionAddSelectVisitId);
+	}
 
 	this.oVisitDetailsTabbar.setImagePath(globalBaseUrl+"/img/");
 	this.oVisitDetailsTabbar.setStyle("silver");
 	this.oVisitDetailsTabbar.setSkinColors("#FFFFFF,#FFFACD");
 
 	this.oVisitDetailsTabbar.addTab(this.tabVisitTypeId,"Visit Type","95");
-	this.oVisitDetailsTabbar.addTab(this.tabDiagnosesId,"Diagnoses","95");
-	this.oVisitDetailsTabbar.addTab(this.tabProceduresId,"Procedures","95");
+	//this.oVisitDetailsTabbar.addTab(this.tabDiagnosesId,"Diagnoses","95");
+	//this.oVisitDetailsTabbar.addTab(this.tabProceduresId,"Procedures","95");
 	this.oVisitDetailsTabbar.addTab(this.tabVitalsId,"Vitals","95");
 	this.oVisitDetailsTabbar.addTab(this.tabImmunizationsId,"Immunizations","95");
 	this.oVisitDetailsTabbar.addTab(this.tabEducationId,"Education","95");
@@ -1083,7 +1118,7 @@ visitSelectorClass.prototype.openWindow = function() {
 		*/
 		switch(id) {
 			case thisClass.tabVisitTypeId:
-				thisClass.visitDetailsTabbarGetContent(id,globalBaseUrl+"/visit-select.raw/visit-type");
+				thisClass.visitDetailsTabbarGetContent(id,globalBaseUrl+"/visit-select.raw/visit-details");
 				break;
 			case thisClass.tabDiagnosesId:
 				thisClass.visitDetailsTabbarGetContent(id,globalBaseUrl+"/visit-select.raw/diagnoses");
@@ -1118,7 +1153,7 @@ visitSelectorClass.prototype.openWindow = function() {
 visitSelectorClass.prototype.accordionOpen = function(id) {
 	switch (id) {
 		case this.accordionAddSelectVisitId:
-			this.accordionGetContent(id,globalBaseUrl+"/visit-select.raw/index");
+			this.accordionGetContent(id,globalBaseUrl+"/visit-select.raw/index?personId="+mainController.getActivePatient()+"&visitId="+mainController.getActiveVisit());
 			break;
 		case this.accordionReferralVisitsId:
 			break;
@@ -1201,3 +1236,176 @@ teamSelectorClass.prototype.setWindowDimension = function(width,height) {
 teamSelectorClass.prototype.closeWindow = function() {
 	this.oWindow.close();
 };
+
+
+
+function drugScheduleClass() {
+}
+
+drugScheduleClass.prototype._computeXID = function(quantity,divisor) {
+	quantity = parseInt(quantity);
+	divisor = parseInt(divisor);
+	var ret = quantity / divisor;
+	if (quantity % divisor != 0) {
+		ret++;
+	}
+	return ret;
+};
+
+drugScheduleClass.prototype.BID = function(quantity) {
+	return this._computeXID(quantity,2);
+};
+
+drugScheduleClass.prototype.TID = function(quantity) {
+	return this._computeXID(quantity,3);
+};
+
+drugScheduleClass.prototype.MOWEFR = function(quantity) {
+	quantity = parseInt(quantity);
+	return quantity;
+};
+
+drugScheduleClass.prototype.NOW = function(quantity) {
+	quantity = parseInt(quantity);
+	return quantity;
+};
+
+drugScheduleClass.prototype.ONCE = function(quantity) {
+	quantity = parseInt(quantity);
+	return quantity;
+};
+
+drugScheduleClass.prototype._computeQXH = function(quantity,multiplier) {
+	quantity = parseInt(quantity);
+	multiplier = parseInt(multiplier);
+	quantity *= multiplier;
+	return this._computeXID(quantity,24);
+};
+
+drugScheduleClass.prototype.Q12H = function(quantity) {
+	return this._computeQXH(quantity,12);
+};
+
+drugScheduleClass.prototype.Q24H = function(quantity) {
+	return this._computeQXH(quantity,24);
+};
+
+drugScheduleClass.prototype.Q2H = function(quantity) {
+	return this._computeQXH(quantity,2);
+};
+
+drugScheduleClass.prototype.Q3H = function(quantity) {
+	return this._computeQXH(quantity,3);
+};
+
+drugScheduleClass.prototype.Q4H = function(quantity) {
+	return this._computeQXH(quantity,4);
+};
+
+drugScheduleClass.prototype.Q6H = function(quantity) {
+	return this._computeQXH(quantity,6);
+};
+
+drugScheduleClass.prototype.Q8H = function(quantity) {
+	return this._computeQXH(quantity,8);
+};
+
+drugScheduleClass.prototype.Q5MIN = function(quantity) {
+	quantity = parseInt(quantity);
+	quantity *= 5;
+	return this._computeXID(quantity,1440);
+};
+
+drugScheduleClass.prototype.QDAY = function(quantity) {
+	quantity = parseInt(quantity);
+	return quantity;
+};
+
+drugScheduleClass.prototype.getDaysSupply = function(quantity,schedule) {
+	quantity = parseInt(quantity);
+	switch (schedule) {
+		case "BID":
+			return this.BID(quantity);
+			break;
+		case "TID":
+			return this.TID(quantity);
+			break;
+		case "MOWEFR":
+			return this.MOWEFR(quantity);
+			break;
+		case "NOW":
+			return this.NOW(quantity);
+			break;
+		case "ONCE":
+			return this.ONCE(quantity);
+			break;
+		case "Q12H":
+			return this.Q12H(quantity);
+			break;
+		case "Q24H":
+			return this.Q24H(quantity);
+			break;
+		case "Q2H":
+			return this.Q2H(quantity);
+			break;
+		case "Q3H":
+			return this.Q3H(quantity);
+			break;
+		case "Q4H":
+			return this.Q4H(quantity);
+			break;
+		case "Q6H":
+			return this.Q6H(quantity);
+			break;
+		case "Q8H":
+			return this.Q8H(quantity);
+			break;
+		case "Q5MIN":
+			return this.Q5MIN(quantity);
+			break;
+		case "QDAY":
+			return this.QDAY(quantity);
+			break;
+		default:
+			return quantity;
+	}
+}
+
+drugScheduleClass.prototype.getDosage = function(quantity,daysSupply,schedule) {
+	quantity = parseInt(quantity);
+	daysSupply = parseInt(daysSupply);
+	var ret = quantity / daysSupply;
+	switch (schedule) {
+		case "BID":
+		case "Q12H":
+			ret /= 2;
+			break;
+		case "TID":
+		case "Q8H":
+			ret /= 3;
+			break;
+		case "MOWEFR":
+		case "NOW":
+		case "ONCE":
+		case "Q24H":
+		case "QDAY":
+			break;
+		case "Q2H":
+			ret /= 12;
+			break;
+		case "Q3H":
+			ret /= 8;
+			break;
+		case "Q4H":
+			ret /= 6;
+			break;
+		case "Q6H":
+			ret /= 4;
+			break;
+		default:
+	}
+	if (isNaN(ret)) {
+		ret = 1;
+	}
+	return ret;
+}

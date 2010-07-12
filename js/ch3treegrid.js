@@ -49,6 +49,9 @@ eXcell_tree.prototype.setValue = function(val) {
 
 	var id = this.cell.parentNode.idd;
 	var row = this.grid._h2.get[id];
+	if (!row) {
+		return;
+	}
 	row.label = val;
 
 	if (this.cell._attrs["image"]) {

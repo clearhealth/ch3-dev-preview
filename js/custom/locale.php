@@ -1,5 +1,8 @@
 <?$basePath = Zend_Registry::get('basePath');
 $contents = trim(file_get_contents($basePath . '/js/dojo/cldr/nls/en/gregorian.js'));?>
+var globalAccessDeniedLabel = '<label style="color:red;"><?=__('Access denied')?></label>';
+var globalAccessDenied = "<?=__('Access denied')?>";
+
 // temporarily set the dojo's baseUrl to cater the template rendering
 dojo.baseUrl = '<?=$this->view->baseUrl?>/js<?=$this->view->baseUrl?>/';
 
@@ -60,3 +63,22 @@ dojo.cldr.nls.number._built=true;
 dojo.provide("dojo.cldr.nls.number");
 dojo.cldr.nls.number=<?=$contents?>;
 
+<?$contents = trim(file_get_contents($basePath . '/js/dojo/cldr/nls/currency.js'));?>
+// en and en-us are the same
+dojo.provide("dojo.cldr.nls.en.currency");
+dojo.cldr.nls.en.currency._built=true;
+dojo.provide("dojo.cldr.nls.currency.en");
+dojo.provide("dojo.cldr.nls.currency.en_us");
+dojo.cldr.nls.currency.en=<?=$contents?>;
+dojo.cldr.nls.currency.en_us=<?=$contents?>;
+
+dojo.provide("dojo.cldr.nls.currency");
+dojo.cldr.nls.currency._built=true;
+dojo.provide("dojo.cldr.nls.currency");
+dojo.cldr.nls.currency=<?=$contents?>;
+
+<?$contents = trim(file_get_contents($basePath . '/js/dojo/cldr/monetary.js'));?>
+dojo.provide("dojo.cldr.monetary");
+dojo.cldr.monetary._built=true;
+dojo.provide("dojo.cldr.monetary");
+dojo.cldr.monetary=<?=$contents?>;
