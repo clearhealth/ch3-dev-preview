@@ -41,7 +41,7 @@ require_once 'User.php';
  */
 require_once 'UserKey.php';
 
-class Models_UserKeyTest extends Models_TableModels {
+class Models_UserKeyTest extends Models_ClinicalNoteAbstract {
 
 	protected $_keyValues = array('userId'=>1234,
 				      'privateKey'=>'Test Private Key',
@@ -84,7 +84,7 @@ class Models_UserKeyTest extends Models_TableModels {
 		$objects = array();
 
 		$clinicalNote = new ClinicalNote();
-		$clinicalNote->clinicalNoteDefinitionId = 19;
+		$clinicalNote->clinicalNoteDefinitionId = $this->_objects['noteDefinition']->clinicalNoteDefinitionId;
 		$clinicalNote->personId = $this->_objects['person']->personId;
 		$clinicalNote->persist();
 		$objects['clinicalNote'] = $clinicalNote;
@@ -126,7 +126,7 @@ class Models_UserKeyTest extends Models_TableModels {
 		$objects = array();
 
 		$clinicalNote = new ClinicalNote();
-		$clinicalNote->clinicalNoteDefinitionId = 19;
+		$clinicalNote->clinicalNoteDefinitionId = $this->_objects['noteDefinition']->clinicalNoteDefinitionId;
 		$clinicalNote->personId = $this->_objects['person']->personId;
 		$clinicalNote->persist();
 		$objects['clinicalNote'] = $clinicalNote;

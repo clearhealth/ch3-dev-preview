@@ -61,13 +61,28 @@ require_once 'ProcessAlert.php';
  */
 require_once 'GeneralAlert.php';
 
-class Models_GeneralAlertTest extends Models_TableModels {
+class Models_GeneralAlertTest extends Models_ClinicalNoteAbstract {
 
 	protected $_keyValues = array('message'=>'Test Message',
 				      'urgency'=>'Test Urgency',
 				      'status'=>1,);
 	protected $_assertMatches = array('message'=>'Test Message');
 	protected $_assertTableName = 'generalAlerts'; // value MUST be the same as $_table
+
+	protected $_noteTemplate;
+	protected $_noteDefinition;
+
+	public function setUp() {
+		parent::setUp();
+		$this->_noteTemplate = $this->_objects['noteTemplate'];
+		$this->_noteDefinition = $this->_objects['noteDefinition'];
+	}
+
+	public function tearDown() {
+		$this->_objects['noteTemplate'] = $this->_noteTemplate;
+		$this->_objects['noteDefinition'] = $this->_noteDefinition;
+		parent::tearDown();
+	}
 
 	public function testUserLoggedOut() {
 		$this->_objects = GeneralAlertHandler::generateUserLoggedOut();
@@ -88,7 +103,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$clinicalNote = new ClinicalNote();
 		$clinicalNote->personId = $this->_objects['person']->person_id;
 		$clinicalNote->visitId = 100;
-		$clinicalNote->clinicalNoteDefinitionId = 19;
+		$clinicalNote->clinicalNoteDefinitionId = $this->_noteDefinition->clinicalNoteDefinitionId;
 		$clinicalNote->dateTime = date('Y-m-d H:i:s');
 		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$clinicalNote->persist();
@@ -135,7 +150,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$clinicalNote = new ClinicalNote();
 		$clinicalNote->personId = $this->_objects['person']->person_id;
 		$clinicalNote->visitId = 100;
-		$clinicalNote->clinicalNoteDefinitionId = 19;
+		$clinicalNote->clinicalNoteDefinitionId = $this->_noteDefinition->clinicalNoteDefinitionId;
 		$clinicalNote->dateTime = date('Y-m-d H:i:s');
 		$clinicalNote->eSignatureId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$clinicalNote->persist();
@@ -182,7 +197,7 @@ class Models_GeneralAlertTest extends Models_TableModels {
 		$clinicalNote = new ClinicalNote();
 		$clinicalNote->personId = $this->_objects['person']->person_id;
 		$clinicalNote->visitId = 100;
-		$clinicalNote->clinicalNoteDefinitionId = 19;
+		$clinicalNote->clinicalNoteDefinitionId = $this->_noteDefinition->clinicalNoteDefinitionId;
 		$clinicalNote->dateTime = date('Y-m-d H:i:s');
 		$clinicalNote->persist();
 		$objects['clinicalNote'] = $clinicalNote;

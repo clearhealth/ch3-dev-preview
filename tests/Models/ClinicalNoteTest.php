@@ -25,16 +25,8 @@
  * Models_TableModels
  */
 require_once 'TableModels.php';
-/**
- * Unit test for Clinical Note Model
- */
 
-/**
- * ClinicalNote
- */
-require_once 'ClinicalNote.php';
-
-class Models_ClinicalNoteTest extends Models_TableModels {
+class Models_ClinicalNoteTest extends Models_ClinicalNoteAbstract {
 
 	protected $_keyValues = array('personId'=>123,
 				      'visitId'=>456,
@@ -47,15 +39,6 @@ class Models_ClinicalNoteTest extends Models_TableModels {
 	protected $_assertMatches = array('personId'=>123);
 	protected $_assertTableName = 'clinicalNotes'; // value MUST be the same as $_table
 
-	public function setUp() {
-		parent::setUp();
-
-		$user = new User();
-		$user->username = TEST_LOGIN_USERNAME;
-		$user->populateWithUsername();
-		Zend_Auth::getInstance()->getStorage()->write($user);
-	}
-
 	public function testAddNote() {
 		$personId = 1000;
 		$authoringPersonId = 65650;
@@ -64,6 +47,7 @@ class Models_ClinicalNoteTest extends Models_TableModels {
 		$note->personId = $personId;
 		$note->dateTime = $dateTime;
 		$note->authoringPersonId = $authoringPersonId;
+		$note->clinicalNoteDefinitionId = $this->_objects['noteDefinition']->clinicalNoteDefinitionId;
 		$note->persist();
 		$noteId = $note->clinicalNoteId;
 

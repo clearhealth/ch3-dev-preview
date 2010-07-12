@@ -34,6 +34,7 @@ class TestCase extends PHPUnit_Framework_TestCase {
 	protected $_objects = array();
 
 	public function setUp() {
+		set_error_handler('errorTestHandler');
 		$this->_setUpEnv();
 		$this->_setUpDB();
 		$this->_setUpCache();
@@ -123,6 +124,7 @@ class TestCase extends PHPUnit_Framework_TestCase {
 			$user->password = TEST_LOGIN_PASSWORD;
 			$user->userId = $person->personId;
 			$user->personId = $person->personId;
+			$user->permissionTemplateId = 'superadmin';
 			$user->persist();
 		}
 		Zend_Auth::getInstance()->getStorage()->write($user);
@@ -172,4 +174,7 @@ class TestCase extends PHPUnit_Framework_TestCase {
 		}
 	}
 
+}
+
+function errorTestHandler($errno, $errstr, $errfile, $errline) {
 }

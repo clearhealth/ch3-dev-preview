@@ -70,23 +70,25 @@ EOL;
 		$person['first_name'] = 'Test';
 		$person['last_name'] = 'ClearHealth';
 		$data['person'] = $person;
-		// invalid XML format
+		// invalid XML format: close tag of xsl:template is xsl:templates
 		$templateXSLT = <<<EOL
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0">
-<xsl:templates match="person">
+<xsl:template match="person">
 <xsl:value-of select="person_id"/>-<xsl:value-of select="first_name"/>-<xsl:value-of select="last_name"/>
 </xsl:templates>
 </xsl:stylesheet>
 EOL;
 		$assert = false;
+		$msg = '';
 		try {
 			$template = TemplateXSLT::render($data,$templateXSLT);
 		}
 		catch (Exception $e) {
 			$assert = true;
+			$msg = $e->getMessage();
 		}
-		$this->assertTrue($assert,$e->getMessage());
+		$this->assertTrue($assert,$msg);
 	}
 
 }
