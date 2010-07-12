@@ -38,7 +38,7 @@
 </tr>
 <tr>
 	<td>waitForVisible</td>
-	<td>//td[@id='menuItem_default_file']</td>
+	<td>//td[@id='menuItem_All_file']</td>
 	<td></td>
 </tr>
 

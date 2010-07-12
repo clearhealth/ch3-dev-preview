@@ -39,5 +39,10 @@ class Models_EnumerationTest extends Models_TableModels {
 	protected $_assertMatches = array('name'=>'Test Name');
 	protected $_assertTableName = 'enumerations'; // value MUST be the same as $_table
 
+	public function setUp() {
+		parent::setUp();
+		Enumeration::generateTestData(true);
+	}
+
 }
 

@@ -33,10 +33,11 @@ require_once 'ReportQuery.php';
 
 class Models_ReportQueryTest extends Models_TableModels {
 
-	protected $_keyValues = array('systemName'=>'Test System Name',
-				      'uuid'=>'u-u-i-d',
+	protected $_keyValues = array('displayName'=>'Test System Name',
+				      'reportBaseId'=>'1000',
+				      'type'=>'TYPE',
 				      'query'=>'Test Query',);
-	protected $_assertMatches = array('systemName'=>'Test System Name');
+	protected $_assertMatches = array('displayName'=>'Test System Name');
 	protected $_assertTableName = 'reportQueries'; // value MUST be the same as $_table
 
 }

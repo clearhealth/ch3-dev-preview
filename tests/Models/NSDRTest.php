@@ -58,7 +58,7 @@ class Models_NSDRTest extends TestCase {
 
 	public function setUp() {
 		$this->_guids = NSDR::generateTestData();
-		Enumeration::generateTestData();
+		Enumeration::generateTestData(true);
 		NSDR::systemUnload();
 		NSDR::systemStart();
 	}
