@@ -38,7 +38,11 @@ dojo.declare("custom.MedicationSelectAutoComplete", dojox.data.QueryReadStore, {
 		for (var i=0; i<data.length; i++) {
 			retData.items[i] = new Object();
 			retData.items[i].label = data[i].id;
-			var drugName = data[i].tradename + ' ' + data[i].strength + ' ' + data[i].unit + ' ' + data[i].packsize + data[i].packtype + ' ' + data[i].ndc;
+			var drugName = data[i].tradename + ' ' + data[i].strength + ' ' + data[i].unit + ' ' + data[i].packsize + data[i].packtype;// + ' ' + data[i].ndc;
+			if (data[i].inFormulary == 1) {
+				//varDump(data[i]);
+				drugName = "<span style='background-color:yellow;color:#000000;'>" + drugName + '</span>';
+			}
 			retData.items[i].name = drugName;
 		}
 		return retData;

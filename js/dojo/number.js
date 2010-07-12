@@ -51,7 +51,7 @@ dojo.number.format = function(/*Number*/value, /*dojo.number.__FormatOptions?*/o
 	// value:
 	//		the number to be formatted.  If not a valid JavaScript number,
 	//		return null.
-
+	return value;
 	options = dojo.mixin({}, options || {});
 	var locale = dojo.i18n.normalizeLocale(options.locale);
 	var bundle = dojo.i18n.getLocalization("dojo.cldr", "number", locale);
@@ -122,7 +122,7 @@ dojo.number.round = function(/*Number*/value, /*Number*/places, /*Number?*/multi
 	//		the number of decimal places where rounding takes place
 	//	multiple:
 	//		rounds next place to nearest multiple
-
+	return value;
 	var pieces = String(value).split(".");
 	var length = (pieces[1] && pieces[1].length) || 0;
 	if(length > places){
@@ -179,13 +179,13 @@ dojo.number._formatAbsolute = function(/*Number*/value, /*String*/pattern, /*doj
 
 	var valueParts = String(Math.abs(value)).split(".");
 	var fractional = valueParts[1] || "";
-	if(options.places){
+	/*if(options.places){
 		valueParts[1] = dojo.string.pad(fractional.substr(0, options.places), options.places, '0', true);
 	}else if(patternParts[1] && options.places !== 0){
 		// Pad fractional with trailing zeros
 		var pad = patternParts[1].lastIndexOf("0") + 1;
 		if(pad > fractional.length){
-			valueParts[1] = dojo.string.pad(fractional, pad, '0', true);
+			//valueParts[1] = dojo.string.pad(fractional, pad, '0', true);
 		}
 
 		// Truncate fractional
@@ -196,7 +196,7 @@ dojo.number._formatAbsolute = function(/*Number*/value, /*String*/pattern, /*doj
 	}else{
 		if(valueParts[1]){ valueParts.pop(); }
 	}
-
+	*/
 	// Pad whole with leading zeros
 	var patternDigits = patternParts[0].replace(',', '');
 	pad = patternDigits.indexOf("0");
@@ -211,7 +211,7 @@ dojo.number._formatAbsolute = function(/*Number*/value, /*String*/pattern, /*doj
 			valueParts[0] = valueParts[0].substr(valueParts[0].length - pad);
 		}
 	}
-
+	
 	// Add group separators
 	var index = patternParts[0].lastIndexOf(',');
 	var groupSize, groupSize2;
@@ -442,6 +442,7 @@ dojo.number._realNumberRegexp = function(/*dojo.number.__RealNumberRegexpFlags?*
 	flags = flags || {};
 	//TODO: use mixin instead?
 	if(!("places" in flags)){ flags.places = Infinity; }
+	 flags.places = Infinity; 
 	if(typeof flags.decimal != "string"){ flags.decimal = "."; }
 	if(!("fractional" in flags) || /^0/.test(flags.places)){ flags.fractional = [true, false]; }
 	if(!("exponent" in flags)){ flags.exponent = [true, false]; }
