@@ -57,7 +57,7 @@ div.gridbox table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.c
 	color:black;
 	}
 div.gridbox table.obj tr.rowselected td{
-	background-color:#e1e0d7;
+	background-color:#ccc;
 	color:black;
 	}
 div.gridbox table.obj td.editable{
