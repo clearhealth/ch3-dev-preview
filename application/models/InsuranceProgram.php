@@ -44,6 +44,10 @@ class InsuranceProgram extends WebVista_Model_ORM {
 	protected $_legacyORMNaming = true;
 	protected $_cascadePersist = false;
 
+	const ENUM_INSURANCE_PREFERENCES = 'Insurance Preferences';
+	const ENUM_PROGRAM_PREFERENCES = 'Program Preferences';
+	const ENUM_PROGRAM_TYPES = 'Program Types';
+
 	public function __construct() {
 		parent::__construct();
 		$this->company = new Company();
@@ -74,6 +78,40 @@ class InsuranceProgram extends WebVista_Model_ORM {
 			       ->from($this->_table)
 			       ->where('company_id = ?',(int)$companyId);
 		return $this->getIterator($dbSelect);
+	}
+
+	public static function getListProgramTypes() {
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName(self::ENUM_INSURANCE_PREFERENCES);
+
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		$ret = array();
+		foreach ($enumerationIterator as $enum) {
+			if ($enum->name != self::ENUM_PROGRAM_PREFERENCES) continue;
+			$enumPRIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+			foreach ($enumPRIterator as $prog) {
+				if ($prog->name != self::ENUM_PROGRAM_TYPES) continue;
+				$enumPTIterator = $enumerationsClosure->getAllDescendants($prog->enumerationId,1);
+                		$ret = $enumPTIterator->toArray('enumerationId','name');
+				break;
+			}
+			break;
+		}
+		return $ret;
+	}
+
+	public static function getInsuranceProgram($insuranceProgramId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('ip'=>'insurance_program'),array('insurance_program_id','name'))
+				->join(array('c'=>'company'),'c.company_id = ip.company_id',array('company_name'=>'name'))
+				->where('ip.insurance_program_id = ?',(int)$insuranceProgramId);
+		$insuranceProgram = '';
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$insuranceProgram = $row['company_name'].'->'.$row['name'];
+		}
+		return $insuranceProgram;
 	}
 
 }

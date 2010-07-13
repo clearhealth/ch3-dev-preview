@@ -136,15 +136,14 @@ class ClinicalNotesManagerController extends WebVista_Controller_Action {
 		$autoAdd = (int)$this->_getParam('autoAdd');
 		$cnTemplate = new ClinicalNoteTemplate();
 		$cnTemplate->populateWithArray($params);
-		$cnTemplate->persist();
-
 		$data = array();
 		try {
 			$xml = new SimpleXMLElement($cnTemplate->template);
 			$data['msg'] = __('Record saved successfully.');
+			$cnTemplate->persist();
 		}
 		catch (Exception $e) {
-			$data['error'] = $e->getMessage();
+			$data['error'] = __('Error: '.$e->getMessage());
 		}
 		if (!isset($data['error']) && (string)$xml->attributes()->useNSDR && (string)$xml->attributes()->useNSDR == 'true') {
 			$namespaceAdd = false;

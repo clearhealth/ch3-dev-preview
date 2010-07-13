@@ -41,7 +41,7 @@ class ESignature extends WebVista_Model_ORM {
                 parent::__construct();
         }
 
-	public static function createSignatureEntry(Document $object) {
+	public static function createSignatureEntry(Document $object,$signingUserId = null) {
 		$db = Zend_Registry::get('dbAdapter');
 		$esig = new ESignature();
 		if ($object->eSignatureId > 0) {
@@ -65,7 +65,10 @@ class ESignature extends WebVista_Model_ORM {
 
                 $esig->objectId = $object->getDocumentId();
                 $esig->objectClass = get_class($object);
-                $esig->signingUserId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		if ($signingUserId === null) {
+                	$signingUserId = Zend_Auth::getInstance()->getIdentity()->personId;
+		}
+                $esig->signingUserId = (int)$signingUserId;
                 $esig->dateTime = date('Y-m-d H:i:s');
                 $esig->persist();
 	}
@@ -104,6 +107,21 @@ class ESignature extends WebVista_Model_ORM {
 		openssl_free_key($publicKey);
 		if ($hash === $verifyHash)  return true;
 		throw new Exception('Document verification with signature failed.');
+	}
+
+	public function populateByObject($objectClass=null,$objectId=null) {
+		if ($objectClass === null) {
+			$objectClass = $this->objectClass;
+		}
+		if ($objectId === null) {
+			$objectId = $this->objectId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('objectClass = ?',$objectClass)
+				->where('objectId = ?',$objectId);
+		$this->populateWithSql($sqlSelect->__toString());
 	}
 
 	public static function retrieveSignatureId($objectClass,$objectId,$signed=true) {

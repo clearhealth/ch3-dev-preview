@@ -5,8 +5,26 @@
 
 function submitpharmacydetailForm() {
 }
+
+function pharmacySubmit() {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/admin-pharmacies.raw/process-edit",
+		form: "pharmacydetail",
+		handleAs: "json", 
+		load: function (data) { 
+			alert("Pharmacy saved"); 
+			pharmacyId = data.pharmacyId;
+			adminPharmacyTabbarAttachContent("tab_pharmacyDetails","<?=$this->baseUrl?>/admin-pharmacies.raw/edit?pharmacyId=" + data.pharmacyId);
+        	        pharmacyEditTabbar.setTabActive("tab_pharmacyDetails");
+			localRefreshCurrentTab();
+		},
+		error: function (er) {
+			alert("err: " + er);
+		}
+	});
+}
 </script>
-<div style="margin-left:auto;margin-right:auto;font-size:9pt;">
+<div style="margin-left:auto;margin-right:auto;font-size:9pt;height:370px;overflow:auto;">
 	<div style="float:left;">
 		<?if ($this->message):?>
 		<div style="background-color:PaleGreen; width:100%;">

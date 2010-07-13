@@ -34,7 +34,11 @@ class ProcessAlert extends ProcessAbstract {
 			$cacheCodeObjects = array();
 		}
 		$handler = new GeneralAlertHandler();
-		$handlerIterator = $handler->getIterator();
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($handler->_table)
+				->where('active = 1');
+		$handlerIterator = $handler->getIterator($sqlSelect);
 		foreach ($handlerIterator as $item) {
 			$this->_evaluateCodes($item);
 			$this->_handlers[] = $item;

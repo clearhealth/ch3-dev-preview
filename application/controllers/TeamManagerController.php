@@ -145,7 +145,7 @@ class TeamManagerController extends WebVista_Controller_Action {
 		}
 		$name = TeamMember::ENUM_PARENT_NAME;
 		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName($name);
+		$enumeration->populateByUniqueName($name);
 
 		$enumerationsClosure = new EnumerationsClosure();
 		$rowset = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);

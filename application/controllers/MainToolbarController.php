@@ -38,8 +38,24 @@ class MainToolbarController extends WebVista_Controller_Action {
                 $visitId = (int)$this->_getParam('visitId', 0);
 		$this->_setActivePatient($personId,$visitId);
 
+		$identity = Zend_Auth::getInstance()->getIdentity();
+
+		$userId = (int)$identity->userId;
+		$user = new User();
+		$user->userId = $userId;
+		$user->populate();
+		$preferences = $user->xmlPreferences;
+		$location = '';
+		if ($preferences !== null) {
+			$currentLocation = (int)$preferences->currentLocation;
+			if ($currentLocation > 0) {
+				$location = Room::location($currentLocation);
+			}
+		}
+		$this->view->location = $location;
+
 		// ALERTS
-		$personId = Zend_Auth::getInstance()->getIdentity()->personId;
+		$personId = (int)$identity->personId;
 		$team = new TeamMember();
 		$teamId = $team->getTeamByPersonId($personId);
 		$ctr = 0;
@@ -53,7 +69,7 @@ class MainToolbarController extends WebVista_Controller_Action {
 		if ($ctr > 0) {
 			$this->view->alerts = $ctr;
 		}
-
+		$this->view->identity =  Zend_Auth::getInstance()->getIdentity();
 		$this->view->xmlHeader = '<?xml version=\'1.0\' encoding=\'iso-8859-1\'?>' . "\n";
 		$contentType = (stristr($_SERVER["HTTP_ACCEPT"],"application/xhtml+xml")) ? "application/xhtml+xml" : "text/xml";
 		header("Content-type: ". $contentType);
@@ -152,11 +168,35 @@ class MainToolbarController extends WebVista_Controller_Action {
 		// VISITS
                 //$this->_visit = null;
 		if (!$visitId > 0) {
-			return;
-		}
-		$visit = new Visit();
-		$visit->encounter_id = (int)$visitId;
-		$visit->populate();
+                        $sql = "select * from encounter where patient_id = " . $patient->personId . "  and DATE_FORMAT(date_of_treatment,'%Y-%m-%d') = '" . date('Y-m-d') . "' order by date_of_treatment DESC, encounter_id DESC limit 1";
+                        try {
+                                $db = Zend_Registry::get('dbAdapter');
+                                $dbSelect = $db->select()
+                                                ->from ('encounter')
+                                                ->where('encounter.patient_id = ?', $patient->personId)
+                                                ->where('DATE_FORMAT(encounter.date_of_treatment,"%Y-%m-%d") = ?',date('Y-m-d'))
+                                                ->order('encounter.date_of_treatment DESC')
+                                                ->order('encounter.encounter_id DESC')
+                                                ->limit(1);
+                                $visitIterator = new VisitIterator($dbSelect);
+                                $visitIterator->valid();
+                                $visit = $visitIterator->first();
+                                if ($visit->encounter_id > 0) {
+                                        $this->_visit = $visit;
+                                        $this->view->visit = $this->_visit;
+                                }
+                                return;
+                        }
+                        catch (Exception $e) {
+                        //      return;
+                        }
+
+                        return;
+                }
+                $visit = new Visit();
+                $visit->encounter_id = (int)$visitId;
+                $visit->populate();
+
 		$this->_visit = $visit;
 		$this->view->visit = $this->_visit;
         }

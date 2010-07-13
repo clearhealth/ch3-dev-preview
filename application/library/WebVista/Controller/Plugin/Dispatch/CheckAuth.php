@@ -43,7 +43,8 @@ class WebVista_Controller_Plugin_Dispatch_CheckAuth extends Zend_Controller_Plug
 			$user->populate();
 			$permissionTemplateId = $user->permissionTemplateId;
 			if ($permissionTemplateId != 'superadmin' && !PermissionTemplate::hasAccess($permissionTemplateId,$controllerName,$actionName)) {
-				$error = __('Access denied');
+				$error = 'Access denied. '.$controllerName.'/'.$actionName.'. ';
+				$error .= 'Please <a href="'.$request->getBaseUrl().'/logout" title="Login">Login</a>.';
 				trigger_error($error,E_USER_NOTICE);
 				throw new WebVista_App_AuthException($error);
 			}

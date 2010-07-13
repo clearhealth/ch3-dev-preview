@@ -47,8 +47,16 @@ class Patient extends WebVista_Model_ORM {
 		parent::__construct();
 		$this->person = new Person();
 		$this->homeAddress = new Address();
+		$this->homeAddress->_cascadePersist = false;
 		$this->billingAddress = new Address();
+		$this->billingAddress->_cascadePersist = false;
 		//$this->phoneNumber = new PhoneNumber();
+	}
+
+	public function persist() {
+		$this->homeAddress->type = 'HOME';
+		$this->billingAddress->type = 'BILL';
+		parent::persist();
 	}
 
 	public function setPerson_id($key) {
@@ -63,9 +71,11 @@ class Patient extends WebVista_Model_ORM {
 			}
 			if ($this->homeAddress->personId > 0) {
 				$this->homeAddress = new Address();
+				$this->homeAddress->_cascadePersist = false;
 			}
 			if ($this->billingAddress->personId > 0) {
 				$this->billingAddress = new Address();
+				$this->billingAddress->_cascadePersist = false;
 			}
 		}
 		$this->person_id = $id; // person_id MUST be the same name as declared
@@ -167,6 +177,80 @@ class Patient extends WebVista_Model_ORM {
 			$this->populate();
 			$ret = true;
 		}
+		return $ret;
+	}
+
+	public function ssCheck() {
+		$ret = array();
+
+		// required SS: Name (last and first), Gender, Date of Birth
+		$person = $this->person;
+		$lastNameLen = strlen($person->lastName);
+		if (!$lastNameLen > 0 || $lastNameLen > 35) {
+			$ret[] = 'Last Name field must be supplied and not more than 35 characters';
+		}
+		$firstNameLen = strlen($person->firstName);
+		if (!$firstNameLen > 0 || $firstNameLen > 35) {
+			$ret[] = 'First Name field must be supplied and not more than 35 characters';
+		}
+
+		$enumeration = new Enumeration();
+		$enumeration->enumerationId = $person->gender;
+		$enumeration->populate();
+		$gender = $enumeration->key;
+		// Gender options = M, F, U
+		$genderList = array('M'=>'Male','F'=>'Female','U'=>'Unknown');
+		if (!isset($genderList[$gender])) {
+			$ret[] = 'Gender is invalid';
+		}
+		// Patient DOB must not be future
+		$date = date('Y-m-d');
+		$dateOfBirth = date('Ymd',strtotime($person->dateOfBirth));
+		if ($person->dateOfBirth == '0000-00-00' || strtotime($dateOfBirth) > strtotime($date)) {
+			$ret[] = 'Date of birth is invalid';
+		}
+
+		// Have appropriate validation on patient address/phone as required by SS docs
+		$address = new Address();
+		$address->personId = $this->personId;
+		$address->populateWithType('MAIN');
+		$line1Len = strlen($address->line1);
+		if (!$line1Len > 0 || $line1Len > 35) {
+			$ret[] = 'Address line1 field must be supplied and not more than 35 characters';
+		}
+		$line2Len = strlen($address->line2);
+		if ($line2Len > 0 && $line2Len > 35) {
+			$ret[] = 'Address line2 must not be more than 35 characters';
+		}
+		$cityLen = strlen($address->city);
+		if (!$cityLen > 0 || $cityLen > 35) {
+			$ret[] = 'Address city field must be supplied and not more than 35 characters';
+		}
+		if (strlen($address->state) != 2) {
+			$ret[] = 'Address state field must be supplied and not more than 2 characters';
+		}
+		$zipCodeLen = strlen($address->zipCode);
+		if ($zipCodeLen != 5 && $zipCodeLen != 9) {
+			$ret[] = 'Address zipcode must be supplied and must be 5 or 9 digit long';
+		}
+
+		$phoneNumber = new PhoneNumber();
+		$phoneNumber->personId = $person->personId;
+		$phones = $phoneNumber->phoneNumbers;
+		$hasTE = false;
+		foreach ($phones as $phone) {
+			if ($phone['type'] == 'TE') {
+				$hasTE = true;
+				$break;
+			}
+			if (strlen($phone['number']) < 11) {
+				$ret[] = 'Phone number \''.$phone['number'].'\' is invalid';
+			}
+		}
+		if (!$hasTE) {
+			$ret[] = 'Phone must have at least one Emergency, Employer or Billing';
+		}
+
 		return $ret;
 	}
 

@@ -1,0 +1,75 @@
+<style>
+#balanceOp {
+	border:1px solid #b3b3b3;
+	font-size:7pt;
+	height:15px;
+}
+</style>
+<div class="formRow">
+	<dt><label for="total" class="optional"><?=('Total')?></label></dt>
+	<?=$this->formCurrencyText('total',null,array('id'=>'total','style'=>'width:150px;'))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow">
+	<dt><label for="paid" class="optional"><?=('Paid')?></label></dt>
+	<?=$this->formCurrencyText('paid',null,array('id'=>'paid','style'=>'width:150px;'))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow">
+	<dt><label for="writeoff" class="optional"><?=('Writeoff')?></label></dt>
+	<?=$this->formCurrencyText('writeoff',null,array('id'=>'writeoff','style'=>'width:150px;'))?>
+</div>
+<br style="clear:left;" />
+<div class="formRow">
+	<dt><label for="balance" class="optional"><?=('Balance')?></label></dt>
+	<?=$this->formSelect('balanceOp','=',array('id'=>'balanceOp','onChange'=>'balanceOpOnChanged(this.value)','style'=>'width:150px;'),$this->balanceOperators)?><br />
+	<?=$this->formCurrencyText('balance',null,array('id'=>'balance','style'=>'width:150px;'))?>
+	<div id="balanceDivId" style="display:none;"><?=__('AND')?><br />
+	<?=$this->formCurrencyText('balance2',null,array('id'=>'balance2','style'=>'width:150px;'))?>
+	</div>
+</div>
+<br style="clear:left;" />
+<div class="formRow" style="padding-top:8px;">
+	<?=$this->formButton('ok',__('OK'),array('onClick'=>'claimsSetFilters()'))?>
+	<?=$this->formButton('cancel',__('Cancel'),array('onClick'=>'closeThisForm()'))?>
+</div>
+<script>
+function claimsSetFilters() {
+	var total = currencyTotal.getValue();
+	var paid = currencyPaid.getValue();
+	var writeoff = currencyWriteoff.getValue();
+	var balance = currencyBalance.getValue();
+	var balance2 = currencyBalance2.getValue();
+	var inValid = (isNaN(total) || isNaN(paid) || isNaN(writeoff) || isNaN(balance));
+	var balanceOpSelect = dojo.byId("balanceOp");
+	var balanceOp = balanceOpSelect.options[balanceOpSelect.selectedIndex].value;
+	var bal = balanceOp+"::"+balance;
+	if (balanceOp == "between") {
+		bal += "::"+balance2;
+		inValid = (inValid || isNaN(balance2))
+	}
+	if (inValid) {
+		alert("<?=__('Please correct all invalid fields')?>");
+		return;
+	}
+	var filters = {
+		"total": total,
+		"paid": paid,
+		"writeoff": writeoff,
+		"balance": bal,
+	};
+	claimsFilterChange(filters);
+}
+
+function balanceOpOnChanged(value) {
+	var balanceDiv = dojo.byId("balanceDivId");
+	balanceDiv.style.display = "none";
+	if (value == "between") {
+		balanceDiv.style.display = "";
+	}
+}
+
+function closeThisForm() {
+	dhxWins.window("windowClaimsAdvancedFiltersId").close();
+}
+</script>

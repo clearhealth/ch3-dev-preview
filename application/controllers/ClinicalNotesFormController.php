@@ -53,6 +53,19 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$this->_form->setWindow('dummyWindowId');
 		$this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
 		$cnXML = simplexml_load_string($cnTemplate->template);
+		$element = $this->_form->createElement('button','print', array('label' => 'Print'));
+                $element->setAttrib('onclick',"
+var printHtml = '<table border=\'0\' cellpadding=\'0\' cellspacing=\'0\' width=\'100%\'>';
+printHtml += '<thead><tr><th><div style=\'margin-bottom:30px;\'>'+dojo.byId('mainToolbar').innerHTML+'</div></th></tr></thead>';
+printHtml += '<tbody><tr><td>'+dojo.byId('cntemplateform').innerHTML+'</td></tr></tbody>';
+printHtml += '</table>';
+dojo.byId('iframeprint').contentWindow.document.body.innerHTML = printHtml;
+dojo.byId('iframeprint').contentWindow.focus();
+dojo.byId('iframeprint').contentWindow.print();
+//dojo.byId('iframeprint').contentWindow.document.body.innerHTML = '';
+printHtml = '';
+");
+                $element->setValue('Print');
 		// pre-register print element to view so that other elements can override particularly the onclick event
 		$this->_buildForm($cnXML);
 		$this->_form->addElement($this->_form->createElement('hidden','clinicalNoteId', array('value' => (int)$cn->clinicalNoteId)));
@@ -134,6 +147,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$cn = new ClinicalNote();
 		$cn->clinicalNoteId = $clinicalNoteId;
 		$cn->populate();
+
 		if (!$revisionId > 0) {
 			$revisionId = GenericData::getUnsignedRevisionId(get_class($cn),$cn->clinicalNoteId);
 		}
@@ -191,17 +205,15 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$json->direct($msg);
 	}
 
-
 	protected function _buildForm($xml) {
 		static $_namespaceElements = array();
+		$headingCounter = 1;
 		foreach ($xml as $question) {
-			$formName = preg_replace('/[^a-zA-Z0-9]/','',$question->attributes()->label);
-			//var_dump($question->dataPoint);
 			$elements = array();
 			foreach($question as $key => $item) {
 				if ($key == "dataPoint") $dataPoint = $item;
 				elseif ($key == "heading") {
-					$headingName = preg_replace('/[^a-zA-Z0-9\ ]/','',(string)$item);
+					$headingName = 'heading'.$headingCounter++;//preg_replace('/[^a-zA-Z0-9\ ]/','',(string)$item);
 					$element = $this->_form->createElement('hidden',$headingName, array('label' => (string)$item, 'disabled' => "disabled"));
 					$element->addDecorator('Label', array('tag' => 'h3'));
 					$this->_form->addElement($element);
@@ -220,7 +232,8 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 					$type = 'drawing';
                                 }
 
-				$elementName = preg_replace('/[-\.]/','_',NSDR2::extractNamespace((string)$dataPoint->attributes()->namespace));
+				//$elementName = preg_replace('/[-\.]/','_',(string)$dataPoint->attributes()->namespace);
+				$elementName = $this->_encodeNamespace((NSDR2::extractNamespace((string)$dataPoint->attributes()->namespace)));
 				$element = $this->_form->createElement($type,$elementName, array('label' => (string)$dataPoint->attributes()->label));
 				if ($this->_form->getElement($elementName) instanceof Zend_Form_Element) {
                                         $element =$this->_form->getElement($elementName);
@@ -238,44 +251,51 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
                                         if ((string)$dataPoint->attributes()->default == true) {
                                                 $element->setValue((string)$dataPoint->attributes()->value);     
                                         }
-					if ((string)$dataPoint->attributes()->type == 'radio') {
-						if ((string)$dataPoint->attributes()->radioGroup) {
-							$radioGroup = preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
-							$innerHTML = '';
-							$elName = 'namespaceData['.$element->getName().']';
-							if (!isset($_namespaceElements[$radioGroup])) {
-								$_namespaceElements[$radioGroup] = true;
-								$innerHTML = '
-var '.$radioGroup.'Members = [];
-function '.$radioGroup.'(name) {
-	var elName = null;
-	var el = null;
-	for (var i = 0; i < '.$radioGroup.'Members.length; i++) {
-		elName = '.$radioGroup.'Members[i];
-		el = document.getElementsByName(elName)[0];
-		if (!el) {
-			continue;
-		}
-		if (el.checked && elName != name) {
-			el.checked = false;
-			break; // there is only on checked element in a group
-		} 
-	}
-}
-';
-							}
-							$innerHTML .= $radioGroup.'Members.push("'.$elName.'");';
-                                        		$element->addDecorator('ScriptTag',array('placement' => 'APPEND','tag' => 'script','innerHTML' => $innerHTML,'noAttribs' => true));
-							$element->setAttrib('onchange',$radioGroup.'("'.$elName.'")');
-						}
-						if ((string)$dataPoint->attributes()->radioGroupDefault && (string)$dataPoint->attributes()->radioGroupDefault == '1') {
-							$element->setAttrib('checked','checked');
-						}
-					}
                                 }
                                 if ((string)$dataPoint->attributes()->type == "checkbox") {
 					$element->AddDecorator('Label', array('placement' => 'APPEND'));
 					$element->AddDecorator('HtmlTag', array('placement' => 'PREPEND', 'tag' => '<br />'));
+					if ((string)$dataPoint->attributes()->radioGroup) {
+						$radioGroup = preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
+						$innerHTML = '';
+						$elName = 'namespaceData['.$element->getName().']';
+						if (!isset($_namespaceElements[$radioGroup])) {
+							$_namespaceElements[$radioGroup] = true;
+							$innerHTML = '
+var '.$radioGroup.'Members = [];
+function '.$radioGroup.'(name) {
+	var elName = null;
+	var el = null;
+	var elem = null;
+	for (var i = 0; i < '.$radioGroup.'Members.length; i++) {
+		elName = '.$radioGroup.'Members[i];
+		el = document.getElementsByName(elName);
+		if (!el) {
+			continue;
+		}
+		elem = null;
+		for (var j = 0; j < el.length; j++) {
+			if (el[j].type == "checkbox") {
+				elem = el[j];
+				break;
+			}
+		}
+		if (elem == null) continue;
+		if (elem.checked && elName != name) {
+			elem.checked = false;
+			//break; // there is only one checked element in a group
+		} 
+	}
+}
+';
+						}
+						$innerHTML .= $radioGroup.'Members.push("'.$elName.'");';
+                                       		$element->addDecorator('ScriptTag',array('placement' => 'APPEND','tag' => 'script','innerHTML' => $innerHTML,'noAttribs' => true));
+						$element->setAttrib('onchange',$radioGroup.'("'.$elName.'")');
+					}
+					if ((string)$dataPoint->attributes()->radioGroupDefault && (string)$dataPoint->attributes()->radioGroupDefault == '1') {
+						$element->setAttrib('checked','checked');
+					}
 				}
                                 if (strlen((string)$dataPoint->attributes()->templateText) > 0) {
 					$templateName = (string)$dataPoint->attributes()->templateText;
@@ -311,4 +331,13 @@ function '.$radioGroup.'(name) {
 			}
 		}
 	}
+
+	protected function _encodeNamespace($value) {
+		return strtr(base64_encode($value),'+/=','___');
+	}
+
+	protected function _decodeNamespace($value) {
+		return base64_decode(strtr($value,'___','+/='));
+	}
+
 }

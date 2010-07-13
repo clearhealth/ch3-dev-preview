@@ -24,7 +24,7 @@ function adminPersonAdd() {
 		handleAs: "json",
 		load: function(data,ioArgs) {
 			personId = data;
-			refreshCurrentTab();
+			localRefreshCurrentTab();
 			dojo.byId("btnAdd").disabled = true;
 			return data;
 		},
@@ -58,11 +58,11 @@ function loadPerson(id) {
 	if (id > 0) {
 		personId = id;
 		//personEditTabbar.setTabActive("tab_personDetails");
-		refreshCurrentTab();
+		localRefreshCurrentTab();
 	}
 }
 
-function refreshCurrentTab() {
+function localRefreshCurrentTab() {
 	var activeTab = personEditTabbar.getActiveTab();
 	onPersonTabbarClick(activeTab);
 	if (activeTab != "tab_eprescribeDetails") {
@@ -74,7 +74,7 @@ function refreshCurrentTab() {
 	var str = dojo.byId("personSelectAutoCompleteDiv").value;
 	var pat = /\(.*\)/gi;
 	if (str.match(pat) != "()") {
-		personEditTabbar.enableTab("tab_eprescribeDetails");
+		//personEditTabbar.enableTab("tab_eprescribeDetails");
 		personEditTabbar.enableTab("tab_locationDetails");
 	}
 }
@@ -85,9 +85,9 @@ personEditTabbar.setSkinColors("#FFFFFF,#FFFACD");
 personEditTabbar.addTab("tab_personDetails","<?=__('Person Details')?>","125");
 personEditTabbar.addTab("tab_providerDetails","<?=__('Provider Details')?>","145");
 personEditTabbar.addTab("tab_userDetails","<?=__('User Details')?>","125");
-personEditTabbar.addTab("tab_eprescribeDetails","<?=__('ePrescribe Details')?>","155");
+//personEditTabbar.addTab("tab_eprescribeDetails","<?=__('ePrescribe Details')?>","155");
 personEditTabbar.addTab("tab_locationDetails","<?=__('Location Details')?>","125");
-personEditTabbar.disableTab("tab_eprescribeDetails",true);
+//personEditTabbar.disableTab("tab_eprescribeDetails",true);
 personEditTabbar.disableTab("tab_locationDetails",true);
 
 function personEditTabbarAttachContent(id,url) {

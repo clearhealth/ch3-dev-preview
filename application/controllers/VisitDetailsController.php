@@ -24,40 +24,194 @@
 
 class VisitDetailsController extends WebVista_Controller_Action {
 
+	public function editTypeAction() {
+		$ormClasses = Visit::ormClasses();
+		$enumerationParentId = 0;
+		$enumerationId = 0;
+		$enumeration = new Enumeration();
+
+		$isAdd = (int)$this->_getParam('isAdd');
+		if ($isAdd) {
+			$parentId = (int)$this->_getParam('parentId');
+			$enumParent = new Enumeration();
+			$enumParent->enumerationId = $parentId;
+			$enumParent->populate();
+			$enumeration->ormClass = $enumParent->ormClass;
+			$enumerationParentId = $parentId;
+		}
+		else {
+			$enumerationId = (int)$this->_getParam('enumerationId');
+			$enumeration->enumerationId = $enumerationId;
+			$enumeration->populate();
+
+			$closure = new EnumerationClosure();
+			$parentId = (int)$closure->getParentById($enumerationId);
+			if ($parentId === 0) {
+				$message = __('There is nothing to edit on this section, add item beneath it');
+			}
+		}
+
+		if (isset($message)) {
+			$this->view->message = $message;
+		}
+		else {
+			$disableTypes = false;
+			if ($enumeration->ormClass != 'Visit') {
+				$disableTypes = true;
+			}
+			$form = new WebVista_Form(array('name'=>'visitTypeId'));
+			$form->setAction(Zend_Registry::get('baseUrl').'visit-details.raw/process-edit-type');
+			$form->loadORM($enumeration,'visit');
+			$form->setWindow('windowEditORMObjectId');
+			$this->view->form = $form;
+
+			$this->view->disableTypes = $disableTypes;
+			$this->view->ormClasses = $ormClasses;
+			$this->view->enumerationParentId = $enumerationParentId;
+		}
+
+		$this->view->enumerationId = $enumerationId;
+		$this->render();
+	}
+
+	public function processEditTypeAction() {
+		$parentId = (int)$this->_getParam('enumerationParentId');
+		$params = $this->_getParam('visit');
+		$enumerationId = (int)$params['enumerationId'];
+		$ormClass = $params['ormClass'];
+		$ormClasses = Visit::ormClasses();
+		$data = false;
+		if (isset($ormClasses[$ormClass])) {
+			if ($parentId > 0) {
+				$closure = new EnumerationsClosure();
+				$params['active'] = 1;
+				$enumerationId = $closure->insertEnumeration($params,$parentId);
+			}
+			else {
+				$enumeration = new Enumeration();
+				$enumeration->enumerationId = $enumerationId;
+				$enumeration->populate();
+				$enumeration->populateWithArray($params);
+				$enumeration->persist();
+			}
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function editVisitTypeAction() {
+		$ormId = $this->_getParam('ormId');
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$enumerationsClosure = new EnumerationsClosure();
+		$depth = (int)$enumerationsClosure->getDepthById($enumerationId);
+		$ormClasses = Visit::ormClasses();
+		if ($depth > 2) {
+			$enumeration = new Enumeration();
+			$enumeration->enumerationId = $enumerationId;
+			$enumeration->populate();
+			$ormClass = $enumeration->ormClass;
+			if (!in_array($ormClass,$ormClasses)) {
+				$ormClass = $ormClasses[0]; // temporary set to ProcedureCodesCPT as default ORM Class
+			}
+			$orm = new $ormClass();
+			$orm->code = $ormId;
+			$orm->populate();
+			$form = new WebVista_Form(array('name'=>'visitTypeId'));
+			$form->setAction(Zend_Registry::get('baseUrl').'visit-details.raw/process-edit-visit-type');
+			$form->loadORM($orm,'visit');
+			$form->setWindow('windowEditORMObjectId');
+			$this->view->form = $form;
+		}
+		else {
+			$this->view->message = __('There is nothing to edit on the Visit Type Sections definition, add diagnosis or procedure beneath it');
+		}
+		$this->view->ormClasses = $ormClasses;
+		$this->view->enumerationId = $enumerationId;
+		$this->render();
+	}
+
+	public function processEditVisitTypeAction() {
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$ormClass = $this->_getParam('ormClass');
+		$ormClasses = Visit::ormClasses();
+		$data = false;
+		if (in_array($ormClass,$ormClasses)) {
+			$params = $this->_getParam('visit');
+			$diagnosis = new $ormClass();
+			$diagnosis->populateWithArray($params);
+			$diagnosis->persist();
+			if ($enumerationId > 0) {
+				$enumeration = new Enumeration();
+				$enumeration->enumerationId = $enumerationId;
+				$enumeration->populate();
+				$enumeration->ormClass = $ormClass;
+				$enumeration->ormId = $diagnosis->code;
+				$enumeration->persist();
+			}
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 	/* VISIT TYPES SECTION */
 
 	public function visitTypeJsonAction() {
-                $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-                $json->suppressExit = true;
-                $json->direct(array("rows" => $this->_getVisitTypes()),true);
-        }
-
-	private function _getVisitTypes() {
-		// STUB method?
-		$ret = array();
-		$types = array();
-		$types['new_patient'] = 'New Patient';
-		$types['established_patient'] = 'Established Patient';
-		$types['consultations'] = 'Consultations';
-		foreach ($types as $id=>$type) {
-			$data = array();
-			$data['id'] = $id;
-			$data['data'][] = $type;
-			$ret[] = $data;
+		$rows = array();
+		$guid = '9eb793f8-1d5d-4ed5-959d-1e238361e00a';
+		$enumeration = new Enumeration();
+		$enumeration->populateByGuid($guid);
+		$closure = new EnumerationClosure();
+		$enumerationIterator = $closure->getAllDescendants($enumeration->enumerationId,1,true);
+		foreach ($enumerationIterator as $enum) {
+			$row = array();
+			$row['id'] = $enum->enumerationId;
+			$row['data'] = array();
+			$row['data'][] = $enum->name;
+			$rows[] = $row;
 		}
-		return $ret;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows),true);
 	}
 
 	public function visitSectionJsonAction() {
-		$sections = array();
-		$visitType = $this->_getParam('visitType',null);
-		if ($visitType !== null) {
-			$sections  = $this->_getVisitSections($visitType);
+		$rows = array();
+		$visitType = (int)$this->_getParam('visitType');
+		$closure = new EnumerationClosure();
+		$modifierId = 0;
+		foreach ($closure->getAllDescendants($visitType,1,true) as $enum) {
+			if ($enum->key == 'MODIFIERS') {
+				$modifierId = $enum->enumerationId;
+				continue;
+			}
+			$codes = array();
+			foreach ($closure->getAllDescendants($enum->enumerationId,1,true) as $item) {
+				$codes[] = $item->key;
+			}
+			if (!isset($codes[0])) continue;
+			$codes = implode(', ',$codes);
+			$row['id'] = $enum->enumerationId;
+			$row['data'] = array();
+			$row['data'][] = '';
+			$row['data'][] = $enum->name.' ('.$codes.')';
+			$row['data'][] = $codes;
+			$rows[] = $row;
 		}
-                $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-                $json->suppressExit = true;
-                $json->direct(array("rows" => $sections),true);
-        }
+		if ($modifierId > 0 && isset($rows[0])) {
+			$modifiers = array();
+			foreach ($closure->getAllDescendants($modifierId,1,true) as $item) {
+				$modifiers[$item->key] = $item->name;
+			}
+			$rows[0]['userdata']['modifiers'] = $modifiers;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows),true);
+	}
 
 	private function _getVisitSections($visitType) {
 		// STUB method?
@@ -342,4 +496,38 @@ class VisitDetailsController extends WebVista_Controller_Action {
 		$json->suppressExit = true;
 		$json->direct($data);
 	}
+
+	public function processAddVisitTypesAction() {
+		$personId = (int)$this->_getParam('personId');
+		$id = (int)$this->_getParam('id');
+		$ret = false;
+		$closure = new EnumerationClosure();
+		foreach ($closure->getAllDescendants($id,1,true) as $enum) {
+			switch ($enum->ormClass) {
+				case 'DiagnosisCodesICD':
+					$orm = new PatientDiagnosis();
+					$orm->code = $enum->key;
+					$orm->dateTime = date('Y-m-d H:i:s');
+					$orm->diagnosis = $enum->name;
+					break;
+				case 'ProcedureCodesCPT':
+					$orm = new PatientProcedure();
+					$orm->code = $enum->key;
+					$orm->quantity = 1; // default to 1
+					$orm->procedure = $enum->name;
+					break;
+				default:
+					continue;
+			}
+			$orm->patientId = $personId;
+			$orm->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			$orm->persist();
+
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
 }

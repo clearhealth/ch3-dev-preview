@@ -28,6 +28,7 @@ class FilterState extends WebVista_Model_ORM {
 	protected $providerId;
 	protected $roomId;
 	protected $dateFilter;
+	protected $showCancelledAppointments;
 	protected $_table = "filterStates";
 	protected $_primaryKeys = array("filterStateId");
 

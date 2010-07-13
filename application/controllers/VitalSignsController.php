@@ -291,7 +291,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 			$row->addAttribute('id','dates');
 			$row->addChild('cell','');
 			foreach ($dates as $date) {
-				$row->addChild('cell',date('m/d/y h:iA',strtotime($date)));
+				$row->addChild('cell',date('m/d/Y h:iA',strtotime($date)));
 				$column = $head->addChild('column','');
 				$column->addAttribute('type','ro');
 				$column->addAttribute('width','130');

@@ -150,14 +150,17 @@ class ReportBase extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$ret = array();
 
+		$filterQueries = array();
 		$reportFilters = array();
 		foreach ($this->reportFilters as $key=>$filter) {
+			$filterQueries[$filter->query] = $filter->query;
 			$reportFilters['{{'.$filter->name.'}}'] = $filter;
 		}
 		//trigger_error(print_r($reportFilters,true),E_USER_NOTICE);
 		$reportQuery = new ReportQuery();
 		$reportQueryIterator = $reportQuery->getIteratorByBaseId($this->reportBaseId);
 		foreach ($reportQueryIterator as $query) {
+			if (isset($filterQueries[$query->reportQueryId])) continue; // report query associated with filter not included
 			$row = array();
 			$row['reportQuery'] = $query->toArray();
 			$queryValue = $query->query;

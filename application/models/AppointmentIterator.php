@@ -39,11 +39,29 @@ class AppointmentIterator extends WebVista_Model_ORMIterator implements Iterator
 	public function setFilter($filter) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()->from('appointments');
-		$dbSelect->where("roomId = ?",(int)$filter['roomId']);
-		$dbSelect->where("providerId = ?",(int)$filter['providerId']);
-		$dbSelect->where("start >= ?", $filter['start']);
-		$dbSelect->where("end <= ?", $filter['end']);
-		$dbSelect->order("start ASC");
+		foreach ($filter as $field=>$value) {
+			switch($field) {
+				case 'roomId':
+					$dbSelect->where("roomId = ?",(int)$value);
+					break;
+				case 'providerId':
+					$dbSelect->where("providerId = ?",(int)$value);
+					break;
+				case 'start':
+					$dbSelect->where("start >= ?", $value);
+					break;
+				case 'end':
+					$dbSelect->where("end <= ?", $value);
+					break;
+				case 'showCancelledAppointments':
+					if (!$value) { // do not show cancelled appointments
+						$where = "appointmentCode != 'CAN'";
+						$dbSelect->where($where);
+					}
+					break;
+			}
+		}
+		$dbSelect->order('start ASC');
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);

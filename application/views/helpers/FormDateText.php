@@ -55,11 +55,13 @@ class Zend_View_Helper_FormDateText extends Zend_View_Helper_FormElement {
 			$dateValue = date('Y-m-d');
 		}
 		$x = explode('-',$dateValue);
-		for ($i = 0; $i < 3; $i++) {
-			$y = (int)$x[$i];
-			if ($i == 1 && $y > 0) {
-				$x[$i]--;
-			}
+		if (count($x) >= 3) {
+			$x[0] = (int)$x[0];
+			$x[1] = (int)$x[1] - 1;
+			$x[2] = (int)$x[2];
+		}
+		else {
+			$x = array(date('Y'),date('m')-1,date('d'));
 		}
 		$disabled = ((bool)$disabled)?'true':'false';
 		$style = 'width:90px;';

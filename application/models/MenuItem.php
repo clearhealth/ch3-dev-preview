@@ -65,16 +65,24 @@ class MenuItem extends WebVista_Model_ORM {
         return $db->query($sql);
     }
 
-	public function ormEditMethod($ormId) {
+	public function ormEditMethod($ormId,$isAdd) {
 		$controller = Zend_Controller_Front::getInstance();
 		$request = $controller->getRequest();
 		$enumerationId = (int)$request->getParam("enumerationId");
 
-		$params = array();
-		$params['enumerationId'] = $enumerationId;
-		$params['menuId'] = $ormId;
 		$view = Zend_Layout::getMvcInstance()->getView();
-		return $view->action("edit","menu-manager",null,$params);
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+			return $view->action('edit','enumerations-manager',null,$params);
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['menuId'] = $ormId;
+			return $view->action("edit","menu-manager",null,$params);
+		}
 	}
 
 	public static function getMenuItems() {

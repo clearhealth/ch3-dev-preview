@@ -131,4 +131,49 @@ class Appointment extends WebVista_Model_ORM {
         return new AppointmentIterator($objSelect);
     }
 
+	public function checkRules() {
+		$ret = false;
+		// check double booking
+		if ($this->isDoubleBook()) {
+			$ret = __('Double booking');
+		}
+		// check outside of schedule time
+		else if ($this->isOutsideScheduleTime()) {
+			$ret = __('Outside of schedule time');
+		}
+		return $ret;
+	}
+
+	public function isDoubleBook() {
+		$ret = false;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('providerId = ?',$this->providerId)
+				->where('`start` >= ?',date('Y-m-d H:i:s',strtotime($this->start)))
+				->where('`end` <= ?',date('Y-m-d H:i:s',strtotime($this->end)))
+				->limit(1);
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		return $ret;
+	}
+
+	public function isOutsideScheduleTime() {
+		$ret = true;
+		$scheduleEvent = new ScheduleEvent();
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($scheduleEvent->_table)
+				->where('providerId = ?',$this->providerId)
+				->where("'".date('Y-m-d H:i:s',strtotime($this->start))."' BETWEEN `start` AND `end`")
+				->where("'".date('Y-m-d H:i:s',strtotime($this->end))."' BETWEEN `start` AND `end`")
+				->limit(1);
+		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = false;
+		}
+		return $ret;
+	}
+
 }

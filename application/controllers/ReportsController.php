@@ -113,11 +113,11 @@ class ReportsController extends WebVista_Controller_Action {
 			}
 			else if ($reportFilter->type == ReportBase::FILTER_TYPE_QUERY) {
 				$reportQuery = new ReportQuery();
-				$reportQuery->reportBaseId = (int)$reportBase->reportBaseId;
-				$reportQueryIterator = $reportQuery->getIteratorByBaseId(null,ReportQuery::TYPE_SQL);
-				$filter['queries'] = array();
-				foreach ($reportQueryIterator as $query) {
-					$filter['queries'][] = array('id'=>$query->reportQueryId,'name'=>$query->displayName);
+				$reportQuery->reportQueryId = (int)$reportFilter->query;
+				$reportQuery->populate();
+				$filter['queries'] = $reportQuery->executeQuery();
+				if ($reportFilter->includeBlank) {
+					array_unshift($filter['queries'],array('id'=>'','name'=>'&amp;nbsp;'));
 				}
 			}
 			$data['filters'][] = $filter;
@@ -239,6 +239,14 @@ class ReportsController extends WebVista_Controller_Action {
 					break;
 			}
 		}
+		$this->_session->results = $data;
+		foreach ($data as $index=>$queryData) {
+			$maxRows = 5;
+			while (isset($queryData['rows'][$maxRows])) {
+				unset($data[$index]['rows'][$maxRows]);
+				$maxRows++;
+			}
+		}
 		//trigger_error(print_r($data,true),E_USER_NOTICE);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -263,6 +271,26 @@ class ReportsController extends WebVista_Controller_Action {
 			}
 		}
 		return $xml;
+	}
+
+	public function getNextResultsAction() {
+		$id = (int)$this->_getParam('index');
+		$offset = (int)$this->_getParam('offset');
+		$limit = (int)$this->_getParam('limit');
+
+		$rows = array('rows'=>array());
+		$data = $this->_session->results;
+		if (isset($data[$id]) && isset($data[$id]['rows'][$offset])) {
+			$ctr = $offset;
+			while (isset($data[$id]['rows'][$ctr])) {
+				$rows['rows'][$ctr] = $data[$id]['rows'][$ctr];
+				$ctr++;
+				if (($ctr - $offset) >= $limit) break;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($rows);
 	}
 
 }

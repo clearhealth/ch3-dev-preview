@@ -120,17 +120,16 @@ class PermissionTemplate extends WebVista_Model_ORM {
 		$memcache = Zend_Registry::get('memcache');
 		$ret = false;
 
-		$controller = str_replace(' ','',ucwords(str_replace('-',' ',$controllerName)));
-		$action = str_replace(' ','',ucwords(str_replace('-',' ',$actionName)));
+		$controller = str_replace(' ','',ucwords(strtr($controllerName,'-.','  ')));
+		$action = lcfirst(str_replace(' ','',ucwords(strtr($actionName,'-.','  '))));
 		$memKey = hash('sha256',self::ACL_MEMKEY.'_'.$permissionTemplateId.'_'.$controller);
 		$resources = $memcache->get($memKey);
-		if ($resources !== false && isset($resources[$actionName])) {
-			list($k,$v) = each($resources[$actionName]);
+		if ($resources !== false && isset($resources[$action])) {
+			list($k,$v) = each($resources[$action]);
 			if ($v) {
 				$ret = true;
 			}
 		}
-
 		return $ret;
 	}
 

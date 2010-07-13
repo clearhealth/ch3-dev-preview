@@ -87,4 +87,18 @@ class LabOrder extends WebVista_Model_ORM implements Document {
 		$this->persist();
 	}
 
+	public function hasSigningEntry() {
+		$ret = false;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('lo'=>$this->_table))
+				->join(array('esig'=>'eSignatures'),'esig.objectId = lo.lab_order_id')
+				->where('esig.objectClass = ?',get_class($this))
+				->where('lo.lab_order_id = ?',$this->labOrderId);
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		return $ret;
+	}
+
 }

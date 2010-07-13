@@ -38,6 +38,8 @@ class User extends WebVista_Model_ORM {
 	protected $_primaryKeys = array("user_id");
 	protected $_legacyORMNaming = true;
 
+	protected $_xmlPreferences = null; // placeholder for simplexml object
+
 	public function __construct() {
 		parent::__construct();
 		$this->person = new Person();
@@ -106,6 +108,17 @@ class User extends WebVista_Model_ORM {
 			return $this->person->__get($key);
 		}
 		return parent::__get($key);
+	}
+
+	public function get_xmlPreferences() {
+		return $this->getXmlPreferences();
+	}
+
+	public function getXmlPreferences() {
+		if ($this->_xmlPreferences === null && strlen($this->preferences) > 0) {
+			$this->_xmlPreferences = new SimpleXMLElement($this->preferences);
+		}
+		return $this->_xmlPreferences;
 	}
 
 }

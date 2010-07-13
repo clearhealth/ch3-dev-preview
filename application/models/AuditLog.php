@@ -128,7 +128,9 @@ class AuditLog {
 		} while($err && $ctr++ < $retry);
 
 		if ($err) {
-			printf("Connect failed: %s\n", mysqli_connect_error());
+			$error = 'Connect failed: '.mysqli_connect_error().PHP_EOL;
+			printf($error);
+			trigger_error($error,E_USER_WARNING);
 			return;
 		}
 
@@ -136,7 +138,11 @@ class AuditLog {
 		$queries = implode(";\n",self::$_sql);
 
 		/* execute multi query */
-		$mysqli->multi_query($queries);
+		$ret = $mysqli->multi_query($queries);
+		if ($ret === false) {
+			$error = 'Audit SQL failed: '.$queries;
+			trigger_error($error,E_USER_WARNING);
+		}
 
 		/* close connection */
 		$mysqli->close();

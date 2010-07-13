@@ -62,7 +62,7 @@ input,select {
 					</div>
 					<div style="float:left;margin-left:10px;">
 						<?=$this->form->identifierType->renderLabel()?>
-						<?=$this->form->identifierTypeInput('FormSelect')?>
+						<?=$this->form->identifierTypeInput('FormSelect',array('options'=>$this->identifierTypes))?>
 					</div>
 				</div>
 				<br class="formRowDivider" />
@@ -140,8 +140,8 @@ function preSubmitpersondetail() {
 var personPhonesGrid = new dhtmlXGridObject("personPhonesGridContainer");
 personPhonesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 personPhonesGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Number')?>,<?=__('Notes')?>,<?=__('Active')?>");
-personPhonesGrid.setInitWidths("*,35,*,*,50");
-personPhonesGrid.setColTypes("ed,ed,ed,ed,ch");
+personPhonesGrid.setInitWidths("*,60,*,*,50");
+personPhonesGrid.setColTypes("ed,coro,ed,ed,ch");
 personPhonesGrid.setSkin("xp");
 personPhonesGrid.attachEvent("onEditCell",personPhonesGridOnCellEdited);
 personPhonesGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
@@ -151,6 +151,13 @@ personPhonesGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
 	}
 	personSingleUpdate(rowId,personPhonesColFields[cellIndex],val,"phone",personPhonesGridReload);
 });
+
+// phone types
+personPhonesGrid.getCombo(1).put("","");
+<?foreach ($this->phoneTypes as $key=>$name):?>
+personPhonesGrid.getCombo(1).put("<?=$key?>","<?=$name?>");
+<?endforeach;?>
+
 function personPhonesGridReload() {
 	personPhonesGrid.clearAll();
 	personPhonesGrid.load("<?=$this->baseUrl?>/admin-persons.raw/ajax-list-phones?personId=<?=$this->form->personId->getValue()?>","json");
@@ -213,8 +220,8 @@ function personPhonesGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 var personAddrGrid = new dhtmlXGridObject("personAddrGridContainer");
 personAddrGrid.setImagePath("<?=$this->baseUrl?>/img/");
 personAddrGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Line1')?>,<?=__('Line2')?>,<?=__('City')?>,<?=__('State')?>,<?=__('Zip')?>,<?=__('Notes')?>,<?=__('Active')?>");
-personAddrGrid.setInitWidths("*,35,*,*,*,40,*,*,40");
-personAddrGrid.setColTypes("ed,ed,ed,ed,ed,coro,ed,ed,ch");
+personAddrGrid.setInitWidths("*,60,*,*,*,40,*,*,40");
+personAddrGrid.setColTypes("ed,coro,ed,ed,ed,coro,ed,ed,ch");
 personAddrGrid.setSkin("xp");
 personAddrGrid.attachEvent("onEditCell",personAddrGridOnCellEdited);
 personAddrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
@@ -224,6 +231,12 @@ personAddrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
 	}
 	personSingleUpdate(rowId,personAddrColFields[cellIndex],val,"address",personAddrGridReload);
 });
+
+// address types
+personAddrGrid.getCombo(1).put("","");
+<?foreach ($this->addressTypes as $key=>$name):?>
+personAddrGrid.getCombo(1).put("<?=$key?>","<?=$name?>");
+<?endforeach;?>
 
 // state
 personAddrGrid.getCombo(5).put("","");

@@ -46,6 +46,31 @@ class ReportQuery extends WebVista_Model_ORM {
 		$this->reportBase->_cascadePersist = false;
 	}
 
+	public function persist() {
+		$db = Zend_Registry::get('dbAdapter');
+		$reportQueryId = (int)$this->reportQueryId;
+		if ($this->_persistMode == self::DELETE) {
+			try {
+				$db->delete($this->_table,'reportQueryId = '.$reportQueryId);
+				return true;
+			}
+			catch (Exception $e) {
+				return false;
+			}
+		}
+		$data = $this->toArray();
+		unset($data['reportBase']);
+		if ($reportQueryId > 0) {
+			$ret = $db->update($this->_table,$data,'reportQueryId = '.$reportQueryId);
+		}
+		else {
+			$this->reportQueryId = WebVista_Model_ORM::nextSequenceId();
+			$data['reportQueryId'] = $this->reportQueryId;
+			$ret = $db->insert($this->_table,$data);
+		}
+		return $ret;
+	}
+
 	public function setReportBaseId($id) {
 		$this->reportBaseId = (int)$id;
 		$this->reportBase->reportBaseId = $this->reportBaseId;
@@ -92,5 +117,21 @@ class ReportQuery extends WebVista_Model_ORM {
 
 	function toXml() {
 		return WebVista_Model_ORM::recurseXml($this->_data,$this->systemName);
+	}
+
+	public function executeQuery() {
+		$ret = array();
+		if (!strlen($this->query) > 0) return $ret;
+		if ($this->type == ReportQuery::TYPE_SQL) {
+			$db = Zend_Registry::get('dbAdapter');
+			$rows = $db->fetchAll($this->query,array(),Zend_Db::FETCH_NUM);
+			foreach ($rows as $row) {
+				$ret[] = array('id'=>$row[0],'name'=>$row[1]);
+			}
+		}
+		else if ($this->type == ReportQuery::TYPE_NSDR) {
+			// TODO: to be implemented
+		}
+		return $ret;
 	}
 }

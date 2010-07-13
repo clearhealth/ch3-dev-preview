@@ -25,7 +25,6 @@
 class AclController extends WebVista_Controller_Action {
 
 	protected $_memcache = null;
-	protected $_aclMemKey = 'aclList';
 	protected $_chkLabelRead = 'chkRead';
 	protected $_chkLabelWrite = 'chkWrite';
 	protected $_chkLabelDelete = 'chkDelete';
@@ -40,34 +39,83 @@ class AclController extends WebVista_Controller_Action {
 		$this->view->chkLabelWrite = $this->_chkLabelWrite;
 		$this->view->chkLabelDelete = $this->_chkLabelDelete;
 		$this->view->chkLabelOther = $this->_chkLabelOther;
+		$permissionTemplate = new PermissionTemplate();
+		$permissionTemplateIterator = $permissionTemplate->getIterator();
+		$this->view->templates = $permissionTemplateIterator->toArray('permissionTemplateId','name');
 		$this->render();
 	}
 
-	public function listItemsAction() {
-		$rows = array();
-		$items = $this->_memcache->get($this->_aclMemKey); // get returns FALSE if error or key not found
+	protected function _generateDefaultTemplateXML() {
+		$aclMemKey = PermissionTemplate::ACL_MEMKEY.'_default';
+		$items = $this->_memcache->get($aclMemKey); // get returns FALSE if error or key not found
 		if ($items === false) {
-			calcTS();
 			trigger_error("before generating list: " . calcTS(),E_USER_NOTICE);
-			$items = WebVista_Acl::getInstance()->getLists();
-			$this->_memcache->set($this->_aclMemKey,$items);
+			$xml = WebVista_Acl::getInstance()->getDefaultList();
+			$items = $xml->asXML();
+			$this->_memcache->set($aclMemKey,$items);
 			trigger_error("after generating list: " .calcTS(),E_USER_NOTICE);
 		}
-		foreach ($items as $moduleName=>$data) {
-			foreach ($data as $id=>$resources) {
-				$resourceName = $resources['name'];
+		if (!isset($xml)) {
+			$xml = new SimpleXMLElement($items);
+		}
+		return $xml;
+	}
+
+	public function listAction() {
+		$templateId = (int)$this->_getParam('templateId');
+		$rows = array();
+		if ($templateId > 0) {
+			$permissionTemplate = new PermissionTemplate();
+			$permissionTemplate->permissionTemplateId = $templateId;
+			if ($templateId > 0 && $permissionTemplate->populate()) {
+				try {
+					$xml = new SimpleXMLElement($permissionTemplate->template);
+				}
+				catch (Exception $e) {
+					trigger_error($e->getMessage(),E_USER_ERROR);
+				}
+			}
+		}
+		else {
+			$xml = $this->_generateDefaultTemplateXML();
+		}
+		$xmlResources = array();
+		foreach ($xml as $moduleName=>$modules) {
+			foreach ($modules as $resourceName=>$resources) {
+				if (!isset($xmlResources[$moduleName])) {
+					$xmlResources[$moduleName] = array();
+				}
+				$xmlResources[$moduleName][$resourceName] = $resources;
+			}
+		}
+		ksort($xmlResources);
+		ksort($xmlResources['default']);
+		foreach ($xmlResources as $moduleName=>$modules) {
+			foreach ($modules as $resourceName=>$resources) {
+				$arrResources = array();
+				$arrResources['read'] = array();
+				$arrResources['write'] = array();
+				$arrResources['delete'] = array();
+				$arrResources['other'] = array();
+				foreach ($resources as $key=>$value) {
+					$access = (int)$value->attributes()->access;
+					$value = (string)$value;
+					$prettyName = ucwords(strtolower(preg_replace('/([A-Z]{1})/',' \1',$value)));
+					$arrResources[$key][] = array('name'=>$value,'prettyName'=>$prettyName,'value'=>$access);
+				}
+				$prettyName = ucwords(strtolower(preg_replace('/([A-Z]{1})/',' \1',$resourceName)));
 				$tmp = array();
-				$tmp['id'] = $id;
+				$tmp['id'] = $resourceName;
 				// Resource
-				$tmp['data'][] = $resources['prettyName'];
+				$tmp['data'][] = $prettyName;
 				// Read
-				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelRead,$resources['read'],$resourceName));
+				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelRead,$arrResources['read'],$resourceName));
 				// Write
-				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelWrite,$resources['write'],$resourceName));
+				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelWrite,$arrResources['write'],$resourceName));
 				// Delete
-				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelDelete,$resources['delete'],$resourceName));
+				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelDelete,$arrResources['delete'],$resourceName));
 				// Other
-				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelOther,$resources['other'],$resourceName));
+				$tmp['data'][] = implode("<br />\n",$this->_generateCheckboxInputs($this->_chkLabelOther,$arrResources['other'],$resourceName));
 				$rows[] = $tmp;
 			}
 		}
@@ -95,7 +143,7 @@ class AclController extends WebVista_Controller_Action {
 		Zend_Registry::set('acl',$acl);
 
 		$items = $acl->getLists();
-		$this->_memcache->set($this->_aclMemKey,$items);
+		$this->_memcache->set(PermissionTemplate::ACL_MEMKEY,$items);
 		ACLAPI::saveACLItems($items);
 
 		$data = array();
@@ -143,9 +191,170 @@ class AclController extends WebVista_Controller_Action {
 	protected function _generateCheckboxInputs($name,Array $values,$resourceName) {
 		$ret = array();
 		foreach ($values as $value) {
-			$ret[] = '<input type="checkbox" name="'.$name.'" value="'.$resourceName.'_'.$value['name'].'" onClick="toggleItem(this)" /> '.$value['prettyName'];
+			$checked = '';
+			if ($value['value'] > 0) {
+				$checked = 'checked="checked"';
+			}
+			$ret[] = '<input type="hidden" name="acl['.$resourceName.'_'.$value['name'].'_'.$name.']" id="'.$resourceName.'_'.$value['name'].'_'.$name.'" value="'.$value['value'].'" />
+				<input type="checkbox" name="'.$name.'" value="'.$resourceName.'_'.$value['name'].'_'.$name.'" onClick="toggleItem(this)" '.$checked.' /> '.$value['prettyName'];
 		}
 		return $ret;
+	}
+
+	public function refreshResourcesAction() {
+		$acl = WebVista_Acl::getInstance();
+		// populate acl from db
+		$acl->populate();
+		// save to memcache
+		$this->_memcache->set('acl',$acl);
+		Zend_Registry::set('acl',$acl);
+
+		$items = $acl->getLists();
+		$this->_memcache->set(PermissionTemplate::ACL_MEMKEY,$items);
+		ACLAPI::saveACLItems($items);
+
+		$data = array();
+		$data['msg'] = __('Resources refresh successfully.');
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processSaveTemplateAction() {
+		$params = $this->_getParam('acl');
+		$templateId = (int)$params['templateId'];
+		$templateName = $params['templateName'];
+		unset($params['templateId']);
+		unset($params['templateName']);
+		$permissionTemplate = new PermissionTemplate();
+		if ($templateId > 0) {
+			$permissionTemplate->permissionTemplateId = $templateId;
+			$permissionTemplate->populate();
+		}
+		else {
+			$permissionTemplate->name = $templateName;
+		}
+		$permissionTemplate->buildTemplate($params);
+		$permissionTemplate->persist();
+
+		$data = array();
+		$data['id'] = $permissionTemplate->permissionTemplateId;
+		$data['name'] = $permissionTemplate->name;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function copyTemplateAction() {
+		$permissionTemplate = new PermissionTemplate();
+		$permissionTemplateIterator = $permissionTemplate->getIterator();
+		$permissionTemplates = $permissionTemplateIterator->toArray('permissionTemplateId','name');
+		//$permissionTemplates['superadmin'] = 'Super Administrator';
+		$this->view->permissionTemplates = $permissionTemplates;
+		$this->view->permissionTemplateId = (int)$this->_getParam('permissionTemplateId');
+		$this->render('copy-template');
+	}
+
+	public function processCopyTemplateAction() {
+		$permissionTemplateId = (int)$this->_getParam('permissionTemplateId');
+		$templateType = $this->_getParam('templateType');
+		$templateValue = $this->_getParam('templateValue');
+
+		$permissionTemplate = new PermissionTemplate();
+		$permissionTemplate->permissionTemplateId = $permissionTemplateId;
+		if (!$permissionTemplate->populate()) {
+			$this->_helper->autoCompleteDojo(array());
+		}
+
+		$templateName = $templateValue;
+		if ($templateType == 'user') {
+			$user = new User();
+			$user->userId = $templateValue;
+			$user->populate();
+			$templateName = 'Special template for User '.$user->username;
+		}
+		$permissionTemplate->permissionTemplateId = 0;
+		$permissionTemplate->name = $templateName;
+		$permissionTemplate->persist();
+		if (isset($user)) {
+			$user->permissionTemplateId = $permissionTemplate->permissionTemplateId;
+			$user->persist();
+		}
+
+		$data = array();
+		$data['id'] = $permissionTemplate->permissionTemplateId;
+		$data['name'] = $permissionTemplate->name;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processAddAction() {
+		$permissionTemplateId = (int)$this->_getParam('aclTemplateId');
+		$type = $this->_getParam('type');
+		$value = preg_replace('/[^a-zA-Z]+/','',ucwords(strtolower($this->_getParam('value',''))));
+		$prettyName = ucwords(preg_replace('/([A-Z]{1})/',' \1',$value));
+
+		$data = false;
+		$isDefault = false;
+		$permissionTemplate = new PermissionTemplate();
+		$permissionTemplate->permissionTemplateId = $permissionTemplateId;
+		if ($permissionTemplate->populate()) {
+			$xml = new SimpleXMLElement($permissionTemplate->template);
+		}
+		else {
+			$xml = $this->_generateDefaultTemplateXML();
+			$isDefault = true;
+		}
+		$defaultModule = 'default';
+		$error = '';
+		switch ($type) {
+			case 'resource':
+				if (isset($xml->$defaultModule->$value)) {
+					$error = __('Resource already exists').': '.$value;
+					trigger_error($error,E_USER_NOTICE);
+					break;
+				}
+				$xml->$defaultModule->addChild($value);
+				$data['id'] = $value;
+				$data['name'] = $prettyName;
+				break;
+			case 'permission':
+				$resourceId = $this->_getParam('resourceId');
+				$mode = strtolower($this->_getParam('mode'));
+				if (!isset($xml->$defaultModule->$resourceId)) {
+					$error = __('Resource not exists').': '.$resourceId;
+					trigger_error($error,E_USER_NOTICE);
+					break;
+				}
+				$action = $xml->$defaultModule->$resourceId->addChild($mode,lcfirst($value));
+				$action->addAttribute('access','0');
+				$newMode = ucfirst($mode);
+				$chkMode = '_chkLabel'.$newMode;
+				$data = $this->_generateCheckboxInputs($this->$chkMode,array(array('name'=>$value,'prettyName'=>$prettyName,'value'=>0)),$resourceId);
+				break;
+			default:
+				$error = __('Invalid type').': '.$type;
+				trigger_error($error,E_USER_NOTICE);
+		}
+
+		if (strlen($error) > 0) {
+			$data['error'] = $error;
+		}
+		else {
+			if ($isDefault) {
+				$aclMemKey = PermissionTemplate::ACL_MEMKEY.'_default';
+				$this->_memcache->set($aclMemKey,$xml->asXML());
+			}
+			else {
+				$permissionTemplate->template = $xml->asXML();
+				$permissionTemplate->persist();
+			}
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

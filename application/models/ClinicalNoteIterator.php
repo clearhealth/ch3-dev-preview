@@ -73,6 +73,21 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 			case 'byAllAuthorsUnsigned': // By All Unsigned Notes for All Authors
 				$dbSelect->where('clinicalNotes.eSignatureId = 0'); // is it 0 for unsigned?
 				break;
+			case 'byCurrentPractice': // By Current Practice
+				$dbSelect->where('clinicalNotes.locationId = '.(int)$filter['locationId']); // is it 0 for unsigned?
+				break;
+			case 'bySelectedVisit': // By Selected Visit
+				$selectedVisit = date('Y-m-d',strtotime($filter['selectedVisit']));
+				$dbSelect->where("clinicalNotes.dateTime BETWEEN '$selectedVisit 00:00:00' AND '$selectedVisit 23:59:59'");
+				break;
+			case 'byVisitPractice': // Notes by Visits to Current Practice
+				$dbSelect->joinLeft('encounter','encounter.encounter_id = clinicalNotes.visitId')
+					->where('encounter.practice_id = ?',(int)$filter['practiceId']);
+				break;
+			case 'byVisitBuilding': // Notes by Visits to Current Building
+				$dbSelect->joinLeft('encounter','encounter.encounter_id = clinicalNotes.visitId')
+					->where('encounter.building_id = ?',(int)$filter['buildingId']);
+				break;
 			default: // Default: Last 100 Notes
 				$dbSelect->order('clinicalNotes.clinicalNoteId DESC')
 			 	 	 ->limit(100);

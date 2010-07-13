@@ -1,25 +1,56 @@
-<div id="aclLayout" style="position:absolute;width:100%;height:480px;">
-<div id="aclToolbar" style="width:99.9%;"></div>
-<div id="aclContainer" style="width:100%;height:390px;overflow:auto"></div>
+<form name="aclFormName" id="aclFormId">
+<div id="aclContainerId" style="position:absolute;width:100%;height:400px;">
+	<div id="aclToolbarId" style="width:99.9%;"></div>
+	<fieldset style="width:800px;height:100%;"><legend id="legendId"><?=__('Add New Template')?></legend>
+		<div id="aclGridId" style="width:800px;height:100%;overflow:auto;"></div>
+	</fieldset>
+	<?=$this->formHidden('acl[templateName]',null,array('id'=>'aclTemplateName'))?>
+	<?=$this->formHidden('acl[templateId]',null,array('id'=>'aclTemplateId'))?>
 </div>
+</form>
 
 <script>
-aclToolbar = new dhtmlXToolbarObject('aclToolbar','ClearSilver');
+var aclTemplateId = null;
+var aclToolbar = new dhtmlXToolbarObject("aclToolbarId","ClearSilver");
 aclToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
-aclToolbar.attachEvent('onClick',function (id) {onACLToolbarClick(id);} );
-aclToolbar.loadXML('<?=$this->baseUrl?>/acl.raw/toolbar.xml');
+aclToolbar.attachEvent("onClick",aclOnToolbarClicked);
 
-function onACLToolbarClick(itemId) {
-	switch (itemId) {
-		case "reload_permissions":
-			reloadPermissions();
+var ctr = 1;
+aclToolbar.addButton("refreshResources",ctr++,"<?=__('Refresh Resources')?>","refresh.png","refresh.png");
+aclToolbar.addButton("saveTemplate",ctr++,"<?=__('Save Template')?>","save.png","save.png");
+aclToolbar.addButton("copyTemplate",ctr++,"<?=__('Copy Template')?>","copy.png","copy.png");
+var opts = [];
+<?foreach ($this->templates as $id=>$name):?>
+opts.push(["loadTemplate_<?=$id?>","obj","<?=$name?>","blank.gif"]);
+<?endforeach;?>
+aclToolbar.addButtonSelect("loadTemplate",ctr++,"<?=__('Load Template')?>",opts,"getStatus.png","getStatus.png");
+
+function aclOnToolbarClicked(id) {
+	if (id == "loadTemplate") return;
+	if (id.substr(0,13) == "loadTemplate_") {
+		aclTemplateId = id.substr(13);
+		aclGridReload(aclTemplateId);
+		dojo.byId("legendId").innerHTML = "<?=__('Edit Template')?>: "+aclToolbar.getListOptionText("loadTemplate",id);
+		return;
+	}
+	switch (id) {
+		case "refreshResources":
+			aclGridReload();
+			break;
+		case "saveTemplate":
+			aclSaveTemplate();
+			break;
+		case "copyTemplate":
+			var templateId = (aclTemplateId == null)?"":aclTemplateId;
+			var params = ["permissionTemplateId="+templateId];
+			globalCreateWindow("winACLCopyTemplate",params,"<?=$this->baseUrl?>/acl.raw/copy-template","<?=__('Copy Template')?>",300,300);
 			break;
 		default:
 			alert("<?=__('Invalid event.')?>");
 	}
 }
 
-aclGrid = new dhtmlXGridObject('aclContainer');
+var aclGrid = new dhtmlXGridObject("aclGridId");
 aclGrid.setImagePath("<?=$this->baseUrl?>/img/");
 aclGrid.selMultiRows = true;
 var headerColRead = '<input id="<?=$this->chkLabelRead?>Header" name="<?=$this->chkLabelRead?>Header" disabled="disabled" type="checkbox" onclick="toggleColumn(this)"> <?=__('Read')?>';
@@ -30,9 +61,23 @@ aclGrid.setHeader("Resource,"+headerColRead+","+headerColWrite+","+headerColDele
 aclGrid.setInitWidths("*,*,*,*,*");
 aclGrid.setColTypes("ro,ro,ro,ro,ro");
 aclGrid.init();
-aclGrid.load('<?=$this->baseUrl?>/acl.raw/list-items',onACLLoaded,"json");
 
-function onACLLoaded() {
+function aclGridReload(templateId) {
+	dojo.byId("<?=$this->chkLabelRead?>Header").checked = false;
+	dojo.byId("<?=$this->chkLabelWrite?>Header").checked = false;
+	dojo.byId("<?=$this->chkLabelDelete?>Header").checked = false;
+	dojo.byId("<?=$this->chkLabelOther?>Header").checked = false;
+	if (!templateId) {
+		aclTemplateId = null;
+		dojo.byId("legendId").innerHTML = "<?=__('Add New Template')?>";
+		templateId = "";
+	}
+	aclGrid.clearAll();
+	aclGrid.load("<?=$this->baseUrl?>/acl.raw/list?templateId="+templateId,aclOnLoaded,"json");
+}
+aclGridReload();
+
+function aclOnLoaded() {
 	toggleCheckboxHeaders(true);
 	var numRows = aclGrid.getRowsNum();
 	if (numRows <= 0) {
@@ -41,16 +86,16 @@ function onACLLoaded() {
 	toggleCheckboxHeaders(false);
 }
 
-var aclMenu = new dhtmlXMenuObject('aclColumnMenu','standard');
+var aclMenu = new dhtmlXMenuObject("aclColumnMenu","standard");
 aclMenu.setImagePath("<?=$this->baseUrl?>/img/");
 aclMenu.renderAsContextMenu();
 aclMenu.setOpenMode("web");
-aclMenu.attachEvent('onClick',onMenuClicked);
-aclMenu.loadXML('<?=$this->baseUrl?>/acl.raw/get-menu.xml');
+aclMenu.attachEvent("onClick",onMenuClicked);
+aclMenu.loadXML("<?=$this->baseUrl?>/acl.raw/get-menu.xml");
 
 function onMenuClicked(itemId,type) {
 	switch (itemId) {
-		case 'acl_add_resource':
+		case "acl_add_resource":
 			do {
 				var name = prompt("<?=__('Resource Name')?>");
 			} while (name != null && name.length <= 0);
@@ -58,7 +103,7 @@ function onMenuClicked(itemId,type) {
 				addResource(name);
 			}
 			break;
-		case 'acl_add_permission':
+		case "acl_add_permission":
 			var rowCol = type.split('_'); // 0: rowId, 1: colIndex
 			addPermission(rowCol[0],rowCol[1]);
 			break;
@@ -66,47 +111,88 @@ function onMenuClicked(itemId,type) {
 }
 
 function addResource(name) {
-	// strip off spaces
-	var id = name.replace(/ /g,'');
-	// TODO: send ajax call
-	aclGrid.addRow(id,name);
+	if (!name || name.length <= 0) {
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/acl.raw/process-add",
+		handleAs: "json",
+		content: {
+			"aclTemplateId": aclTemplateId,
+			"type": "resource",
+			"value": name,
+		},
+		load: function(data,ioArgs) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				aclGrid.addRow(data.id,data.name);
+			}
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
 }
 
 function addPermission(rowId,colIndex) {
-	var name = 'Other';
+	var name = "Other";
 	switch (parseInt(colIndex)) {
 		case 1:
-			name = 'Read';
+			name = "Read";
 			break;
 		case 2:
-			name = 'Write';
+			name = "Write";
 			break;
 		case 3:
-			name = 'Delete';
+			name = "Delete";
 			break;
 		case 4:
-			name = 'Other';
+			name = "Other";
 			break;
 		default:
 			return;
 	}
 	var resourceName = aclGrid.cells(rowId,0).getValue();
 	do {
-		var value = prompt(resourceName+'->'+name+"\n<?=__('Permission Name')?>");
+		var value = prompt(resourceName+"->"+name+"\n<?=__('Permission Name')?>");
 	} while (value != null && value.length <= 0);
 
 	if (value == null) {
 		return;
 	}
-	// TODO: send ajax call
-	var newCheckbox = '<input type="checkbox" name="chk'+name+'" value="'+value+'" onClick="toggleItem(this)" /> '+value;
-	var oldCheckboxes = aclGrid.cells(rowId,colIndex).getValue();
-	var newCheckboxes = oldCheckboxes;
-	if (oldCheckboxes.length > 0) {
-		newCheckboxes += "<br />\n";
-	}
-	newCheckboxes += newCheckbox;
-	aclGrid.cells(rowId,colIndex).setValue(newCheckboxes);
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/acl.raw/process-add",
+		handleAs: "json",
+		content: {
+			"aclTemplateId": aclTemplateId,
+			"type": "permission",
+			"value": value,
+			"resourceId": rowId,
+			"mode": name.toLowerCase(),
+		},
+		load: function(data,ioArgs) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else {
+				var val = aclGrid.cells(rowId,colIndex).getValue();
+				if (val.length > 0) {
+					val += "<br />";
+				}
+				val += data;
+				aclGrid.cells(rowId,colIndex).setValue(val);
+			}
+			return data;
+		},
+		error: function(response, ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
 }
 
 aclGrid.enableContextMenu(aclMenu);
@@ -115,44 +201,48 @@ dhtmlxEvent(aclGrid.entBox,"contextmenu",function(e){
 	return false;
 });
 
-aclGrid.attachEvent('onBeforeContextMenu',onBeforeContextMenuEvent);
+aclGrid.attachEvent("onBeforeContextMenu",onBeforeContextMenuEvent);
 
 function onBeforeContextMenuEvent(rowId,colIndex,gridObj) {
 	// hide all menus, only show relevant menu
 	aclMenu.forEachItem(function(id){ aclMenu.hideItem(id); });
 	if (colIndex == 0) {
-		aclMenu.showItem('acl_add_resource');
+		aclMenu.showItem("acl_add_resource");
 	}
 	else {
-		aclMenu.showItem('acl_add_permission');
+		aclMenu.showItem("acl_add_permission");
 	}
 
 	return true;
 }
 
 function toggleCheckboxHeaders(state) {
-	dojo.byId('<?=$this->chkLabelRead?>Header').disabled = state;
-	dojo.byId('<?=$this->chkLabelWrite?>Header').disabled = state;
-	dojo.byId('<?=$this->chkLabelDelete?>Header').disabled = state;
-	dojo.byId('<?=$this->chkLabelOther?>Header').disabled = state;
+	dojo.byId("<?=$this->chkLabelRead?>Header").disabled = state;
+	dojo.byId("<?=$this->chkLabelWrite?>Header").disabled = state;
+	dojo.byId("<?=$this->chkLabelDelete?>Header").disabled = state;
+	dojo.byId("<?=$this->chkLabelOther?>Header").disabled = state;
 }
 
 function toggleColumn(oChk) {
-	var chkName = oChk.name.replace(/Header/, '');
+	var chkName = oChk.name.replace(/Header/,"");
 	var chkEl = document.getElementsByName(chkName);
 	for(var i=0; i < chkEl.length; i++) {
 		chkEl[i].checked = oChk.checked;
+		dojo.byId(chkEl[i].value).value = (oChk.checked)?"1":"0";
 	}
-	savePermission(chkName,oChk.checked,'admin','all');
+	savePermission(chkName,oChk.checked,"admin","all");
 }
 
 function toggleItem(oChk) {
-	savePermission(oChk.name,oChk.checked,'admin',oChk.value);
+	dojo.byId(oChk.value).value = (oChk.checked)?"1":"0";
+	return;
+	savePermission(oChk.name,oChk.checked,"admin",oChk.value);
 }
 
 function savePermission(name,value,template,access) {
-	dojo.xhrGet({
-		url: '<?=$this->baseUrl?>/acl.raw/ajax-save-permission',
+	return;
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/acl.raw/ajax-save-permission",
 		handleAs: "json",
 		content: {
 			name: name,
@@ -170,9 +260,11 @@ function savePermission(name,value,template,access) {
 	});
 }
 
-function reloadPermissions() {
+function refreshResources() {
+	aclTemplateId = null;
+	dojo.byId("legendId").innerHTML = "<?=__('Add New Template')?>";
 	dojo.xhrGet({
-		url: '<?=$this->baseUrl?>/acl.raw/reload-permissions',
+		url: "<?=$this->baseUrl?>/acl.raw/refresh-resources",
 		handleAs: "json",
 		load: function(data,ioArgs) {
 			alert(data.msg);
@@ -183,5 +275,46 @@ function reloadPermissions() {
 			return response;
 		}
 	});
+}
+
+function aclSaveTemplate() {
+	if (aclTemplateId == null) {
+		while (true) {
+			var templateName = prompt("<?=__('Enter Template name')?>");
+			if (templateName === null) return;
+			if (templateName.length < 1) {
+				alert("<?=__('Template name is required')?>");
+			}
+			else {
+				break;
+			}
+		}
+		dojo.byId("aclTemplateName").value = templateName;
+	}
+	else {
+		dojo.byId("aclTemplateId").value = aclTemplateId;
+	}
+	dojo.xhrPost({
+		url: globalBaseUrl+"/acl.raw/process-save-template",
+		handleAs: "json",
+		form: "aclFormId",
+		load: function (data) {
+			aclTemplateOnProcessed(data);
+		},
+		error: function (error) {
+			alert(error);
+			console.error ("Error: ", error);
+		}
+	});
+}
+
+function aclTemplateOnProcessed(data) {
+	if (typeof aclToolbar.objPull[aclToolbar.idPrefix+"loadTemplate_"+data.id] == "undefined") {
+		var arr = aclToolbar.getAllListOptions("loadTemplate");
+		aclToolbar.addListOption("loadTemplate","loadTemplate_"+data.id,(arr.length+1),"button",data.name,"blank.gif");
+	}
+	dojo.byId("legendId").innerHTML = "<?=__('Edit Template')?>: "+data.name;
+	aclTemplateId = data.id;
+	aclGridReload(aclTemplateId);
 }
 </script>

@@ -55,6 +55,10 @@ class DrugScheduleDaysSupply {
 		$quantity = (int)$quantity;
 		return $quantity;
 	}
+	public static function OTHER($quantity) {
+		$quantity = (int)$quantity;
+		return $quantity;
+	}
 
 	protected static function _computeQXH($quantity,$multiplier) {
 		$quantity = (int)$quantity;

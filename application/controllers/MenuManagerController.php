@@ -102,22 +102,7 @@ class MenuManagerController extends WebVista_Controller_Action {
 	}
 
     protected function getMainTabs() {
-        // temporarily placed it here, move this later to appropriate location
-        // since the mainTabs are defined in MainController
-        $mainTabs = array();
-        $mainTabs['All'] =  '';
-        $mainTabs['Calendar'] = $this->view->baseUrl.'/calendar.raw';
-        $mainTabs['Problem']   = $this->view->baseUrl.'/problem-list.raw';
-        $mainTabs['Medication']   = $this->view->baseUrl.'/medications.raw';
-        $mainTabs['Order']   = $this->view->baseUrl.'/orders.raw';
-        $mainTabs['ClinicalNote']   = $this->view->baseUrl.'/clinical-notes.raw';
-        $mainTabs['LabResult']   = $this->view->baseUrl.'/lab-results.raw';
-        $mainTabs['NsdrManager']   = $this->view->baseUrl.'/nsdr-manager.raw';
-
-        $mainTabs['Patient'] = '/index.php/minimal/PatientFinder/find';
-        $mainTabs['Billing'] = '/index.php/minimal/Claims/list';
-        $mainTabs['Admin']   = '/index.php/minimal/Admin';
-        return $mainTabs;
+        	return Menu::getMainTabs($this->view->baseUrl);
     }
 
     public function ajaxEditAction() {

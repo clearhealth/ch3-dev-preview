@@ -41,7 +41,10 @@ class EnumGenerator {
 		self::generateDemographicsPreferencesEnum($force);
 		self::generateGeographyPreferencesEnum($force);
 		self::generateCalendarPreferencesEnum($force);
-		self::generateClinicalPreferencesEnum($force);		
+		self::generateClinicalPreferencesEnum($force);
+		self::generatePaymentTypesEnum($force);
+		self::generateCodingPreferencesEnum($force);
+		self::generateFacilityCodesEnum($force);
 	}
 
 	public static function generateDemographicsPreferencesEnum($force = true) {
@@ -50,7 +53,7 @@ class EnumGenerator {
 			$name = 'Demographics';
 			$key = 'DEMOGRAPH';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -131,7 +134,7 @@ class EnumGenerator {
 			$name = 'Geography';
 			$key = 'GEOGRAPH';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -476,7 +479,7 @@ class EnumGenerator {
 			$name = 'Calendar';
 			$key = 'CALENDAR';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -532,7 +535,7 @@ class EnumGenerator {
 			$name = 'Clinical';
 			$key = 'CLINICAL';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -733,7 +736,7 @@ class EnumGenerator {
 			$name = 'Contact Preferences';
 			$key = 'CONTACT';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -785,7 +788,7 @@ class EnumGenerator {
 			$name = 'Menu';
 			$key = 'MENU';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -829,7 +832,7 @@ class EnumGenerator {
 			self::_saveEnumeration($data);
 
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 
 			$menu = new MenuItem();
 			$menu->siteSection = 'All';
@@ -886,7 +889,7 @@ class EnumGenerator {
 			$name = PatientImmunization::ENUM_PARENT_NAME;
 			$key = 'IP';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1106,7 +1109,7 @@ class EnumGenerator {
 			$name = TeamMember::ENUM_PARENT_NAME;
 			$key = 'TP';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1151,7 +1154,7 @@ class EnumGenerator {
 			$name = HealthStatusAlert::ENUM_PARENT_NAME;
 			$key = 'HP';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1189,7 +1192,7 @@ class EnumGenerator {
 			$name = PatientNote::ENUM_REASON_PARENT_NAME;
 			$key = 'RP';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1230,7 +1233,7 @@ class EnumGenerator {
 			$name = PatientProcedure::ENUM_PARENT_NAME;
 			$key = 'ProcPref';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1321,7 +1324,7 @@ class EnumGenerator {
 			$name = PatientExam::ENUM_RESULT_PARENT_NAME;
 			$key = 'Exam_Res';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1358,7 +1361,7 @@ class EnumGenerator {
 			$name = PatientExam::ENUM_OTHER_PARENT_NAME;
 			$key = 'Exam_Other';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1398,7 +1401,7 @@ class EnumGenerator {
 			$name = Medication::ENUM_PARENT_NAME;
 			$key = 'MED_PREF';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1449,7 +1452,7 @@ class EnumGenerator {
 			$name = Room::ENUM_COLORS_NAME;
 			$key = 'colors';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1515,7 +1518,7 @@ class EnumGenerator {
 			$name = 'Facilities';
 			$key = 'FACILITIES';
 			$enumeration = new Enumeration();
-			$enumeration->populateByEnumerationName($name);
+			$enumeration->populateByUniqueName($name);
 			// check for key existence
 			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
 				if (!$force) {
@@ -1539,7 +1542,163 @@ class EnumGenerator {
 		} while(false);
 		return $ret;
 	}
-		
+
+	public static function generatePaymentTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Payment Types';
+			$key = 'PAY_TYPES';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => 'VISA', 'name' => 'Visa', 'active' => 1, 'guid' => 'cfc36cc6-76b0-4ea0-a6de-7e8d5217f06a'),
+				array('key' => 'MASTERCARD', 'name' => 'MasterCard', 'active' => 1, 'guid' => '1665c4b5-0f91-4c86-b7e6-317ad95efe07'),
+				array('key' => 'AMEX', 'name' => 'AMEX', 'active' => 1, 'guid' => '7c29ff7b-966d-428a-8ce5-037a36e73576'),
+				array('key' => 'CHECK', 'name' => 'Check', 'active' => 1, 'guid' => '2c7dbe2b-0f24-420f-b950-ba6a024367c4'),
+				array('key' => 'CASH', 'name' => 'Cash', 'active' => 1, 'guid' => 'b9eb5d9f-0c95-4ad3-9e51-62a0452083da'),
+				array('key' => 'REMITTANCE', 'name' => 'Remittance', 'active' => 1, 'guid' => 'f353bced-e140-4af4-bfd2-deedf575b244'),
+				array('key' => 'CORRECTION', 'name' => 'Correction Payment', 'active' => 1, 'guid' => 'fd36d634-6e0b-41c4-bac5-b650a1d5b6d8'),
+				array('key' => 'LABPAYMENT', 'name' => 'Labs Payment', 'active' => 1, 'guid' => '9ab537c4-198d-44c1-b5d6-7f60d49bc5c4'),
+				array('key' => 'MEDPAYMENT', 'name' => 'Medication Payment', 'active' => 1, 'guid' => '02232de4-014f-4d26-b4eb-717c0e09e607'),
+				array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => '6b5a30ba-3f8b-4c00-9a6a-be5f72694c51'),
+				array('key' => 'VISITPAY', 'name' => 'Visit Payment', 'active' => 1, 'guid' => 'af075c09-a5dc-4ad4-8ddf-9dd7312472e2'),
+				array('key' => 'DISCOUNT', 'name' => 'Discount', 'active' => 1, 'guid' => '704a29e4-029a-4c69-a441-a7c32ba74ee4'),
+			);
+
+			$level = array();
+			$level['guid'] = 'd1d9039a-a21b-4dfb-b6fa-ec5f41331682';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateCodingPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Coding Preferences';
+			$key = 'CODINGPREF';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => 'VISITYPE', 'name' => 'Visit Type Sections', 'active' => 1, 'guid' => '9eb793f8-1d5d-4ed5-959d-1e238361e00a', 'ormClass' => 'Visit', 'ormEditMethod' => 'ormVisitTypeEditMethod', 'data' => array(
+					array('key' => 'NEWPATIENT', 'name' => 'New Patient', 'active' => 1, 'guid' => 'ebc41ebe-dd6b-4b78-97a7-63298ddef675', 'ormClass' => 'Visit', 'ormEditMethod' => 'ormVisitTypeEditMethod'),
+					array('key' => 'ESTPATIENT', 'name' => 'Established Patient', 'active' => 1, 'guid' => '519b2620-b893-4bac-8d46-7daefd69aa1e', 'ormClass' => 'Visit', 'ormEditMethod' => 'ormVisitTypeEditMethod'),
+					array('key' => 'CONSULT', 'name' => 'Consultations', 'active' => 1, 'guid' => 'd2ba49ec-f2b6-4183-8495-c9c1f8386414', 'ormClass' => 'Visit', 'ormEditMethod' => 'ormVisitTypeEditMethod'),
+				)),
+				array('key' => 'PROCEDURE', 'name' => 'Procedure Sections', 'active' => 1, 'guid' => '8e6a2456-1710-46be-a018-2afb0ec2829f', 'ormClass' => 'ProcedureCodesCPT', 'ormEditMethod' => 'ormEditMethod'),
+				array('key' => 'DIAGNOSIS', 'name' => 'Diagnosis Sections', 'active' => 1, 'guid' => 'fac51e51-95fd-485e-a8f3-62e1228057ad', 'ormClass' => 'DiagnosisCodesICD', 'ormEditMethod' => 'ormEditMethod'),
+			);
+
+			$level = array();
+			$level['guid'] = 'ab377de7-8ea7-4912-a27b-2f9749499204';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['ormClass'] = 'Visit';
+			$level['ormEditMethod'] = 'ormEditMethod';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateFacilityCodesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Facility Codes';
+			$key = 'FACIL_CODES';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => '11', 'name' => 'Office', 'active' => 1, 'guid' => '97e73bc4-eb06-4f66-8fb9-67e6974cc2f6'),
+				array('key' => '12', 'name' => 'Home', 'active' => 1, 'guid' => '6f87512e-05bc-4144-bf2a-6be063d3e6b8'),
+				array('key' => '21', 'name' => 'Inpatient Hospital', 'active' => 1, 'guid' => '1b46d32b-6383-4359-bc37-2bac4d258529'),
+				array('key' => '22', 'name' => 'Outpatient Hospital', 'active' => 1, 'guid' => '2506384a-50ae-410b-9cc5-876f26226b7c'),
+				array('key' => '23', 'name' => 'Emergency Room - Hospital', 'active' => 1, 'guid' => '64b119ab-495f-4629-87f2-33aa7e000578'),
+				array('key' => '24', 'name' => 'Ambulatory Surgical Center', 'active' => 1, 'guid' => '32363b83-4119-4db5-82e4-af3468983419'),
+				array('key' => '25', 'name' => 'Birthing Center', 'active' => 1, 'guid' => 'c1c92a9c-14a1-4b90-ad14-b710b13ace85'),
+				array('key' => '26', 'name' => 'Military Treatment Facility', 'active' => 1, 'guid' => 'bf869590-b482-47d7-8669-33c7bd3caea6'),
+				array('key' => '31', 'name' => 'Skilled Nursing Facility', 'active' => 1, 'guid' => '477762b4-148b-44c7-a869-6ace256a248c'),
+				array('key' => '32', 'name' => 'Nursing Facility', 'active' => 1, 'guid' => 'c5c3df6c-4c72-4638-9702-e686322c0a18'),
+				array('key' => '33', 'name' => 'Custodial Care Facility', 'active' => 1, 'guid' => '074acacf-3340-483e-ae57-ad65776b5a5e'),
+				array('key' => '34', 'name' => 'Hospice', 'active' => 1, 'guid' => '815d94b4-0407-4c78-9168-8f9b266a75cf'),
+				array('key' => '41', 'name' => 'Ambulance - Land', 'active' => 1, 'guid' => '59e87b4b-4975-4110-9436-a751cfa31f0b'),
+				array('key' => '42', 'name' => 'Ambulance - Air or Water', 'active' => 1, 'guid' => '78c196b9-c2c1-4281-84f7-1e0da0dc6a67'),
+				array('key' => '50', 'name' => 'Federally Qualified Health Center', 'active' => 1, 'guid' => '8305dfc2-941d-45dd-a929-a1d84f25bcf6'),
+				array('key' => '51', 'name' => 'Inpatient Psychiatric Facility', 'active' => 1, 'guid' => '3fea6917-c5ed-41ed-b2f9-c743bc504cc4'),
+				array('key' => '52', 'name' => 'Psychiatric Facility Partial Hospitalization', 'active' => 1, 'guid' => '3f18955f-a3bd-4f22-a86c-6d5539070258'),
+				array('key' => '53', 'name' => 'Community Mental Health Center', 'active' => 1, 'guid' => '90d55f5e-d81d-442d-a925-d58467bdb6c7'),
+				array('key' => '54', 'name' => 'Intermediate Care Facility/Mentally Retarded', 'active' => 1, 'guid' => 'eb3b94a8-baef-48de-80bb-20ba9465a4af'),
+				array('key' => '55', 'name' => 'Residential Substance Abuse Treatment Facility', 'active' => 1, 'guid' => 'c9f8d5de-8e08-46a1-8bae-231783a295a2'),
+				array('key' => '56', 'name' => 'Psychiatric Residential Treatment Center', 'active' => 1, 'guid' => '8ba47649-3cbf-49b5-ac7e-9663e53a9795'),
+				array('key' => '60', 'name' => 'Mass Immunization Center', 'active' => 1, 'guid' => '905992e4-e172-4bc3-8bb3-240b81a44b78'),
+				array('key' => '61', 'name' => 'Comprehensive Inpatient Rehabilitation Facility', 'active' => 1, 'guid' => '4706d13f-bca8-476f-b217-cecf0ee56318'),
+				array('key' => '62', 'name' => 'Comprehensive Outpatient Rehabilitation Facility', 'active' => 1, 'guid' => 'd0014445-262a-4dc7-b41c-c88ba5dad2ab'),
+				array('key' => '65', 'name' => 'End Stage Renal Disease Treatment Facility', 'active' => 1, 'guid' => '121fdadb-2caf-468c-9f79-5aaa947d38ac'),
+				array('key' => '71', 'name' => 'State or Local Public Health Clinic', 'active' => 1, 'guid' => 'a214f437-c072-4197-978b-d919471d427e'),
+				array('key' => '72', 'name' => 'Rural Health Clinic', 'active' => 1, 'guid' => '0a981977-c060-4258-a679-f64a2a3c03b7'),
+				array('key' => '81', 'name' => 'Independent Laboratory', 'active' => 1, 'guid' => '34fb5d8f-c068-4a81-8740-504b4b114f1a'),
+				array('key' => '99', 'name' => 'Other Unlisted Facility', 'active' => 1, 'guid' => '9865976d-a8b0-4811-9161-8d583df8e0ad'),
+			);
+
+
+			$level = array();
+			$level['guid'] = '22fb4e1e-a37a-4e7a-9dae-8e220ba939e8';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
 	protected static function _saveEnumeration($data,$parentId=0) {
 		$enumerationsClosure = new EnumerationsClosure();
 		foreach ($data as $item) {

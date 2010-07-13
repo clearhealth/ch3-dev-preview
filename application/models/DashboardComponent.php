@@ -28,6 +28,7 @@ class DashboardComponent extends WebVista_Model_ORM {
     protected $content;
     protected $name;
     protected $systemName;
+    protected $type;
     protected $dashboardComponentId;
 
 	function __construct() {

@@ -196,8 +196,10 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 				continue;
 			}
 			$icon = '';
+			$ormClass = '';
 			if (strlen($enum->ormClass) > 0 && class_exists($enum->ormClass)) {
 				$icon = "<a onclick=\"enumEditObject({$enum->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
+				$ormClass = $enum->ormClass;
 			}
 			$category = '';
 			if ($item === null) {
@@ -211,6 +213,8 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 			$leaf->addChild('cell',$category);
 			$leaf->addChild('cell',$enum->active);
 			$leaf->addChild('cell',$icon);
+			$userdata = $leaf->addChild('userdata',$ormClass);
+			$userdata->addAttribute('name','ormClass');
 			$enumerationList[] = $enum->enumerationId;
 			if ($enumerationId != $enum->enumerationId) { // prevents infinite loop
 				$this->_generateEnumerationTree($leaf,$enum->enumerationId);
@@ -228,8 +232,10 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		$enumeration->enumerationId = $enumerationId;
 		$enumeration->populate();
 		$icon = '';
+		$ormClass = '';
 		if (strlen($enumeration->ormClass) > 0 && class_exists($enumeration->ormClass)) {
 			$icon = "<a onclick=\"enumEditObject({$enumeration->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
+			$ormClass = $enumeration->ormClass;
 		}
 		$item = $xml->addChild("row");
 		$item->addAttribute('id',$enumeration->enumerationId);
@@ -237,6 +243,8 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		$item->addChild('cell',$enumeration->category);
 		$item->addChild('cell',$enumeration->active);
 		$item->addChild('cell',$icon);
+		$userdata = $item->addChild('userdata',$ormClass);
+		$userdata->addAttribute('name','ormClass');
 		$this->_generateEnumerationTree($item,$enumerationId);
 
                 header('content-type: text/xml');

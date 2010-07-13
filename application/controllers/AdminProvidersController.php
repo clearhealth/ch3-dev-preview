@@ -56,6 +56,14 @@ class AdminProvidersController extends WebVista_Controller_Action
 		$stations = array_merge(array('' => ''),$stations);
 		$this->view->stations = $stations;
 
+		$specialties = array(''=>'');
+		$listSpecialties = Provider::getListSpecialties();
+		 // temporarily use AM = American Medical Association
+		foreach ($listSpecialties['AM'] as $specialty) {
+			$specialties[$specialty['code']] = $specialty['description'];
+		}
+		$this->view->specialties = $specialties;
+
 		$this->render('edit');
 	}
 

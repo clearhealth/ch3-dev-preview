@@ -32,12 +32,17 @@ class Audit extends WebVista_Model_ORM {
 	protected $dateTime;
 	protected $startProcessing;
 	protected $endProcessing;
-	protected $_table = "audits";
+	protected $ipAddress;
+
+	protected $_table = 'audits';
 	protected $_primaryKeys = array('auditId');
 	protected $_persistMode = WebVista_Model_ORM::INSERT;
 	protected $_ormPersist = false;
 
 	public function persist() {
+		if (!strlen($this->ipAddress) > 0 && isset($_SERVER['REMOTE_ADDR'])) {
+			$this->ipAddress = $_SERVER['REMOTE_ADDR'];
+		}
 		if ($this->shouldAudit()) {
 			$sql = $this->toSQL();
 			AuditLog::appendSql($sql);

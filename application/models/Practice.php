@@ -29,13 +29,26 @@ class Practice extends WebVista_Model_ORM {
 	protected $identifier;
 	protected $primaryAddress;
 	protected $secondaryAddress;
+	protected $mainPhone;
+	protected $secondaryPhone;
+	protected $fax;
 	protected $_table = 'practices';
 	protected $_primaryKeys = array('id');
+
+	protected $_cascadePopulate = false;
 
 	public function __construct() {
 		parent::__construct();
 		$this->primaryAddress = new Address();
+		$this->primaryAddress->type = Address::TYPE_MAIN;
 		$this->secondaryAddress = new Address();
+		$this->secondaryAddress->type = Address::TYPE_SEC;
+		$this->mainPhone = new PhoneNumber();
+		$this->mainPhone->type = PhoneNumber::TYPE_HOME; // MAIN
+		$this->secondaryPhone = new PhoneNumber();
+		$this->secondaryPhone->type = PhoneNumber::TYPE_WORK; // SEC
+		$this->fax = new PhoneNumber();
+		$this->fax->type = PhoneNumber::TYPE_FAX;
 	}
 
 	public function getPracticeId() {
@@ -47,40 +60,68 @@ class Practice extends WebVista_Model_ORM {
 	}
 
 	public function setPracticeId($id) {
-		$this->id = $id;
-		if ($this->primaryAddress->addressId > 0) {
-			$this->primaryAddress = $this->_loadAddress(4); //4 is primary address
+		$this->id = (int)$id;
+		$this->primaryAddress->practiceId = $this->id;
+		if (!$this->primaryAddress->addressId > 0) {
+			$address = clone $this->primaryAddress;
+			$address->populateWithPracticeIdType();
+			$this->primaryAddress->addressId = $address->addressId;
 		}
-		if ($this->secondaryAddress->addressId > 0) {
-			$this->secondaryAddress = $this->_loadAddress(5); //5 is secondary address
+		$this->secondaryAddress->practiceId = $this->id;
+		if (!$this->secondaryAddress->addressId > 0) {
+			$address = clone $this->secondaryAddress;
+			$address->populateWithPracticeIdType();
+			$this->secondaryAddress->addressId = $address->addressId;
 		}
-	}
-
-	private function _loadAddress($type) {
-		$address = new Address();
-		$address->practiceId = (int)$this->id;
-		$address->type = (int)$type;
-		$address->populateWithPracticeIdType();
-		return $address;
+		$this->mainPhone->practiceId = $this->id;
+		if (!$this->mainPhone->numberId > 0) {
+			$phone = clone $this->mainPhone;
+			$phone->populateWithPracticeIdType();
+			$this->mainPhone->numberId = $phone->numberId;
+		}
+		$this->secondaryPhone->practiceId = $this->id;
+		if (!$this->secondaryPhone->numberId > 0) {
+			$phone = clone $this->secondaryPhone;
+			$phone->populateWithPracticeIdType();
+			$this->secondaryPhone->numberId = $phone->numberId;
+		}
+		$this->fax->practiceId = $this->id;
+		if (!$this->fax->numberId > 0) {
+			$phone = clone $this->fax;
+			$phone->populateWithPracticeIdType();
+			$this->fax->numberId = $phone->numberId;
+		}
 	}
 
 	public function populate() {
 		parent::populate();
-		$this->primaryAddress = $this->_loadAddress(4); //4 is primary address
-		$this->secondaryAddress = $this->_loadAddress(5); //4 is primary address
+		$this->primaryAddress->populateWithPracticeIdType();
+		$this->secondaryAddress->populateWithPracticeIdType();
+		$this->mainPhone->populateWithPracticeIdType();
+		$this->secondaryPhone->populateWithPracticeIdType();
+		$this->fax->populateWithPracticeIdType();
 		return true;
 	}
 
-	public function ormEditMethod($ormId) {
+	public function ormEditMethod($ormId,$isAdd) {
 		$controller = Zend_Controller_Front::getInstance();
 		$request = $controller->getRequest();
 		$enumerationId = (int)$request->getParam('enumerationId');
 
-		$params = array();
-		$params['enumerationId'] = $enumerationId;
-		$params['id'] = $ormId;
 		$view = Zend_Layout::getMvcInstance()->getView();
-		return $view->action('edit-practice','facilities',null,$params);
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+			$params['ormClass'] = 'Building';
+			return $view->action('edit','enumerations-manager',null,$params);
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['id'] = $ormId;
+			return $view->action('edit-practice','facilities',null,$params);
+		}
 	}
 
 }

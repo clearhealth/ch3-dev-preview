@@ -1,0 +1,215 @@
+<!--<dl class="formRow"  style="margin-right:15px;">
+	<dd><b>Primary Co-pay (Aetna)</b></dd>
+	<dt style="text-align:center;">25.00</dt>
+</dl>
+<dl class="formRow" style="margin-right:15px;">
+	<dd><b><?=__('Balance Forward')?></b></dd>
+	<dt style="text-align:center;">77.34</dt>
+</dl>
+<dl class="formRow" style="margin-right:15px;">
+	<dd><b><?=__('Record Payment')?></b></dd>
+	<dt style="text-align:center;">
+		<a href="">Credit Card</a><br />
+		<a href="">Check/Cash</a>
+	</dt>
+</dl>
+<br style="clear:left;" />-->
+<h3><?=__('Payments')?></h3>
+<div id="payGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
+<h3><?=__('Charges')?></h3>
+<div id="chargeGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
+<h3><?=__('Eligibility')?></h3>
+<div id="eligibilityGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
+
+<script>
+/* PAYMENTS */
+payGrid = new dhtmlXGridObject("payGridContainer");
+payGrid.setImagePath("<?=$this->baseUrl?>/img/");
+payGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+payGrid.setInitWidths("75,100,100,*");
+payGrid.setColTypes("ro,ro,ro,ro");
+payGrid.setColAlign("left");
+payGrid.setSkin("xp");
+payGrid.init(); 
+<?foreach ($this->listPayments as $id=>$data):?>
+payGrid.addRow("<?=$id?>","");
+	<?foreach ($data as $index=>$item):?>
+		payGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
+	<?endforeach;?>
+<?endforeach;?>
+
+dhtmlxEvent(payGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+/* CHARGES */
+chargeGrid = new dhtmlXGridObject("chargeGridContainer");
+chargeGrid.setImagePath("<?=$this->baseUrl?>/img/");
+chargeGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+chargeGrid.setInitWidths("75,100,100,*");
+chargeGrid.setColTypes("ro,ro,ro,ro");
+chargeGrid.setColAlign("left");
+chargeGrid.setSkin("xp");
+chargeGrid.init(); 
+<?foreach ($this->listCharges as $id=>$data):?>
+chargeGrid.addRow("<?=$id?>","");
+	<?foreach ($data as $index=>$item):?>
+		chargeGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
+	<?endforeach;?>
+<?endforeach;?>
+
+dhtmlxEvent(chargeGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+/* ELIGIBILITY */
+var indexPOSDate = 0;
+var indexPOSProgram = 1;
+var indexPOSExpires = 2;
+var indexPOSVerified = 3;
+var indexPOSDesc = 4;
+
+eligGrid = new dhtmlXGridObject("eligibilityGridContainer");
+eligGrid.setImagePath("<?=$this->baseUrl?>/img/");
+eligGrid.setHeader("<?=__('Date')?>,<?=__('Program')?>,<?=__('Expires')?>,<?=__('Verified')?>,<?=__('Desc')?>");
+eligGrid.setInitWidths("75,125,75,85,*");
+eligGrid.setColTypes("ed,ro,ed,ro,txt");
+eligGrid.setColAlign("center,left,center,center,left");
+eligGrid.setSkin("xp");
+eligGrid.init(); 
+<?foreach ($this->listEligibility as $id=>$data):?>
+eligGrid.addRow("<?=$id?>","");
+	<?foreach ($data as $index=>$item):?>
+		<?if($index == 2): // Expires column
+		$x = explode(':',$item);
+		$item = $x[0];
+		$color = $x[1];
+		?>
+		eligGrid.setCellTextStyle("<?=$id?>","<?=$index?>","vertical-align:top;background-color:<?=$color?>");
+		<?endif?>
+		eligGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
+	<?endforeach;?>
+<?endforeach;?>
+
+function eligGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
+	if (stage == 2 && newValue != oldValue) {
+		eligUpdate(rowId,cellIndex,newValue);
+	}
+	return true;
+}
+eligGrid.attachEvent("onEditCell",eligGridOnCellEdited);
+
+function eligUpdate(id,index,value) {
+	var content = {
+		"id": id,
+	};
+	switch (index) {
+		case indexPOSDate:
+			content["pos[dateLastVerified]"] = value;
+			break;
+		case indexPOSExpires:
+			content["pos[effectiveEnd]"] = value;
+			break;
+		case indexPOSDesc:
+			content["pos[desc]"] = value;
+			break;
+		default:
+			return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-update-eligibility",
+		handleAs: "json",
+		content: content,
+		load: function (data) {
+			if (data == false) {
+				alert("<?=__('Invalid item')?>");
+			}
+			else if (data.error) {
+				alert(data.error);
+			}
+			else if (data.row) {
+				eligGridFillRow(id,data.row);
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
+}
+
+dhtmlxEvent(eligGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+/* === ELIGIBILITY MENU === */
+var eligMenu = new dhtmlXMenuObject(null,"standard");
+eligMenu.setImagePath("<?=$this->baseUrl?>/img/");
+eligMenu.renderAsContextMenu();
+eligMenu.setOpenMode("web");
+function eligMenuOnClicked(menuItemId,type) {
+	switch(menuItemId) {
+		case "eligibilityCheck":
+			var x = type.split("_");
+			var rowId = x[0];
+			//var cellIndex = x[1];
+			eligCheck(rowId);
+			break;
+		default:
+			alert("<?=__('Invalid event')?>:"+menuItemId);
+			break;
+	}
+}
+eligMenu.attachEvent("onClick",eligMenuOnClicked);
+
+function eligMenuOnLoaded() {
+}
+eligMenu.loadXML("<?=$this->baseUrl?>/calendar.raw/pos-context-menu",eligMenuOnLoaded);
+eligGrid.enableContextMenu(eligMenu);
+
+
+function eligCheck(id) {
+	if (!confirm("<?=__('Are you sure you want to recheck eligibility now?')?>")) {
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-check-eligibility",
+		handleAs: "json",
+		content: {
+			"id": id,
+		},
+		load: function (data) {
+			if (data == false) {
+				alert("<?=__('Invalid item')?>");
+			}
+			else if (data.error) {
+				alert(data.error);
+			}
+			else if (data.row) {
+				eligGridFillRow(id,data.row);
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
+}
+
+function eligGridFillRow(rowId,data) {
+	for (var i in data) {
+		if (i == indexPOSExpires) {
+			var x = data[i].split(":");
+			data[i] = x[0];
+			var color = x[1];
+			eligGrid.setCellTextStyle(rowId,i,"vertical-align:top;background-color:"+color);
+		}
+		eligGrid.cells(rowId,i).setValue(data[i]);
+	}
+}
+</script>

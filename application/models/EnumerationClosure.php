@@ -76,4 +76,35 @@ class EnumerationClosure extends ClosureBase {
 		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
 		return $ormClass->getIterator($sqlSelect);
 	}
+
+	public function generatePathsKeyName($id) {
+		$db = Zend_Registry::get('dbAdapter');
+		$className = $this->_ormClass;
+		$ormClass = new $className();
+		$ormKey = $ormClass->_primaryKeys[0];
+		$whrSelect = $db->select()
+				->from(array('ccc'=>$this->_table),'ccc.ancestor')
+				->where('ccc.depth != 0')
+				->where('ccc.ancestor = ?',(int)$id);
+		$sqlSelect = $db->select()
+				->from(array('c'=>$this->_table),"c.descendant AS node, GROUP_CONCAT(n.name ORDER BY n.enumerationId SEPARATOR ' -> ') AS path")
+				->join(array('cc'=>$this->_table),'cc.descendant = c.descendant',array())
+				->join(array('n'=>$ormClass->_table),'n.'.$ormKey.' = cc.ancestor',array())
+				->where('c.ancestor = ?',(int)$id)
+				->where('c.descendant != c.ancestor')
+				//->where('cc.descendant NOT IN ?',$whrSelect)
+				->group('c.descendant');
+		$ret = array();
+		$rows = $db->fetchAll($sqlSelect);
+		if ($rows) {
+			foreach ($rows as $row) {
+				$enumeration = new Enumeration();
+				$enumeration->enumerationId = (int)$row['node'];
+				$enumeration->populate();
+				$ret[$enumeration->name] = $row['path'];
+			}
+		}
+		return $ret;
+	}
+
 }

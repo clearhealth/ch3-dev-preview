@@ -189,6 +189,8 @@ class ReportsManagerController extends WebVista_Controller_Action {
 			'defaultValue'=>'',
 			'type'=>'',
 			'options'=>array(),
+			'query'=>'',
+			'includeBlank'=>'',
 			'enumName'=>array('id'=>'','value'=>''),
 		);
 		if (isset($filters[$filterId])) {
@@ -199,10 +201,16 @@ class ReportsManagerController extends WebVista_Controller_Action {
 				'defaultValue'=>$filter->defaultValue,
 				'type'=>$filter->type,
 				'options'=>$filter->options,
+				'query'=>$filter->query,
+				'includeBlank'=>$filter->includeBlank,
 				'enumName'=>$filter->enumName,
 			);
 		}
 		$this->view->filterData = $filterData;
+
+		$reportQuery = new ReportQuery();
+		$reportQuery->reportBaseId = $baseId;
+		$this->view->reportQueries = $reportQuery->getIteratorByBaseId()->toArray('reportQueryId','displayName');
 
 		$this->render('edit-filter');
 	}
@@ -256,6 +264,8 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$oFilter->defaultValue = $params['defaultValue'];
 		$oFilter->type = $params['type'];
 		$oFilter->options = $params['options'];
+		$oFilter->query = $params['query'];
+		$oFilter->includeBlank = isset($params['includeBlank'])?1:0;
 		$oFilter->enumName = $params['enumName'];
 		$filters[$params['id']] = $oFilter;
 
@@ -278,11 +288,23 @@ class ReportsManagerController extends WebVista_Controller_Action {
 
 	public function processDeleteFilterAction() {
 		$baseId = (int)$this->_getParam('baseId');
+		$filterId = $this->_getParam('filterId');
 		$reportBase = new ReportBase();
 		$reportBase->reportBaseId = $baseId;
-		$reportBase->setPersistMode(WebVista_Model_ORM::DELETE);
-		$reportBase->persist();
-		$data = true;
+		$reportBase->populate();
+
+		$filters = array();
+		if (strlen($reportBase->filters) > 0) {
+			$filters = unserialize($reportBase->filters);
+		}
+		$data = false;
+		if (isset($filters[$filterId])) {
+			unset($filters[$filterId]);
+			$reportBase->filters = serialize($filters);
+			$reportBase->persist();
+			$data = true;
+		}
+
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
