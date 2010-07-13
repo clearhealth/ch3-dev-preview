@@ -30,10 +30,35 @@
 	endif;?>
 	<?=$this->formDateText('calendar[dateFilter]',$dateFilterValue,array('id'=>'calendar-date-filter'))?>
 	</div>
+<br style="clear:both;" />
+	<div class="formRow" style="padding-top:4px;">
+		<input type="hidden" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="0" />
+		<input type="checkbox" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="1" /> <?=__('Show Cancelled Appointments')?>
+	</div>
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">
 	<input type="button" value="<?=__("Cancel")?>" onClick="closeAddColumnWindow()" />
-	<input type="button" value="<?=__("Add Column")?>" onClick="dojo.xhrPost ({url: '<?=$this->baseUrl?>/calendar.raw/process-add-column',form: 'addColumnForm', handleAs: 'json', load: function (data) { applyNewColumn(data.columnId); }, error: function (er) {alert('err: ' + er)}});" />
+	<input type="button" value="<?=__("Add Column")?>" onClick="calendarAddColumn()" />
 </div>
 </form>
 </div>
+<script>
+function calendarAddColumn() {
+	var dateFilter = boxCalendarDateFilter.getValue();
+	if (!dateFilter) {
+		alert("<?=__('Invalid date.')?>");
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-add-column",
+		form: "addColumnForm",
+		handleAs: "json",
+		load: function (data) {
+			applyNewColumn(data.columnId);
+		},
+		error: function (er) {
+			console.error ("Error: ", err);
+		}
+	});
+}
+</script>

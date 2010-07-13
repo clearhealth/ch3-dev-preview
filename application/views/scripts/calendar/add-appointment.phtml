@@ -1,4 +1,32 @@
 <script>
+
+function calendarMakeAppointment(forced) {
+	enableButtons(true);
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-add-appointment",
+		form: "addappointment",
+		content: {
+			"forced": (forced)?"1":"0",
+		},
+		handleAs: "json",
+		load: function (data) {
+			if (data.error) {
+				if (confirm(data.error + "\n\n<?=__('Continue?')?>")) {
+					calendarMakeAppointment(true);
+				}
+				else {
+					enableButtons(false);
+				}
+				return;
+			}
+			window.applyNewAppointment(data.columnId);
+		},
+		error: function (er) {
+			alert("err: " + er);
+		}
+	});
+}
+
 var listProviders = new Array();
 listProviders.push({value:"0",text:"<?=__('No Provider')?>"});
 <?foreach(Provider::getArray() as $personId => $name):?>
@@ -141,11 +169,11 @@ function appointmentReasonOnChanged() {
 	appointmentProvidersChanged(reason);
 }
 
-function enableButtons() {
+function enableButtons(enabled) {
 	for (var i in providerSelectIds) {
-		dojo.byId(providerSelectIds[i]).disabled = false;
+		dojo.byId(providerSelectIds[i]).disabled = !enabled;
 	}
-	dojo.byId('appointment-room-id').disabled = false;
+	dojo.byId('appointment-room-id').disabled = !enabled;
 }
 
 </script>
@@ -222,7 +250,7 @@ function enableButtons() {
 	<input type="hidden" name="rowId" value="<?=(isset($this->rowId))?$this->rowId:''?>" />
 	<input type="hidden" name="appointment[appointmentId]" value="<?=($this->form->appointmentId->getValue())?$this->form->appointmentId->getValue():''?>" />
 	<input type="button" value="<?=__("Cancel")?>" onClick="closeAddAppointmentWindow()" />
-	<input type="button" value="<?=($this->form->appointmentId->getValue())?__('Update Appointment'):__("Make Appointment")?>" onClick="enableButtons(); dojo.xhrPost ({url: '<?=$this->baseUrl?>/calendar.raw/process-add-appointment',form: 'addappointment', handleAs: 'json', load: function (data) { window.applyNewAppointment(data.columnId); }, error: function (er) {alert('err: ' + er)}});" />
+	<input type="button" value="<?=($this->form->appointmentId->getValue())?__('Update Appointment'):__("Make Appointment")?>" onClick="calendarMakeAppointment(false);" />
 </div>
 
 <div style="margin-top:10px;">

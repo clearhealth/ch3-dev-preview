@@ -16,12 +16,7 @@ div.gridbox_xp table.obj td {
 <script>
 
 function GAEditWindow(winId,params,url,winText,width,height) {
-	var winEditGA = dhxWins.createWindow(winId,60,10,width,height);
-	winEditGA.setText(winText);
-	winEditGA.attachURL(url+'?'+params.join("&"),true);
-	winEditGA.setModal(true);
-	winEditGA.centerOnScreen();
-	return winEditGA;
+	return globalCreateWindow(winId,params,url,winText,width,height);
 }
 
 var GALayout = new dhtmlXLayoutObject("GALayoutId","2E");

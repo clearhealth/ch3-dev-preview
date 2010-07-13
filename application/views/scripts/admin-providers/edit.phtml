@@ -4,7 +4,7 @@ function addProvider() {
 	dojo.xhrGet ({
 		url: "<?=$this->baseUrl?>/admin-providers.raw/add-process?personId=" + personId,
 		handleAs: "json",
-		load: function (data) { refreshCurrentTab(); },
+		load: function (data) { localRefreshCurrentTab(); },
 		error: function (er) {alert(er)}
 	});
 }
@@ -98,6 +98,15 @@ function addProvider() {
 						<option value="<?=$key?>" style="background-color:<?=$key?>"<?=($key == $this->form->color->getValue())?' selected="selected"':''?>><?=$value?></option>
 					<?endforeach;?>
 					</select>
+				</div>
+			</div>
+			<br class="formRowDivider" />
+			<div class="formRow">
+				<div style="float:left;">
+					<?=$this->form->specialty->renderLabel()?>
+					<?=$this->form->specialtyInput('FormSelect',array('style'=>'width:150px;','options'=>$this->specialties))?>
+				</div>
+				<div style="float:left;margin-left:10px;">
 				</div>
 			</div>
 		</div>

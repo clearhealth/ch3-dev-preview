@@ -3,14 +3,14 @@ div.gridbox_xp table.obj td {
 	border-bottom: thin dashed;
 	border-right:none;
 }
-div.gridbox table.obj td { /* data cell */
+div.gridbox#scheduleGridId table.obj td { /* data cell */
 	text-align: center; /* alternative for grid.setColAlign("center") since it currently not working; it assumes that all cells be a centered align */
 }
-div.gridbox table.obj tr.rowselected td { /* elements in the selected row */
+div.gridbox#scheduleGridId table.obj tr.rowselected td { /* elements in the selected row */
 	background-color: white;
 }
 
-div.gridbox table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected { /* element in the selected cell */
+div.gridbox#scheduleGridId table.obj tr.rowselected td.cellselected, div.gridbox table.obj td.cellselected { /* element in the selected cell */
 	background-color: #ccc;
 }
 .smallButton {
@@ -451,8 +451,14 @@ function scheduleGridOnRowDblClicked(rowId,cellIndex) {
 		offsetLeft += obj.x;
 		offsetTop += obj.y;
 	}
-	scheduleTimePicker.style.left = (offsetLeft - 240) + "px";
-	scheduleTimePicker.style.top = (offsetTop - (22 + 8)) + "px";
+
+	var win = dhxWins.window("windowScheduleManagerId");
+	var pos = win.getPosition();
+	offsetLeft -= (pos[0] + 6); // left
+	offsetTop -= (pos[1] + 12); // top
+
+	scheduleTimePicker.style.left = offsetLeft + "px";
+	scheduleTimePicker.style.top = offsetTop + "px";
 
 	var timeStart = new Date();
 	timeStart.setHours(8);

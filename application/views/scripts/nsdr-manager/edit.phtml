@@ -1,9 +1,4 @@
 <script>
-var dhxWins = new dhtmlXWindows();
-dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-dhxWins.setSkin("clear_silver");
-dhxWins.attachEvent("onContentLoaded",contentLoadedHandler);
-
 function nsdrRemove(uuid,url,callback) {
 	dojo.xhrPost({
 		url: url,
@@ -45,11 +40,8 @@ function openMethodWindow(id) {
 		id = '';
 	}
 
-	winMethod = dhxWins.createWindow('windowEditMethodId',60,10,500,450);
-	winMethod.setText('<?=__('Add/Edit Method')?>');
-	winMethod.attachURL('<?=$this->baseUrl?>/nsdr-manager.raw/edit-method?id='+id+'&parentId=<?=$this->form->uuid->getValue()?>',true);
-	winMethod.setModal(true);
-	winMethod.centerOnScreen();
+	var url = "<?=$this->baseUrl?>/nsdr-manager.raw/edit-method?id="+id+"&parentId=<?=$this->form->uuid->getValue()?>";
+	winMethod = globalCreateWindow("windowEditMethodId",[],url,"<?=__('Add/Edit Method')?>",500,450);
 }
 function contentLoadedHandler() {
 }

@@ -36,6 +36,12 @@
 			<br style="clear:left;" />
 			<br style="clear:left;" />
 			<div class="formRow">
+				<?=$this->form->permissionTemplateId->renderLabel()?>
+				<?=$this->form->permissionTemplateIdInput('FormSelect',array('options'=>$this->permissionTemplates,'style'=>'width:250px;'))?>
+			</div>
+			<br style="clear:left;" />
+			<br style="clear:left;" />
+			<div class="formRow">
 				<?=$this->form->defaultBuildingId->renderLabel()?>
 				<?=$this->form->defaultBuildingIdInput('FormSelect',array('options'=>Building::getBuildingArray(),'style'=>'width:250px;'))?>
 			</div>

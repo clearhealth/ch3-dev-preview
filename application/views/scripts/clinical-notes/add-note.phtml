@@ -17,7 +17,7 @@
 <br />
 <div class="formRow" style="padding-top:4px;">
         <dt><label for="clinical-note-date-time" class="optional"><?=__("Date/Time")?></label></dt>
-        <input type="text" name="clinicalNote[dateTime]" id="clinical-note-date-time" size="16" helper="formText" value="<?=date('Y-m-d H:i:s')?>"/>
+	<?=$this->form->dateTimeInput()?>
         </div>
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">

@@ -79,7 +79,7 @@ endif;?>
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->enumerationIdInput('FormHidden')?>
 	<?=$this->form->okInput()?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('windowEditEnumerationId').close()"/>
+	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('windowEditORMObjectId').close()"/>
 </div>
 
 </fieldset>
@@ -105,7 +105,7 @@ function postSubmit<?=$this->form->getId()?>(data) {
 <?else:?>
 	enumUpdateListGrid();
 <?endif;?>
-	dhxWins.window('windowEditEnumerationId').close();
+	dhxWins.window('windowEditORMObjectId').close();
 	return false;
 }
 </script>

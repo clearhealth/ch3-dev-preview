@@ -3,10 +3,6 @@
 var previousFilterRowId = 'active_problems';
 var previousFilterCellIndex = 0;
 
-var dhxWins = new dhtmlXWindows();
-dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-dhxWins.setSkin("clear_silver");
-
 function closeProblemWindow() {
 	winEditProblem.close();
 }
@@ -15,12 +11,8 @@ function closeLookupProblemWindow() {
 }
 
 function openLookupProblemWindow() {
-	winLookupProblem = dhxWins.createWindow('windowDiagnosisLookupId',60,10,400,450);
-	winLookupProblem.setText('<?=__('Problem Lookup')?>');
 	var url = '<?=$this->baseUrl?>/diagnosis.raw/lookup?jsCallback=selectedProblemLookup';
-	winLookupProblem.attachURL(url,true);
-	winLookupProblem.setModal(true);
-	winLookupProblem.centerOnScreen();
+	winLookupProblem = globalCreateWindow("windowDiagnosisLookupId",[],url,"<?=__('Problem Lookup')?>",400,450);
 }
 
 function selectedProblemLookup(code,description) {
@@ -29,15 +21,11 @@ function selectedProblemLookup(code,description) {
 }
 
 function openViewProblemWindow(id) {
-	winViewProblem = dhxWins.createWindow('windowViewProblem',60,10,400,450);
-	winViewProblem.setText('<?=__('Problem Details')?>');
 	var url = '<?=$this->baseUrl?>/problem-list.raw/view-problem';
 	if (id != undefined) {
 		url += '?problemListId='+id;
 	}
-	winViewProblem.attachURL(url,true);
-	winViewProblem.setModal(true);
-	winViewProblem.centerOnScreen();
+	winViewProblem = globalCreateWindow("windowViewProblem",[],url,"<?=__('Problem Details')?>",400,450);
 }
 
 function closeViewProblemWindow() {
@@ -53,15 +41,11 @@ function editProblem(id) {
 			return;
 		}
 	}
-	winEditProblem = dhxWins.createWindow('windowProblem',60,10,510,500);
-	winEditProblem.setText(label + '<?=__(' Problem')?>');
-	var url = '<?=$this->baseUrl?>/problem-list.raw/ajax-edit-problem?personId=' + mainController.getActivePatient();
+	var url = "<?=$this->baseUrl?>/problem-list.raw/ajax-edit-problem?personId=" + mainController.getActivePatient();
 	if (id != undefined) {
-		url += '&problemListId='+id;
+		url += "&problemListId=" + id;
 	}
-	winEditProblem.attachURL(url,true);
-	winEditProblem.setModal(true);
-	winEditProblem.centerOnScreen();
+	winViewProblem = globalCreateWindow("windowProblem",[],url,label + " <?=__('Problem')?>",510,500);
 
 	if (id == undefined) {
 		openLookupProblemWindow();

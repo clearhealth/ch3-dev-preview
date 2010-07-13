@@ -1,20 +1,37 @@
 <div style="padding:5px;">
 	<h2>Synchronize Pharmacies Database with HealthCloud</h2>
 	<p>This activity is performance intensive and can disrupt normal system activity. It is strongly reccomended that this only be done during off-hours.</p>
-	<input type="button" id="syncButton" value="Synchronize" onclick="handlePharmaciesSyncStepOne();"/>
+	<input type="button" id="syncButton" value="<?=__('Fully Sync to HealthCloud')?>" onclick="handlePharmaciesSyncStepOne();"/>
+	<input type="button" id="syncDailyButton" value="<?=__('Daily Sync to HealthCloud')?>" onclick="handlePharmaciesSyncStepOne(true);"/>
 	<br />
 	<br />
 	<div id="progressNotes"></div>
 </div>
 <script>
-function handlePharmaciesSyncStepOne() {
-	dojo.byId("syncButton").disabled = "disabled";
-	dojo.byId("progressNotes").innerHTML += "Activating download url, this process can take up to 60 seconds...<br />";
+function handlePharmaciesSyncStepOne(daily) {
+	var syncButton = null;
+	if (!daily) {
+		syncButton = dojo.byId("syncButton");
+		daily = 0;
+	}
+	else {
+		syncButton = dojo.byId("syncDailyButton");
+		daily = 1;
+	}
+	syncButton.disabled = true;
+	dojo.byId("progressNotes").innerHTML = "Activating download url, this process can take up to 60 seconds...<br />";
 	dojo.xhrGet({
-		url: "<?=$this->baseUrl?>/admin-pharmacies.raw/ajax-activate-download-url",
+		url: "<?=$this->baseUrl?>/admin-pharmacies.raw/ajax-activate-download-url?daily="+daily,
 		handleAs: "json",
 		load: function (data) { 
-			handlePharmaciesSyncStepTwo(data.downloadUrl[0],data.cookieFile);
+			if (data.error.length > 0) {
+				alert(data.error);
+				dojo.byId("progressNotes").innerHTML = "";
+				syncButton.disabled = false;
+			}
+			else {
+				handlePharmaciesSyncStepTwo(data.downloadUrl[0],data.cookieFile);
+			}
 		},
 		error: function (er) {
 			alert("err: "+er);

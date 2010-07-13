@@ -10,7 +10,7 @@ div.gridbox_xp table.obj td {
 	<div id="cnmTemplateContainer" style="float:left;width:100%;height:250px"></div>
 </div>
 <div id="cnmBottomContainer">
-	<div id="cnmDefinitionContainer" style="float:left;width:80%;height:135px"></div>
+	<div id="cnmDefinitionContainer" style="float:left;width:70%;height:135px"></div>
 	<div id="cnmButtonsContainer" style="float:left;margin:10px;">
 		<input type="button" id="add-new-definition" value="<?=__('Add New')?>" disabled="disabled" onClick="openWindowDefinition()" /><br />
 		<input type="button" id="remove-definition" value="<?=__('Remove')?>" disabled="disabled" onClick="deleteDefinition()" />
@@ -82,24 +82,16 @@ function openWindowTemplate(templateId) {
 	if (templateId == undefined) {
 		templateId = 0;
 	}
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin('clear_silver');
-	winCNMT = dhxWins.createWindow('windowEditTemplateId',60,10,550,375);
-	winCNMT.setText('Edit Template');
-	winCNMT.attachURL('<?=$this->baseUrl?>/clinical-notes-manager.raw/edit-template?clinicalNoteTemplateId='+templateId,true);
-	winCNMT.centerOnScreen();
+	var url = "<?=$this->baseUrl?>/clinical-notes-manager.raw/edit-template?clinicalNoteTemplateId="+templateId;
+	winCNMT = globalCreateWindow("windowEditTemplateId",[],url,"<?=__('Edit Template')?>",550,375);
 }
 
 function openWindowDefinition(definitionId) {
 	if (definitionId == undefined) {
 		definitionId = 0;
 	}
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin('clear_silver');
-	winCNMD = dhxWins.createWindow('windowEditDefinitionId',60,10,550,475);
-	winCNMD.setText('Edit Definition');
-	winCNMD.attachURL('<?=$this->baseUrl?>/clinical-notes-manager.raw/edit-definition?clinicalNoteDefinitionId='+definitionId+'&clinicalNoteTemplateId='+cnmTemplateGrid.getSelectedRowId(),true);
-	winCNMD.centerOnScreen();
+	var url = "<?=$this->baseUrl?>/clinical-notes-manager.raw/edit-definition?clinicalNoteDefinitionId="+definitionId+"&clinicalNoteTemplateId="+cnmTemplateGrid.getSelectedRowId();
+	winCNMD = globalCreateWindow("windowEditDefinitionId",[],url,"<?=__('Edit Definition')?>",550,475);
 }
 
 // LEFT PANE SECTION

@@ -108,8 +108,9 @@ allergiesGrid.attachEvent("onRowSelect",allergiesOnRowSelected);
 allergiesGrid.init();
 
 // temporary replace grid onBeforeContextMenu
-allergiesGrid.objBox.id = allergiesGrid.uid();
-allergiesMenu.addContextZone(allergiesGrid.objBox.id);
+allergiesGrid.hdr.id = allergiesGrid.uid();
+allergiesMenu.addContextZone(allergiesGrid.hdr.id);
+allergiesGrid.enableContextMenu(allergiesMenu);
 allergiesMenu.attachEvent("onContextMenu",function(id){
 	allergiesMenu.forEachItem(function (itemId) { allergiesMenu.hideItem(itemId); });
 	var rowId = allergiesGrid.getSelectedRowId();
@@ -254,8 +255,9 @@ postingsMenu.attachEvent("onCheckboxClick",function(id,state,zoneId,caseState) {
 	return true;
 });
 
-postingsGrid.objBox.id = postingsGrid.uid();
-postingsMenu.addContextZone(postingsGrid.objBox.id);
+postingsGrid.hdr.id = postingsGrid.uid();
+postingsMenu.addContextZone(postingsGrid.hdr.id);
+postingsGrid.enableContextMenu(postingsMenu);
 postingsMenu.attachEvent("onContextMenu",function(id) {
 	postingsMenu.forEachItem(function (itemId) { postingsMenu.hideItem(itemId); });
 	var rowId = postingsGrid.getSelectedRowId();

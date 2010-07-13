@@ -76,11 +76,11 @@ function submitmenuitemForm() {
 					<optgroup label="<?=$reports['label']?>">
 					<?foreach ($reports['items'] as $report):
 						$selected = '';
-						if ($this->form->type->getValue() == 'report' && $report['reportTemplateId'] == $this->form->action->getValue()) {
+						if ($this->form->type->getValue() == 'report' && $report['report_template_id'] == $this->form->action->getValue()) {
 							$selected = 'selected="selected"';
 						}
 					?>
-					<option value="<?=$report['id'].'-'.$report['reportTemplateId']?>" <?=$selected?>><?=$report['name']?></option>
+					<option value="<?=$report['id'].'-'.$report['report_template_id']?>" <?=$selected?>><?=$report['name']?></option>
 					<?endforeach?>
 					</optgroup>
 				<?endforeach?>

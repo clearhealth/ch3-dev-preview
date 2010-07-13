@@ -25,7 +25,7 @@
 	<br style="clear:left;" />
 	<div class="formRow">
 		<?=$this->form->template->renderLabel()?>
-		<textarea cols="70" rows="12" name="cnTemplate[template]" id="cnTemplate-template"><?=$this->form->template->getValue()?></textarea>
+		<textarea cols="70" rows="12" name="cnTemplate[template]" id="cnTemplate-template"><?=htmlspecialchars($this->form->template->getValue());?></textarea>
 
 	</div>
 
@@ -83,6 +83,7 @@ function preSubmit<?=$this->form->getId()?>() {
 	});
 	return false;
 }
+
 function noteTemplatePostSubmit(autoAdd) {
 	dojo.xhrPost({
 		url: "<?=$this->form->getAction()?>",

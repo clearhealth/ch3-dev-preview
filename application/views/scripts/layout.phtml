@@ -9,6 +9,7 @@ var globalDefaultAction = '<?=Zend_Registry::get('config')->user->preferences->d
 var globalLogoutTimer = null;
 var globalForceLogout = false;
 var globalTimerTimeout = '<?=Zend_Registry::get('sessionTimeout')?>';
+var globalPhotoIsClicked = false;
 
 // used by generic processing like single edit field and deleting
 function globalProcessGeneric(action,content,callback) {

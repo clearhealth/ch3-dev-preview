@@ -1,5 +1,5 @@
 <style>
-input,select {
+input,select,#markDuplicateId {
 	margin: 0em 0.1em;
 	border:1px solid #b3b3b3;
 	line-height: normal;
@@ -54,85 +54,83 @@ function pdRemove(id,type,callback) {
 }
 </script>
 
-<div style="width:100%;" id="pdContainerId">
+<div style="width:100%;height:100%;" id="pdContainerId">
 	<div style="float:left;width:45%;">
 		<?=$this->form->renderOpen()?>
 		<fieldset><legend><?=__('Patient Information')?></legend>
 		<div style="float:left;">
-			<div style="display:table-cell;vertical-align:middle;height:100px;">
-				<img src="<?=$this->baseUrl?>/img/no-person-image.png" />
+			<div style="float:left;">
+				<div style="display:table-cell;vertical-align:middle;height:100px;">
+					<img src="<?=$this->baseUrl?>/<?if($this->form->formPerson->activePhoto->getValue() > 0):?>attachments.raw/view-attachment?attachmentId=<?=$this->form->formPerson->activePhoto->getValue()?><?else:?>img/no-person-image.png<?endif;?>" height="50" width="50" onClick="windowPatientPictures()" />
+				</div>
 			</div>
-		</div>
-		<div style="float:left;">
-			<div class="formRow">
+			<div style="float:left;margin-left:10px;">
 				<div style="float:left;">
-					<?=$this->form->formPerson->lastName->renderLabel()?>
-					<?=$this->form->formPerson->lastNameInput()?>
+					<div>
+						<?=$this->form->formPerson->lastName->renderLabel()?>
+						<?=$this->form->formPerson->lastNameInput('FormText',array('style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->recordNumber->renderLabel()?>
+						<?=$this->form->recordNumberInput('FormText',array('style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->formPerson->identifier->renderLabel()?>
+						<?=$this->form->formPerson->identifierInput('FormText',array('style'=>'width:90px;'))?>
+					</div>
 				</div>
 				<div style="float:left;margin-left:10px;">
-					<?=$this->form->formPerson->firstName->renderLabel()?>
-					<?=$this->form->formPerson->firstNameInput()?>
+					<div>
+						<?=$this->form->formPerson->firstName->renderLabel()?>
+						<?=$this->form->formPerson->firstNameInput('FormText',array('style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
+						<?=$this->form->formPerson->dateOfBirthInput('FormDateText',array('style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->signedHipaaDate->renderLabel()?>
+						<?=$this->formDateText('patient[signedHipaaDate]',$this->form->signedHipaaDate->getValue(),array('id'=>'patient-signedHipaaDate','style'=>'width:90px;'))?>
+					</div>
+				</div>
+				<div style="float:left;margin-left:10px;">
+					<div>
+						<?=$this->form->formPerson->middleName->renderLabel()?>
+						<?=$this->form->formPerson->middleNameInput('FormText',array('style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->formPerson->gender->renderLabel()?>
+						<?=$this->form->formPerson->genderInput('FormSelect',array('options'=>Enumeration::getEnumArray('Gender','enumerationId'),'style'=>'width:90px;'))?>
+					</div>
+					<div>
+						<?=$this->form->formPerson->maritalStatus->renderLabel()?>
+						<?=$this->form->formPerson->maritalStatusInput('FormSelect',array('options'=>Enumeration::getEnumArray('Marital Status','enumerationId'),'style'=>'width:90px;'))?>
+					</div>
 				</div>
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
-				<div style="float:left;">
-					<?=$this->form->formPerson->middleName->renderLabel()?>
-					<?=$this->form->formPerson->middleNameInput()?>
-				</div>
+				<div style="float:left;"><dt><label for="<?=$this->form->formPerson->active->getId()?>" class="optional">&nbsp;</label></dt>
+					<?=__('Active')?> <input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> /></div>
 				<div style="float:left;margin-left:10px;">
-					<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
-					<?=$this->form->formPerson->dateOfBirthInput()?>
-				</div>
-			</div>
-			<br class="formRowDivider" />
-			<div class="formRow">
-				<div style="float:left;">
-					<?=$this->form->formPerson->gender->renderLabel()?>
-					<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
-				</div>
-				<div style="float:left;margin-left:10px;">
-					<?=$this->form->recordNumber->renderLabel()?>
-					<?=$this->form->recordNumberInput()?>
-				</div>
-			</div>
-			<br class="formRowDivider" />
-			<div class="formRow">
-				<div style="float:left;">
-					<?=$this->form->formPerson->identifier->renderLabel()?>
-					<?=$this->form->formPerson->identifierInput()?>
-				</div>
-				<div style="float:left;margin-left:10px;">
-					<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-					<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
-				</div>
-			</div>
-			<br class="formRowDivider" />
-			<div class="formRow">
-				<div style="float:left;">
 					<?=$this->form->confidentiality->renderLabel()?>
-					<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
+					<?=$this->form->confidentialityInput('FormSelect',array('options'=>Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
-					<?=$this->form->signedHipaaDate->renderLabel()?>
-					<?=$this->formDateText('patient[signedHipaaDate]',$this->form->signedHipaaDate->getValue(),array('id'=>'patient-signedHipaaDate'))?>
+					<dt><label for="markDuplicateId" class="optional">&nbsp;</label></dt>
+					<?=$this->formButton('markDuplicateId',__('Mark Duplicate'),array('id'=>'markDuplicateId','onClick'=>'','style'=>'width:120px;'))?>
 				</div>
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
 				<div style="float:left;">
 					<?=$this->form->formPerson->primaryPracticeId->renderLabel()?>
-					<?=$this->form->formPerson->primaryPracticeIdInput('FormSelect',array("options" => $this->facilityIterator->toArray('practiceId','name')))?>
+					<?=$this->form->formPerson->primaryPracticeIdInput('FormSelect',array('options'=>$this->facilityIterator->toArray('practiceId','name')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->defaultProvider->renderLabel()?>
-					<?=$this->form->defaultProviderInput('FormSelect',array("options" => Provider::getArray()))?>
+					<?=$this->form->defaultProviderInput('FormSelect',array('options'=>Provider::getArray()))?>
 				</div>
-			</div>
-			<br class="formRowDivider" />
-			<div class="formRow">
-				<?=$this->form->formPerson->active->renderLabel()?>
-				<input type="checkbox" name="patient[person][active]" id="patient-person-active" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> />
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
@@ -176,17 +174,18 @@ function pdRemove(id,type,callback) {
 
 	<div style="float:left;width:55%;">
 		<fieldset><legend><?=__('Phone numbers')?> (<a href="javascript:patDetailsPhonesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="patDetailsPhonesGridContainer" style="height:150px;"></div>
+			<div id="patDetailsPhonesGridContainer" style="height:95px;"></div>
 		</fieldset>
 		<fieldset><legend><?=__('Addresses')?> (<a href="javascript:patDetailsAddrAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="patDetailsAddrGridContainer" style="height:150px;"></div>
+			<div id="patDetailsAddrGridContainer" style="height:95px;"></div>
 		</fieldset>
 		<script>
 		var patDetailsPhonesGrid = new dhtmlXGridObject("patDetailsPhonesGridContainer");
+		patDetailsPhonesGrid.enableDragAndDrop(true);
 		patDetailsPhonesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 		patDetailsPhonesGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Number')?>,<?=__('Notes')?>,<?=__('Active')?>");
-		patDetailsPhonesGrid.setInitWidths("*,35,*,*,40");
-		patDetailsPhonesGrid.setColTypes("ed,ed,ed,ed,ch");
+		patDetailsPhonesGrid.setInitWidths("*,60,*,*,40");
+		patDetailsPhonesGrid.setColTypes("ed,coro,ed,ed,ch");
 		patDetailsPhonesGrid.setSkin("xp");
 		patDetailsPhonesGrid.attachEvent("onEditCell",patDetailsPhonesGridOnCellEdited);
 		patDetailsPhonesGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
@@ -196,12 +195,44 @@ function pdRemove(id,type,callback) {
 								}
 								patDetailsSingleUpdate(rowId,patDetailsPhonesColFields[cellIndex],val,"phone",patDetailsPhonesGridReload);
 							});
+		// phone types
+		patDetailsPhonesGrid.getCombo(1).put("","");
+		<?foreach ($this->phoneTypes as $key=>$name):
+			//if ($key == 'FAX' || $name == 'Fax') continue;?>
+		patDetailsPhonesGrid.getCombo(1).put("<?=$key?>","<?=$name?>");
+		<?endforeach;?>
+
 		function patDetailsPhonesGridReload() {
 			patDetailsPhonesGrid.clearAll();
 			patDetailsPhonesGrid.load("<?=$this->baseUrl?>/patient.raw/ajax-list-phones?patientId=<?=$this->form->personId->getValue()?>","json");
 		}
 		patDetailsPhonesGrid.init();
 		patDetailsPhonesGridReload();
+
+		function patDetailsPhonesGridOnDragged(idFrom,idTo,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/patient.raw/process-reorder-phones",
+				handleAs: "json",
+				content: {
+					"from": idFrom,
+					"to": idTo,
+				},
+				load: function (data) {
+					patDetailsPhonesGridReload();
+				},
+				error: function (error) {
+					alert(error);
+					console.error ('Error: ', error);
+				}
+			});
+			return false;
+		}
+		patDetailsPhonesGrid.attachEvent("onDrag",patDetailsPhonesGridOnDragged);
+
+		function patDetailsPhonesGridOnDropped(idFrom,idTo,idMercy,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+			return false;
+		}
+		patDetailsPhonesGrid.attachEvent("onDrop",patDetailsPhonesGridOnDropped);
 
 		function patDetailsPhonesRemove(id) {
 			patDetailsRemove(id,"phone",patDetailsPhonesGridReload);
@@ -256,10 +287,11 @@ function pdRemove(id,type,callback) {
 		}
 
 		var patDetailsAddrGrid = new dhtmlXGridObject("patDetailsAddrGridContainer");
+		patDetailsAddrGrid.enableDragAndDrop(true);
 		patDetailsAddrGrid.setImagePath("<?=$this->baseUrl?>/img/");
 		patDetailsAddrGrid.setHeader("<?=__('Description')?>,<?=__('Type')?>,<?=__('Line1')?>,<?=__('Line2')?>,<?=__('City')?>,<?=__('State')?>,<?=__('Zip')?>,<?=__('Notes')?>,<?=__('Active')?>");
-		patDetailsAddrGrid.setInitWidths("*,35,*,*,*,40,*,*,40");
-		patDetailsAddrGrid.setColTypes("ed,ed,ed,ed,ed,coro,ed,ed,ch");
+		patDetailsAddrGrid.setInitWidths("*,60,*,*,*,40,*,*,40");
+		patDetailsAddrGrid.setColTypes("ed,coro,ed,ed,ed,coro,ed,ed,ch");
 		patDetailsAddrGrid.setSkin("xp");
 		patDetailsAddrGrid.attachEvent("onEditCell",patDetailsAddrGridOnCellEdited);
 		patDetailsAddrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
@@ -272,7 +304,13 @@ function pdRemove(id,type,callback) {
 		// state
 		patDetailsAddrGrid.getCombo(5).put("","");
 		<?foreach ($this->statesList as $key=>$name):?>
-		patDetailsAddrGrid.getCombo(5).put("<?=$key?>","<?=$key?>");
+		patDetailsAddrGrid.getCombo(5).put("<?=$key?>","<?=$name?>");
+		<?endforeach;?>
+
+		// address types
+		patDetailsAddrGrid.getCombo(1).put("","");
+		<?foreach ($this->addressTypes as $key=>$name):?>
+		patDetailsAddrGrid.getCombo(1).put("<?=$key?>","<?=$name?>");
 		<?endforeach;?>
 
 		function patDetailsAddrGridReload() {
@@ -281,6 +319,31 @@ function pdRemove(id,type,callback) {
 		}
 		patDetailsAddrGrid.init();
 		patDetailsAddrGridReload();
+
+		function patDetailsAddrGridOnDragged(idFrom,idTo,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/patient.raw/process-reorder-addresses",
+				handleAs: "json",
+				content: {
+					"from": idFrom,
+					"to": idTo,
+				},
+				load: function (data) {
+					patDetailsAddrGridReload();
+				},
+				error: function (error) {
+					alert(error);
+					console.error ('Error: ', error);
+				}
+			});
+			return false;
+		}
+		patDetailsAddrGrid.attachEvent("onDrag",patDetailsAddrGridOnDragged);
+
+		function patDetailsAddrGridOnDropped(idFrom,idTo,idMercy,gridFrom,gridTo,colIndexFrom,colIndexTo) {
+			return false;
+		}
+		patDetailsAddrGrid.attachEvent("onDrop",patDetailsAddrGridOnDropped);
 
 		function patDetailsAddrRemove(id) {
 			patDetailsRemove(id,"address",patDetailsAddrGridReload);
@@ -387,15 +450,32 @@ function pdRemove(id,type,callback) {
 	</div>
 
 	<br style="clear:left;" />
-	<div style="float:left;width:100%;">
-		<fieldset><legend><?=__('Notes')?> (<a href="javascript:pdNotesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="pdNotesGridId" style="height:100px;"></div>
-		</fieldset>
+	<div style="width:100%;">
+		<div style="float:left;width:40%;">
+			<fieldset><legend><?=__('Patient Statistics')?></legend>
+				<div id="pdStatsGridId" style="height:100px;"></div>
+				<div id="pdStatsContainerId" style="position:absolute;display:none;background-color:Silver;padding:3px;border:1px solid #000;width:200px;z-index: 9999;">
+					<div style="float:left;width:100%;background-color:#fff;">
+						<fieldset><legend><?=__('Edit Statistics')?></legend>
+						<div id="pdStatsPanelId"></div>
+						<br />
+						<?=$this->formButton('pdStatsOK',__('OK'),array('id'=>'pdStatsOK','class'=>'smallButton','disabled'=>true,'onClick'=>'pdStatsSave()'))?>
+						</fieldset>
+					</div>
+				</div>
+			</fieldset>
+		</div>
+		<div style="float:left;width:60%;">
+			<fieldset><legend><?=__('Notes')?> (<a href="javascript:pdNotesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
+				<div id="pdNotesGridId" style="height:100px;"></div>
+			</fieldset>
+		</div>
+	</div>
 		<script>
 		var pdNotesGrid = new dhtmlXGridObject("pdNotesGridId");
 		pdNotesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 		pdNotesGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>");
-		pdNotesGrid.setInitWidths("60,150,150,300,*,50");
+		pdNotesGrid.setInitWidths("60,120,120,120,*,50");
 		pdNotesGrid.setColTypes("coro,ed,ro,coro,txt,coro");
 		pdNotesGrid.setSkin("xp");
 		pdNotesGrid.attachEvent("onEditCell",pdNotesGridOnCellEdited);
@@ -496,7 +576,6 @@ function pdRemove(id,type,callback) {
 			return true;
 		}
 		</script>
-	</div>
 
 	<br style="clear:left;" />
 	<div style="float:left;width:100%;">
@@ -566,27 +645,12 @@ function pdRemove(id,type,callback) {
 	</script>
 
 
-	<br style="clear:left;" />
-	<div style="float:left;width:100%;">
-		<fieldset><legend><?=__('Patient Statistics')?></legend>
-			<div id="pdStatsGridId" style="height:100px;"></div>
-			<div id="pdStatsContainerId" style="position:absolute;display:none;background-color:Silver;padding:3px;border:1px solid #000;width:200px;">
-				<div style="float:left;width:100%;background-color:#fff;">
-					<fieldset><legend><?=__('Edit Statistics')?></legend>
-					<div id="pdStatsPanelId"></div>
-					<br />
-					<?=$this->formButton('pdStatsOK',__('OK'),array('id'=>'pdStatsOK','class'=>'smallButton','disabled'=>true,'onClick'=>'pdStatsSave()'))?>
-					</fieldset>
-				</div>
-			</div>
-		</fieldset>
-	</div>
 </div>
 
 <script>
 var pdStatsGrid = new dhtmlXGridObject("pdStatsGridId");
 pdStatsGrid.setImagePath("<?=$this->baseUrl?>/img/");
-pdStatsGrid.setHeader("<?=__('Name')?>,<?=__('Value')?>");
+pdStatsGrid.setHeader("<?=__('Statistic')?>,<?=__('Data')?>");
 pdStatsGrid.setInitWidths("*,*");
 pdStatsGrid.setColTypes("ro,ro");
 pdStatsGrid.setSkin("xp");
@@ -673,7 +737,7 @@ function pdStatsGridOnRowDblClicked(rowId,cellIndex) {
 		offsetLeft -= (pos[0] + 6); // left
 		offsetTop -= (pos[1] + 12); // top
 	}
-	offsetLeft -= 340;
+//	offsetLeft -= 340;
 
 	var pdStatsContainer = dojo.byId("pdStatsContainerId");
 	pdStatsContainer.style.display = "";

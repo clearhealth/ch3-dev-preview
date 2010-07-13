@@ -18,10 +18,11 @@ div.bottomInner:hover {
 
 <div id="stylesContainerId" style="display:none;height:0px;"><style></style></div>
 <div id="viewDayContainer" style="height:1000px;">
-<div id="timeColumnContainer" style="float:left;width:80px;height:1000px;"></div>
-
-<div id="scheduleColumnContainer" style="width:auto;overflow:auto;">
-<div id="scheduleContainer">
+	<div id="timeColumnContainer" style="float:left;width:80px;height:1000px;"></div>
+	<div id="scheduleColumnContainer" style="width:auto;overflow:auto;">
+		<div id="scheduleContainer"></div>
+	</div>
+</div>
 
 <!-- all user code -->
 <script type="text/javascript">
@@ -48,6 +49,7 @@ function calendarLoadEvents(columns) {
 				// we need to change the label of the column header
 				gridObjects[colIndex].setColumnLabel("0",data[colIndex].header);
 				gridObjects[colIndex].parse(data[colIndex].events,function(){ postLoad(colIndex); },"json");
+				colSearch[colIndex] = null;
 			}
 			return data;
 		},
@@ -155,33 +157,29 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	}
 
 	function openAppointmentWindow(params) {
-		winAddAppointment = dhxWins.createWindow('windowAddColumn',60,10,800,500);
-		winAddAppointment.setText('<?=__('Add New Appointment')?>');
-		var url = '<?=$this->baseUrl?>/calendar.raw/add-appointment';
+		var url = "<?=$this->baseUrl?>/calendar.raw/add-appointment";
 		if (params != undefined) {
-			url += '?'+params;
+			url += "?" + params;
 		}
-		//winAddAppointment.attachURL(url,true);
-		//winAddAppointment.setModal(true);
+		winAddAppointment = globalCreateWindow("windowAddAppointment",[],url,"<?=__('Add New Appointment')?>",800,500,{attachURL:false,setModal:false});
 		appAccordion = winAddAppointment.attachAccordion();
 		appAccordion.skin = 'dhx_blue';
 		appAccordion.setIconsPath("<?=$this->baseUrl?>/img/");
 		appAccordion.addItem("appointmentInfo","<?=__('Appointment Information')?>");
-		//appAccordion.addItem("pointOfSale","<?=__('Point of Sale')?>");
+		appAccordion.addItem("pointOfSale","<?=__('Account Status & Eligibility')?>");
 		appAccordion.attachEvent("onActive",function(itemId){
 			switch (itemId) {
 				case "appointmentInfo":
 					openAppointmentAccordion(itemId+"ContainerId",itemId,url);
 					break;
 				case "pointOfSale":
-					openAppointmentAccordion(itemId+"ContainerId",itemId,"<?=$this->baseUrl?>/calendar.raw/point-of-sale");
+					openAppointmentAccordion(itemId+"ContainerId",itemId,"<?=$this->baseUrl?>/calendar.raw/point-of-sale?"+params);
 					break;
 			}
 		});
 
 		appAccordion.cells("appointmentInfo").open();
 		openAppointmentAccordion("appointmentInfoContainerId","appointmentInfo",url);
-		winAddAppointment.centerOnScreen();
 	}
 
 	function closeAddAppointmentWindow() {
@@ -222,14 +220,35 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		resizeScheduleContainer();
 	}
 
-	function dblClickedEvent(columnIndex, rowId, colIndex) {
-		var appointmentId = gridObjects[columnIndex].getUserData(rowId,'appointmentId');
+	function appointmentEdit(columnIndex,rowId,colIndex,appointmentId) {
+		dblClickedEvent(columnIndex,rowId,colIndex,appointmentId);
+		apptFlag = true;
+	}
+
+	var globalAppointmentId = null;
+	function setAppointmentId(appointmentId) {
+		globalAppointmentId = appointmentId;
+	}
+
+	var apptFlag = false;
+	function dblClickedEvent(columnIndex,rowId,colIndex,appointmentId) {
+		if (apptFlag) {
+			apptFlag = false;
+			return;
+		}
+		if (!appointmentId) {
+			appointmentId = globalAppointmentId;
+			globalAppointmentId = null;
+			if (appointmentId == null) {
+				appointmentId = gridObjects[columnIndex].getUserData(rowId,'appointmentId');
+			}
+		}
 		var providerId = gridObjects[columnIndex].getUserData(gridObjects[columnIndex].getRowId(0),'providerId');
 		if (providerId == 'placeHolderId') {
 			alert('<?=__('No filter defined.')?>');
 			return;
 		}
-		if (appointmentId.length > 0) {
+		if (appointmentId && appointmentId.length > 0) {
 			openAppointmentWindow('appointmentId='+appointmentId);
 			winAddAppointment.setText('<?=__('Edit Appointment')?>');
 		}
@@ -243,11 +262,8 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	}
 
 	function setFilterColumn(columnIndex, colIndex, obj) {
-		winFilterObjects[columnIndex] = dhxWins.createWindow('windowSetFilter',60,10,400,375);
-		winFilterObjects[columnIndex].setText('Set Column Filter');
-		winFilterObjects[columnIndex].attachURL('<?=$this->baseUrl?>/calendar.raw/set-filter?id='+gridObjects[columnIndex].getColumnId(colIndex),true);
-		winFilterObjects[columnIndex].setModal(true);
-		winFilterObjects[columnIndex].centerOnScreen();
+		var url = "<?=$this->baseUrl?>/calendar.raw/set-filter?id="+gridObjects[columnIndex].getColumnId(colIndex);
+		winFilterObjects[columnIndex] = globalCreateWindow("windowSetFilter",[],url,"<?=__('Set Column Filter')?>",400,375);
 		return true;
 	}
 
@@ -284,6 +300,27 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 
 		gridObjects[columnIndex].enableContextMenu(menuObjects[columnIndex]);
 		gridObjects[columnIndex].attachEvent('onBeforeContextMenu',beforeContextMenuEvent);
+		gridObjects[columnIndex].rowToDragElement = function(rowId){
+			var text = this.cells(rowId,0).getValue();
+			if (parseInt(this.getUserData(rowId,"ctr")) > 1) { // double book detected
+				var childNodes = this.cells(rowId,0).cell.childNodes;
+				for (var i = 0; i < childNodes.length; i++) {
+					var node = childNodes[i];
+					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+globalAppointmentId)) {
+						var marginLeft = node.style.marginLeft;
+						node.style.marginLeft = "8px";
+						var attributes = [];
+						for (var j = 0; j < node.attributes.length; j++) {
+							attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
+						}
+						node.style.marginLeft = marginLeft;
+						text = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
+						break;
+					}
+				}
+			}
+			return text;
+		};
 		gridObjects[columnIndex].setHeader("");
 		gridObjects[columnIndex].init();
 		gridObjects[columnIndex].attachEvent("onMouseOver",function(rowId,cellIndex) { return gridObjectsOnMouseOver(columnIndex,rowId,cellIndex); });
@@ -295,7 +332,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			return false;
 		});
 
-		dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#eventColumn"+columnIndex+"Container table.hdr td div.hdrcell { height: 30px; }";
+		dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#eventColumn"+columnIndex+"Container table.hdr td div.hdrcell { height: 50px; }";
 	}
 
 	function keyPressEvent(code,ctrl,shift) {
@@ -312,8 +349,15 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		if (menuObjects[columnId]) {
 			menuObjects[columnId].hideItem('cancel_move');
 			menuObjects[columnId].hideItem('edit_appointment');
-			if (value != '') {
+			menuObjects[columnId].hideItem("create_visit");
+			menuObjects[columnId].hideItem("add_payment");
+			if (value != "") {
 				menuObjects[columnId].showItem('edit_appointment');
+				menuObjects[columnId].showItem("add_payment");
+				var visitId = gridObj.getUserData(rowId,"visitId");
+				if (visitId <= 0) {
+					menuObjects[columnId].showItem("create_visit");
+				}
 			}
 		}
 		currentRowId = rowId;
@@ -361,11 +405,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			}
 		}
 
-		winAddColumn = dhxWins.createWindow('windowAddColumn',60,10,400,375);
-                winAddColumn.setText('<?=__('Add New Column')?>');
-                winAddColumn.attachURL('<?=$this->baseUrl?>/calendar.raw/add-column',true);
-                winAddColumn.setModal(true);
-                winAddColumn.centerOnScreen();
+		winAddColumn = globalCreateWindow("windowAddColumn",[],"<?=$this->baseUrl?>/calendar.raw/add-column","<?=__('Add New Column')?>",400,375);
 	}
 
 	function closeAddColumnWindow() {
@@ -448,6 +488,46 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			case 'cancel_move':
 				cancelMoveEvent();
 				break;
+			case "find_first":
+				viewCalendarFindFirst(columnId);
+				break;
+			case "create_visit":
+				if (!confirm("<?=__('Are you sure you want to create visit?')?>")) {
+					break;
+				}
+				var x = type.split("i");
+				var appointmentId = x[0];
+				var params = [];
+				params.push("appointmentId="+appointmentId);
+				dojo.xhrPost({
+					url: "<?=$this->baseUrl?>/appointment.raw/process-create-visit",
+					content: {
+						"appointmentId": appointmentId,
+					},
+					handleAs: "json",
+					load: function(responseObject,ioArgs){
+						calendarLoadEvents([columnId]);
+					},
+					error: function (er) {
+						alert("Error: "+er);
+					}
+				});
+				break;
+			case "add_payment":
+				var visitId = gridObjects[columnId].getUserData(currentRowId,"visitId");
+				/*if (visitId <= 0) {
+					if (confirm("<?=__('No visit created, do you want to create visit now?')?>")) {
+						menuGridEvent(columnId,"create_visit",type);
+					}
+					break;
+				}*/
+				var appointmentId = gridObjects[columnId].getUserData(currentRowId,"appointmentId");
+				var params = [];
+				params.push("visitId="+visitId);
+				params.push("appointmentId="+appointmentId);
+				params.push("columnId="+columnId);
+				globalCreateWindow("winPaymentId",params,"<?=$this->baseUrl?>/appointment.raw/add-payment","<?=__('Add Payment')?>",300,300);
+				break;
 			default:
 				action = menuItemId.split('_');
 				appointmentId = type.split('i');
@@ -488,10 +568,6 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		return true;
 	}
 
-	var dhxWins= new dhtmlXWindows();
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin("clear_silver");
-
 	var timeColumnHeader = '<a href="javascript:previousDay();" title="[Previous Day]"><img src="' + globalBaseUrl + '/img/ar_left.gif" height="12" /></a> <label onclick="openCalendar(\'.dojoCalendar\')" class="dojoCalendar">Time</label> <a href="javascript:nextDay();" title="[Next Day]"><img src="' + globalBaseUrl + '/img/ar_right.gif" height="12" /></a>';
 
         timeColumnGrid = new dhtmlXGridObject('timeColumnContainer');
@@ -521,7 +597,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		(e||event).cancelBubble=true;
 		return false;
 	});
-	dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#timeColumnContainer table.hdr td div.hdrcell { height: 30px; }";
+	dojo.byId("stylesContainerId").childNodes[0].innerHTML += "div.gridbox_xp#timeColumnContainer table.hdr td div.hdrcell { height: 50px; }";
 
 	// temporarily placed it here
 	timeColumnGrid.attachEvent("onRowDblClicked",timeDblClickedEvent);
@@ -598,6 +674,26 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			}
 			var appointmentId = splittedId[0];
 			var columnId = gridFrom.getColumnId(colIndexFrom);
+
+			if (parseInt(gridFrom.getUserData(idFrom,"ctr")) > 1) { // double book detected
+				var childNodes = gridFrom.cells(idFrom,colIndexFrom).cell.childNodes;
+				for (var i = 0; i < childNodes.length; i++) {
+					var node = childNodes[i];
+					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+globalAppointmentId)) {
+						var marginLeft = node.style.marginLeft;
+						node.style.marginLeft = "8px";
+						var attributes = [];
+						for (var j = 0; j < node.attributes.length; j++) {
+							attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
+						}
+						node.style.marginLeft = marginLeft;
+						valFrom = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
+						appointmentId = globalAppointmentId;
+						break;
+					}
+				}
+				globalAppointmentId = null;
+			}
 
 			gridTo.setUserData(idTo,'appointmentId',appointmentId);
 			gridTo.setUserData(idTo,'columnId',columnId);
@@ -788,8 +884,55 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 <?endforeach;?>
 
 	calendarLoadEvents();
-</script>
 
-</div>
-</div>
-</div>
+
+var ok = false;
+var ctr = 4;
+var colSearch = [];
+function viewCalendarFindFirst(columnId) {
+	var grid = gridObjects[columnId];
+	var ctr = 0;
+	var rowId = null;
+	var prevSearch = colSearch[columnId];
+	if (prevSearch != null) {
+		ctr = prevSearch.ctr;
+		rowId = prevSearch.rowId;
+	}
+	var value = "";
+	var len = 0;
+	while (true) {
+		rowId = grid.getRowId(ctr++);
+		if (rowId == null) {
+			nextDay();
+			colSearch[columnId] = null;
+		}
+
+		if (grid.cells(rowId,0).cell.style.cssText.length <= 0) continue;
+		value = grid.cells(rowId,0).getValue();
+		if (value.length > 0) {
+			len = parseInt(grid.getUserData(rowId,"length"));
+			if (len > 0) {
+				ctr += (len - 1);
+			}
+			continue;
+		}
+
+		if (prevSearch != null) {
+			grid.cells(prevSearch.rowId,0).cell.style.border = prevSearch.border;
+			grid.cells(prevSearch.rowId,0).cell.style.borderColor = prevSearch.borderColor;
+		}
+		var border = grid.cells(rowId,0).cell.style.border;
+		var borderColor = grid.cells(rowId,0).cell.style.borderColor;
+		colSearch[columnId] = {"ctr":ctr,"rowId":rowId,"borderColor":borderColor,"border":border};
+
+		grid.cells(rowId,0).cell.style.border = "2px solid yellow";
+		break;
+	}
+	return;
+}
+
+function showPatientDetails(personId) {
+	mainController.setActivePatient(personId);
+	windowPatientDetails();
+}
+</script>

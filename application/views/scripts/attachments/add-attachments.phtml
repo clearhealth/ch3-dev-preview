@@ -16,23 +16,31 @@
 <div>
 </div>
 <script>
-dojo.require("dojo.io.iframe");
+var progressTimer = "";
+var uploadStarted = false;
 function ajaxUploadFile() {
+	uploadStarted = true;
 	dojo.io.iframe.send({
-		url: '<?=$this->baseUrl?>/attachments.raw/process-add-attachments',
+		url: "<?=$this->baseUrl?>/attachments.raw/process-add-attachments",
 		method: "post",
 		handleAs: "json",
-		method: 'post',
-		form: 'addAttachmentsForm',
-		load: function(data){ dojo.byId('uploadProgressBarId').style.width = '100%';},
-		error: function (er) {alert('err: ' + er)}	
-		});
+		method: "post",
+		form: "addAttachmentsForm",
+		load: function(data) {
+			uploadStarted = false;
+			dojo.byId("addAttachmentsForm").reset();
+			clearTimeout(progressTimer);
+			dojo.byId("uploadProgressBarId").style.width = "100%";
+		},
+		error: function (er) {
+			alert("err: " + er);
+		}
+	});
 		initProgressBar();
 }
 </script>
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">
-	<input type="button" value="<?=__("Cancel")?>"/>
 	<input type="button" value="<?=__("Upload")?>" onClick="ajaxUploadFile();" />
 	<!--<input type="submit" />-->
 <script>
@@ -40,17 +48,18 @@ function addedNewAttachments() {
 
 }
 function initProgressBar(progressKey) {
+	if (!uploadStarted) return;
 	dojo.byId('fileUploadProgressId').style.display = "block";
 	if (progressKey == undefined) {
 		progressKey = dojo.byId('progressKey').value;
 	}
-	dojo.xhrGet ({
+	dojo.xhrGet({
 		url: '<?=$this->baseUrl?>/attachments.raw/view-upload-progress?uploadKey=' + progressKey,
 		handleAs: 'json', 
 		load: function (data) {
 			//alert('progressKey: ' + progressKey + ' :: '  + data);
 			dojo.byId('uploadProgressBarId').style.width = data + '%';
-			setTimeout("initProgressBar(progressKey)", 1000);
+			progressTimer = setTimeout("initProgressBar('"+progressKey+"')", 1000);
 		}, 
 		error: function (er) {alert('err: ' + er)}}
 	);

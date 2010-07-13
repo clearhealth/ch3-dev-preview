@@ -40,10 +40,10 @@ button,input,select {
 </div>
 
 <div id="vitalSignsGraphId" style="width:100%;height:200px;">
-	<div id="graphLegendId" style="width:100%;height:20px;overflow:auto;background-color:#ece9d8;padding-top:5px;"><center><label id="vitalSignsLegendLabelId" style="border:1px solid #000;padding:3px;background-color:#fff;">Legend</label></center></div>
+	<div id="graphLegendId" style="width:100%;height:20px;overflow:auto;background-color:#ece9d8;padding-top:5px;padding-bottom:5px;"><center><label id="vitalSignsLegendLabelId" style="border:1px solid #000;padding:3px;background-color:#fff;">Legend</label></center></div>
 	<div id="graphChartId" style="width:100%;height:170px;overflow:auto;"></div>
 </div>
-
+<iframe id="iframeVitalSignsPrintId" style="width:0px;height:0px;margin:0;padding:0;position:relative;float:top;border:none;" />
 <script>
 
 var colorList = [];
@@ -65,7 +65,6 @@ colorList[colorList.length] = "#EE82EE"; // Violet
 colorList[colorList.length] = "#FF00FF"; // Magenta
 colorList[colorList.length] = "#800000"; // Maroon
 
-var graphChart = null;
 var chartData = {};
 var minDate = null;
 var maxDate = null;
@@ -109,17 +108,21 @@ var graphFilterList = {
 	"systolic": "Systolic",
 	"diastolic": "Diastolic",
 };
-function vitalSignsSetFilterGraph(filterGraph) {
-	if (typeof filterGraph == "undefined") {
+
+function vitalSignsSetFilterGraph(filterGraph,doc) {
+	if (!doc) {
+		doc = document;
+	}
+	if (typeof filterGraph == "undefined" || filterGraph == null) {
 		var filterGraphSelect = dojo.byId("filterGraphId");
 		filterGraph = filterGraphSelect.options[filterGraphSelect.selectedIndex].value;
 	}
 	if (filterGraph == "") {
-		dojo.byId("vitalSignsGraphId").style.display = "none";
+		doc.getElementById("vitalSignsGraphId").style.display = "none";
 	}
 	else {
-		if (dojo.byId("vitalSignsGraphId").style.display == "none") {
-			dojo.byId("vitalSignsGraphId").style.display = "block";
+		if (doc.getElementById("vitalSignsGraphId").style.display == "none") {
+			doc.getElementById("vitalSignsGraphId").style.display = "block";
 		}
 		var filterData = [];
 		var legend = "";
@@ -151,14 +154,17 @@ function vitalSignsSetFilterGraph(filterGraph) {
 			}
 			filterData[filterIndex] = {"color":color,"filter":filter,"data":[]};
 		}
-		dojo.setInnerHTML(dojo.byId("vitalSignsLegendLabelId"),legend);
+		dojo.setInnerHTML(doc.getElementById("vitalSignsLegendLabelId"),legend);
 
-		vitalSignsGenerateGraph(filterData);
+		vitalSignsGenerateGraph(filterData,doc);
 	}
 }
 
-function vitalSignsGenerateGraph(filtersData) {
-	dojo.setInnerHTML(dojo.byId("graphChartId"),"");
+function vitalSignsGenerateGraph(filtersData,doc) {
+	if (!doc) {
+		doc = document;
+	}
+	dojo.setInnerHTML(doc.getElementById("graphChartId"),"");
 	var numCols = vitalSignsLabelGrid.getColumnsNum();
 	if (typeof filtersData != "object" || !(numCols > 1)) {
 		return;
@@ -238,63 +244,154 @@ function vitalSignsGenerateGraph(filtersData) {
 	}
 	vAxes.sort(function(a,b){return(a-b);}); // numeric sort in ascending order
 
-	var vLabels = [];
-	var hLabels = [];
-	for (var i in vAxes) {
-		var vLabel = '{value:"'+i+'",text:"'+vAxes[i]+'"}';
-		vLabels.push(vLabel);
+
+	var xMajorTickStep = 1;
+	var xMinorTickStep = 1;
+	var xMicroTickStep = 1;
+	var yMajorTickStep = 1;
+	var yMinorTickStep = 1;
+	var yMicroTickStep = 1;
+
+	var xMin = 0;
+	var xMax = 15;
+	var yMin = 0;
+	var yMax = 9;
+
+	var series = [];
+
+	var dateStart = hAxes[0];
+	var yyyy = parseInt(dateStart.substr(6,4));
+	var mm = parseInt(dateStart.substr(0,2)) - 1;
+	var dd = parseInt(dateStart.substr(3,2));
+	var dStart = new Date(yyyy,mm,dd);
+
+	// 1 day = 86400000 ms
+	var dayMs = 86400000;
+
+	var dateEnd = hAxes[(hAxes.length-1)];
+	yyyy = parseInt(dateEnd.substr(6,4));
+	mm = parseInt(dateEnd.substr(0,2)) - 1;
+	dd = parseInt(dateEnd.substr(3,2));
+	var dEnd = new Date(yyyy,mm,dd);
+
+	var daysDiff = (dEnd.getTime() - dStart.getTime()) / dayMs;
+
+	var diff = daysDiff / xMax;
+	var xIntDiff = parseInt(diff) + 1;
+	dEnd.setTime(dEnd.getTime() + (dayMs * xIntDiff));
+
+	xMajorTickStep = dayMs * xIntDiff;
+	if (xMajorTickStep == 0) {
+		xMajorTickStep = dayMs;
 	}
-	for (var i in hAxes) {
-		var hLabel = '{value:"'+i+'",text:"'+hAxes[i]+'"}';
-		hLabels.push(hLabel);
+
+	var xLabels = [];
+
+	var tmpDate = dStart;
+	var dStartTime = dStart.getTime();
+	var tmpArr = [];
+	tmpXMax = 0;
+	for (var i = 0; i <= xMax; i++) {
+		tmpArr = [];
+		var mo = tmpDate.getMonth() + 1;
+		if (mo < 10) mo = "0"+mo;
+		tmpArr.push(mo);
+		var day = tmpDate.getDate();
+		if (day < 10) day = "0"+day;
+		tmpArr.push(day);
+		tmpArr.push(tmpDate.getFullYear());
+		xLabels.push({value:i,text:tmpArr.join("/")});
+		var newTime = tmpDate.getTime() + xMajorTickStep;
+		if (newTime > dEnd.getTime()) break;
+		tmpDate.setTime(newTime);
+		tmpXMax++;
 	}
-	var arrPlots = [];
-	var defaultSeries = [];
-	defaultSeries[defaultSeries.length] = "{x:0,y:"+(vLabels.length-1)+"}";
-	defaultSeries[defaultSeries.length] = "{x:0,y:0}";
-	defaultSeries[defaultSeries.length] = "{x:"+(hLabels.length-1)+",y:0}";
-	arrPlots[0] = {name:"imaginary",seriesName:"Imaginary Plot",series:defaultSeries,"color":"gray","markers":false};
+	if (tmpXMax < xMax) {
+		xMax = tmpXMax;
+	}
+
+	var yValMin = parseInt(vAxes[0]);
+	var yValMax = parseInt(vAxes[(vAxes.length-1)]);
+	if (yValMax != vAxes[(vAxes.length-1)]) {
+		yValMax++;
+	}
+
+	var yValDiff = yValMax - yValMin;
+
+	var diff = yValDiff / yMax;
+	var yIntDiff = parseInt(diff);
+	if (yIntDiff != diff) {
+		yIntDiff++;
+	}
+
+	yValMax += yIntDiff;
+
+	yMajorTickStep = yIntDiff;
+	if (yMajorTickStep == 0) {
+		yMajorTickStep = 1;
+	}
+
+	var yLabels = [];
+	var val = yValMin;
+	for (var i = 0; i <= yMax; i++) {
+		yLabels.push({value:val,text:val});
+		val += yMajorTickStep;
+	}
+	yMax = yValMax;
+
+	var chart = new dojox.charting.Chart2D(doc.getElementById("graphChartId"));
+	chart.addAxis("x",{labels:xLabels,majorTickStep:xMajorTickStep,minorTickStep:xMinorTickStep,microTickStep:xMicroTickStep});
+	chart.addAxis("y", {vertical:true,labels:yLabels,majorTickStep:yMajorTickStep,minorTickStep:yMinorTickStep,microTickStep:yMicroTickStep});
+
+	series = [];
+	series.push({x:xMin,y:yMax});
+	series.push({x:xMin,y:yMin});
+	series.push({x:xMax,y:yMin});
+	chart.addPlot("imaginary",{type:"Lines",markers:false});
+	chart.addSeries("Imaginary Plot",series,{plot:"imaginary",stroke:{color:"white"}});
 
 	for (var i in filtersData) {
 		var filter = filtersData[i];
 		if (!(filter.data.length > 0)) {
 			continue;
 		}
-		var series = [];
+		series = [];
 		for (var j in filter.data) {
 			var x = 0;
 			var y = 0;
 			for (var k in hAxes) {
 				if (hAxes[k] == filter.data[j].date) {
-					x = k;
+					x = hAxes[k];
 					break;
 				}
 			}
 			for (var k in vAxes) {
 				if (vAxes[k] == filter.data[j].value) {
-					y = k;
+					y = vAxes[k];
 					break;
 				}
 			}
-			series[series.length] = "{x:"+x+",y:"+y+"}";
+			if (x != 0) {
+				yyyy = parseInt(x.substr(6,4));
+				mm = parseInt(x.substr(0,2)) - 1;
+				dd = parseInt(x.substr(3,2));
+				var hr = parseInt(x.substr(11,2));
+				var min = parseInt(x.substr(14,2));
+				var ap = parseInt(x.substr(16,2));
+				if (ap == "PM") hr += 12;
+				var dTmp = new Date(yyyy,mm,dd,hr,min);
+				x = ((dTmp.getTime() - dStartTime) / dayMs) / xIntDiff;
+			}
+			series.push({x:x,y:y});
 		}
-		var plotIndex = arrPlots.length;
-		arrPlots[plotIndex] = {name:"plot"+i,seriesName:"Plot "+i,series:series,"color":filtersData[i].color,"markers":true};
+		if (series.length > 0) {
+			chart.addPlot("plot"+i,{type:"Lines",markers:true});
+			chart.addSeries("Plot "+i,series,{plot:"plot"+i,stroke:{color:filtersData[i].color}});
+		}
 	}
-
-	if (graphChart != null) {
-		graphChart.destroy();
-	}
-	graphChart = new custom.Chart2D("graphChartId");
-
-	var plots = [];
-	for (var i in arrPlots) {
-		var plot = arrPlots[i];
-		eval('plots[plots.length] = {name:"'+plot.name+'",seriesName:"'+plot.seriesName+'",series:['+plot.series.join(',')+'],color:"'+plot.color+'",markers:'+plot.markers+'};');
-	}
-	eval('var plotData = {xLabels:['+hLabels.join(',')+'],yLabels:['+vLabels.join(',')+'],plots:plots};');
-	graphChart.createGraph(plotData);
+	chart.render();
 }
+
 
 var vitalSignsLayout = new dhtmlXLayoutObject("vitalSignsLayoutId","3E");
 vitalSignsLayout.setEffect("collapse",true);
@@ -352,13 +449,86 @@ function vitalSignsToolbarOnClicked(itemId,itemValue) {
 		case "enteredInError":
 			break;
 		case "pediatricGrowth":
+			windowGrowthCharts();
+			break;
+		case "print":
+			vitalSignsPrint();
 			break;
 		default:
-			alert("Button "+itemId+" was pressed "+itemValue);
+			alert("Invalid event "+itemId+" was pressed "+itemValue);
 			break;
 	}
 }
 vitalSignsToolbar.attachEvent("onClick",vitalSignsToolbarOnClicked);
 vitalSignsToolbar.loadXML("<?=$this->baseUrl?>/vital-signs.raw/toolbar-xml")
+
+function vitalSignsPrint() {
+	var colsNum = vitalSignsLabelGrid.getColumnsNum();
+	if (colsNum < 2) {
+		alert("<?=__('Nothing to print')?>");
+		return;
+	}
+
+	var rowsNum = vitalSignsLabelGrid.getRowsNum();
+	var vitalSignsTable = "<table border=\"1\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">";
+	vitalSignsTable += "<tr>";
+	for (var col = 0; col < colsNum; col++) {
+		var val = vitalSignsLabelGrid.cells2(0,col).getValue();
+		if (val.length < 1) val = "&nbsp;";
+		vitalSignsTable += "<td style=\"font-size:9px;\"><strong>"+val+"</strong></td>";
+	}
+	vitalSignsTable += "</tr>";
+	for (var row = 1; row < rowsNum; row++) {
+		vitalSignsTable += "<tr>";
+		for (col = 0; col < colsNum; col++) {
+			vitalSignsTable += "<td style=\"font-size:9px;\">";
+			if (col == 0) vitalSignsTable += "<strong>";
+			var val = vitalSignsLabelGrid.cells2(row,col).getValue();
+			if (val.length < 1) val = "&nbsp;";
+			vitalSignsTable += val;
+			if (col == 0) vitalSignsTable += "</strong>";
+			vitalSignsTable += "</td>";
+		}
+		vitalSignsTable += "</tr>";
+	}
+	vitalSignsTable += "</table>";
+
+	var printHtml = "";
+	printHtml += "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">";
+	printHtml += "<thead>";
+	printHtml += "<tr><th><div style=\"margin-bottom:30px;\">"+dojo.byId("mainToolbar").innerHTML+"</div></th></tr>";
+	printHtml += "</thead><tbody>";
+	printHtml += "<tr><td><div style=\"margin-bottom:30px;\">"+vitalSignsTable+"</div></td></tr>";
+	printHtml += "<tr><td style=\"font-size:9px;\"><div id=\"vitalSignsGraphId\" style=\"width:1000px;height:200px;\">"+dojo.byId("vitalSignsGraphId").innerHTML+"</div></td></tr>";
+	//printHtml += "<tr><td style=\"font-size:9px;\"><div id=\"vitalSignsGraphId\" style=\"width:100%;\"><div id=\"graphLegendId\" style=\"width:100%;height:20px;overflow:auto;background-color:#ece9d8;padding-top:5px;padding-bottom:5px;\"><center><label id=\"vitalSignsLegendLabelId\" style=\"border:1px solid #000;padding:3px;background-color:#fff;\">Legend</label></center></div><div id=\"graphChartId\" style=\"width:1000px;height:250px;overflow:auto;\"></div></div>";
+	//printHtml += "</div></td></tr>";
+	printHtml += "</tbody></table>";
+
+	var doc = null;
+	var iframe = dojo.byId("iframeVitalSignsPrintId");
+	if (iframe.contentDocument) {
+		// Firefox/Opera
+		doc = iframe.contentDocument;
+	}
+	else if (iframe.contentWindow) {
+		// Internet Explorer
+		doc = iframe.contentWindow.document;
+	}
+	else if (iframe.document) {
+		// Others
+		doc = iframe.document;
+	}
+	if (doc == null) {
+		throw "Document not initialized";
+	}
+	doc.open();
+	doc.write(printHtml);
+	doc.close();
+
+	vitalSignsSetFilterGraph(null,doc);
+	iframe.contentWindow.focus();
+	iframe.contentWindow.print();
+}
+
 
 </script>

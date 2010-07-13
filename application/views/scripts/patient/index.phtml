@@ -396,12 +396,7 @@ othersTab.setTabActive('relatedPeople');
 
 
 function viewAccountHistory() {
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin('clear_silver');
-	winSP = dhxWins.createWindow('windowAccountHistoryId',60,10,800,600);
-	winSP.setText('<?=__('Account History')?>');
-	winSP.attachURL('<?=$this->baseUrl?>/patient.raw/account-history',true);
-	winSP.centerOnScreen();
+	winSP = globalCreateWindow("windowAccountHistoryId",[],"<?=$this->baseUrl?>/patient.raw/account-history","<?=__('Account History')?>",800,600);
 }
 
 
@@ -480,12 +475,7 @@ encountersGrid.parse(testdata,"jsarray");
 appointmentsGrid.attachEvent("onRowDblClicked",function(rowId,colIndex) { windowEncounters(); });
 
 function windowEncounters() {
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin('clear_silver');
-	winSP = dhxWins.createWindow('windowEncountersId',60,10,800,600);
-	winSP.setText('<?=__('Edit Encounter')?>');
-	winSP.attachURL('<?=$this->baseUrl?>/patient.raw/encounter',true);
-	winSP.centerOnScreen();
+	winSP = globalCreateWindow("windowEncountersId",[],"<?=$this->baseUrl?>/patient.raw/encounter","<?=__('Edit Encounter')?>",800,600);
 }
 
 

@@ -9,6 +9,7 @@
         esrdGrid.setColTypes("tree,ch,ro,ro");
 	esrdGrid.attachEvent('onRowDblClicked',doubleClickedEvent);
 	esrdGrid.attachEvent('onCheck',onCheckedEvent);
+        esrdGrid.enableMultiline(true);
         esrdGrid.init();
 	function esrdGridReload() {
 		esrdGrid.clearAll();
@@ -19,26 +20,27 @@
 		esrdGrid.expandAll();
 		if (!<?=$this->multipleSign?>) {
 			esrdGrid.forEachRow(function(rowId){
-				var parentId = esrdGrid.getParentId(rowId);
-				if (parentId == null || parentId != 0) {
-					return;
+				if (esrdGrid.getLevel(rowId) != 1) { // level 0 is parent
+					esrdGrid.cells(rowId,1).cell.innerHTML = "";
 				}
-				esrdGrid.cells(rowId,1).cell.innerHTML = '';
 			});
 		}
 	}
 	function doubleClickedEvent(rowId,colIndex) {
 		var objectClassId = esrdGrid.getParentId(rowId);
-		if (objectClassId == null || objectClassId == 0) {
+		if (objectClassId == null || esrdGrid.getLevel(rowId) != 1) {
 			return;
 		}
-		var objectId = esrdGrid.cells(rowId,2).getValue();
-		var patientId = esrdGrid.cells(rowId,3).getValue();
+		//var objectId = esrdGrid.cells(rowId,2).getValue();
+		var objectId = esrdGrid.getUserData(rowId,"objectId");
+		//var patientId = esrdGrid.cells(rowId,3).getValue();
+		var patientId = esrdGrid.getUserData(rowId,"patientId");
 		if (patientId == '0' || patientId == '') {
 			winES.close();
 			return;
 		}
-		var jsCode = esrdGrid.cells(objectClassId,2).getValue();
+		//var jsCode = esrdGrid.cells(objectClassId,2).getValue();
+		var jsCode = esrdGrid.getUserData(objectClassId,"js");
 		jsCode += "\njumpLink"+objectClassId+"('"+objectId+"','"+patientId+"');";
 		eval(jsCode);
 		winES.close();
@@ -49,39 +51,17 @@
 			esrdGrid.setCheckedRows(1,state);
 		}
 	}
-	function showHideSignatureText() {
-		if (dojo.byId('signature').type == 'password') {
-			dojo.byId('signature').type = 'text';
-			dojo.byId('showHideSignatureTextLink').innerHTML = '<?=__('Hide Signature');?>';
-		}
-		else if (dojo.byId('signature').type == 'text') {
-			dojo.byId('signature').type = 'password';
-			dojo.byId('showHideSignatureTextLink').innerHTML = '<?=__('Show Signature')?>';
-		}
-	}
-	function enterKeypressSubmit(evt) {
-		if (evt.keyCode === 13) {
-			evt.cancelBubble = true;
-			evt.stopPropagation();
-			evt.preventDefault();
-			return false;
-        	 }
-	}
-
 </script>
 	 
 	<?=$this->form->renderOpen()?>
 <div style="float:right;">
-<?$this->form->signature->setAttrib('onkeypress', 'enterKeypressSubmit(event);');?>
-<?$this->form->signature->setAttrib('onkeyup', 'enterKeypressSubmit(event);');?>
-<?$this->form->signature->setAttrib('onkeydown', 'enterKeypressSubmit(event);');?
 <?=$this->form->getElement('signature')->renderViewHelper()?>
 </div>
 <div style="float:right;padding-right:4px;padding-top:4px;">
 <?=$this->form->signature->renderLabel()?>
 </div>
 <div style="clear:right;text-align:right;">
-<a id="showHideSignatureTextLink" href="javascript:showHideSignatureText();void(0);">Show Signature</a>&nbsp;&nbsp;&nbsp;&nbsp;<?=$this->form->okInput()?>
+<?=$this->form->okInput()?>
 </div>
 <?=$this->form->renderClose()?>
 <input type="hidden" name="signIds" value="" id="e-sign-doc-ids"/>

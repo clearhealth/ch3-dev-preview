@@ -67,8 +67,8 @@ function teamOnSelected(teamId) {
 </div>
 
 <script>
-dojo.byId("team-team").disabled = true;
-dojo.byId("selectTeamId").disabled = true;
+//dojo.byId("team-team").disabled = true;
+//dojo.byId("selectTeamId").disabled = true;
 
 function externalTeamSingleUpdate(id,field,value,callback) {
 	dojo.xhrPost({
@@ -171,8 +171,9 @@ function externalTeamMenuOnClicked(menuItemId,type) {
 externalTeamMenu.attachEvent("onClick",externalTeamMenuOnClicked);
 externalTeamMenu.loadXML("<?=$this->baseUrl?>/team-manager.raw/get-external-menu");
 
-externalTeamGrid.objBox.id = externalTeamGrid.uid();
-externalTeamMenu.addContextZone(externalTeamGrid.objBox.id);
+externalTeamGrid.hdr.id = externalTeamGrid.uid();
+externalTeamMenu.addContextZone(externalTeamGrid.hdr.id);
+externalTeamGrid.enableContextMenu(externalTeamMenu);
 externalTeamMenu.attachEvent("onContextMenu",function(id){
 	externalTeamMenu.forEachItem(function (itemId) { externalTeamMenu.hideItem(itemId); });
 	var rowId = externalTeamGrid.getSelectedRowId();

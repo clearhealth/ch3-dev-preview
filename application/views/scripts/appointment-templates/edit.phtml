@@ -87,8 +87,9 @@ breakdownGrid.getCombo(2).put("<?=__('All')?>","<?=__('All')?>");
 breakdownGrid.getCombo(2).put("<?=__('Provider')?>","<?=__('Provider')?>");
 
 // temporary replace grid onBeforeContextMenu
-breakdownGrid.objBox.id = breakdownGrid.uid();
-breakdownMenu.addContextZone(breakdownGrid.objBox.id);
+breakdownGrid.hdr.id = breakdownGrid.uid();
+breakdownMenu.addContextZone(breakdownGrid.hdr.id);
+breakdownGrid.enableContextMenu(breakdownMenu);
 breakdownMenu.attachEvent("onContextMenu",function(id){
 	breakdownMenu.hideItem("remove");
 	var rowId = breakdownGrid.getSelectedRowId();
