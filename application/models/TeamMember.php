@@ -34,16 +34,24 @@ class TeamMember extends WebVista_Model_ORM {
 
 	const ENUM_PARENT_NAME = 'Team Preferences';
 
-	public function ormEditMethod($ormId) {
+	public function ormEditMethod($ormId,$isAdd) {
 		$controller = Zend_Controller_Front::getInstance();
 		$request = $controller->getRequest();
 		$enumerationId = (int)$request->getParam("enumerationId");
 
-		$params = array();
-		$params['enumerationId'] = $enumerationId;
-		$params['ormId'] = $ormId;
 		$view = Zend_Layout::getMvcInstance()->getView();
-		return $view->action("edit","team-manager",null,$params);
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+			return $view->action('edit','enumerations-manager',null,$params);
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['ormId'] = $ormId;
+			return $view->action("edit","team-manager",null,$params);
+		}
 	}
 
 	public static function generateTeamTree($enumerationId,$level=0,$separator="<br />\n") {
@@ -120,6 +128,30 @@ class TeamMember extends WebVista_Model_ORM {
 			$enumeration->enumerationId = $parentId;
 			$enumeration->populate();
 			$ret = $enumeration->key;
+		}
+		return $ret;
+	}
+
+	public static function getAttending($teamId) {
+		$name = TeamMember::ENUM_PARENT_NAME;
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName($name);
+
+		$enumerationsClosure = new EnumerationsClosure();
+		$rowset = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+
+		$ret = 0;
+		foreach ($rowset as $row) {
+			if ($teamId == $row->key) {
+				$attendings = $enumerationsClosure->getAllDescendants($row->enumerationId,1);
+				foreach ($attendings as $attending) {
+					$teamMember = new self();
+					$teamMember->teamMemberId = (int)$attending->ormId;
+					$teamMember->populate();
+					$ret = $teamMember->personId;
+					break 2;
+				}
+			}
 		}
 		return $ret;
 	}

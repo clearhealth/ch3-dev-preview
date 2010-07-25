@@ -176,6 +176,9 @@ class InsuranceManagerController extends WebVista_Controller_Action {
 		$payerTypes = array(''=>'');
 		$this->view->payerTypes = $payerTypes;
 		$programTypes = array(''=>'');
+		foreach (InsuranceProgram::getListProgramTypes() as $key=>$value) {
+			$programTypes[$key] = $value;
+		}
 		$this->view->programTypes = $programTypes;
 		$fundsSources = array(''=>'');
 		$this->view->fundsSources = $fundsSources;
@@ -255,7 +258,12 @@ class InsuranceManagerController extends WebVista_Controller_Action {
 				$orm->$ormLink->$primaryKey = $id;
 				$orm->populate();
 			}
-			$orm->$field = $value;
+			if ($field == 'number') {
+				$orm->number->$field = $value;
+			}
+			else {
+				$orm->$field = $value;
+			}
 			$orm->persist();
 			$retVal = true;
 		}

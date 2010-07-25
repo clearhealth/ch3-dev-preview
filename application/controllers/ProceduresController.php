@@ -27,29 +27,71 @@
  */
 class ProceduresController extends WebVista_Controller_Action {
 
+	public function editAction() {
+		$ormId = $this->_getParam('ormId');
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$enumerationsClosure = new EnumerationsClosure();
+		//$depth = (int)$enumerationsClosure->getDepthById($enumerationId);
+		//if ($depth > 1) {
+			$procedure = new ProcedureCodesCPT();
+			$procedure->code = $ormId;
+			$procedure->populate();
+			$form = new WebVista_Form(array('name'=>'procedureId'));
+			$form->setAction(Zend_Registry::get('baseUrl').'procedures.raw/process-edit');
+			$form->loadORM($procedure,'Procedure');
+			$form->setWindow('windowEditORMObjectId');
+			$this->view->form = $form;
+		//}
+		//else {
+		//	$this->view->message = __('There is nothing to edit on the Procedure Sections definition, add procedure beneath it');
+		//}
+		$this->view->enumerationId = $enumerationId;
+		$this->render();
+	}
+
+	public function processEditAction() {
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$params = $this->_getParam('procedure');
+		$procedure = new ProcedureCodesCPT();
+		$procedure->populateWithArray($params);
+		$procedure->persist();
+		if ($enumerationId > 0) {
+			$enumeration = new Enumeration();
+			$enumeration->enumerationId = $enumerationId;
+			$enumeration->populate();
+			$enumeration->ormId = $procedure->code;
+			$enumeration->persist();
+		}
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 	public function listAction() {
+		$rows = array();
+		$guid = '8e6a2456-1710-46be-a018-2afb0ec2829f';
+		$enumeration = new Enumeration();
+		$enumeration->populateByGuid($guid);
+		$closure = new EnumerationClosure();
+		$enumerationIterator = $closure->getAllDescendants($enumeration->enumerationId,1,true);
+		foreach ($enumerationIterator as $enum) {
+			$row = array();
+			$row['id'] = $enum->enumerationId;
+			$row['data'] = array();
+			$row['data'][] = $enum->name;
+			$rows[] = $row;
+		}
                 $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
-                $json->direct(array('rows'=>$this->_getProcedures()),true);
+                $json->direct(array('rows'=>$rows),true);
         }
-
-	protected function _getProcedures() {
-		$ret = array();
-		$name = PatientProcedure::ENUM_PARENT_NAME;
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName($name);
-		$enumerationsClosure = new EnumerationsClosure();
-		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$ret = $enumerationIterator->toJsonArray('enumerationId',array('name'));
-		return $ret;
-	}
 
 	public function listSectionAction() {
 		$sectionId = (int)$this->_getParam('section');
-		$enumerationsClosure = new EnumerationsClosure();
-		$enumerationIterator = $enumerationsClosure->getAllDescendants($sectionId,1);
+		$closure = new EnumerationsClosure();
 		$rows = array();
-		foreach ($enumerationIterator as $enum) {
+		foreach ($closure->getAllDescendants($sectionId,1,true) as $enum) {
 			$tmp = array();
 			$tmp['id'] = $enum->key;
 			$tmp['data'][] = '';
@@ -119,12 +161,12 @@ class ProceduresController extends WebVista_Controller_Action {
 			$listProviders = $providerIterator->toArray('personId','displayName');
 			foreach ($patientProcedureIterator as $proc) {
 				$quantity = $proc->quantity;
-				if ($quantity > 2) {
+				/*if ($quantity > 2) {
 					$quantity .= ' times';
 				}
 				else {
 					$quantity .= ' time';
-				}
+				}*/
 				$provider = '';
 				if (isset($listProviders[$proc->providerId])) {
 					$provider = $listProviders[$proc->providerId];

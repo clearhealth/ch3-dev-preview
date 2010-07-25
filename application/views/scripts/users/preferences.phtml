@@ -9,12 +9,12 @@
 	<br style="clear:left"/>
 	<div class="formRow">
 		<dt><label for="usersPreferences-defaultTab" class="optional"><?=__('Default Tab')?></label></dt>
-		<?=$this->formSelect('usersPreferences[defaultTab]',$this->data['defaultTab'],array('id'=>'usersPreferences-defaultTab','onChange'=>'usersPreferencesDefaultTabOnChanged(this.value)'),$this->tabs)?>
+		<?=$this->formSelect('usersPreferences[defaultTab]',$this->data['defaultTab'],array('id'=>'usersPreferences-defaultTab','onChange'=>'usersPreferencesDefaultTabOnChanged(this.value)','style'=>'width:250px;'),$this->tabs)?>
 	</div>
 	<br style="clear:left"/>
 	<div class="formRow">
 		<dt><label for="usersPreferences-currentLocation" class="optional"><?=__('Current Location')?></label></dt>
-		<?=$this->formSelect('usersPreferences[currentLocation]',$this->data['currentLocation'],array('id'=>'usersPreferences-currentLocation'),$this->facilities)?>
+		<?=$this->formSelect('usersPreferences[currentLocation]',$this->data['currentLocation'],array('id'=>'usersPreferences-currentLocation','style'=>'width:250px;'),$this->facilities)?>
 	</div>
 	<br style="clear:left"/>
 	<div style="text-align:center;margin-top:10px;">

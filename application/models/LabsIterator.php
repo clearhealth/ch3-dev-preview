@@ -24,11 +24,13 @@
 
 class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 
+	protected $_columnMeta = array();
+
 	public function __construct($dbSelect = null) {
 		if ($dbSelect === null) {
 			$db = Zend_Registry::get('dbAdapter');
 			$dbSelect = $db->select()
-				       ->from('lab_result',"description as description2")
+				       ->from('lab_result')
 				       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id')
 				       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
 				       ->order('lab_result.observation_time DESC')
@@ -37,38 +39,14 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 		parent::__construct("LabResult",$dbSelect);
 	}
 
-	public function current() {
-		$ormObj = new $this->_ormClass();
-		$row = $this->_dbStmt->fetch(null,null,$this->_offset);
-		$ormObj->populateWithArray($row);
-		if (isset($row['lt_observation_time'])) {
-			// conflicts in observation_time
-			$row['observation_time'] = $row['lt_observation_time'];
-		}
-		$ormObj->labTest->populateWithArray($row);
-		$ormObj->labTest->labOrder->populateWithArray($row);
-		return $ormObj;
-	}
-
 	public function setFilters($filters) {
+		if (empty($filters)) {
+			throw new Exception(__('Filter must not be empty'));
+		}
 		$db = Zend_Registry::get('dbAdapter');
-		$labTestCols = array();
-		$labTestCols[] = 'lab_test_id';
-		$labTestCols[] = 'lab_order_id';
-		$labTestCols[] = 'order_num';
-		$labTestCols[] = 'filer_order_num';
-		$labTestCols[] = 'specimen_received_time';
-		$labTestCols[] = 'report_time';
-		$labTestCols[] = 'ordering_provider';
-		$labTestCols[] = 'service';
-		$labTestCols[] = 'component_code';
-		$labTestCols[] = 'status';
-		$labTestCols[] = 'clia_disclosure';
-		// observation_time is conflict with lab_result
-		$labTestCols['lt_observation_time'] = 'observation_time';
 		$dbSelect = $db->select()
 			       ->from('lab_result')
-			       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id',$labTestCols)
+			       ->joinLeft('lab_test','lab_test.lab_test_id=lab_result.lab_test_id')
 			       ->joinLeft('lab_order','lab_order.lab_order_id=lab_test.lab_order_id')
 			       ->order('lab_result.observation_time DESC');
 		foreach ($filters as $filter => $val) {
@@ -104,6 +82,39 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 		//trigger_error($dbSelect->__toString(),E_USER_WARNING);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
+		return $this;
+	}
+
+	public function current() {
+		$className = $this->_ormClass;
+		$ormObj = new $className();
+		$data = array();
+		$row = $this->_dbStmt->fetch(Zend_Db::FETCH_NUM,null,$this->_offset);
+		if ($this->_offset == 0) {
+			for($i=0,$ctr=count($row); $i<$ctr;$i++) {
+				$this->_columnMeta[$i] = $this->_dbStmt->getColumnMeta($i);
+			}
+		}
+
+		$labResult = array();
+		$labTest = array();
+		$labOrder = array();
+		$ctr = count($this->_columnMeta);
+		for ($i=0; $i<$ctr;$i++) {
+			if ($this->_columnMeta[$i]['table'] == $ormObj->_table) {
+				$labResult[$this->_columnMeta[$i]['name']] = $row[$i];
+			}
+			else if ($this->_columnMeta[$i]['table'] == $ormObj->labTest->_table) {
+				$labTest[$this->_columnMeta[$i]['name']] = $row[$i];
+			}
+			else if ($this->_columnMeta[$i]['table'] == $ormObj->labTest->labOrder->_table) {
+				$labOrder[$this->_columnMeta[$i]['name']] = $row[$i];
+			}
+		}
+		$ormObj->populateWithArray($labResult);
+		$ormObj->labTest->populateWithArray($labTest);
+		$ormObj->labTest->labOrder->populateWithArray($labOrder);
+		return $ormObj;
 	}
 
 }

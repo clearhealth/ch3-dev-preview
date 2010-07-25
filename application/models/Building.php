@@ -31,6 +31,12 @@ class Building extends WebVista_Model_ORM {
 	protected $identifier;
 	protected $facility_code_id;
 	protected $phone_number;
+	protected $fax;
+	protected $line1;
+	protected $line2;
+	protected $city;
+	protected $state;
+	protected $postalCode;
 	protected $_table = 'buildings';
 	protected $_primaryKeys = array('id');
 	protected $_cascadePopulate = false; // disable to prevent assigning buildingId as practiceId since buildings.id != practices.id
@@ -82,16 +88,29 @@ class Building extends WebVista_Model_ORM {
 		return $ret;
 	}
 
-	public function ormEditMethod($ormId) {
+	public function ormEditMethod($ormId,$isAdd) {
 		$controller = Zend_Controller_Front::getInstance();
 		$request = $controller->getRequest();
 		$enumerationId = (int)$request->getParam('enumerationId');
 
-		$params = array();
-		$params['enumerationId'] = $enumerationId;
-		$params['id'] = $ormId;
 		$view = Zend_Layout::getMvcInstance()->getView();
-		return $view->action('edit-building','facilities',null,$params);
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+			$params['ormClass'] = 'Room';
+			return $view->action('edit','enumerations-manager',null,$params);
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['id'] = $ormId;
+			return $view->action('edit-building','facilities',null,$params);
+		}
+	}
+
+	public function getZipCode() {
+		return preg_replace('/[^0-9]*/','',$this->postalCode);
 	}
 
 }

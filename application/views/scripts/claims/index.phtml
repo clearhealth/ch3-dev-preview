@@ -1,0 +1,162 @@
+<style>
+div.dhtmlxToolbar_ClearSilver#claimsToolbarId table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemPressed {
+	background-color: #D3E2E5;
+	border-bottom: #D3E2E5 1px solid;
+}
+div.dhtmlxToolbar_ClearSilver#claimsToolbarId table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem td.dhtmlxToolbarTEXT span {
+	margin-left: -10px;
+	margin-right: 10px;
+}       
+</style>
+<div id="claimsToolbarId" style="width:100%;"></div>
+<div id="claimsContainerId" style="width:100%;margin-top:2px;">
+	<div id="claimsLeftPaneId" style="float:left;width:20%;">
+		<div><?=$this->formSelect('claimSelectId',null,array('id'=>'claimSelectId','style'=>'width:150px;'),array('ClearHealth'))?></div>
+		<div style="margin-top:20px;"><span id="claimsCtrId">10</span> <?=__('claims in queue')?></div>
+		<div style="margin-top:5px;">Dated <span id="claimsDateRangeId"><?=date('m/d/Y',strtotime('-1 month'))?>-<?=date('m/d/Y',strtotime('-1 month'))?></span></div>
+		<div style="margin-top:5px;">Totalling, $<span id="claimsTotalId">0.00</span></div>
+		<div style="margin-top:100px;"><?=$this->formButton('transmitPrintId',__('Transmit/Print'),array('id'=>'transmitPrintId'))?></div>
+	</div>
+	<div id="claimsGridId" style="float:left;width:80%;height:440px;"></div>
+</div>
+<script>
+var claimsGrid = new dhtmlXGridObject("claimsGridId");
+claimsGrid.setImagePath("<?=$this->baseUrl?>/img/");
+claimsGrid.setHeader("<?=__('DOS')?>,<?=__('Patient')?>,<?=__('Total')?>,<?=__('Billed')?>,<?=__('Paid/WO')?>,<?=__('Balance')?>,<?=__('Current Insurer')?>,<?=__('Status')?>");
+claimsGrid.setInitWidths("100,200,80,80,120,80,*,*");
+claimsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro");
+claimsGrid.init();
+dhtmlxEvent(claimsGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+var claimsToolbar = new dhtmlXToolbarObject("claimsToolbarId","ClearSilver");
+claimsToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+function claimsToolbarOnClicked(id) {
+	var parentId = null;
+	if (id == "advancedFilters") {
+		globalCreateWindow("windowClaimsAdvancedFiltersId",[],"<?=$this->baseUrl?>/claims.raw/advanced-filters","<?=__('Advanced Filters')?>",300,300);
+	}
+	else if (id.substr(0,9) == "facility_") {
+		parentId = "facility";
+	}
+	else if (id.substr(0,8) == "insurer_") {
+		parentId = "insurer";
+	}
+	if (parentId != null) {
+		claimsToolbar.setItemText(parentId,claimsToolbar.getListOptionText(parentId,id));
+		claimsFilterChange();
+	}
+}
+claimsToolbar.attachEvent("onClick",claimsToolbarOnClicked);
+claimsToolbar.attachEvent("onEnter",function(id,value){
+});
+
+function claimsDateFilterOnChanged(value) {
+	claimsFilterChange();
+}
+
+var ctr = 1;
+var params = {
+	"uid": "DOSStart",
+	"name": "DOSStart",
+	"id": "DOSStart",
+	"onChange": "claimsDateFilterOnChanged",
+	"style": "width:80px;",
+	"value": "<?=date('Y-m-d',strtotime('-1 month'))?>",
+};
+claimsToolbar.addDatePicker(params,"DOSStart",ctr++,"<?=__('DOS Start')?>","dhtmlxcalendar_icon.gif","dhtmlxcalendar_icon.gif");
+claimsToolbar.addSeparator("sep"+ctr,ctr++);
+
+params = {
+	"uid": "DOSEnd",
+	"name": "DOSEnd",
+	"id": "DOSEnd",
+	"onChange": "claimsDateFilterOnChanged",
+	"style": "width:80px;",
+	"value": "<?=date('Y-m-d')?>",
+};
+claimsToolbar.addDatePicker(params,"DOSEnd",ctr++,"<?=__('DOS End')?>","dhtmlxcalendar_icon.gif","dhtmlxcalendar_icon.gif");
+claimsToolbar.addSeparator("sep"+ctr,ctr++);
+
+var opts = [];
+<?foreach($this->facilityIterator as $facilities):?>
+opts.push(["facility_<?=$facilities['Practice']->practiceId.'_'.$facilities['Building']->buildingId.'_'.$facilities['Room']->roomId?>","obj","<?=$facilities['Building']->name?>-><?=$facilities['Room']->name?>","blank.gif"]);
+<?endforeach?>
+claimsToolbar.addButtonSelect("facility",ctr++,"<?=__('Facility')?>",opts,"filter.png","filter.png");
+claimsToolbar.setItemToolTip("facility","<?=__('Facility')?>");
+claimsToolbar.addSeparator("sep"+ctr,ctr++);
+
+opts = [];
+<?foreach ($this->insurers as $id=>$name):?>
+opts.push(["insurer_<?=$id?>","obj","<?=$name?>","blank.gif"]);
+<?endforeach;?>
+claimsToolbar.addButtonSelect("insurer",ctr++,"<?=__('Insurer')?>",opts,"filter.png","filter.png");
+claimsToolbar.setItemToolTip("insurer","<?=__('Insurer')?>");
+claimsToolbar.addSeparator("sep"+ctr,ctr++);
+
+claimsToolbar.addButton("advancedFilters",ctr++,"<?=__('Advanced Filters')?>","filter.png","filter.png");
+
+function claimsFilterExec(filters) {
+	// TODO: to be implemented
+	dojo.xhrGet({
+		url: globalBaseUrl + "/claims.raw/list",
+		handleAs: "json",
+		content: filters,
+		load: function(data) {
+			if (filters.dateRange) {
+				dojo.byId("claimsDateRangeId").innerHTML = filters.dateRange;
+			}
+			return data;
+		},
+		error: function(response) {
+			console.error("ERROR: ",response);
+			return response;
+		}
+	});
+}
+
+function claimsFilterChange(filters) {
+	var dateRange = claimsFormatDate(boxDOSStart.getValue())+"-"+claimsFormatDate(boxDOSEnd.getValue());
+	var facility = ""
+	var facilitySelect = claimsToolbar.getListOptionSelected("facility");
+	if (facilitySelect != null) {
+		facility = facilitySelect.substr(9);
+	}
+	var insurer = "";
+	var insurerSelect = claimsToolbar.getListOptionSelected("insurer");
+	if (insurerSelect != null) {
+		insurer = insurerSelect.substr(8);
+	}
+	if (!filters) {
+		filters = {};
+	}
+	filters.dateRange = dateRange;
+	filters.facility = facility;
+	filters.insurer = insurer;
+	claimsFilterExec(filters);
+}
+claimsFilterChange();
+
+function claimsFormatDate(value) {
+	var ret = [];
+	var mo = value.getMonth() + 1;
+	if (mo < 10) {
+		mo = "0" + mo;
+	}
+	ret.push(mo);
+	var dt = value.getDate();
+	if (dt < 10) {
+		dt = "0" + dt;
+	}
+	ret.push(dt);
+	var yr = value.getFullYear();
+	if (yr < 10) {
+		yr = "0" + yr;
+	}
+	ret.push(yr);
+	return ret.join("/");
+}
+</script>

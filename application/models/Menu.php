@@ -70,7 +70,6 @@ class Menu {
 			       ->where('e.active = 1')
 			       ->order('ec.weight ASC')
 			       ->order('m.displayOrder ASC');
-		trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		if ($rowset = $db->fetchAll($dbSelect)) {
 			$item = null;
 			foreach ($rowset as $row) {
@@ -431,6 +430,8 @@ class Menu {
 		$mainTabs['Reports']['hrefMode'] =  'ajax-html';
 		$mainTabs['Admin']['url']   = $baseUrl.'/admin.raw';
 		$mainTabs['Admin']['hrefMode'] =  'ajax-html';
+		$mainTabs['Messaging']['url']   = $baseUrl.'/messaging.raw';
+		$mainTabs['Messaging']['hrefMode'] =  'ajax-html';
 
 		foreach ($mainTabs as $tabName => $url) {
 			if (self::userHasPermissionForTab($tabName) === false) {
@@ -439,6 +440,5 @@ class Menu {
 		}
 		return $mainTabs;
 	}
+
 }
-
-

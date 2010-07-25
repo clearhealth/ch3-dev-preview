@@ -85,12 +85,8 @@
 			alert('A clinical note definition must be selected before adding an attachment.');
 			return false;
 		}
-		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-		dhxWins.setSkin('clear_silver');
-		winAA = dhxWins.createWindow('windowAddAttachmentId',60,10,400,175);
-		winAA.setText('Add Attachments');
-		winAA.attachURL('<?=$this->baseUrl?>/attachments.raw/add-attachments?attachmentReferenceId=' + cndId,true);
-		winAA.centerOnScreen();
+		var url = "<?=$this->baseUrl?>/attachments.raw/add-attachments?attachmentReferenceId=" + cndId;
+		winAA = globalCreateWindow("windowAddAttachmentId",[],url,"<?=__('Add Attachments')?>",400,175);
 	}
 
 	function addNewDefinition() {

@@ -103,6 +103,8 @@ class LabResultsController extends WebVista_Controller_Action {
 				}
 			}
 			$tmpArr[] = date('Y-m-d',strtotime($lab->observationTime)).'::'.$tmpValue;
+			$sign = (int)$lab->labTest->labOrder->hasSigningEntry();
+			$tmpArr[] = (int)$sign.'::'.$lab->labTest->labOrder->labOrderId;
 			$labs[$lab->labResultId] = $tmpArr;
 		}
 		$rows = $this->_toJsonArray($labs);

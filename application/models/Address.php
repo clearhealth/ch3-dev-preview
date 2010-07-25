@@ -38,12 +38,16 @@ class Address extends WebVista_Model_ORM {
 	protected $postal_code;
 	protected $notes;
 	protected $practiceId;
+	protected $displayOrder;
 	protected $_table = 'address';
 	protected $_primaryKeys = array('address_id');
 	protected $_legacyORMNaming = true;
 
 	const ENUM_STATES_NAME = 'States';
 	const ENUM_COUNTRIES_NAME = 'Countries';
+
+	const TYPE_MAIN = 'MAIN';
+	const TYPE_SEC = 'SEC';
 
 	public function populateWithPersonId() {
 		$db = Zend_Registry::get('dbAdapter');
@@ -119,15 +123,68 @@ class Address extends WebVista_Model_ORM {
 			$practiceId = (int)$this->practiceId;
 		}
 		if ($type === null) {
-			$type = (int)$this->type;
+			$type = $this->type;
 		}
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('practiceId = ?',(int)$practiceId)
-				->where('type = ?',(int)$type)
+				->where('type = ?',$type)
 				->limit(1);
 		$this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public function populateWithType($type,$forced=false) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('person_id = ?',(int)$this->person_id)
+//				->where('type = ?',$type) // temporarily comment out
+				->where('active = 1')
+				->limit(1);
+		if ($forced) {
+			$sqlSelect->where('type = ?',$type);
+		}
+		$this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public static function getListAddressTypes() {
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName('Contact Preferences');
+
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		$ret = array();
+		foreach ($enumerationIterator as $enum) {
+			if ($enum->name != 'Address Types') continue;
+			$ret = $enumerationsClosure->getAllDescendants($enum->enumerationId,1)->toArray('key','name');
+			break;
+		}
+		return $ret;
+	}
+
+	public static function nextDisplayOrder($personId) {
+		$orm = new self();
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($orm->_table,'MAX(displayOrder) AS displayOrder')
+				->where('person_id = ?',(int)$personId);
+		$ret = 1;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = $row['displayOrder'] + 1;
+		}
+		return $ret;
+	}
+
+	public function persist() {
+		if ($this->_persistMode != WebVista_Model_ORM::DELETE && (int)$this->displayOrder <= 0) {
+			$this->displayOrder = self::nextDisplayOrder($this->personId);
+		}
+		return parent::persist();
+	}
+
+	public function getZipCode() {
+		return preg_replace('/[^0-9]*/','',$this->postal_code);
 	}
 
 }

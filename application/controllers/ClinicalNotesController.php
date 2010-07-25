@@ -136,7 +136,28 @@ EOL;
 	}
 
 	public function indexAction() {
-		$personId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$identity = Zend_Auth::getInstance()->getIdentity();
+		$personId = (int)$identity->personId;
+
+		$userId = $identity->userId;
+		$user = new User();
+		$user->userId = $userId;
+		$user->populate();
+		$currentPractice = '';
+		$currentBuilding = '';
+		if (strlen($user->preferences) > 0) {
+			$this->xmlPreferences = new SimpleXMLElement($user->preferences);
+			$currentLocation = (string)$this->xmlPreferences->currentLocation;
+			$locationId = (int)$currentLocation;
+			if ($locationId > 0) {
+				$currentLocation = Room::location($locationId,true);
+				$currentPractice = $currentLocation['practice'];
+				$currentBuilding = $currentLocation['practice'].'->'.$currentLocation['building'];
+			}
+		}
+		$this->view->currentPractice = $currentPractice;
+		$this->view->currentBuilding = $currentBuilding;
+
 		$this->view->currentPersonId = $personId;
 		$provider = new Provider();
 		$provider->person_id = $personId;
@@ -176,7 +197,7 @@ EOL;
 		if (!$signatureIterator->valid()) {
 			$db->beginTransaction();
                 	try {
-                        $db->delete("eSignatures", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId);
+                        $db->delete("eSignatures", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId); // TODO: objectId refers to genericData.revisionId
                         $db->delete("clinicalNotes", "clinicalNoteId = " . (int)$clinicalNoteId);
                         $db->delete("genericData", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId);
                         $db->commit();
@@ -203,6 +224,18 @@ EOL;
 		unset($cnParams['clinicalNoteDefinitionId']);
 		$clinicalNote = new ClinicalNote();
                 $clinicalNote->populateWithArray($cnParams);
+		$noteLocationId = (int)$clinicalNote->locationId;
+		if (!$noteLocationId > 0) {
+			$identity = Zend_Auth::getInstance()->getIdentity();
+			$user = new User();
+			$user->userId = (int)$identity->userId;
+			$user->populate();
+			$preferences = $user->xmlPreferences;
+			if ($preferences !== null) {
+				$noteLocationId = (int)$preferences->currentLocation;
+			}
+		}
+		$clinicalNote->locationId = $noteLocationId;
 		$clinicalNote->personId = $personId;
 		//$clinicalNote->visitId = $this->_visit->visitId;
 		//$clinicalNote->locationId = $this->_location->locationId;
@@ -257,6 +290,42 @@ EOL;
 			if ($filter == 'byDateRange') {
 				$data['dateRange'] = $this->_getParam('dateRange');
 			}
+			if ($filter == 'byCurrentPractice' || $filter == 'bySelectedVisit') {
+				$visitId = (int)$this->_getParam('visitId');
+				$visit = new Visit();
+				$visit->visitId = $visitId;
+				$visit->populate();
+
+				$building = new Building();
+				$building->buildingId = $visit->buildingId;
+				$building->populate();
+
+				$data['locationId'] = $building->buildingId;
+				$data['selectedVisit'] = date('Y-m-d',strtotime($visit->timestamp));
+			}
+			if ($filter == 'byVisitPractice' || $filter == 'byVisitBuilding') {
+				$practiceId = 0;
+				$buildingId = 0;
+				$identity = Zend_Auth::getInstance()->getIdentity();
+				$userId = $identity->userId;
+				$user = new User();
+				$user->userId = $userId;
+				$user->populate();
+				if (strlen($user->preferences) > 0) {
+					$this->xmlPreferences = new SimpleXMLElement($user->preferences);
+					$currentLocation = (string)$this->xmlPreferences->currentLocation;
+					$locationId = (int)$currentLocation;
+					if ($locationId > 0) {
+						$room = new Room();
+						$room->roomId = $locationId;
+						$room->populate();
+						$practiceId = $room->building->practiceId;
+						$buildingId = $room->buildingId;
+					}
+				}
+				$data['practiceId'] = $practiceId;
+				$data['buildingId'] = $buildingId;
+			}
 			$clinicalNoteIterator->setFilter($filter,$data);
 		}
 
@@ -281,7 +350,12 @@ EOL;
                         $row['data'][] = $icon.' '.$note['dateTime'];
                         $row['data'][] = $note['noteTitle'];
                         $row['data'][] = $note['last_name'].', '.$note['first_name'].' '.substr($note['middle_name'],0,1);
-			$row['data'][] = 'Main Clinic->General Care'; // location->room temporarily hardcoded
+			$location = '';
+			$locationId = (int)$row['locationId'];
+			if ($locationId > 0) {
+				$location = Room::location($locationId);
+			}
+			$row['data'][] = $location;
 
 			$xml = simplexml_load_string($note['template']);
 			$genericData = new GenericData();
@@ -305,13 +379,13 @@ EOL;
 				$row['rows'][] = $tmp;
 			}
 			$notes[] = $row;
-		}
+                }
 
 		$acj = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $acj->suppressExit = true;
                 $acj->direct(array("rows" => $notes));
-
 	}
+
 	public function clinicalNotesGridContextMenuAction() {
                 header('Content-Type: application/xml;');
                 $this->view->xmlHeader = '<?xml version="1.0" ?>';
@@ -338,4 +412,24 @@ EOL;
 	public function notesByCustomViewAction() {
 		$this->render();
 	}
+
+	public function getVisitInfoAction() {
+		$visitId = (int)$this->_getParam('visitId');
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		$visit->populate();
+
+		$practice = new Practice();
+		$practice->practiceId = $visit->practiceId;
+		$practice->populate();
+
+		$data = array();
+		$data['currentPractice'] = $practice->name.'';
+		$data['selectedVisit'] = date('Y-m-d',strtotime($visit->timestamp));
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 }

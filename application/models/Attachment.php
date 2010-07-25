@@ -42,5 +42,17 @@ class Attachment extends WebVista_Model_ORM {
                   . " and attachmentReferenceId = " . $db->quote($this->attachmentReferenceId) . " order by dateTime DESC limit 1";
                 $this->populateWithSql($sql);
         }
-	
+
+	public function getIteratorByAttachmentReferenceId($attachmentReferenceId = null) {
+		if ($attachmentReferenceId === null) {
+			$attachmentReferenceId = $this->attachmentReferenceId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('attachmentReferenceId = ' . $attachmentReferenceId)
+				->order('dateTime DESC');
+		return $this->getIterator($sqlSelect);
+	}
+
 }

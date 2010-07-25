@@ -44,6 +44,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	protected $inactive;
 	protected $active;
 	protected $primary_practice_id;
+	protected $activePhoto;
 	protected $_table = "person";
 	protected $_primaryKeys = array("person_id");
 	protected $_legacyORMNaming = true;
@@ -95,6 +96,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		$age = floor($age/$year);
 		return $age;
         }
+
 	public function nsdrPersist($tthis,$context,$data) {
 		$ret = false;
 		//debug_print_backtrace();
@@ -153,4 +155,47 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		}
 		return $ret;
         }
+
+	public static function checkDuplicatePerson(self $person) {
+		$db = Zend_Registry::get('dbAdapter');
+		$lastName = $person->lastName;
+		$firstName = $person->firstName;
+		$firstInitial = substr($firstName,0,1);
+		$gender = $person->gender;
+		$dob = $person->dateOfBirth;
+
+		$sqlSelect = $db->select()
+				->from($person->_table) //,array('person_id','last_name','first_name','middle_name','gender','date_of_birth','identifier','identifier_type'))
+				->where('last_name LIKE '.$db->quote($lastName).' OR last_name LIKE '.$db->quote($lastName.'%'))
+				->where('first_name LIKE '.$db->quote($firstName).' OR first_name LIKE '.$db->quote($firstName.'%').' OR (SUBSTRING(first_name,1,1) LIKE '.$db->quote($firstInitial). ' AND gender='.$db->quote($gender).') OR date_of_birth='.$db->quote($dob))
+				->order('last_name')
+				->order('first_name')
+				->order('middle_name')
+				->order('date_of_birth');
+		$duplicates = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$p = new self();
+				$p->populateWithArray($row);
+				$tmp = array();
+				$tmp['personId'] = $p->personId;
+				$tmp['name'] = $p->displayName;
+				$tmp['dateOfBirth'] = $p->dateOfBirth;
+				$tmp['gender'] = $p->displayGender;
+				$tmp['ssn'] = $p->identifier;
+				$duplicates[] = $tmp;
+			}
+		}
+		return $duplicates;
+	}
+
+	public static function getListIdentifierTypes() {
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName('Identifier Type');
+
+		$enumerationsClosure = new EnumerationsClosure();
+		$ret = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1)->toArray('key','name');
+		return $ret;
+	}
+
 }

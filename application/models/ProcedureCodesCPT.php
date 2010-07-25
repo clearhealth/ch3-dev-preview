@@ -57,4 +57,27 @@ class ProcedureCodesCPT extends WebVista_Model_ORM {
 		$this->postPopulate();
 	}
 
+	public function ormVisitTypeEditMethod($ormId,$isAdd) {
+		return $this->ormEditMethod($ormId,$isAdd);
+	}
+
+	public function ormEditMethod($ormId,$isAdd) {
+		$controller = Zend_Controller_Front::getInstance();
+		$request = $controller->getRequest();
+		$enumerationId = (int)$request->getParam('enumerationId');
+
+		$view = Zend_Layout::getMvcInstance()->getView();
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['ormId'] = $ormId;
+		}
+		return $view->action('edit-type','visit-details',null,$params);
+	}
+
 }

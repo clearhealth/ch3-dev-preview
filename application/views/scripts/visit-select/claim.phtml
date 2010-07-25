@@ -1,0 +1,49 @@
+<h3><?=__('Payments')?></h3>
+<div id="claimPayGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
+<h3><?=__('Charges')?></h3>
+<div id="claimChargeGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
+
+<script>
+/* PAYMENTS */
+payGrid = new dhtmlXGridObject("claimPayGridContainer");
+payGrid.setImagePath("<?=$this->baseUrl?>/img/");
+payGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+payGrid.setInitWidths("75,100,100,*");
+payGrid.setColTypes("ro,ro,ro,ro");
+payGrid.setColAlign("left");
+payGrid.setSkin("xp");
+payGrid.init(); 
+<?foreach ($this->listPayments as $id=>$data):?>
+payGrid.addRow("<?=$id?>","");
+	<?foreach ($data as $index=>$item):?>
+		payGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
+	<?endforeach;?>
+<?endforeach;?>
+
+dhtmlxEvent(payGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+
+
+/* CHARGES */
+chargeGrid = new dhtmlXGridObject("claimChargeGridContainer");
+chargeGrid.setImagePath("<?=$this->baseUrl?>/img/");
+chargeGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+chargeGrid.setInitWidths("75,100,100,*");
+chargeGrid.setColTypes("ro,ro,ro,ro");
+chargeGrid.setColAlign("left");
+chargeGrid.setSkin("xp");
+chargeGrid.init(); 
+<?foreach ($this->listCharges as $id=>$data):?>
+chargeGrid.addRow("<?=$id?>","");
+	<?foreach ($data as $index=>$item):?>
+		chargeGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
+	<?endforeach;?>
+<?endforeach;?>
+
+dhtmlxEvent(chargeGrid.entBox,"contextmenu",function(e){
+	(e||event).cancelBubble=true;
+	return false;
+});
+</script>

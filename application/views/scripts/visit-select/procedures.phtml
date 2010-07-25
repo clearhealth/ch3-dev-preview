@@ -1,13 +1,13 @@
-<div id="proceduresContainer" style="width:100%;height:100%;overflow:auto;">
+<div id="proceduresContainer" style="width:100%;height:100%;overflow:none;">
 	<div class="formRow">
 		<div style="float:left;">
 			<dt><label for="procedures-section"><?=__("Procedure Section")?></label></dt>
-			<div id="proceduresSectionListContainer" style="float:left;width:230px;height:120px;"></div><br />
+			<div id="proceduresSectionListContainer" style="float:left;width:240px;height:120px;"></div><br />
 			<?=$this->formButton('otherProcedure',__('Other Procedure...'),array('style'=>'float:right;','onClick'=>'openProcedureLookupWindow()'))?>
 		</div>
 		<div style="float:left;margin-left:10px;">
 			<dt><label for="procedures-section"><?=__("Section Name")?></label></dt>
-			<div id="proceduresSectionNameListContainer" style="float:left;width:260px;height:140px;"></div>
+			<div id="proceduresSectionNameListContainer" style="float:left;width:240px;height:140px;"></div>
 		</div>
 		<div style="float:left;margin-left:10px;">
 			<dt><label for="procedures-modifiers"><?=__("Modifiers")?></label></dt>
@@ -93,13 +93,20 @@
 			providerText = selectedProvider.text.replace(/,/g, "&#44;");
 			providerValue = selectedProvider.value;
 		}
-		proceduresListGrid.addRow(id,"1 time,,"+providerText);
+		//proceduresListGrid.addRow(id,"1 time,,"+providerText);
+		proceduresListGrid.addRow(id,"1,,"+providerText);
 		proceduresListGrid.cells(id,1).setValue(data);
 		proceduresListGrid.cells(id,3).setValue(providerValue);
 	}
 
 	function proceduresSectionNameOnChecked(rowId,cellIndex,state) {
 		if (state) { // add to procedure list
+			if (rowId == "99213" && proceduresListGrid.doesRowExist("99214")) {
+				alert("NCCI Edit: code 99213 is mutually exclusive with code 99214");
+			}
+			else if (rowId == "99214" && proceduresListGrid.doesRowExist("99213")) {
+				alert("NCCI Edit: code 99214 is mutually exclusive with code 99213");
+			}
 			proceduresAddToList(rowId,proceduresSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
 		}
 		else { // remove from procedure list
@@ -218,12 +225,12 @@
 			proceduresQuantity.setDisabled(true);
 			dojo.connect(dijit.byId("procedures-quantity"),'onChange',function(){
 				var quantityVal = proceduresQuantity.getValue();
-				if (quantityVal > 1) {
+				/*if (quantityVal > 1) {
 					quantityVal += " times";
 				}
 				else {
 					quantityVal += " time";
-				}
+				}*/
 				setProcedureList(0,quantityVal);
 			});
 			</script>

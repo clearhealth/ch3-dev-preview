@@ -59,7 +59,7 @@
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->enumerationIdInput('FormHidden')?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('windowEditEnumerationId').close()"/>
+	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('windowEditORMObjectId').close()"/>
 	<?=$this->form->okInput()?>
 </div>
 
@@ -67,7 +67,7 @@
 
 <script>
 function postSubmiteditenumeration() {
-	dhxWins.window('windowEditEnumerationId').close();
+	dhxWins.window('windowEditORMObjectId').close();
 	return false;
 }
 </script>

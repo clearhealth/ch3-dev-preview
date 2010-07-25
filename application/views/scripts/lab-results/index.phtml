@@ -42,10 +42,6 @@ TabState = new TabStateClass();
 function redrawTabGrid(params) {
 }
 
-var dhxWin = new dhtmlXWindows();
-dhxWin.setImagePath("<?=$this->baseUrl?>/img/");
-dhxWin.setSkin("clear_silver");
-
 function openSelectLabTestsWindow() {
 	var params = [];
 	params.push("personId="+mainController.getActivePatient());
@@ -59,12 +55,7 @@ function closeSelectLabTestsWindow() {
 }
 
 function openWorksheetWindow() {
-	winWorksheet = dhxWin.createWindow('windowSelectLabTests',60,10,400,350);
-	winWorksheet.setText('<?=('Select Lab Tests for Worksheet')?>');
-	var url = '<?=$this->baseUrl?>/lab-results.raw/worksheet';
-	winWorksheet.attachURL(url,true);
-	winWorksheet.setModal(true);
-	winWorksheet.centerOnScreen();
+	winWorksheet = globalCreateWindow("windowSelectLabTests",[],"<?=$this->baseUrl?>/lab-results.raw/worksheet","<?=__('Select Lab Tests for Worksheet')?>",400,350);
 }
 
 function closeWorksheetWindow() {
@@ -72,12 +63,7 @@ function closeWorksheetWindow() {
 }
 
 function openDateRangeWindow() {
-	winDateRange = dhxWin.createWindow('windowDateRange',60,10,175,150);
-	winDateRange.setText('<?=('Select a Date Range')?>');
-	var url = '<?=$this->baseUrl?>/lab-results.raw/date-range';
-	winDateRange.attachURL(url,true);
-	winDateRange.setModal(true);
-	winDateRange.centerOnScreen();
+	winDateRange = globalCreateWindow("windowDateRange",[],"<?=$this->baseUrl?>/lab-results.raw/date-range","<?=__('Select a Date Range')?>",175,150);
 }
 
 function closeDateRangeWindow() {

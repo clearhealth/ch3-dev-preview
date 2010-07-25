@@ -50,122 +50,258 @@ class DataIntegration extends WebVista_Model_ORM {
 		$eSignature = new ESignature();
 		$eSignature->eSignatureId = $audit->objectId;
 		$eSignature->populate();
-		if ($eSignature->objectClass != 'Medication') {
+		if ($eSignature->objectClass != 'Medication' || !strlen($eSignature->signature) > 0) {
 			return $data;
 		}
-		$data['_audit'] = $audit;
+
+		// MEDICATION DATA
 		$medication = new Medication();
 		$medication->medicationId = (int)$eSignature->objectId;
 		$medication->populate();
-		$data['PrescriberOrderNumber'] = $medication->medicationId;
+		if ($medication->transmit != 'ePrescribe' || $medication->isScheduled()) {
+			return $data;
+		}
+
+		$data['_audit'] = $audit;
+		$uuid = uuid_create();
+		$data['messageId'] = str_replace('-','',$uuid);
+		$data['prescriberOrderNumber'] = $medication->medicationId.'_'.$audit->auditId;
+		$data['rxReferenceNumber'] = $medication->rxReferenceNumber;
 
 		$medData = array();
-		$medData['DrugDescription'] = $medication->description;
-		$medData['Strength'] = $medication->strength;
-		$medData['StrengthUnits'] = $medication->unit;
-		$medData['Quantity'] = $medication->quantity;
-		$medData['Directions'] = $medication->directions;
-		$medData['Refills'] = $medication->refills;
-		$medData['Substitutions'] = $medication->substitution;
-		$medData['WrittenDate'] = date('Ymd',strtotime($medication->datePrescribed));
-		$data['medication'] = $medData;
+		$medData['description'] = $medication->description;
+		//$medData['strength'] = $medication->strength;
+		//$dose = '';
+		//if (preg_match('/^[0-9]*/',trim($medication->dose),$matches)) {
+		//	$dose = $matches[0];
+		//}
+		//$medData['strength'] = $dose;
+		$medData['strength'] = $medication->dose;
+		$qualifiers = Medication::listQuantityQualifiersMapping();
+		$medData['strengthUnits'] = $qualifiers[$medication->quantityQualifier];// temporarily set to the same with quantity
+		//$qty = '';
+		//if (preg_match('/^[0-9]*/',trim($medication->quantity),$matches)) {
+		//	$qty = $matches[0];
+		//}
+		//$medData['quantity'] = $qty;
+		$medData['quantity'] = $medication->quantity;
+		$medData['quantityUnits'] = $qualifiers[$medication->quantityQualifier];
+		$medData['daysSupply'] = $medication->daysSupply;
+		$medData['directions'] = $medication->directions;
+		$qualifier = 'R';
+		if ($medication->prn) {
+			$qualifier = 'PRN';
+		}
+		$medData['refills'] = $medication->refills;
+		$medData['refillsUnits'] = $qualifier;
+		$medData['substitutions'] = ($medication->substitution)?'0':'1';
+		$writtenDate = date('Ymd',strtotime($medication->datePrescribed));
+		if ($medication->datePrescribed == '0000-00-00 00:00:00') {
+			$writtenDate = '';
+		}
+		$medData['writtenDate'] = $writtenDate;
+		$medData['productCode'] = $medication->hipaaNDC;
+		$medData['productQualifier'] = 'ND';
+		$medData['dosageForm'] = DataTables::getDosageForm($medication->chmedDose);
+		$medData['drugDBCode'] = $medication->pkey;
+		$medData['drugDBQualifier'] = ''; //'pkey'; valid options: "E|G|FG|FS|MC|MD|MG|MM"
+		$medData['note'] = $medication->comment;
+		$data['Medication'] = $medData;
 
+		// PHARMACY DATA
 		$pharmacy = new Pharmacy();
 		$pharmacy->pharmacyId = $medication->pharmacyId;
 		$pharmacy->populate();
 
 		$pharmacyData = array();
 		$pharmacyData['NCPDPID'] = $pharmacy->NCPDPID;
-		$pharmacyData['StoreName'] = $pharmacy->StoreName;
-		$pharmacyData['AddressLine1'] = $pharmacy->AddressLine1.' '.$pharmacy->AddressLine2;
-		$pharmacyData['City'] = $pharmacy->City;
-		$pharmacyData['State'] = $pharmacy->State;
-		$pharmacyData['ZipCode'] = $pharmacy->Zip;
-		$pharmacyData['PhoneNumber'] = $pharmacy->PhonePrimary;
-		$data['pharmacy'] = $pharmacyData;
+		$pharmacyData['fileId'] = $pharmacy->pharmacyId;
+		$pharmacyData['NPI'] = $pharmacy->NPI;
+		$pharmacyData['storeName'] = $pharmacy->StoreName;
+		$pharmacyData['storeNumber'] = $pharmacy->StoreNumber;
+		$pharmacyData['email'] = $pharmacy->Email;
+		$pharmacyData['twentyFourHourFlag'] = $pharmacy->TwentyFourHourFlag;
+		$pharmacyData['crossStreet'] = $pharmacy->CrossStreet;
+		$pharmacyData['addressLine1'] = $pharmacy->AddressLine1;
+		$pharmacyData['addressLine2'] = $pharmacy->AddressLine2;
+		$pharmacyData['city'] = $pharmacy->City;
+		$pharmacyData['state'] = $pharmacy->State;
+		$pharmacyData['zip'] = $pharmacy->Zip;
+		$phones = array();
+		$phones[] = array('number'=>$pharmacy->PhonePrimary,'type'=>'TE');
+		$phones[] = array('number'=>$pharmacy->Fax,'type'=>'FX');
+		$phones[] = array('number'=>$pharmacy->PhoneAlt1,'type'=>$pharmacy->PhoneAlt1Qualifier);
+		$phones[] = array('number'=>$pharmacy->PhoneAlt2,'type'=>$pharmacy->PhoneAlt2Qualifier);
+		$phones[] = array('number'=>$pharmacy->PhoneAlt3,'type'=>$pharmacy->PhoneAlt3Qualifier);
+		$phones[] = array('number'=>$pharmacy->PhoneAlt4,'type'=>$pharmacy->PhoneAlt4Qualifier);
+		$phones[] = array('number'=>$pharmacy->PhoneAlt5,'type'=>$pharmacy->PhoneAlt5Qualifier);
+		$pharmacyData['phones'] = $phones;
+		$data['Pharmacy'] = $pharmacyData;
+
+		// PRESCRIBER DATA
 		$provider = new Provider();
 		$provider->personId = $medication->prescriberPersonId;
 		$provider->populate();
 		$prescriberData = array();
 		$prescriberData['DEANumber'] = $provider->deaNumber;
 		$prescriberData['SPI'] = $provider->sureScriptsSPI;
-		$prescriberData['ClinicName'] = '';
-		$prescriberData['LastName'] = $provider->person->lastName;
-		$prescriberData['FirstName'] = $provider->person->firstName;
-		$prescriberData['Suffix'] = '';
-		$address = new Address();
-		$address->personId = $provider->personId;
-		$address->populateWithPersonId();
-		$prescriberData['AddressLine1'] = $address->line1.' '.$address->line2;
-		$prescriberData['City'] = $address->city;
-		$prescriberData['State'] = 'AZ'; //$address->state;
-		$prescriberData['ZipCode'] = $address->postalCode;
+		// it has conflicts with DEANumber
+		//$prescriberData['stateLicenseNumber'] = $provider->stateLicenseNumber;
+		$prescriberData['fileId'] = $provider->personId;
+		$prescriberData['clinicName'] = '';
+
+		$identifierType = $provider->identifierType;
+		if (strlen($identifierType) > 0) {
+		//	$prescriberData[$identifierType] = $provider->identifier;
+		}
 		$phoneNumber = new PhoneNumber();
 		$phoneNumber->personId = $provider->personId;
-		$phoneNumber->populateWithPersonId();
-		$prescriberData['PhoneNumber'] = $phoneNumber->number;
-		$data['prescriber'] = $prescriberData;
+		$prescriberData['phones'] = $phoneNumber->phoneNumbers;
 
+		$prescriberData['lastName'] = $provider->person->lastName;
+		$prescriberData['firstName'] = $provider->person->firstName;
+		$prescriberData['middleName'] = $provider->person->middleName;
+		$prescriberData['suffix'] = $provider->person->suffix;
+		$prescriberData['prefix'] = '';
+		$prescriberData['email'] = $provider->person->email;
+		$prescriberData['specialtyCode'] = $provider->specialty;
+		$specialtyQualifier = '';
+		if (strlen($provider->specialty) > 0) {
+			$specialtyQualifier = 'AM';
+		}
+		$prescriberData['specialtyQualifier'] = $specialtyQualifier;
+		$address = new Address();
+		$address->personId = $provider->personId;
+		$address->populateWithType('MAIN');
+		$prescriberData['addressLine1'] = $address->line1;
+		$prescriberData['addressLine2'] = $address->line2;
+		$prescriberData['city'] = $address->city;
+		$prescriberData['state'] = $address->state;
+		$prescriberData['zip'] = $address->zipCode;
+		$data['Prescriber'] = $prescriberData;
+
+		// PATIENT DATA
 		$patient = new Patient();
 		$patient->personId = $medication->personId;
 		$patient->populate();
 		$patientData = array();
-		$patientData['LastName'] = $patient->person->lastName;
-		$patientData['FirstName'] = $patient->person->firstName;
+		$patientData['lastName'] = $patient->person->lastName;
+		$patientData['firstName'] = $patient->person->firstName;
+		$patientData['middleName'] = $patient->person->middleName;
+		$patientData['suffix'] = $patient->person->suffix;
+		$patientData['prefix'] = '';
+		$patientData['email'] = $patient->person->email;
+		$patientData['fileId'] = $patient->recordNumber;
+		$patientData['medicareNumber'] = ''; // TODO: to be implemented
+
+		$identifierType = $patient->identifierType;
+		if (strlen($identifierType) > 0) {
+			$patientData[$identifierType] = $patient->identifier;
+		}
 
 		$enumeration = new Enumeration();
 		$enumeration->enumerationId = $patient->person->gender;
 		$enumeration->populate();
 		$gender = $enumeration->key;
 
-		$patientData['Gender'] = $gender;
-		$patientData['DateOfBirth'] = date('Ymd',strtotime($patient->person->dateOfBirth));
+		$patientData['gender'] = $gender;
+		$dateOfBirth = date('Ymd',strtotime($patient->person->dateOfBirth));
+		if ($patient->person->dateOfBirth == '0000-00-00') {
+			$dateOfBirth = '';
+		}
+		$patientData['dateOfBirth'] = $dateOfBirth;
 		$address = new Address();
 		$address->personId = $patient->personId;
-		$address->populateWithPersonId();
-		$patientData['AddressLine1'] = $address->line1.' '.$address->line2;
-		$patientData['City'] = $address->city;
-		$patientData['State'] = 'AZ'; //$address->state;
-		$patientData['ZipCode'] = $address->postalCode;
+		$address->populateWithType('MAIN');
+		$patientData['addressLine1'] = $address->line1;
+		$patientData['addressLine2'] = $address->line2;
+		$patientData['city'] = $address->city;
+		$patientData['state'] = $address->state;
+		$patientData['zip'] = $address->zipCode;
 		$phoneNumber = new PhoneNumber();
 		$phoneNumber->personId = $patient->personId;
-		$phoneNumber->populateWithPersonId();
-		$patientData['PhoneNumber'] = $phoneNumber->number;
-		$data['patient'] = $patientData;
-		return $data;
+		$patientData['phones'] = $phoneNumber->phoneNumbers;
+		$data['Patient'] = $patientData;
 
-		$ret = array();
-		foreach ($data as $type=>$row) {
-			if (is_array($row)) {
-				foreach ($row as $field=>$value) {
-					$key = $type.'['.$field.']';
-					$ret[$key] = $value;
-				}
+		// CHECK for attending/supervisor
+		$attendingId = TeamMember::getAttending($patient->teamId);
+		if ($attendingId > 0) {
+			// SUPERVISOR
+			$provider = new Provider();
+			$provider->personId = $attendingId;
+			$provider->populate();
+			$supervisorData = array();
+			$supervisorData['DEANumber'] = $provider->deaNumber;
+			$supervisorData['SPI'] = $provider->sureScriptsSPI;
+			// it has conflicts with DEANumber
+			//$supervisorData['stateLicenseNumber'] = $provider->stateLicenseNumber;
+			$supervisorData['fileId'] = $provider->personId;
+			$supervisorData['clinicName'] = '';
+
+			$identifierType = $provider->identifierType;
+			if (strlen($identifierType) > 0) {
+			//	$prescriberData[$identifierType] = $provider->identifier;
 			}
-			else {
-				$ret[$type] = $row;
+			$phoneNumber = new PhoneNumber();
+			$phoneNumber->personId = $provider->personId;
+			$supervisorData['phones'] = $phoneNumber->phoneNumbers;
+	
+			$supervisorData['lastName'] = $provider->person->lastName;
+			$supervisorData['firstName'] = $provider->person->firstName;
+			$supervisorData['middleName'] = $provider->person->middleName;
+			$supervisorData['suffix'] = $provider->person->suffix;
+			$supervisorData['prefix'] = '';
+			$supervisorData['email'] = $provider->person->email;
+			$supervisorData['specialtyCode'] = $provider->specialty;
+			$specialtyQualifier = '';
+			if (strlen($provider->specialty) > 0) {
+				$specialtyQualifier = 'AM';
 			}
+			$supervisorData['specialtyQualifier'] = $specialtyQualifier;
+			$address = new Address();
+			$address->personId = $provider->personId;
+			$address->populateWithType('MAIN');
+			$supervisorData['addressLine1'] = $address->line1;
+			$supervisorData['addressLine2'] = $address->line2;
+			$supervisorData['city'] = $address->city;
+			$supervisorData['state'] = $address->state;
+			$supervisorData['zip'] = $address->zipCode;
+			$data['Supervisor'] = $supervisorData;
 		}
-		return $ret;
+
+		return $data;
 	}
 
 	public static function handlerSSAct(Audit $audit,Array $sourceData) {
-		if ($audit->objectClass != 'ESignature') {
+		if (!isset($sourceData['_audit']) || $audit->objectClass != 'ESignature') {
 			return false;
 		}
 		$eSignature = new ESignature();
 		$eSignature->eSignatureId = $audit->objectId;
 		$eSignature->populate();
-		if ($eSignature->objectClass != 'Medication') {
+		if ($eSignature->objectClass != 'Medication' || !strlen($eSignature->signature) > 0) {
 			return false;
 		}
+
+		$medication = new Medication();
+		$medication->medicationId = (int)$eSignature->objectId;
+		$medication->populate();
+		$medication->dateTransmitted = date('Y-m-d H:i:s');
+		$medication->persist();
+
+		$patientInfo = $sourceData['Patient']['lastName'].', '.$sourceData['Patient']['firstName'].' '.$sourceData['Patient']['middleName'].' MRN#'.$sourceData['Patient']['fileId'];
+		$patientInfo .= ' - '.$sourceData['Medication']['description'].' #'.date('m/d/Y',strtotime($sourceData['Medication']['writtenDate']));
+
 		$audit = $sourceData['_audit'];
+		unset($sourceData['_audit']);
 		$messaging = new Messaging();
-		$messaging->messagingId = (int)$eSignature->objectId;
+		$messaging->messagingId = $sourceData['messageId'];
+		$messaging->messageType = 'NewRx';
 		$messaging->populate();
-		$messaging->objectId = $messaging->messagingId;
+		$messaging->objectId = (int)$eSignature->objectId;
 		$messaging->objectClass = $audit->objectClass;
-		$messaging->status = 'Prescribed';
+		$messaging->status = 'Sending';
+		$messaging->note = 'Sending newRx ('.$patientInfo.')';
 		$messaging->dateStatus = date('Y-m-d H:i:s');
 		$messaging->auditId = $audit->auditId; // this must be required for retransmission in case of error
 		$messaging->persist();
@@ -178,18 +314,20 @@ class DataIntegration extends WebVista_Model_ORM {
 			$pharmacyData = array();
 			$pharmacyData['NCPDPID'] = $pharmacy->NCPDPID;
 			$pharmacyData['StoreName'] = $pharmacy->StoreName;
-			$pharmacyData['AddressLine1'] = $pharmacy->AddressLine1.' '.$pharmacy->AddressLine2;
-			$pharmacyData['City'] = $pharmacy->City;
-			$pharmacyData['State'] = $pharmacy->State;
-			$pharmacyData['ZipCode'] = $pharmacy->Zip;
-			$pharmacyData['PhoneNumber'] = $pharmacy->PhonePrimary;
-			$sourceData['pharmacy'] = $pharmacyData;
+			$pharmacyData['addressLine1'] = $pharmacy->AddressLine1;
+			$pharmacyData['addressLine2'] = $pharmacy->AddressLine2;
+			$pharmacyData['city'] = $pharmacy->City;
+			$pharmacyData['state'] = $pharmacy->State;
+			$pharmacyData['zip'] = $pharmacy->Zip;
+			$pharmacyData['phone'] = $pharmacy->PhonePrimary;
+			$pharmacyData['fax'] = '';
+			$sourceData['Pharmacy'] = $pharmacyData;
 		}
 
-		$query = http_build_query($sourceData);
+		$query = http_build_query(array('data'=>$sourceData));
 		$ch = curl_init();
 		$ePrescribeURL = Zend_Registry::get('config')->healthcloud->URL;
-		$ePrescribeURL .= 'sure-scripts-manager.raw/new-rx?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
+		$ePrescribeURL .= 'ss-manager.raw/new-rx?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
 		curl_setopt($ch,CURLOPT_URL,$ePrescribeURL);
 		curl_setopt($ch,CURLOPT_POST,true);
 		curl_setopt($ch,CURLOPT_POSTFIELDS,$query);
@@ -197,11 +335,15 @@ class DataIntegration extends WebVista_Model_ORM {
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
 		$output = curl_exec($ch);
 		$error = '';
+		$messaging->status = 'Sent';
+		$messaging->note = 'newRx sent';
+		trigger_error('RESPONSE:'.$output,E_USER_NOTICE);
 		if (!curl_errno($ch)) {
 			try {
-				$responseXml = simplexml_load_string($output);
+				$responseXml = new SimpleXMLElement($output);
 				if (isset($responseXml->error)) {
 					$errorCode = (string)$responseXml->error->code;
 					$errorMsg = (string)$responseXml->error->message;
@@ -214,21 +356,31 @@ class DataIntegration extends WebVista_Model_ORM {
 					$error = $errorMsg;
 					trigger_error('There was an error prescribing new medication, Error code: '.$errorCode.' Error Message: '.$errorMsg,E_USER_NOTICE);
 				}
+				else if (isset($responseXml->status)) {
+					if ((string)$responseXml->status->code == '010') { // value 000 is for free standing error?
+						$messaging->status .= ' and Verified';
+						$messaging->note .= ' and verified';
+					}
+				}
+				if (isset($responseXml->rawMessage)) {
+					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+				}
 			}
 			catch (Exception $e) {
 				$error = __("There was an error connecting to HealthCloud to prescribe new medication. Please try again or contact the system administrator.");
-				trigger_error("There was an error prescribeing new medication, the response couldn't be parsed as XML: " . $output, E_USER_NOTICE);
+				trigger_error("There was an error prescribing new medication, the response couldn't be parsed as XML: " . $output, E_USER_NOTICE);
 			}
 		}
 		else {
 			$error = __("There was an error connecting to HealthCloud to prescribe new medication. Please try again or contact the system administrator.");
 			trigger_error("Curl error connecting to healthcare prescribed new medication: " . curl_error($ch),E_USER_NOTICE);
 		}
+
+		$messaging->note .= ' ('.$patientInfo.')';
 		curl_close ($ch);
-		$messaging->status = 'Prescribe Sent';
 		$ret = true;
 		if (strlen($error) > 0) {
-			$messaging->status = 'Prescribe Error';
+			$messaging->status = 'Error';
 			$messaging->note = $error;
 			$ret = false;
 		}
@@ -239,170 +391,6 @@ class DataIntegration extends WebVista_Model_ORM {
 		$messaging->dateStatus = date('Y-m-d H:i:s');
 		$messaging->persist();
 		return $ret;
-	}
-
-	public static function handlereFaxSourceData(Audit $audit) {
-		$data = array();
-		if ($audit->objectClass != 'ESignature') {
-			return $data;
-		}
-		$eSignature = new ESignature();
-		$eSignature->eSignatureId = $audit->objectId;
-		$eSignature->populate();
-		if ($eSignature->objectClass != 'Medication') {
-			return $data;
-		}
-
-		$data['_audit'] = $audit;
-		$medication = new Medication();
-		$medication->medicationId = $eSignature->objectId;
-		$medication->populate();
-
-		$data['transmissionId'] = (int)$medication->medicationId;
-		$data['recipients'] = array();
-		$patient = new Patient();
-		$patient->personId = $medication->personId;
-		$patient->populate();
-		$pharmacyId = $patient->defaultPharmacyId;
-
-		$provider = new Provider();
-		$provider->personId = $medication->prescriberPersonId;
-		$provider->populate();
-
-		// recipients MUST be a pharmacy?
-		$pharmacy = new Pharmacy();
-		$pharmacy->pharmacyId = $pharmacyId;
-		$pharmacy->populate();
-		//$data['recipients'][] = array('fax'=>$pharmacy->Fax,'name'=>$pharmacy->StoreName,'company'=>$pharmacy->StoreName);
-		// temporarily comment out the above recipient and use the hardcoded recipient
-		$data['recipients'][] = array('fax'=>'6022976632','name'=>'Jay Walker','company'=>'ClearHealth Inc.');
-
-		$prescription = new Prescription();
-		$prescription->prescriberName = $provider->firstName.' '.$provider->lastName.' '.$provider->title;
-		$prescription->prescriberStateLicenseNumber = $provider->stateLicenseNumber;
-		$prescription->prescriberDeaNumber = $provider->deaNumber;
-
-		// Practice Info
-		$primaryPracticeId = $provider->primaryPracticeId;
-		$practice = new Practice();
-		$practice->id = $primaryPracticeId;
-		$practice->populate();
-		$address = $practice->primaryAddress;
-		$prescription->practiceName = $practice->name;
-		$prescription->practiceAddress = $address->line1.' '.$address->line2;
-		$prescription->practiceCity = $address->city;
-		$prescription->practiceState = $address->state;
-		$prescription->practicePostalCode = $address->postalCode;
-
-		$attachment = new Attachment();
-		$attachment->attachmentReferenceId = $provider->personId;
-		$attachment->populateWithAttachmentReferenceId();
-		if ($attachment->attachmentId > 0) {
-			$db = Zend_Registry::get('dbAdapter');
-			$sqlSelect = $db->select()
-					->from('attachmentBlobs')
-					->where('attachmentId = ?',(int)$attachment->attachmentId);
-			if ($row = $db->fetchRow($sqlSelect)) {
-				$tmpFile = tempnam('/tmp','ch30_sig_');
-				file_put_contents($tmpFile,$row['data']);
-				$signatureFile = $tmpFile;
-				$prescription->prescriberSignature = $signatureFile;
-			}
-		}
-
-		$prescription->patientName = $patient->lastName.', '.$patient->firstName;
-		$address = $patient->homeAddress;
-		$prescription->patientAddress = $address->line1.' '.$address->line2;
-		$prescription->patientCity = $address->city;
-		$prescription->patientState = $address->state;
-		$prescription->patientPostalCode = $address->postalCode;
-		$prescription->patientDateOfBirth = date('m/d/Y',strtotime($patient->dateOfBirth));
-		$prescription->medicationDatePrescribed = date('m/d/Y',strtotime($medication->datePrescribed));
-		$prescription->medicationDescription = $medication->description;
-		$prescription->medicationComment = $medication->comment;
-		$prescription->medicationQuantity = $medication->quantity;
-		$prescription->medicationRefills = $medication->refills;
-		$prescription->medicationDirections = $medication->directions;
-		$prescription->medicationSubstitution = $medication->substitution;
-		$prescription->create();
-
-		$filename = $prescription->imageFile;
-		$fileType = pathinfo($filename,PATHINFO_EXTENSION);
-		$data['files'] = array();
-		$contents = file_get_contents($filename);
-		unlink($filename);
-		$data['files'][] = array('contents'=>base64_encode($contents),'type'=>$fileType);
-		return $data;
-	}
-
-	public static function handlereFaxAct(Audit $audit,Array $sourceData) {
-		if ($audit->objectClass != 'ESignature') {
-			return false;
-		}
-		$eSignature = new ESignature();
-		$eSignature->eSignatureId = $audit->objectId;
-		$eSignature->populate();
-		if ($eSignature->objectClass != 'Medication') {
-			return false;
-		}
-
-		$medication = new Medication();
-		$medication->medicationId = $eSignature->objectId;
-		$medication->populate();
-
-		$audit = $sourceData['_audit'];
-		$messaging = new Messaging(Messaging::TYPE_OUTBOUND_FAX);
-		$messaging->messagingId = (int)$sourceData['transmissionId'];
-		$messaging->transmissionId = $messaging->messagingId;
-		$messaging->populate();
-		$messaging->objectId = $messaging->messagingId;
-		$messaging->objectClass = $audit->objectClass;
-		$messaging->status = 'Faxed';
-		$messaging->dateStatus = date('Y-m-d H:i:s');
-		$messaging->auditId = $audit->auditId; // this must be required for retransmission in case of error
-		$messaging->persist();
-
-		$efax = new eFaxOutbound();
-		$url = Zend_Registry::get('config')->healthcloud->eFax->outboundUrl;
-		$url .= '?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
-		$efax->setUrl($url);
-
-		$efax->setTransmissionId($sourceData['transmissionId']);
-		$efax->setNoDuplicate(eFaxOutbound::NO_DUPLICATE_ENABLE);
-		$efax->setDispositionMethod('POST');
-		// use the default disposition URL
-		$dispositionUrl = Zend_Registry::get('config')->healthcloud->eFax->dispositionUrl;
-		$efax->setDispositionUrl($dispositionUrl);
-
-		//$efax->setDispositionMethod('EMAIL');
-		//$efax->addDispositionEmail('Arthur Layese','arthur@layese.com');
-		foreach ($sourceData['recipients'] as $recipient) {
-			if ($messaging->resend && strlen($messaging->faxNumber) > 9) { // supersedes fax number from messaging
-				$recipient['fax'] = $messaging->faxNumber;
-			}
-			$efax->addRecipient($recipient['fax'],$recipient['name'],$recipient['company']);
-		}
-		foreach ($sourceData['files'] as $file) {
-			$efax->addFile($file['contents'],$file['type']);
-		}
-
-		$ret = $efax->send();
-		if (!$ret) {
-			$messaging->status = 'Fax Error';
-			$messaging->note = implode(PHP_EOL,$efax->getErrors());
-		}
-		else {
-			$messaging->docid = $efax->getDocId();
-			$messaging->status = 'Fax Sent';
-			$messaging->note = '';
-		}
-		if ($messaging->resend) {
-			$messaging->resend = 0;
-		}
-		$messaging->retries++;
-		$messaging->dateStatus = date('Y-m-d H:i:s');
-		$messaging->persist();
-		return true;
 	}
 
 }

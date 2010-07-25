@@ -3,6 +3,14 @@ div.gridbox_xp table.obj td {
 	border-bottom: none;
 	border-right:none;
 }
+div.dhtmlxToolbar_ClearSilver#reportsResultsToolbarId table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem table.itemPressed {
+	background-color: #D3E2E5;
+	border-bottom: #D3E2E5 1px solid;
+}
+div.dhtmlxToolbar_ClearSilver#reportsResultsToolbarId table.dhtmlxToolbarTable_ClearSilver td.dhtmlxToolbarItem td.dhtmlxToolbarTEXT span {
+	margin-left: -10px;
+	margin-right: 10px;
+}       
 </style>
 <div id="reportsResultsContainerId" style="width:100%;overflow:auto;">
 	<div id="reportsViewsGridId" style="display:none;width:96%;"></div>
@@ -13,8 +21,15 @@ div.gridbox_xp table.obj td {
 </div>
 <div id="reportsLayoutId" style="width:100%;height:480px;"></div>
 <div id="reportsIframeDivId" style="display:none;"></div>
+<iframe id="iframeReportsPrintId" style="width:0px;height:0px;margin:0;padding:0;position:relative;float:top;border:none;" />
 <script>
 
+var globVars  = {
+	current:null,
+	previous:null,
+	executed:false,
+	buttonClicked:false,
+};
 var grids = [];
 function reportsResize() {
 	/*
@@ -64,6 +79,7 @@ function reportsSearchResults(viewId) {
 }
 
 function reportsGetResultsGrid(viewId) {
+	globVars.executed = true;
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/reports.raw/get-results?viewId="+viewId,
 		handleAs: "json",
@@ -81,6 +97,9 @@ function reportsGetResultsGrid(viewId) {
 function reportsViewsRun(rowId) {
 	var reportsResultsContainer = dojo.byId("reportsResultsGridContainerId");
 	reportsResultsContainer.innerHTML = "";
+	if (!rowId) {
+		rowId = reportsViewsGrid.getSelectedRowId();
+	}
 	var buildResultsIn = reportsViewsGrid.cells(rowId,indexRVShowResultsIn).getValue();
 	reportsResultsToolbar.showItem("downloadQueries");
 	reportsResultsToolbar.hideItem("executeQueries");
@@ -111,6 +130,36 @@ function reportsViewsRun(rowId) {
 	if (rowId != null && reportsViewsGrid.cells(rowId,indexRVRunQueriesImmediately).getValue() == 1) {
 		reportsSearchResults(rowId);
 	}
+}
+
+function reportsBuildSmart(index,offset,limit) {
+	dojo.xhrGet({
+		url: "<?=$this->baseUrl?>/reports.raw/get-next-results",
+		handleAs: "json",
+		content: {
+			"index": index,
+			"offset": offset,
+			"limit": limit,
+		},
+		load: function (data) {
+			if (data.rows.length <= 0) {
+				grids[index].userHasRows = false;
+				return;
+			}
+			for (var i in data.rows) {
+				var rowId = i;
+				grids[index].addRow(rowId,"");
+				var ctr = 0;
+				for (var j in data.rows[i]) {
+					grids[index].cells(rowId,ctr++).setValue(data.rows[i][j]);
+				}
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error("Error: ",error);
+		}
+	});
 }
 
 function reportsBuildResultsGrid(data) {
@@ -169,6 +218,28 @@ function reportsBuildResultsGrid(data) {
 				grids[index].cells(rowId,ctr++).setValue(query.rows[i][j]);
 			}
 		}
+		grids[index].userScrollTop = 0;
+		grids[index].userOffset = 0;
+		grids[index].userHasRows = true;
+		grids[index].userIndex = index;
+		grids[index].displayName = query.reportQuery.displayName;
+		grids[index].attachEvent("onScroll",function(scrollLeft,scrollTop){
+			if (!this.userHasRows) {
+				return;
+			}
+			if (scrollTop > this.userScrollTop) {
+				var limit = 5; // set number of rows to 10
+				this.userScrollTop = scrollTop;
+				// width 100px renders only 5 rows; 65 = 5 rows (13 per row)
+				var diff = scrollTop / 13 / 5;
+				var absDiff = Math.ceil(diff);
+				if (absDiff > this.userOffset) {
+					this.userOffset++;
+					// fetch the next set after scrolling the next 5 rows
+					reportsBuildSmart(this.userIndex,(this.userOffset*limit),limit);
+				}
+			}
+		});
 		dhtmlxEvent(grids[index].entBox,"contextmenu",function(e){
 			(e||event).cancelBubble=true;
 			return false;
@@ -225,6 +296,7 @@ function reportsGetResults(baseId) {
 							opts.push(["filter_"+filter.id+"_"+enums.id,"obj",enums.name,"blank.gif"]);
 						}
 						reportsResultsToolbar.addButtonSelect(filter.id,ctr++,prettyName,opts,"filter.png","filter.png");
+						reportsResultsToolbar.setItemToolTip(filter.id,prettyName);
 						break;
 					case "<?=ReportBase::FILTER_TYPE_QUERY?>":
 						var opts = [];
@@ -233,6 +305,7 @@ function reportsGetResults(baseId) {
 							opts.push(["filter_"+filter.id+"_"+query.id,"obj",query.name,"blank.gif"]);
 						}
 						reportsResultsToolbar.addButtonSelect(filter.id,ctr++,prettyName,opts,"filter.png","filter.png");
+						reportsResultsToolbar.setItemToolTip(filter.id,prettyName);
 						break;
 				}
 			}
@@ -246,13 +319,18 @@ function reportsGetResults(baseId) {
 				var view = data.views[i];
 				reportsViewsGrid.addRow(view.id,"");
 				for (var j in view.data) {
-					reportsViewsGrid.cells(view.id,j).setValue(view.data[j]);
+					var val = view.data[j];
+					if (j == 0) {
+						if (i == 0) val += " (default)";
+						val += " <input type=\"button\" value=\"Print\" onClick=\"reportsResultsPrint('"+view.id+"')\" style=\"width:50px;\" />";
+					}
+					reportsViewsGrid.cells(view.id,j).setValue(val);
 				}
 			}
 			var rowId = reportsViewsGrid.getRowId(0);
 			if (rowId != null) {
-				var value = reportsViewsGrid.cells(rowId,0).getValue() + " (default)";
-				reportsViewsGrid.cells(rowId,0).setValue(value);
+				//var value = reportsViewsGrid.cells(rowId,0).getValue() + " (default)";
+				//reportsViewsGrid.cells(rowId,0).setValue(value);
 				reportsViewsGrid.selectRow(0,true);
 			}
 		},
@@ -261,6 +339,74 @@ function reportsGetResults(baseId) {
 			console.error ('Error: ', error);
 		}
 	});
+}
+
+function reportsResultsPrint(rowId) {
+	if (rowId != globVars.current || !globVars.executed) {
+		alert("<?=__('Please select filters and execute that view to generate results that can be printed')?>");
+		return;
+	}
+	globVars.buttonClicked = true;
+
+	var tableHtml = "";
+	var printHtml = "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">";
+	for (var i = 0; i < grids.length; i++) {
+		var grid = grids[i];
+		var rowsNum = grid.getRowsNum();
+		if (rowsNum <= 0) continue;
+		var colsNum = grid.getColumnsNum();
+
+		tableHtml = grid.displayName+"<table border=\"1\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">";
+		tableHtml += "<tr>";
+		for (var col = 0; col < colsNum; col++) {
+			var val = grid.getColumnLabel(col);
+			if (val.length < 1) val = "&nbsp;";
+			tableHtml += "<td style=\"font-size:9px;\"><strong>"+val+"</strong></td>";
+		}
+		tableHtml += "</tr>";
+		for (var row = 0; row < rowsNum; row++) {
+			tableHtml += "<tr>";
+			for (col = 0; col < colsNum; col++) {
+				tableHtml += "<td style=\"font-size:9px;\">";
+				var val = grid.cells2(row,col).getValue();
+				if (val.length < 1) val = "&nbsp;";
+				tableHtml += val;
+				tableHtml += "</td>";
+			}
+			tableHtml += "</tr>";
+		}
+		tableHtml += "</table>";
+		printHtml += "<tr><td><div style=\"margin-bottom:10px;font-size:10px;\">"+tableHtml+"</div></td></tr>";
+	}
+	if (tableHtml == "") {
+		alert("No results found");
+		return;
+	}
+	printHtml += "</tbody></table>";
+
+	var doc = null;
+	var iframe = dojo.byId("iframeReportsPrintId");
+	if (iframe.contentDocument) {
+		// Firefox/Opera
+		doc = iframe.contentDocument;
+	}
+	else if (iframe.contentWindow) {
+		// Internet Explorer
+		doc = iframe.contentWindow.document;
+	}
+	else if (iframe.document) {
+		// Others
+		doc = iframe.document;
+	}
+	if (doc == null) {
+		throw "Document not initialized";
+	}
+	doc.open();
+	doc.write(printHtml);
+	doc.close();
+
+	iframe.contentWindow.focus();
+	iframe.contentWindow.print();
 }
 
 function reportsLayoutLeftGridHasChildren(rowId) {
@@ -318,11 +464,18 @@ var indexRVDisplayName = 0;
 var indexRVRunQueriesImmediately = 1;
 var indexRVShowResultsIn = 2;
 function reportsViewsGridOnRowSelected(rowId,cellIndex) {
+	if (globVars.buttonClicked) {
+		globVars.buttonClicked = false;
+		return;
+	}
 	filterValues = {};
 	reportsResultsToolbar.hideItem("executeQueries");
 	if (reportsViewsGrid.cells(rowId,indexRVRunQueriesImmediately).getValue() == 0) {
 		reportsResultsToolbar.showItem("executeQueries");
 	}
+	globVars.previous = globVars.current;
+	globVars.current = rowId;
+	globVars.executed = false;
 	reportsViewsRun(rowId);
 }
 reportsViewsGrid.attachEvent("onRowSelect",reportsViewsGridOnRowSelected);
@@ -344,7 +497,12 @@ function reportsResultsToolbarOnClicked(id) {
 	var value = id.substr(7);
 	var arrVal = value.split("_");
 	if (arrVal.length < 2) return;
-
+	if (arrVal[1] == "") {
+		reportsResultsToolbar.setItemText(arrVal[0],reportsResultsToolbar.getItemToolTip(arrVal[0]));
+	}
+	else {
+		reportsResultsToolbar.setItemText(arrVal[0],reportsResultsToolbar.getListOptionText(arrVal[0],id));
+	}
 	filterValues["filter_"+arrVal[0]] = arrVal[1];
 	reportsViewsRun();
 }

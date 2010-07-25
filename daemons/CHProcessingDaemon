@@ -100,9 +100,8 @@ class CHProcessingDaemon extends WebVista {
 		$process->startProcessing();
 		return $this;
 	}
-
 }
 
+touch('/tmp/CHProcessingDaemon.lock');
 $CHProcessingDaemon = CHProcessingDaemon::getInstance();
 $CHProcessingDaemon->run();
-

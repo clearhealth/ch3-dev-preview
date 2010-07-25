@@ -38,6 +38,8 @@ class FormularyItem extends WebVista_Model_ORM {
 	protected $qty;
 	protected $keywords;
 	protected $vaclass;
+	protected $deaSchedule;
+	protected $print;
 	protected $_table = 'formularyDefault';
 	protected $_primaryKeys = array("fullNDC");
 
@@ -146,8 +148,14 @@ class FormularyItem extends WebVista_Model_ORM {
 	public function populate($actual = true) {
 		if ($actual) {
 			$this->_table = $this->_name;
-			parent::populate();
-			return true;
+			$db = Zend_Registry::get('dbAdapter');
+			$sqlSelect = $db->select()
+					->from($this->_table)
+					->where('fullNDC = ?',$this->fullNDC);
+			//parent::populate();
+			$retval = $this->populateWithSql($sqlSelect->__toString());
+			$this->postPopulate();
+			return $retval;
 		}
 		$ret = false;
 		$this->_config->configId = $this->_name;

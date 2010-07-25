@@ -55,4 +55,17 @@ class AdminServicesController extends WebVista_Controller_Action {
 		$this->_renderToolbar();
 	}
 
+	public function processPermissionAction() {
+		$service = $this->_getParam('service');
+		$validServices = array('start'=>'serviceStart','stop'=>'serviceStop','reload'=>'serviceReload');
+		if (!isset($validServices[$service])) {
+			$service = 'start';
+		}
+		$method = $validServices[$service];
+		PermissionTemplate::$method();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(true);
+	}
+
 }

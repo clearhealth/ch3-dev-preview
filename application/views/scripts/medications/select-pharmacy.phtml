@@ -24,7 +24,7 @@ function getPharmacyText(rowId,cellIndex) {
 	pharmacyDisplayText = pharmaciesGrid.rowsAr[rowId].cells[1].textContent;
 	pharmacyDisplayText += ', ' + pharmaciesGrid.rowsAr[rowId].cells[2].textContent;
 	pharmacyDisplayText += ', ' + pharmaciesGrid.rowsAr[rowId].cells[3].textContent;
-	pharmacyDisplayText += ', ' + pharmaciesGrid.rowsAr[rowId].cells[4].textContent;
+	//pharmacyDisplayText += ', ' + pharmaciesGrid.rowsAr[rowId].cells[4].textContent;
 	return pharmacyDisplayText;
 }
 
@@ -42,6 +42,15 @@ function selectPharmacyForPrescription() {
                 return false;
         } 
 	dojo.byId('medication-pharmacyId').value = pharmacyId;
+	var rowId = pharmaciesGrid.getSelectedRowId();
+	var pharmacyInfo = dojo.byId("pharmacyInfo");
+	if (rowId != null && pharmacyInfo != null) {
+		var pharmacyDisplayText = pharmaciesGrid.rowsAr[rowId].cells[1].textContent;
+		pharmacyDisplayText += "<br />" + pharmaciesGrid.rowsAr[rowId].cells[2].textContent;
+		pharmacyDisplayText += ", " + pharmaciesGrid.rowsAr[rowId].cells[3].textContent;
+		pharmacyInfo.innerHTML = pharmacyDisplayText;
+	}
+	winSelectPharmacy.close();
 }
 
 function reloadPharmaciesGrid() {
@@ -106,3 +115,10 @@ No pharmacy is selected.
 <input type="hidden" id="selectedPharmacyId" value="0" />
 <input style="width:auto;float:right;" type="button" name="useSelected" value="<?=__("Use Selection for Prescription")?>" onclick="selectPharmacyForPrescription();"/>
 </fieldset>
+<script>
+var pharmacyInfo = dojo.byId("pharmacyInfo");
+if (pharmacyInfo != null) {
+	dojo.byId("selectedPharmacyText").innerHTML = pharmacyInfo.innerHTML.replace("<br>",", ");
+	dojo.byId("selectedPharmacyId").value = dojo.byId("medication-pharmacyId").value;
+}
+</script>

@@ -63,12 +63,19 @@ class Zend_View_Helper_FormNumberSpinner extends Zend_View_Helper_FormElement {
 		$varName = str_replace(' ','',ucwords(str_replace('-',' ',$sanitized['id'])));
 
 		// min:-10.9,max:155,places:1,round:true,exponent:false
-		$constraints = 'min:0,places:0';
+		$constraints = 'round:-1,min:0,places:0';
 		if (isset($attribs['places'])) {
-			$constraints = 'min:0,places:'.$attribs['places'];
+			$constraints = 'round:-1,min:0,places:'.$attribs['places'];
+		}
+		if (isset($attribs['max'])) {
+			$constraints .= ',max:'.$attribs['max'];
 		}
 
 		$disabled = ((bool)$disabled)?'true':'false';
+		$validate = "";
+		if (isset($attribs['validate'])) { 
+			$validate = "validate:function (input) {" . $attribs['validate'] . "},";
+		}
 		$xhtml .= <<<EOL
 <script>
 var spin{$varName} = dijit.byId("{$sanitized['id']}");
@@ -76,7 +83,7 @@ if (typeof spin{$varName} != "undefined") {
 	spin{$varName}.destroyRecursive();
 	spin{$varName} = null;
 }
-spin{$varName} = new dijit.form.NumberSpinner({name:"{$sanitized['name']}",value:{$sanitized['value']},constraints:{{$constraints}},disabled:{$disabled},style:"{$style}"{$maxlength},intermediateChanges:true},dojo.byId("{$sanitized['id']}"));
+spin{$varName} = new dijit.form.NumberSpinner({name:"{$sanitized['name']}",value:"{$sanitized['value']}",{$validate}constraints:{{$constraints}},disabled:{$disabled},style:"{$style}"{$maxlength},intermediateChanges:true},dojo.byId("{$sanitized['id']}"));
 </script>
 EOL;
 		return $xhtml;

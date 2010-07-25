@@ -181,8 +181,7 @@ class CalendarController extends WebVista_Controller_Action {
 			$room->id = $roomId;
 			$room->populate();
 			if ($providerId > 0) {
-				//$data['header'] .= '<br>';
-				$data['header'] .= ' - ';
+				$data['header'] .= '<br>';
 			}
 			$data['header'] .= $room->name;
 			$title .= ' -> '.$room->name;
@@ -317,7 +316,10 @@ class CalendarController extends WebVista_Controller_Action {
 		$menus[] = array('text'=>__('Remove This Column'), 'id'=>'remove_column');
 		$menus[] = array('text'=>__('Select Date'), 'id'=>'select_date');
 		$menus[] = array('text'=>__('Edit This Appointment'), 'id'=>'edit_appointment');
+		$menus[] = array('text'=>__('Create Visit'), 'id'=>'create_visit');
+		$menus[] = array('text'=>__('Add Payment'), 'id'=>'add_payment');
 		$menus[] = array('text'=>__('Cancel Move'), 'id'=>'cancel_move');
+		$menus[] = array('text'=>__('Find First'), 'id'=>'find_first');
 		$this->view->menus =  $menus;
 		$this->view->stations = LegacyEnum::getEnumArray('routing_stations');
 		header('Content-Type: application/xml;');
@@ -496,6 +498,7 @@ class CalendarController extends WebVista_Controller_Action {
 		// extra providers if any, can be retrieved using $paramProviders variable, not sure where to place it
 		$columnId = $this->_getParam('columnId');
 		$rowId = $this->_getParam('rowId');
+		$forced = (int)$this->_getParam('forced');
 		$filter = $this->getCurrentDisplayFilter();
 
 		if (strlen($columnId) <= 0) {
@@ -516,6 +519,10 @@ class CalendarController extends WebVista_Controller_Action {
 
 		$column = $filter->columns[$columnId];
 
+		$data = array();
+		$data['columnId'] = $columnId;
+		$data['rowId'] = $rowId;
+
 		$app = new Appointment();
 		$app->populateWithArray($appointment);
 		if ($app->appointmentId > 0) {
@@ -532,11 +539,13 @@ class CalendarController extends WebVista_Controller_Action {
 		$app->walkin = isset($appointment['walkin'])?1:0;
 		$app->start = $filter->date . ' ' . date('H:i:s', strtotime($appointment['start']));
 		$app->end = $filter->date . ' ' . date('H:i:s', strtotime($appointment['end']));
-		$app->persist();
 
-		$data = array();
-		$data['columnId'] = $columnId;
-		$data['rowId'] = $rowId;
+		if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
+			$data['error'] = $error;
+		}
+		else {
+			$app->persist();
+		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -585,7 +594,107 @@ class CalendarController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
+	public function posContextMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render('pos-context-menu');
+	}
+
+	protected function _generateEligibilityRowData(InsuredRelationship $insuredRelationship) {
+		$row = array();
+		$row[] = $insuredRelationship->displayDateLastVerified;
+		$row[] = $insuredRelationship->displayProgram;
+		$row[] = $insuredRelationship->displayExpires;
+		$row[] = $insuredRelationship->displayVerified;
+		$row[] = $insuredRelationship->desc;
+		return $row;
+	}
+
+	public function processUpdateEligibilityAction() {
+		$id = (int)$this->_getParam('id');
+		$data = false;
+		if ($id > 0) {
+			$insuredRelationship = new InsuredRelationship();
+			$insuredRelationship->insuredRelationshipId = $id;
+			$insuredRelationship->populate();
+		}
+		$params = $this->_getParam('pos');
+		$insuredRelationship->populateWithArray($params);
+		$insuredRelationship->persist();
+		$data = array('row'=>$this->_generateEligibilityRowData($insuredRelationship));
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processCheckEligibilityAction() {
+		$id = (int)$this->_getParam('id');
+		$data = false;
+		if ($id > 0) {
+			$insuredRelationship = InsuredRelationship::eligibilityCheck($id);
+			$data = array('row'=>$this->_generateEligibilityRowData($insuredRelationship));
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 	public function pointOfSaleAction() {
+		$appointmentId = (int)$this->_getParam('appointmentId');
+		$listPayments = array();
+		$listCharges = array();
+		$listEligibility = array();
+		if ($appointmentId > 0) {
+			$appointment = new Appointment();
+			$appointment->appointmentId = $appointmentId;
+			$appointment->populate();
+			$personId = (int)$appointment->patientId;
+
+			$visit = new Visit();
+			$visit->appointmentId = $appointmentId;
+			$visit->populateByAppointmentId();
+
+			$payment = new Payment();
+			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
+			//$paymentIterator = $payment->getMostRecentPayments();
+			foreach ($paymentIterator as $pay) {
+				$listPayments[$pay->paymentId] = array(
+					date('Y-m-d',strtotime($pay->paymentDate)), // date
+					$pay->paymentType, // type
+					$pay->amount, // amount
+					$pay->title, // note
+				);
+			}
+
+			$miscCharge = new MiscCharge();
+			/*$miscChargeIterator = $miscCharge->getIteratorByVisitId($visitId);
+			foreach ($miscChargeIterator as $misc) {
+				$listCharges[$misc->miscChargeId] = array(
+					date('Y-m-d',strtotime($misc->chargeDate)), // date
+					'', // type
+					$misc->amount, // amount
+					$misc->note, // note
+				);
+			}*/
+			$results = $miscCharge->getUnpaidCharges();
+			foreach ($results as $id=>$row) {
+				$listCharges[$id] = array(
+					$row['date'], // date
+					$row['type'], // type
+					$row['amount'], // amount
+					$row['note'], // note
+				);
+			}
+
+			$insuredRelationship = new InsuredRelationship();
+			$insuredRelationship->personId = $personId;
+			$insuredRelationshipIterator = $insuredRelationship->getActiveEligibility();
+			foreach ($insuredRelationshipIterator as $item) {
+				$listEligibility[$item->insuredRelationshipId] = $this->_generateEligibilityRowData($item);
+			}
+		}
+		$this->view->listPayments = $listPayments;
+		$this->view->listCharges = $listCharges;
+		$this->view->listEligibility = $listEligibility;
 		$this->render('point-of-sale');
 	}
 
@@ -640,6 +749,7 @@ class CalendarController extends WebVista_Controller_Action {
 	$paramFilters['end'] = $filter->date . ' ' . $filter->end;
 	$paramFilters['start'] = $filter->date . ' ' . $filter->start;
 	$paramFilters['end'] = $filter->date . ' 23:59:59';
+	$paramFilters['showCancelledAppointments'] = $paramFilters['showCancelledAppointments'];
 	$scheduleEventIterator->setFilter($paramFilters);
 
 	// we need to get the length of time to create number of rows in the grid
@@ -722,14 +832,45 @@ class CalendarController extends WebVista_Controller_Action {
 		$this->_session->currentAppointments[$columnIndex][$row->appointmentId] = $row;
 		$mark = '';
 		if (strlen($row->appointmentCode) > 0) {
-			$mark = "({$row->appointmentCode})";
+			//$mark = "({$row->appointmentCode})";
 		}
 		$zIndex++;
 		// where to use room?
 		$columnData[$tmpIndex]['id'] = $row->appointmentId . 'i' . $columnData[$tmpIndex]['id'];
 		$appointmentId = $row->appointmentId;
-		$columnData[$tmpIndex]['data'][0] .= "<div style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this);\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} <a href=\"\">{$person->last_name}, {$person->first_name} (#{$row->patientId})</a> <div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
+
+		$visitIcon = '';
+		$visit = new Visit();
+		$visit->appointmentId = $appointmentId;
+		$visit->populateByAppointmentId();
+		if ($visit->visitId > 0) {
+			$visitIcon = '<img src="'.$this->view->baseUrl.'/img/appointment_visit.png" alt="'.__('Visit').'" title="'.__('Visit').'" style="border:0px;height:18px;width:18px;margin-left:5px;" />';
+		}
+
+		$routingStatuses = array();
+		if (strlen($row->appointmentCode) > 0) {
+			$routingStatuses[] = __('Mark').': '.$row->appointmentCode;
+		}
+		$routing = new Routing();
+		$routing->personId = $row->patientId;
+		$routing->appointmentId = $row->appointmentId;
+		$routing->providerId = $row->providerId;
+		$routing->roomId = $row->roomId;
+		$routing->populateByAppointments();
+		if (strlen($routing->stationId) > 0) {
+			$routingStatuses[] = __('Station').': '.$routing->stationId;
+		}
+		$routingStatus = implode(' ',$routingStatuses);
+
+		//$columnData[$tmpIndex]['data'][0] .= "<div onclick=\"setAppointmentId('$row->appointmentId')\" ondblclick=\"appointmentEdit('$columnIndex','{$columnData[$tmpIndex]['id']}',0,'$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this);\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} <a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$row->patientId})</a> {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
+		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"setAppointmentId('$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this);\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} <a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$row->patientId})</a> {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
+		$columnData[$tmpIndex]['userdata']['visitId'] = $visit->visitId;
 		$columnData[$tmpIndex]['userdata']['appointmentId'] = $row->appointmentId;
+		$columnData[$tmpIndex]['userdata']['length'] = $j;
+		if (!isset($columnData[$tmpIndex]['userdata']['ctr'])) {
+			$columnData[$tmpIndex]['userdata']['ctr'] = 0;
+		}
+		$columnData[$tmpIndex]['userdata']['ctr']++;
 	}
 	$columnData[0]['userdata']['colMultiplier'] = $colMultiplier;
 	$columnData[0]['userdata']['providerId'] = $paramFilters['providerId'];

@@ -30,13 +30,38 @@
 	endif;?>
 	<?=$this->formDateText('calendar[dateFilter]',$dateFilterValue,array('id'=>'calendar-date-filter'))?>
 	</div>
+<br style="clear:both;" />
+	<div class="formRow" style="padding-top:4px;">
+		<input type="hidden" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="0" />
+		<input type="checkbox" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="1" <?=($this->data['showCancelledAppointments'])?'checked="checked"':''?> /> <?=__('Show Cancelled Appointments')?>
+	</div>
 
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">
 	<input type="hidden" id="calendar-filter-state-id" name="calendar[filterStateId]" value="<?=$this->data['filterStateId']?>" />
 	<input type="hidden" id="calendar-column-id" name="calendar[columnId]" value="<?=$this->columnId?>" />
 	<input type="button" value="<?=__("Cancel")?>" onClick="closeFilterWindow('<?=$this->columnId?>')" />
-	<input type="button" value="<?=__("Select")?>" onClick="dojo.xhrPost ({url: '<?=$this->baseUrl?>/calendar.raw/process-set-filter',form: 'setFilterForm', handleAs: 'json', load: function (data) { window.applyNewFilter('<?=$this->columnId?>'); }, error: function (er) {alert('err: ' + er)}});" />
+	<input type="button" value="<?=__("Select")?>" onClick="calendarSetFilter()" />
 </div>
 </form>
 </div>
+<script>
+function calendarSetFilter() {
+	var dateFilter = boxCalendarDateFilter.getValue();
+	if (!dateFilter) {
+		alert("<?=__('Invalid date.')?>");
+		return;
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-set-filter",
+		form: "setFilterForm",
+		handleAs: "json",
+		load: function (data) {
+			window.applyNewFilter("<?=$this->columnId?>");
+		},
+		error: function (er) {
+			console.error ("Error: ", err);
+		}
+	});
+}
+</script>

@@ -1,9 +1,9 @@
 <?//on that tab any active HSA alerts that apply to the current patient are shown (they can be marked as inactived fulfilled or ignored manually), on that tab the user can subscribe patients to a particular hsaHandler.?>
 
-<div id="hsaContainer" style="width:100%;height:100%;">
+<div id="hsaContainer" style="width:100%;height:100%;overflow:none;">
 	<div style="width:100%;">
 		<fieldset><legend><strong><?=__('Active HSA Alerts')?></strong></legend>
-			<div id="hsaActiveAlertsGridId" style="width:740px;height:120px"></div>
+			<div id="hsaActiveAlertsGridId" style="width:720px;height:120px"></div>
 			<div style="float:left;">
 				<input type="button" id="hsaAddAlertId" value="<?=__('Add Alert')?>" onClick="hsaAddAlert()" />
 			</div>
@@ -19,12 +19,12 @@
 		<fieldset><legend><strong><?=__('Subscribed Handlers')?></strong></legend>
 		<div style="float:left;">
 			<dt><label for="hsa-section"><?=__("Available Handlers")?></label></dt>
-			<div id="hsaHandlersGridId" style="width:365px;height:120px"></div>
+			<div id="hsaHandlersGridId" style="width:350px;height:120px"></div>
 			<input type="button" id="hsaSubscribeId" value="<?=__('Subscribe')?>" onClick="hsaUpdateSubscription(false)" disabled="disabled" />
 		</div>
 		<div style="float:left;margin-left:10px;">
 			<dt><label for="hsa-section"><?=__("Assigned Handlers")?></label></dt>
-			<div id="hsaSubscribedGridId" style="width:365px;height:120px"></div>
+			<div id="hsaSubscribedGridId" style="width:350px;height:120px"></div>
 			<input type="button" id="hsaUnsubscribeId" value="<?=__('Unsubscribe')?>" onClick="hsaUpdateSubscription(true)" disabled="disabled" />
 		</div>
 		</fieldset>
@@ -36,10 +36,8 @@ function hsaAddAlert(id) {
 	if (!id) {
 		id = 0;
 	}
-	var winEditHSAlert = dhxWins.createWindow("winHSAEditAlertId",60,10,350,250);
-	winEditHSAlert.setText("Add/Edit HSA Alert");
-	winEditHSAlert.attachURL("<?=$this->baseUrl?>/health-status.raw/edit-alert?callback=hsaActiveAlertsGridReload&id="+id,true);
-	winEditHSAlert.centerOnScreen();
+	var url = "<?=$this->baseUrl?>/health-status.raw/edit-alert?callback=hsaActiveAlertsGridReload&id="+id;
+	var winEditHSAlert = globalCreateWindow("winHSAEditAlertId",[],url,"<?=__('Add/Edit HSA Alert')?>",350,250);
 }
 
 function hsaUpdateStatus(id) {

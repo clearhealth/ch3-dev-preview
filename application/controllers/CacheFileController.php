@@ -114,6 +114,23 @@ class CacheFileController extends WebVista_Controller_Action {
         $this->render('js');
     }
 
+	public function imagesAction() {
+		$requestUri = explode('/',$_SERVER['REQUEST_URI']);
+		foreach ($requestUri as $segment) {
+			array_shift($requestUri);
+			if (strtolower($segment) == 'images') {
+				break;
+			}
+		}
+		$image = array_pop($requestUri);
+		$x = explode('.',$image);
+		array_pop($x);
+		array_push($requestUri,implode('.',$x));
+		$file = implode('-',$requestUri);
+		$this->_setParam('file',$file);
+		$this->imageAction();
+	}
+
     /**
      * Handles images files
      */
@@ -207,10 +224,10 @@ class CacheFileController extends WebVista_Controller_Action {
                         $searchExt = $cleanType;
                         break 2;
                     }
-			else if ($x == (count($searchPaths)-1)) {
-				echo $filename;exit;
-                		throw new Exception("File does not exist : " . $filename . " also tried paths " . implode(':',$searchPaths));
-			}
+			//else if ($x == (count($searchPaths)-1)) {
+				//echo $filename;exit;
+                		//throw new Exception("File does not exist : " . $filename . " also tried paths " . implode(':',$searchPaths));
+			//}
                 }
             }
             if (!isset($content)) {
@@ -344,6 +361,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxcss'][] = 'dhtmlxeditor_dhx_blue';
 		$files['dhtmlxcss'][] = 'dhtmlxaccordion_dhx_blue';
 		$files['dhtmlxcss'][] = 'dhtmlxmenu_standard';
+		$files['dhtmlxcss'][] = 'dhtmlxfolders';
 
 		return $files;
 	}
@@ -463,8 +481,9 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dojojs'][] = 'charting-plot2d-Pie';
 		$files['dojojs'][] = 'charting-Chart2D';
 		$files['dojojs'][] = 'custom-Chart2D';
-
 		$files['dojojs'][] = 'form-FilteringSelect';
+		$files['dojojs'][] = 'currency';
+		$files['dojojs'][] = 'form-CurrencyTextBox';
 
 		$files['dhtmlxjs'] = array();
 		$files['dhtmlxjs'][] = 'dhtmlxcommon';
@@ -481,13 +500,15 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';
 		$files['dhtmlxjs'][] = 'ch3treegrid';
-		$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
+		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
 		$files['dhtmlxjs'][] = 'dhtmlxtree_json';
 		$files['dhtmlxjs'][] = 'dhtmlxlayout';
 		$files['dhtmlxjs'][] = 'dhtmlxaccordion';
 		$files['dhtmlxjs'][] = 'dhtmlxmenu';
 		$files['dhtmlxjs'][] = 'dhtmlxeditor';
-		
+		$files['dhtmlxjs'][] = 'dhtmlxfolders';
+		$files['dhtmlxjs'][] = 'dhtmlxfolders_drag';
+
 		$files['chbootstrap'][] = 'ch3main';
 		$files['chbootstrap'][] = 'menuActions';
 		return $files;

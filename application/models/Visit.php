@@ -38,8 +38,14 @@ class Visit extends WebVista_Model_ORM {
 	protected $current_payer;
 	protected $room_id;
 	protected $practice_id;
+	protected $dateOfService;
+	protected $activePayerId;
+	protected $closed;
+	protected $void;
+	protected $appointmentId;
 	protected $_providerDisplayName = ''; //placeholder for use in visit list iterator
 	protected $_locationName = ''; //placeholder for use in visit list iterator
+	protected $_legacyORMNaming = true;
 	protected $_table = "encounter";
 	protected $_primaryKeys = array("encounter_id");
 
@@ -60,6 +66,70 @@ class Visit extends WebVista_Model_ORM {
 		$provider->person_id = $this->treating_person_id;
 		$provider->populate();
 		return $provider->person->getDisplayName();
+	}
+
+	public function getVisitId() {
+		return $this->encounter_id;
+	}
+
+	public function setVisitId($id) {
+		$this->encounter_id = $id;
+	}
+
+	public function getDisplayDateOfService() {
+		$date = '';
+		if ($this->dateOfService != '' && $this->dateOfService != '0000-00-00 00:00:00') {
+			$date = date('Y-m-d',strtotime($this->dateOfService));
+		}
+		return $date;
+	}
+
+	public function getInsuranceProgram() {
+		return InsuranceProgram::getInsuranceProgram($this->activePayerId);
+	}
+
+	public function ormEditMethod($ormId,$isAdd) {
+		return $this->ormVisitTypeEditMethod($ormId,$isAdd);
+	}
+
+	public function ormVisitTypeEditMethod($ormId,$isAdd) {
+		$controller = Zend_Controller_Front::getInstance();
+		$request = $controller->getRequest();
+		$enumerationId = (int)$request->getParam('enumerationId');
+
+		$view = Zend_Layout::getMvcInstance()->getView();
+		$params = array();
+		if ($isAdd) {
+			$params['parentId'] = $enumerationId;
+			unset($_GET['enumerationId']); // remove enumerationId from params list
+			$params['grid'] = 'enumItemsGrid';
+		}
+		else {
+			$params['enumerationId'] = $enumerationId;
+			$params['ormId'] = $ormId;
+		}
+		return $view->action('edit-type','visit-details',null,$params);
+	}
+
+	public static function ormClasses() {
+		return array(
+			'Visit' => 'Visit Type',
+			'ProcedureCodesCPT' => 'Procedure',
+			'DiagnosisCodesICD' => 'Diagnosis',
+		);
+	}
+
+	public function populateByAppointmentId($appointmentId = null) {
+		if ($appointmentId === null) {
+			$appointmentId = $this->appointmentId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('appointmentId = ?',(int)$appointmentId);
+		$ret = $this->populateWithSql($sqlSelect->__toString());
+		$this->postPopulate();
+		return $ret;
 	}
 
 }

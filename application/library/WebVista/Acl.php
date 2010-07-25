@@ -142,5 +142,69 @@ class WebVista_Acl extends Zend_Acl {
 		}
 		return $ret;
 	}
+
+	/* returns an SimpleXMLElement object */
+	public function getDefaultList() {
+		$whiteLists = array();
+		$whiteLists['read'] = array('index','list','get','ajaxget','view');
+		$whiteLists['write'] = array('edit','ajaxedit','add','ajaxadd','process','ajaxprocess');
+		$whiteLists['delete'] = array('delete','ajaxdelete');
+
+		$xml = new SimpleXMLElement('<clearhealth/>');
+		// retrieves all controllers directories registered at front controller
+		$controllerDirs = Zend_Controller_Front::getInstance()->getControllerDirectory();
+		foreach ($controllerDirs as $moduleName=>$controllerDir) {
+			try {
+				$directoryIterator = new DirectoryIterator($controllerDir);
+			} catch (Exception $e) { // just use the parent Exception instead of UnexpectedValueException
+				// just continue if path is unreadable or could not open
+				continue;
+			}
+			$module = $xml->addChild($moduleName);
+
+			foreach ($directoryIterator as $file) {
+				if ($file->isDot() || !$file->isFile() ||
+				    !$file->isReadable() || substr($file->getFilename(),-3) != 'php') {
+					continue;
+				}
+				include_once $controllerDir.DIRECTORY_SEPARATOR.$file;
+				$className = substr($file->getFilename(),0,-4);
+				// make sure $className ends with Controller
+				if (substr($className,-10) != 'Controller') {
+					// this is not a controller class
+					continue;
+				}
+				$prettyClass = substr($className,0,-10);
+				$prettyClassName = ucwords(strtolower(preg_replace('/([A-Z]{1})/',' \1',$prettyClass)));
+				$resource = $module->addChild($prettyClass);
+
+				$class = new ReflectionClass($className);
+				$methods = $class->getMethods();
+				foreach ($methods as $method) {
+					$methodName = $method->getName();
+					// make sure method is public and ends with Action
+					if (!$method->isPublic() || substr($methodName,-6) != 'Action') {
+						continue;
+					}
+					$prettyMethodName = substr($methodName,0,-6);
+					$isFound = false;
+					foreach ($whiteLists as $mode=>$lists) {
+						foreach ($lists as $list) {
+							if ($prettyMethodName == $list) {
+								$res = $resource->addChild($mode,$prettyMethodName);
+								$isFound = true;
+								break 2;
+							}
+						}
+					}
+					if (!$isFound) {
+						$res = $resource->addChild('other',$prettyMethodName);
+					}
+					$res->addAttribute('access','0');
+				}
+			}
+		}
+		return $xml;
+	}
  
 }

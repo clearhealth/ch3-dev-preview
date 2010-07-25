@@ -120,15 +120,24 @@ enumItemsMenu.renderAsContextMenu();
 enumItemsMenu.setOpenMode("web");
 enumItemsMenu.loadXML('<?=$this->baseUrl?>/enumerations-manager.raw/context-menu.xml');
 enumItemsMenu.attachEvent('onClick',enumItemsMenuClickHandler);
+enumItemsGrid.attachEvent("onBeforeContextMenu",function(rowId,colIndex,gridObj){
+	var ret = true;
+
+	enumItemsMenu.hideItem("import2xFacilities");
+	var rowLevel = gridObj.getLevel(rowId); // 0 for root/first level
+	if (rowLevel != 0 || gridObj.cells(rowId,0).getValue() != "Facilities") return ret;
+	enumItemsMenu.showItem("import2xFacilities");
+	return ret;
+});
 enumItemsGrid.enableContextMenu(enumItemsMenu);
 dhtmlxEvent(enumItemsGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
 	return false;
 });
 function enumItemsMenuClickHandler(id) {
+	var rowId = enumItemsGrid.getSelectedRowId();
 	switch (id) {
 		case "menuAddSubItem":
-			var rowId = enumItemsGrid.getSelectedRowId();
 			var ormClass = enumItemsGetOrmClass(rowId);
 			if (ormClass == false) {
 				alert("<?=__('Adding sub item is now allowed')?>");
@@ -136,7 +145,29 @@ function enumItemsMenuClickHandler(id) {
 			}
 			enumerationEditWindow(null,rowId,"enumItemsGrid",ormClass); // defined at index.phtml
 			break;
+		case "import2xFacilities":
+			if (!confirm("<?=__('Are you sure you want to continue importing 2.x facilities?')?>")) break;
+			import2xFacilities(rowId);
+			break;
 	}
+}
+
+function import2xFacilities(parentId) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/facilities.raw/process-import-2x-facilities",
+		handleAs: "json",
+		content: {
+			"import": "1",
+			"parentId": parentId,
+		},
+		load: function (data) {
+			enumItemsReloadGrid();
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
 }
 
 function enumItemsGetOrmClass(rowId) {

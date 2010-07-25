@@ -65,9 +65,9 @@ testLayout.setEffect('collapse',true);
 testLayout.setEffect("resize",true);
 
 resultsGrid.setImagePath("<?=$this->baseUrl?>/img/");
-resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,");
-resultsGrid.setInitWidths("120,*,*,*,*,60,50,0");
-resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro");
+resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,,");
+resultsGrid.setInitWidths("120,*,*,*,*,60,50,0,0");
+resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro");
 resultsGrid.setSkin("xp");
 resultsGrid.init();
 //resultsGrid.load('<?=$this->baseUrl?>/lab-results.raw/results.json?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd'),onPostLoad,"json");
@@ -81,6 +81,7 @@ var indexLRRefRange = 4;
 var indexLRAbnormal = 5;
 var indexLRStatus = 6;
 var indexLRHidden = 7;
+var indexLRSign = 8;
 
 function onPostLoad() {
 	numRows = resultsGrid.getRowsNum();
@@ -108,6 +109,12 @@ function onPostLoad() {
 
 resultsGrid.attachEvent('onRowSelect',onRowSelected);
 function onRowSelected(rowId,cellIndex) {
+	resultsMenu.hideItem("sign");
+	var sign = resultsGrid.cells(rowId,indexLRSign).getValue();
+	var x = sign.split("::");
+	if (x[0] == "1") {
+		resultsMenu.showItem("sign");
+	}
 }
 
 var resultsMenu = new dhtmlXMenuObject('resultsColumnMenu','standard');
@@ -121,6 +128,14 @@ function resultsOnMenuClicked(itemId,type) {
 			addSelectedResultsToChart();
 			break;
 		case 'clear_graph':
+			clearChart();
+			break;
+		case "sign":
+			var rowId = resultsGrid.getSelectedRowId();
+			if (rowId == null) break;
+			var sign = resultsGrid.cells(rowId,indexLRSign).getValue();
+			var x = sign.split("::");
+			windowReviewSignDocuments(x[1]);
 			clearChart();
 			break;
 	}
@@ -185,6 +200,7 @@ function addSelectedResultsToChart() {
 	hAxis.sort();
 	//vAxis.sort(function(a,b){return(a-b);}); // numeric sort in ascending order
 
+	var hAxes = []; // storage of dates in itemList
 	var hasVZero = false;
 	var uniqueNames = [''];
 	var itemList = [];
@@ -238,40 +254,138 @@ function addSelectedResultsToChart() {
 		}
 
 		itemList[itemList.length] = {xLabel:xTxt,yLabel:yTxt,name:name};
+		hAxes.push(xTxt);
 	}
 
 	if (!hasVZero) {
 		vAxis[vAxis.length] = '0';
 	}
 	vAxis.sort(function(a,b){return(a-b);}); // numeric sort in ascending order
+	hAxes.sort();
 
-	if (graphChart != null) {
-		graphChart.destroy();
-		graphChart = null;
+	var xMajorTickStep = 1;
+	var xMinorTickStep = 1;
+	var xMicroTickStep = 1;
+	var yMajorTickStep = 1;
+	var yMinorTickStep = 1;
+	var yMicroTickStep = 1;
+
+	var xMin = 0;
+	var xMax = 10;
+	var yMin = 0;
+	var yMax = 9;
+
+	var series = [];
+
+	var dateStart = hAxes[0];
+	var yyyy = parseInt(dateStart.substr(0,4));
+	var mm = parseInt(dateStart.substr(5,2)) - 1;
+	var dd = parseInt(dateStart.substr(8,2));
+	var dStart = new Date(yyyy,mm,dd);
+
+	// 1 day = 86400000 ms
+	var dayMs = 86400000;
+
+	var dateEnd = hAxes[(hAxes.length-1)];
+	yyyy = parseInt(dateEnd.substr(0,4));
+	mm = parseInt(dateEnd.substr(5,2)) - 1;
+	dd = parseInt(dateEnd.substr(8,2));
+	var dEnd = new Date(yyyy,mm,dd);
+
+	var daysDiff = (dEnd.getTime() - dStart.getTime()) / dayMs;
+
+	var diff = daysDiff / xMax;
+	var xIntDiff = parseInt(diff) + 1;
+	dEnd.setTime(dEnd.getTime() + (dayMs * xIntDiff));
+
+	xMajorTickStep = dayMs * xIntDiff;
+	if (xMajorTickStep == 0) {
+		xMajorTickStep = dayMs;
 	}
 
-	var arrPlots = [];
-	var defaultSeries = [];
-	defaultSeries[defaultSeries.length] = "{x:0,y:"+(vAxis.length-1)+"}";
-	defaultSeries[defaultSeries.length] = "{x:0,y:0}";
-	defaultSeries[defaultSeries.length] = "{x:"+(hAxis.length-1)+",y:0}";
-	arrPlots[0] = {name:"imaginary",seriesName:"Imaginary Plot",series:defaultSeries};
+	var xLabels = [];
 
-	var arrSeries = [];
-	var xLabel = '';
-	var yLabel = '';
-	var testName = '';
+	var tmpDate = dStart;
+	var dStartTime = dStart.getTime();
+	var tmpArr = [];
+	tmpXMax = 0;
+	for (var i = 0; i <= xMax; i++) {
+		tmpArr = [];
+		var mo = tmpDate.getMonth() + 1;
+		if (mo < 10) mo = "0"+mo;
+		tmpArr.push(mo);
+		var day = tmpDate.getDate();
+		if (day < 10) day = "0"+day;
+		tmpArr.push(day);
+		tmpArr.push(tmpDate.getFullYear());
+		xLabels.push({value:i,text:tmpArr.join("/")});
+		var newTime = tmpDate.getTime() + xMajorTickStep;
+		if (newTime > dEnd.getTime()) break;
+		tmpDate.setTime(newTime);
+		tmpXMax++;
+	}
+	if (tmpXMax < xMax) {
+		xMax = tmpXMax;
+	}
+
+	var yValMin = parseInt(vAxis[0]);
+	var yValMax = parseInt(vAxis[(vAxis.length-1)]);
+	if (yValMax != vAxis[(vAxis.length-1)]) {
+		yValMax++;
+	}
+
+	var yValDiff = yValMax - yValMin;
+
+	var diff = yValDiff / yMax;
+	var yIntDiff = parseInt(diff);
+	if (yIntDiff != diff) {
+		yIntDiff++;
+	}
+
+	yValMax += yIntDiff;
+
+	yMajorTickStep = yIntDiff;
+	if (yMajorTickStep == 0) {
+		yMajorTickStep = 1;
+	}
+
+	var yLabels = [];
+	var val = yValMin;
+	for (var i = 0; i <= yMax; i++) {
+		yLabels.push({value:val,text:val});
+		val += yMajorTickStep;
+	}
+	yMax = yValMax;
+
+	var oGraphChart = dojo.byId("graphChart");
+	dojo.setInnerHTML(oGraphChart,"");
+	var chart = new dojox.charting.Chart2D("graphChart");
+	chart.addAxis("x",{labels:xLabels,majorTickStep:xMajorTickStep,minorTickStep:xMinorTickStep,microTickStep:xMicroTickStep});
+	chart.addAxis("y", {vertical:true,labels:yLabels,majorTickStep:yMajorTickStep,minorTickStep:yMinorTickStep,microTickStep:yMicroTickStep});
+
+	series = [];
+	series.push({x:xMin,y:yMax});
+	series.push({x:xMin,y:yMin});
+	series.push({x:xMax,y:yMin});
+	chart.addPlot("imaginary",{type:"Lines",markers:false});
+	chart.addSeries("Imaginary Plot",series,{plot:"imaginary",stroke:{color:"gray"}});
+
+	var xLabel = "";
+	var yLabel = "";
+	var testName = "";
 	var itemKey = 0;
 	var xKey = 0;
 	var yKey = 0;
 	var nameKey = 0;
 	var origItemList = itemList;
+	var arrPlots = [];
 	for (xKey in hAxis) {
 		xIndex = xKey;
 		// get all items with the horizontal values
 		for (itemKey in itemList) {
 			yIndex = -1;
 			if (itemList[itemKey].xLabel == hAxis[xKey]) {
+				xLabel = itemList[itemKey].xLabel;
 				yLabel = itemList[itemKey].yLabel;
 				// locate the position/index of the yLabel in the vAxis
 				for (yKey in vAxis) {
@@ -294,49 +408,37 @@ function addSelectedResultsToChart() {
 					}
 				}
 
+				// yLabel == yValue
+				yIndex = yLabel;
+				yyyy = parseInt(xLabel.substr(0,4));
+				mm = parseInt(xLabel.substr(5,2)) - 1;
+				dd = parseInt(xLabel.substr(8,2));
+				var dTmp = new Date(yyyy,mm,dd);
+				xIndex = ((dTmp.getTime() - dStartTime) / dayMs) / xIntDiff;
+
 				if (!(nameKey in arrPlots)) {
-					arrPlots[nameKey] = {name:"default"+nameKey,seriesName:testName,series:[],};
+					arrPlots[nameKey] = {name:"plot"+nameKey,seriesName:testName,series:[],};
 				}
-				arrPlots[nameKey].series[arrPlots[nameKey].series.length] = "{x:"+xIndex+",y:"+yIndex+"}";
+				arrPlots[nameKey].series.push({x:xIndex,y:yIndex});
 			}
 		}
 	}
 
-	var arrXLabels = [];
-	for (xKey in hAxis) {
-		var tmpTxt = hAxis[xKey].split('-');
-		xTxt = tmpTxt[1] + '/' + tmpTxt[2] + '/' + tmpTxt[0];
-		arrXLabels[arrXLabels.length] = '{value:'+xKey+',text:"'+xTxt+'"}';
-	}
-	var arrYLabels = [];
-	for (yKey in vAxis) {
-		arrYLabels[arrYLabels.length] = '{value:'+yKey+',text:"'+vAxis[yKey]+'"}';
-	}
-
-	//itemList.sort(sortByXAxis);
-
-	oGraphChart = dojo.byId('graphChart');
-	oGraphLegend = dojo.byId('graphLegend');
-	dojo.setInnerHTML(oGraphChart,'');
-	dojo.setInnerHTML(oGraphLegend,'');
-	graphChart = new custom.Chart2D("graphChart");
-
-	var graphLegend = '';
+	var oGraphLegend = dojo.byId("graphLegend");
+	var graphLegend = "";
 	var plots = [];
 	for (var i in arrPlots) {
 		var plot = arrPlots[i];
-		if (plot.name == "imaginary") {
-			eval('plots[plots.length] = {name:"'+plot.name+'",seriesName:"'+plot.seriesName+'",series:['+plot.series.join(',')+'],color:"gray",markers:false};');
-		}
-		else {
+		if (plot.series.length > 0) {
 			var color = getColor(i);
-			eval('plots[plots.length] = {name:"'+plot.name+'",seriesName:"'+plot.seriesName+'",series:['+plot.series.join(',')+'],color:"'+color+'"};');
-			graphLegend += '<label style="color:'+color+'">'+plot.seriesName+'</label> ';
+			chart.addPlot(plot.name,{type:"Lines",markers:true});
+			chart.addSeries(plot.seriesName,plot.series,{plot:plot.name,stroke:{color:color}});
+			graphLegend += "<label style=\"color:"+color+"\">"+plot.seriesName+"</label> ";
 		}
 	}
-	eval('var plotData = {xLabels:['+arrXLabels.join(',')+'],yLabels:['+arrYLabels.join(',')+'],plots:plots};');
-	graphChart.createGraph(plotData);
+
 	dojo.setInnerHTML(oGraphLegend,graphLegend);
+	chart.render();
 }
 
 function sortByXAxis(a,b) {

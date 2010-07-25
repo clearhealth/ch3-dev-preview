@@ -128,6 +128,15 @@ class AdminPersonsController extends WebVista_Controller_Action {
 		$this->view->maritalStatuses = $maritalStatuses;
 
 		$this->view->statesList = Address::getStatesList();
+		$this->view->phoneTypes = PhoneNumber::getListPhoneTypes();
+		$this->view->addressTypes = Address::getListAddressTypes();
+
+		$identifierTypes = array(''=>'');
+		$identifierType = Enumeration::getEnumArray('Identifier Type','key');
+		foreach ($identifierType as $key=>$value) {
+			$identifierTypes[$key] = $value;
+		}
+		$this->view->identifierTypes = $identifierTypes;//Person::getListIdentifierTypes();
         	$this->render('edit-person');
 	}
 

@@ -407,7 +407,12 @@ function processTemplatesDropdown(data) {
 	tabStateObject.setParam({"sdTemplateState":{"data":data,"sdTemplateValue":sdTemplateValue,"sdTemplateText":sdTemplateText}});
     if ( data.value == "-1" ) {
         // we save current layout
-        winDC = dashboardInnerLayout.dhxWins.createWindow('windowSaveCurLayout',60,10,450,250);
+	if (dashboardInnerLayout.dhxWins.isWindow("windowSaveCurLayout")) { // close any existing open window
+		winDC = dashboardInnerLayout.dhxWins.window("windowSaveCurLayout");
+	}
+	else {
+		winDC = dashboardInnerLayout.dhxWins.createWindow('windowSaveCurLayout',60,10,450,250);
+	}
         dashboardInnerLayout.dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
         dashboardInnerLayout.dhxWins.setSkin('clear_silver');
         winDC.setText("<?=__("Save Current Layout To");?>");
@@ -435,7 +440,12 @@ var baseUrl = '<?=$this->baseUrl?>/';
 
 
 function windowSelectDashComponent(cellId) {
-    winDC = dashboardInnerLayout.dhxWins.createWindow('windowSelectDashCom',60,10,450,250);
+	if (dashboardInnerLayout.dhxWins.isWindow("windowSelectDashCom")) { // close any existing open window
+		winDC = dashboardInnerLayout.dhxWins.window("windowSelectDashCom");
+	}
+	else {
+		winDC = dashboardInnerLayout.dhxWins.createWindow('windowSelectDashCom',60,10,450,250);
+	}
     dashboardInnerLayout.dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
     dashboardInnerLayout.dhxWins.setSkin('clear_silver');
 
@@ -694,10 +704,16 @@ function stationRestoreActivity() {
 	}
 
 	if (sdDashComponent != null) {
+		var guidList = {};
+		var dashComp = [];
 		for (var i in sdDashComponent) {
 			var dc = sdDashComponent[i];
+			if (guidList[dc.GUID]) continue;
+			dashComp.push(dc);
+			guidList[dc.GUID] = true;
 			DCM.loadDashComponent(dc.contentComponent,dc.pane,dc.GUID);
 		}
+		tabStateObject.setParam({"sdDashComponent":dashComp});
 	}
 
 }

@@ -1,4 +1,4 @@
-<div>
+<div style="height:300px;">
 	<div>
 		<label><?=__("Select Pharmacy to View/Edit")?></label>
 	</div>
@@ -10,9 +10,9 @@
 <script>
 var pharmacyId = 0;
 function addPharmacy() {
-	pharmacyEditTabbar.setContentHref("tab_pharmacyDetails","<?=$this->baseUrl?>/admin-pharmacies/add");
+	adminPharmacyTabbarAttachContent("tab_pharmacyDetails","<?=$this->baseUrl?>/admin-pharmacies.raw/add");
 	pharmacyEditTabbar.setTabActive("tab_pharmacyDetails");
-	pharmacyEditTabbar.forceLoad(pharmacyEditTabbar.getActiveTab());        
+	localRefreshCurrentTab();
 }
 
 var pscb = dijit.byId("pharmacySelectAutoCompleteDiv");
@@ -29,12 +29,13 @@ dojo.connect(pscb,"onChange","loadPharmacy");
 function loadPharmacy(id) {
 	if (id) {
 		pharmacyId = id;
+		onPharmacyTabbarClick("tab_pharmacyDetails");
 		pharmacyEditTabbar.setTabActive("tab_pharmacyDetails");
-		refreshCurrentTab();
+		localRefreshCurrentTab();
 	}
 }
 
-function refreshCurrentTab() {
+function localRefreshCurrentTab() {
 	pharmacyEditTabbar.forceLoad(pharmacyEditTabbar.getActiveTab());        
 }
 
@@ -43,6 +44,7 @@ pharmacyEditTabbar.setImagePath("<?=$this->baseUrl?>/img/");
 pharmacyEditTabbar.setStyle("silver");
 pharmacyEditTabbar.setSkinColors("#FFFFFF,#FFFACD");
 pharmacyEditTabbar.addTab("tab_pharmacyDetails","<?=__('Pharmacy Details')?>","145");
+pharmacyEditTabbar.addTab("tab_pharmacyePrescribeDetails","<?=__('ePrescribe Details')?>","145");
 pharmacyEditTabbar.addTab("tab_pharmacyHealthCloudLoadDetails","<?=__('Load Pharmacies')?>","145");
 
 function adminPharmacyTabbarAttachContent(id,url) {
@@ -64,6 +66,9 @@ function onPharmacyTabbarClick(id) {
 	switch(id) {
 		case "tab_pharmacyDetails":
 			adminPharmacyTabbarAttachContent(id,"<?=$this->baseUrl?>/admin-pharmacies.raw/edit?pharmacyId="+pharmacyId);
+			break;
+		case "tab_pharmacyePrescribeDetails":
+			adminPharmacyTabbarAttachContent(id,"<?=$this->baseUrl?>/admin-eprescribe.raw/edit-pharmacy?pharmacyId="+pharmacyId);
 			break;
 		case "tab_pharmacyHealthCloudLoadDetails":
 			adminPharmacyTabbarAttachContent(id,"<?=$this->baseUrl?>/admin-pharmacies.raw/healthcloud-sync");

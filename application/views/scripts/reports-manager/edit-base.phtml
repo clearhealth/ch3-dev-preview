@@ -159,6 +159,7 @@ function reportBaseFiltersDelete(id) {
 		url: "<?=$this->baseUrl?>/reports-manager.raw/process-delete-filter",
 		handleAs: "json",
 		content: {
+			"baseId": dojo.byId("<?=$this->form->reportBaseId->getId()?>").value,
 			"filterId": id,
 		},
 		load: function (data) {

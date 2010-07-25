@@ -69,6 +69,7 @@ class CalcLabs {
                 $tmpArr[] = ''; //abnormal
                 $tmpArr[] = 'F'; //status
                 $tmpArr[] = date('Y-m-d H:i:s').'::'.'0'; // observationTime::(boolean)normal; 0 = abnormal, 1 = normal
+                $tmpArr[] = '0'; //sign
                 //$this->_calcLabResults[uniqid()] = $tmpArr;
                 $this->_calcLabResults[1] = $tmpArr; // temporarily set index to one(1) to be able to include in selected lab results
 		return $tmpArr;

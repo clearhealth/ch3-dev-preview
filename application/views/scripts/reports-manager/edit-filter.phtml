@@ -23,6 +23,14 @@
 			<?=$this->formHidden('filter[enumName][value]',$this->filterData['enumName']['value'],array('id'=>'filter-enumName-value'))?>
 		</div>
 	</div>
+	<div id="filterTypeQueryId" style="display:none;">
+		<br style="clear:left"/>
+		<div class="formRow" style="padding-top:4px;">
+			<dt><label for="filter-query" class="optional"><?=__('Query')?></label></dt>
+			<?=$this->formSelect('filter[query]',$this->filterData['query'],array('id'=>'filter-query','style'=>'width:250px;'),$this->reportQueries)?>
+			<input type="checkbox" name="filter[includeBlank]" id="filter-includeBlank" <?=($this->filterData['includeBlank'])?'checked="checked"':''?> /> <?=__('Include Blank')?>
+		</div>
+	</div>
 	<br style="clear:left"/>
 	<div class="formRow" style="padding-top:4px;">
 		<dt><label for="filter-options" class="optional"><?=__('Options')?></label></dt>
@@ -67,7 +75,9 @@ function submitFilter() {
 
 function filterTypeOnChanged(value) {
 	var filterTypeEnumName = dojo.byId("filterTypeEnumNameId");
+	var filterTypeQuery = dojo.byId("filterTypeQueryId");
 	filterTypeEnumName.style.display = "none";
+	filterTypeQuery.style.display = "none";
 	switch (value) {
 		case "<?=ReportBase::FILTER_TYPE_DATE?>":
 			break;
@@ -77,6 +87,7 @@ function filterTypeOnChanged(value) {
 			filterTypeEnumName.style.display = "";
 			break;
 		case "<?=ReportBase::FILTER_TYPE_QUERY?>":
+			filterTypeQuery.style.display = "";
 			break;
 	}
 }

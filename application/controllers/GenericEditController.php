@@ -49,7 +49,8 @@ class GenericEditController extends WebVista_Controller_Action {
 			throw new Exception("ORM Class {$ormClass} is not an instance of an ORM");
 		}
 		if (strlen($ormEditMethod) > 0 && method_exists($ormObject,$ormEditMethod)) {
-			$form = $ormObject->$ormEditMethod($ormId);
+			$isAdd = (int)$this->_getParam('isAdd'); // isAdd is a flag to add new enum and ORM to parent's $ormId
+			$form = $ormObject->$ormEditMethod($ormId,$isAdd);
 		}
 		else {
 			foreach ($ormObject->_primaryKeys as $key) {

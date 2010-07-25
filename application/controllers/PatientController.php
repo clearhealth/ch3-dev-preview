@@ -42,7 +42,7 @@ class PatientController extends WebVista_Controller_Action {
 	public function ajaxSetPatientDefaultPharmacyAction() {
 		$retval = false;
 		$personId = (int) $this->_getParam('personId');
-		$pharmacyId = preg_replace('/[^a-zA-Z0-9]/','',$this->_getParam('pharmacyId'));
+		$pharmacyId = preg_replace('/[^a-zA-Z0-9-]+/','',$this->_getParam('pharmacyId'));
 		if ($personId > 0 && strlen($pharmacyId) > 0) {
 			$patient = new Patient();
 			$patient->personId = $personId;
@@ -80,6 +80,8 @@ class PatientController extends WebVista_Controller_Action {
 		$this->view->reasons = $this->_getReasons();
 
 		$this->view->statesList = Address::getStatesList();
+		$this->view->phoneTypes = PhoneNumber::getListPhoneTypes();
+		$this->view->addressTypes = Address::getListAddressTypes();
 		$this->render();
 	}
 
@@ -235,7 +237,8 @@ class PatientController extends WebVista_Controller_Action {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from('number')
-				->where('person_id = ?',$patientId);
+				->where('person_id = ?',$patientId)
+				->order('displayOrder ASC');
 		$phoneNumberIterator = new PhoneNumberIterator();
 		$phoneNumberIterator->setDbSelect($sqlSelect);
 		foreach ($phoneNumberIterator as $phone) {
@@ -259,7 +262,8 @@ class PatientController extends WebVista_Controller_Action {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from('address')
-				->where('person_id = ?',$patientId);
+				->where('person_id = ?',$patientId)
+				->order('displayOrder ASC');
 		$addressIterator = new AddressIterator();
 		$addressIterator->setDbSelect($sqlSelect);
 		foreach ($addressIterator as $addr) {
@@ -386,6 +390,9 @@ class PatientController extends WebVista_Controller_Action {
 
 		$subscribers = array(''=>'');
 		$this->view->subscribers = $subscribers;
+
+		$this->view->listVerified = InsuredRelationship::getVerifiedOptions();
+
 		$this->render('edit-insurer');
 	}
 
@@ -423,7 +430,7 @@ class PatientController extends WebVista_Controller_Action {
 			$options = array();
 			if ($row->type == PatientStatisticsDefinition::TYPE_ENUM) {
 				$enumerationClosure = new EnumerationClosure();
-				$paths = $enumerationClosure->generatePaths($row->value);
+				$paths = $enumerationClosure->generatePathsKeyName($row->value);
 				foreach ($paths as $id=>$name) {
 					$options[] = array('key'=>$id,'value'=>$name);
 				}
@@ -435,6 +442,85 @@ class PatientController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(array('rows'=>$rows));
+	}
+
+	public function processReorderPhonesAction() {
+		$from = (int)$this->_getParam('from');
+		$to = (int)$this->_getParam('to');
+		$ret = false;
+
+		if ($from > 0 && $to > 0) {
+			$phoneFrom = new PhoneNumber();
+			$phoneFrom->phoneNumberId = $from;
+			$phoneFrom->populate();
+			$phoneTo = new PhoneNumber();
+			$phoneTo->phoneNumberId = $to;
+			$phoneTo->populate();
+
+			// swap displayOrder
+			$displayOrder = $phoneFrom->displayOrder;
+			$phoneFrom->displayOrder = $phoneTo->displayOrder;
+			$phoneTo->displayOrder = $displayOrder;
+			$phoneFrom->persist();
+			$phoneTo->persist();
+			$ret = true;
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function processReorderAddressesAction() {
+		$from = (int)$this->_getParam('from');
+		$to = (int)$this->_getParam('to');
+		$ret = false;
+
+		if ($from > 0 && $to > 0) {
+			$addressFrom = new Address();
+			$addressFrom->addressId = $from;
+			$addressFrom->populate();
+			$addressTo = new Address();
+			$addressTo->addressId = $to;
+			$addressTo->populate();
+
+			// swap displayOrder
+			$displayOrder = $addressFrom->displayOrder;
+			$addressFrom->displayOrder = $addressTo->displayOrder;
+			$addressTo->displayOrder = $displayOrder;
+			$addressFrom->persist();
+			$addressTo->persist();
+			$ret = true;
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function autoCompleteAction() {
+        	$match = $this->_getParam('name');
+		$match = preg_replace('/[^a-zA-Z-0-9 ]/','',$match);
+		$matches = array();
+		if (!strlen($match) > 0) $this->_helper->autoCompleteDojo($matches);
+		$db = Zend_Registry::get('dbAdapter');
+		$match = $db->quote($match.'%');
+		$sqlSelect = $db->select()
+				->from('person')
+				->joinUsing('patient','person_id')
+				->where('person.last_name LIKE '.$match)
+				->orWhere('person.first_name LIKE '.$match)
+				->order('person.last_name DESC')
+				->order('person.first_name DESC');
+				//->limit(50);
+
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$matches[$row['person_id']] = $row['last_name'] . ', ' . $row['first_name'] . ' ' . substr($row['middle_name'],0,1) . ' #' . $row['record_number'];
+			}
+		}
+
+        	$this->_helper->autoCompleteDojo($matches);
 	}
 
 }

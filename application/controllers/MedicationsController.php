@@ -36,14 +36,15 @@ class MedicationsController extends WebVista_Controller_Action {
 	}
 
 	public function ajaxDiscontinueMedicationAction() {
-		$medicationId = $this->_getParam('medicationId');
-		$medication = new Medication();
-		$medication->medicationId = (int)$medicationId;
-		$medication->populate();
-		$medication->daysSupply = -1;
-		$medication->dateDiscontinued = date('Y-m-d H:i:s');
-		$medication->persist();
-
+		$medicationIds = explode(',',$this->_getParam('medicationId'));
+		foreach ($medicationIds as $medicationId) {
+			$medication = new Medication();
+			$medication->medicationId = (int)$medicationId;
+			$medication->populate();
+			$medication->daysSupply = -1;
+			$medication->dateDiscontinued = date('Y-m-d H:i:s');
+			$medication->persist();
+		}
 		$data = array();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -78,7 +79,7 @@ class MedicationsController extends WebVista_Controller_Action {
 				$expiration = '<font color="#ff0000">'.date('m/d/Y h:i A',strtotime($medication->dateDiscontinued)).'</font>';
 			}
 			else if ($medication->dateBegan != '0000-00-00 00:00:00') {
-				$expiration = date('m/d/Y h:i A',strtotime($medication->expires));
+				$expiration = date('m/d/Y',strtotime($medication->expires));
 				$color = '#00ff00'; // green
 				if (strtotime(date('m/d/Y')) >= strtotime(substr($expiration,0,10))) {
 					$color = '#ff0000'; // red
@@ -95,6 +96,8 @@ class MedicationsController extends WebVista_Controller_Action {
 			$tmp['data'][] = '';
 			$tmp['data'][] = $medication->refillsRemaining;
 			$tmp['data'][] = $medication->comment;
+			$tmp['data'][] = (int)$medication->eSignatureId;
+			//$tmp['data'][] = $medication->datePrescribed; // extra row
 			$rows[] = $tmp;
 		}
 		$data = array();
@@ -107,6 +110,7 @@ class MedicationsController extends WebVista_Controller_Action {
 	public function editMedicationAction() {
 		$personId = (int)$this->_getParam('personId');
 		$medicationId = (int)$this->_getParam('medicationId');
+		$refillRequestId = $this->_getParam('refillRequestId');
 		$copy = $this->_getParam('copy');
 
 		$patient = new Patient();
@@ -115,6 +119,15 @@ class MedicationsController extends WebVista_Controller_Action {
 
 		if (strlen($copy) > 0) {
 			$this->view->copy = $copy;
+		}
+
+		$patient = new Patient();
+		$patient->personId = $personId;
+		$patient->populate();
+		$defPharmacy = new Pharmacy();
+		$defPharmacy->pharmacyId = $patient->defaultPharmacyId;
+		if ($defPharmacy->populate()) {
+			$this->view->defaultPharmacy = $defPharmacy;
 		}
 
 		$name = Medication::ENUM_ADMIN_SCHED;
@@ -149,12 +162,44 @@ class MedicationsController extends WebVista_Controller_Action {
 
 		if (strlen($copy) > 0) {
 			$this->_medication->medicationId = 0;
+			//$this->_medication->datePrescribed = date('Y-m-d H:i:s');
 		}
+		$this->_medication->datePrescribed = date('Y-m-d H:i:s');
+		$baseMed24 = new BaseMed24();
+		if (strlen($refillRequestId) > 0) {
+			$this->_medication->refillRequestId = $refillRequestId;
+			$messaging = new Messaging();
+			$messaging->messagingId = $refillRequestId;
+			$messaging->populate();
+			if (strlen($messaging->rawMessage) > 0) {
+				$xml = new SimpleXMLElement($messaging->rawMessage);
+				$xmlMedication = $xml->Body->RefillRequest->MedicationPrescribed;
+				// override pkey
+				// search by NDC if exists
+				if ((string)$xmlMedication->DrugCoded->ProductCodeQualifier == 'ND' && strlen((string)$xmlMedication->DrugCoded->ProductCode) > 0) {
+					$ndc = (string)$xmlMedication->DrugCoded->ProductCode;
+					$baseMed24->hipaa_ndc = $ndc;
+					$baseMed24->populateByHipaaNDC();
+					if (!strlen($baseMed24->pkey) > 0) {
+						// search by tradename
+						$baseMed24->populateByDrugDescription((string)$xmlMedication->DrugDescription);
+						if (strlen($baseMed24->pkey) > 0) {
+							$this->_medication->pkey = $baseMed24->pkey;
+						}
+					}
+					else {
+						$this->_medication->pkey = $baseMed24->pkey;
+					}
+				}
+			}
+		}
+		$this->view->baseMed24 = $baseMed24;
 
 		$this->_form->loadORM($this->_medication, "Medication");
 		$this->_form->setWindow('windowNewMedication');
 		$this->view->form = $this->_form;
 		$this->view->medication = $this->_medication;
+		$this->view->quantityQualifiers = Medication::listQuantityQualifiersMapping();
 		$this->render('new-medication');
 	}
 
@@ -162,6 +207,7 @@ class MedicationsController extends WebVista_Controller_Action {
 		$personId = (int)$this->_getParam('personId');
 		$medicationId = (int)$this->_getParam('medicationId');
 		$copy = $this->_getParam('copy');
+		$forced = (int)$this->_getParam('forced');
 
 		$patient = new Patient();
 		$patient->personId = $personId;
@@ -183,17 +229,45 @@ class MedicationsController extends WebVista_Controller_Action {
 		}
 
 		$params = $this->_getParam('medication');
+		$params['daysSupply'] = preg_replace('/,/','',$params['daysSupply']);
+		$params['quantity'] = preg_replace('/,/','',$params['quantity']);
+		$params['refills'] = preg_replace('/,/','',$params['refills']);
 		$this->_medication->populateWithArray($params);
 		$this->_medication->datePrescribed = date('Y-m-d H:i:s');
 		$this->_medication->prescriberPersonId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$this->_medication->provider->populate();
 		// daysSupply computation
+		/*
 		if (method_exists('DrugScheduleDaysSupply',$this->_medication->schedule)) {
 			$methodName = $this->_medication->schedule;
 			$this->_medication->daysSupply = (int)DrugScheduleDaysSupply::$methodName($this->_medication->quantity);
 		}
-		$this->_medication->persist();
+		*/
 		$data = array();
-		$data['medicationId'] = $this->_medication->medicationId;
+		if (!$forced && $this->_medication->isScheduled()) {
+			$data['confirmation'] = 'Medication is a controlled substance, it cannot be sent electronically. The Rx will be printed and needs a wet signature before it can be faxed to the pharmacy or handed to the patient.';
+		}
+		else if (!$forced && $this->_medication->isFreeForm()) {
+			$data['confirmation'] = 'If the entered freeform medication is a controlled medication, it cannot be eprescribed and will be rejected';
+		}
+		else {
+			$ret = $this->_medication->ssCheck();
+			if (isset($ret[0])) {
+				$error = 'The following error';
+				if (isset($ret[1])) {
+					$error .= 's';
+				}
+				$error .= ' for medication detected:';
+				foreach ($ret as $val) {
+					$error .= "\n*) ".$val;
+				}
+				$data['error'] = $error;
+			}
+		}
+		if (!isset($data['error']) && !isset($data['confirmation'])) {
+			$this->_medication->persist();
+			$data['medicationId'] = $this->_medication->medicationId;
+		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -257,10 +331,11 @@ class MedicationsController extends WebVista_Controller_Action {
 
 	public function selectPharmacyAction() {
 		$personId = (int)$this->_getParam('personId');
-		$selectedPharmacyId = (int)$this->_getParam('selectedPharmacyId');
+		$selectedPharmacyId = preg_replace('/[^a-zA-Z0-9-]+/','',$this->_getParam('selectedPharmacyId'));
 		$patient = new Patient();
 		$patient->personId = $personId;
 		$patient->populate();
+		$patient->homeAddress->populateWithType('HOME');
 		$this->view->patient = $patient;
 		$defPharmacy = new Pharmacy();
 		$defPharmacy->pharmacyId = $patient->defaultPharmacyId;
@@ -425,6 +500,280 @@ mainTabbar.setOnTabContentLoaded(function(tabId){
 
 EOL;
 		return $js;
+	}
+
+	public function listMedicationRefillsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$rows = array();
+
+		$responded = array();
+		$refillRequest = new MedicationRefillRequest();
+		$refillRequestIterator = $refillRequest->getIteratorByPersonId($personId);
+		foreach ($refillRequestIterator as $refill) {
+			$row = array();
+			$row['id'] = $refill->messageId;
+			//$row['data'][] = $this->view->baseUrl.'/medications.raw/medication-refills-info?messagingId='.$row['id'];
+
+			$refillDetails = $this->_generateRefillDetails($refill->messageId);
+			if ($refillDetails === false) continue;
+
+			$pharmacy = $refillDetails['pharmacy'];
+			$provider = $refillDetails['prescriber'];
+			$patient = $refillDetails['patient'];
+			$medication = $refillDetails['medication'];
+			$responseInfo = $refill->refillResponse->respondedBy;
+			if ($responseInfo != '') {
+				$responseInfo .= '<br />Req. '.$refillDetails['dateRequested'];
+				if ($refill->refillResponse->dateTime == '' || $refill->refillResponse->dateTime == '0000-00-00 00:00:00') {
+					$refill->refillResponse->dateTime = date('Y-m-d H:i:s');
+				}
+				$responseInfo .= '<br />Res. '.date('m/d/Y h:iA',strtotime($refill->refillResponse->dateTime));
+			}
+			$medicationDescription = $refill->medication->description;
+			$medicationDescription = $refillDetails['medicationDescription'];
+			$row['data'][] = '<table class="refillInfo"><tbody>
+				<tr>
+					<th class="firstCol">'.__('Pharmacy Data').'</th>
+					<th>'.__('Prescriber Data').'</th>
+					<th>'.__('Patient').'</th>
+					<th>'.__('Medication Prescribed').'</th>
+					<th class="lastCol">'.__('Response Info').'</th>
+				</tr>
+				<tr>
+					<td class="firstCol" title="'.htmlspecialchars(str_replace('<br />',' ',$pharmacy)).'">'.$pharmacy.'</td>
+					<td title="'.htmlspecialchars(str_replace('<br />',' ',$provider)).'">'.$provider.'</td>
+					<td title="'.htmlspecialchars(str_replace('<br />',' ',$patient)).'">'.$patient.'</td>
+					<td title="'.htmlspecialchars(str_replace('<br />',' ',str_replace(' &nbsp; ',' ',$medication))).'">'.$medication.'</td>
+					<td class="lastCol" title="'.htmlspecialchars(str_replace('<br />',' ',$responseInfo)).'">'.$responseInfo.'</td>
+				</tr>
+			</tbody></table>';
+			$row['data'][] = $medicationDescription.' (Req. '.date('m/d/Y',strtotime($refillDetails['dateRequested'])).')';
+			$status = $refill->status;
+			$description = trim(preg_replace('/([A-Z])(?![A-Z])/',' $1',$refill->refillResponse->response)) .': '.$refill->refillResponse->message;
+			if (!strlen($status) > 0) {
+				$description = '';
+				$status = '';
+				//$isScheduled = $refill->medication->isScheduled();
+				//$controlled = '';
+				//if (!$isScheduled) {
+					$status = '<input type="button" name="approved-'.$refill->messageId.'" id="approved-'.$refill->messageId.'" value="'.__('Approve').'" onClick="refillResponse(\''.$refill->messageId.'\',\'approved\')" style="width:70px;" />';
+				//}
+				//else {
+				//	$controlled = ",'1'";
+				//}
+				$status .= '<input type="button" name="denied-'.$refill->messageId.'" id="denied-'.$refill->messageId.'" value="'.__('Deny').'" onClick="refillResponse(\''.$refill->messageId.'\',\'denied\')" style="width:70px;" />';
+			}
+			else if ($status != '') {
+				if ($refill->refillResponse->dateTime == '' || $refill->refillResponse->dateTime == '0000-00-00 00:00:00') {
+					$refill->refillResponse->dateTime = date('Y-m-d H:i:s');
+				}
+				$status .= ' ('.date('m/d/Y',strtotime($refill->refillResponse->dateTime)).')';
+			}
+			$row['data'][] = $description;
+			$row['data'][] = $status;
+			//$row['data'][] = ($refill->dateStart == '0000-00-00 00:00:00')?'':$refill->dateStart;
+			$row['data'][] = $refill->details;
+			$row['data'][] = $refill->medicationId;
+			if (strlen($refill->status) > 0) {
+				$responded[] = $row;
+			}
+			else {
+				$rows[] = $row;
+			}
+		}
+		foreach ($responded as $respond) {
+			$rows[] = $respond;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
+	}
+
+	protected function _generateRefillDetails($messageId) {
+		// TODO: to be optimized
+		$ret = array();
+		$messaging = new Messaging();
+		$messaging->messagingId = $messageId;
+		$messaging->populate();
+		if (!strlen($messaging->rawMessage) > 0) {
+			return false;
+		}
+		$xml = new SimpleXMLElement($messaging->rawMessage);
+
+		$xmlPharmacy = $xml->Body->RefillRequest->Pharmacy;
+		$pharmacy = array();
+		$pharmacy[] = (string)$xmlPharmacy->StoreName;
+		$pharmacy[] = (string)$xmlPharmacy->Address->AddressLine1;
+		if (strlen($xmlPharmacy->Address->AddressLine2) > 0) {
+			$pharmacy[] = (string)$xmlPharmacy->Address->AddressLine2;
+		}
+		$pharmacy[] = (string)$xmlPharmacy->Address->City.', '.(string)$xmlPharmacy->Address->State.', '.(string)$xmlPharmacy->Address->ZipCode;
+		$phones = array();
+		foreach ($xmlPharmacy->PhoneNumbers->Phone as $key=>$phone) {
+			$phones[] = (string)$phone->Number;
+		}
+		$pharmacy[] = implode(', ',$phones);
+		$ret['pharmacy'] = implode('<br />',$pharmacy);
+
+		$xmlPrescriber = $xml->Body->RefillRequest->Prescriber;
+		$prescriber = array();
+		$prescriber[] = (string)$xmlPrescriber->Name->LastName.', '.(string)(string)$xmlPrescriber->Name->FirstName;
+		$prescriber[] = (string)$xmlPrescriber->Address->AddressLine1;
+		if (strlen($xmlPrescriber->Address->AddressLine2) > 0) {
+			$prescriber[] = (string)$xmlPrescriber->Address->AddressLine2;
+		}
+		$prescriber[] = (string)$xmlPrescriber->Address->City.', '.(string)$xmlPrescriber->Address->State.', '.(string)$xmlPrescriber->Address->ZipCode;
+		$phones = array();
+		foreach ($xmlPrescriber->PhoneNumbers->Phone as $key=>$phone) {
+			$phones[] = (string)$phone->Number;
+		}
+		$prescriber[] = implode(', ',$phones);
+		$ret['prescriber'] = implode('<br />',$prescriber);
+
+		$xmlPatient = $xml->Body->RefillRequest->Patient;
+		$patient = array();
+		$patient[] = (string)$xmlPatient->Name->LastName.', '.(string)(string)$xmlPatient->Name->FirstName;
+		$patient[] = (string)$xmlPatient->Address->AddressLine1;
+		if (strlen($xmlPatient->Address->AddressLine2) > 0) {
+			$patient[] = (string)$xmlPatient->Address->AddressLine2;
+		}
+		$patient[] = (string)$xmlPatient->Address->City.', '.(string)$xmlPatient->Address->State.', '.(string)$xmlPatient->Address->ZipCode;
+		$phones = array();
+		if (isset($xmlPatient->PhoneNumbers->Phone)) {
+			foreach ($xmlPatient->PhoneNumbers->Phone as $key=>$phone) {
+				$phones[] = (string)$phone->Number;
+			}
+		}
+		$patient[] = implode(', ',$phones);
+		$ret['patient'] = implode('<br />',$patient);
+
+		$medication = Messaging::convertXMLMessage($xml->Body->RefillRequest->MedicationPrescribed,$medication,-1,' &nbsp; ');
+		$ret['medication'] = implode('<br />',$medication);
+		$ret['medicationDescription'] = (string)$xml->Body->RefillRequest->MedicationPrescribed->DrugDescription;
+
+		$sentTime = strtotime((string)$xml->Header->SentTime);
+		if (!$sentTime > 0) {
+			$sentTime = time();
+		}
+		$ret['dateRequested'] = date('m/d/Y h:iA',$sentTime);
+
+		return $ret;
+	}
+
+	public function refillsContextMenuAction() {
+		//placeholder function, template is xml and autorenders when called as medications.xml/refills-context-menu
+	}
+
+	public function processRefillResponseAction() {
+		$medicationId = (int)$this->_getParam('medicationId');
+		$response = $this->_getParam('response');
+
+		$refillResponse = new MedicationRefillResponse();
+		$refillResponse->medicationId = $medicationId;
+		$ret = $refillResponse->send($response);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function detailsMedicationAction() {
+		$medicationId = (int)$this->_getParam('medicationId');
+
+		$name = Medication::ENUM_ADMIN_SCHED;
+		$enumeration = new Enumeration();
+		$enumeration->populateByEnumerationName($name);
+		$enumerationsClosure = new EnumerationsClosure();
+		$rowset = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		$scheduleOptions = array();
+		$adminSchedules = array();
+		foreach ($rowset as $row) {
+			$scheduleOptions[] = $row->key;
+			$adminSchedules[$row->key] = $row->name;
+		}
+		$this->view->scheduleOptions = $scheduleOptions;
+		$this->view->adminSchedules = $adminSchedules;
+
+		$this->view->chBaseMed24Url = Zend_Registry::get('config')->healthcloud->CHMED->chBaseMed24Url;
+		$this->view->chBaseMed24DetailUrl = Zend_Registry::get('config')->healthcloud->CHMED->chBaseMed24DetailUrl;
+		$this->_form = new WebVista_Form(array('name' => 'new-medication'));
+		$this->_form->setAction(Zend_Registry::get('baseUrl') . "medications.raw/process-add-medication");
+
+		$this->_medication = new Medication();
+		$this->_medication->medicationId = (int)$medicationId;
+		$this->_medication->populate();
+		if (!strlen($this->_medication->pharmacyId) > 0) {
+			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
+		}
+		if ($this->_medication->pharmacy->populate()) {
+			$this->view->defaultPharmacy = $this->_medication->pharmacy;
+		}
+
+		$this->_form->loadORM($this->_medication,"Medication");
+		$this->_form->setWindow('windowDetailsMedication');
+		$this->view->form = $this->_form;
+		$this->view->medication = $this->_medication;
+		$this->view->quantityQualifiers = Medication::listQuantityQualifiersMapping();
+
+		$medication = $this->_medication;
+		$prescriberDetails = 'Prescribed on: '.$medication->datePrescribed.' by: '.$medication->provider->firstName.' '.$medication->provider->lastName.' '.$medication->provider->suffix;
+		$this->view->prescriberDetails = $prescriberDetails;
+		$signedDetails = '**Unsigned**';
+		if ($this->_medication->eSignatureId > 0) {
+			$signature = new ESignature();
+			$signature->eSignatureId = $medication->eSignatureId;
+			$signature->populate();
+			$person = new Person();
+			$person->personId = $signature->signingUserId;
+			$person->populate();
+			$signedDetails = 'Signed on: '.$signature->signedDateTime.' by: '.$person->firstName.' '.$person->lastName.' '.$person->suffix;
+		}
+		$this->view->signedDetails = $signedDetails;
+		$transmitDetails = '';
+		if ($medication->transmit == 'ePrescribe') {
+			$transmitDetails = 'Transmitted on: ';
+			if ($medication->dateTransmitted != '0000-00-00 00:00:00') {
+				$transmitDetails .= $medication->dateTransmitted;
+			}
+			else {
+				$transmitDetails .= 'pending';
+			}
+			$transmitDetails .= ' to pharmacy: '.$medication->pharmacy->StoreName;
+		}
+		else if ($medication->transmit == 'print') {
+			$transmitDetails = 'Printed on: ';
+			if ($medication->dateTransmitted != '0000-00-00 00:00:00') {
+				$transmitDetails .= $medication->dateTransmitted;
+			}
+			else {
+				$transmitDetails .= 'pending';
+			}
+		}
+		$this->view->transmitDetails = $transmitDetails;
+		$this->render('details-medication');
+	}
+
+	public function ajaxCheckPatientInfoAction() {
+		$personId = (int)$this->_getParam('personId');
+		$data = true;
+		$patient = new Patient();
+		$patient->personId = $personId;
+		$patient->populate();
+		$ret = $patient->ssCheck();
+		if (isset($ret[0])) {
+			$error = 'The following error';
+			if (isset($ret[1])) {
+				$error .= 's';
+			}
+			$error .= ' for patient detected:';
+			foreach ($ret as $val) {
+				$error .= "\n*) ".$val;
+			}
+			$data = array('error'=>$error);
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

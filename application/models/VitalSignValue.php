@@ -34,6 +34,10 @@ class VitalSignValue extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('vitalSignValueId');
 	protected $_table = "vitalSignValues";
 
+	public static function convertValuesHeadCircumference($value,$unit) {
+		return self::convertValuesHeight($value,$unit);
+	}
+
 	public static function convertValuesHeight($value,$unit) {
 		if (!is_numeric($value) || !$value > 0) {
 			return false;

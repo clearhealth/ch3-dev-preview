@@ -44,11 +44,16 @@
 				globalCreateWindow("windowNewPatientId",[],"<?=$this->baseUrl?>/patient-new.raw","<?=__('Add Patient')?>",750,600);
 				break;
 			case "All_manage_schedules":
-			case "All_schedule_manager":
 				globalCreateWindow("windowScheduleManagerId",[],"<?=$this->baseUrl?>/schedule-manager.raw","<?=__('Manage Schedules')?>",800,600);
 				break;
 			case "All_my_preferences":
 				globalCreateWindow("winMyPreferencesId",[],"<?=$this->baseUrl?>/users.raw/preferences","<?=__('My Preferences')?>",400,400);
+				break;
+			case "All_sliding_fee_tables":
+				globalCreateWindow("windowFeeTablesId",[],"/index.php/main/FeeScheduleDiscount/List","<?=__('Sliding Fee Tables')?>",800,600);
+				break;
+			case "All_fee_schedules":
+				globalCreateWindow("windowFeeSchedulesId",[],"/index.php/main/FeeSchedule/List","<?=__('Fee Schedules')?>",800,600);
 				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
@@ -71,12 +76,17 @@ function windowAddVitals(jsCallback) {
 	return globalCreateWindow("windowAddVitalSignsId",params,"<?=$this->baseUrl?>/vital-signs.raw/add","<?=__('Add Vitals')?>",600,400);
 }
 
-function windowReviewSignDocuments() {
-	return globalCreateWindow("windowESignId",new Array(),"<?=$this->baseUrl?>/e-sign.raw","<?=__('Review / Sign Documents')?>",450,450);
+function windowReviewSignDocuments(objectId) {
+	var params = [];
+	if (objectId) {
+		params.push("objectId="+objectId);
+	}
+	return globalCreateWindow("windowESignId",params,"<?=$this->baseUrl?>/e-sign.raw","<?=__('Review / Sign Documents')?>",450,450);
 }
 
-function windowSelectPatient(byPass) {
+function windowSelectPatient(byPass,callback) {
 	var patientId = mainController.getActivePatient();
+	callbackSP = null;
 	if (!byPass && patientId != 0) {
 		dojo.xhrGet({
 			url: globalBaseUrl + '/e-sign.raw/count-unsigned',
@@ -98,18 +108,19 @@ function windowSelectPatient(byPass) {
 		});
 	}
 	else {
-		dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-		dhxWins.setSkin('clear_silver');
-		winSP = dhxWins.createWindow('windowSelectPatientId',60,10,800,650);
-		winSP.setText('Select Patient');
-		winSP.attachURL('<?=$this->baseUrl?>/patient-select.raw',true);
-		//winSP.setModal(true);
-		winSP.centerOnScreen();
+		if (callback && callback.length > 0) {
+			callbackSP = callback;
+		}
+		var params = [];
+		winSP = globalCreateWindow("windowSelectPatientId",params,"<?=$this->baseUrl?>/patient-select.raw","<?=__('Select Patient')?>",800,650);
 	}
 }
 function closeWindowSelectPatient() {
 	winSP.close();
 	refreshCurrentTab();
+	if (callbackSP !== null) {
+		eval(callbackSP);
+	}
 }
 
 function windowPatientDetails() {
@@ -118,12 +129,7 @@ function windowPatientDetails() {
 		windowSelectPatient();
 		return;
 	}
-	dhxWins.setImagePath("<?=$this->baseUrl?>/img/");
-	dhxWins.setSkin('clear_silver');
-	winPD = dhxWins.createWindow('windowPatientDetailsId',60,10,900,900);
-	winPD.setText('<?=__('Patient Details')?>');
-	winPD.attachURL('<?=$this->baseUrl?>/patient.raw/details?patientId='+patientId,true);
-	winPD.centerOnScreen();
+	winPD = globalCreateWindow("windowPatientDetailsId",[],"<?=$this->baseUrl?>/patient.raw/details?patientId="+patientId,"<?=__('Patient Details')?>",900,600);
 }
 
 var globAlerts = new Array();
@@ -252,6 +258,10 @@ function openPostings() {
     function onToolbarClick(itemId) {
         switch (itemId) {
                 case "tbSelectPatient":
+			if (globalPhotoIsClicked) { // stop bubbling if image is clicked
+				globalPhotoIsClicked = false;
+				break;
+			}
 			if (mainController.getActivePatient() > 0) {
                         	windowPatientDetails();
 			}
@@ -313,7 +323,7 @@ function mainTabbarClick(id) {
         switch(id) {
 	<?foreach ($this->mainTabs as $tabName => $tab):?>
 	case 'tab_<?=$tabName?>':
-		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports" || $tabName == "Admin" || $tabName == 'Messaging'):?>
+		<? if($tabName == 'Calendar' || $tabName == "Billing" || $tabName == "Reports" || $tabName == "Admin" || $tabName == 'Messaging' || $tabName == 'Claims' || $tabName == 'A/R'):?>
                 dojo.byId('mainToolbar').style.display = 'none';
                 <?else:?>
                 dojo.byId('mainToolbar').style.display = 'block';
@@ -348,6 +358,35 @@ function dhtmlxCatchError(type,desc,erData) {
 	return false;
 }
 dhtmlxError.catchError("ALL",dhtmlxCatchError);
+
+function windowPatientPictures(patientId) {
+	if (!patientId) {
+		patientId = mainController.getActivePatient();
+	}
+	if (patientId == 0) {
+		alert("No patient selected.");
+		return;
+	}
+	var params = ["personId="+patientId];
+	var winPatientPictures = globalCreateWindow("winPatientPicturesId",params,"<?=$this->baseUrl?>/patient-pictures.raw","<?=__('Patient Pictures')?>",800,600);
+}
+
+function windowGrowthCharts(patientId) {
+	if (!patientId) {
+		patientId = mainController.getActivePatient();
+	}
+	if (patientId == 0) {
+		alert("No patient selected.");
+		return;
+	}
+	var params = ["personId="+patientId];
+	var winGrowthCharts = globalCreateWindow("winGrowthChartsId",params,"<?=$this->baseUrl?>/growth-charts.raw","<?=__('Growth Charts')?>",800,600);
+}
+
+function windowForwardForSigning(ormClass,ormId) {
+	var params = ["ormClass="+ormClass,"ormId="+ormId];
+	var winForwardForSigning = globalCreateWindow("winForwardForSigningId",params,"<?=$this->baseUrl?>/e-sign.raw/forward-for-signing","<?=__('Forward for signing')?>",400,200);
+}
 
     </script>
 </div>

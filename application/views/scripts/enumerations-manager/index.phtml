@@ -30,10 +30,12 @@ $categories['User'] = "User";
 
 <script>
 
-function enumEditObject(enumerationId) {
+function enumEditObject(enumerationId,isAdd) {
+	isAdd = (isAdd)?1:0;
 	var params = [];
 	params.push("enumerationId="+enumerationId);
-	var winEditORM = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/generic-edit.raw","<?=__('Edit ORM Object')?>",400,400);
+	params.push("isAdd="+isAdd);
+	var winEditORM = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/generic-edit.raw",((isAdd)?"<?=__('Add')?>":"<?=__('Edit')?>")+" <?=__('ORM Object')?>",400,400);
 }
 
 function enumSingleUpdate(field,id,value,cellIndex,grid) {
@@ -151,11 +153,15 @@ function enumOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 
 function enumerationEditWindow(enumerationId,parentId,grid,ormClass) {
 	var params = [];
+	if (parentId) {
+		eval("var className = "+grid+".getUserData(parentId,\"ormClass\") + \"\";");
+		if (className.length > 0) {
+			return enumEditObject(parentId,true);
+		}
+		params.push("parentId="+parentId);
+	}
 	if (enumerationId) {
 		params.push("enumerationId="+enumerationId);
-	}
-	if (parentId) {
-		params.push("parentId="+parentId);
 	}
 	if (grid) {
 		params.push("grid="+grid);
@@ -170,7 +176,7 @@ function enumerationEditWindow(enumerationId,parentId,grid,ormClass) {
 		enumCategory = "User";
 	}
 	params.push("category="+enumCategory);
-	var winEditEnumeration = globalCreateWindow("windowEditEnumerationId",params,"<?=$this->baseUrl?>/enumerations-manager.raw/edit","<?=__('Add/Edit Enumeration')?>",350,420);
+	var winEditEnumeration = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/enumerations-manager.raw/edit","<?=__('Add/Edit Enumeration')?>",350,420);
 }
 
 enumUpdateListGrid();

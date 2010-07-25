@@ -1,0 +1,164 @@
+<style>
+div.gridbox_xp table.obj td {
+	border-bottom: 1px solid #eee;
+	border-right: 1px solid #eee;
+}
+
+#chartTypeId {
+	margin: 0em 0.1em;
+	border:1px solid #b3b3b3;
+	line-height: normal;
+	font-size: 100%;
+	width: 25em;
+}
+</style>
+
+<div style="margin:10px;padding-top:4px;">
+	<div style="float:left;">
+		<span><?=__('Show Chart')?>: </span><?=$this->formSelect('chartTypeId',null,array('onChange'=>'chartTypeOnChanged(this.value)'),$this->chartList)?>
+	</div>
+	<div style="float:right;">
+		<span><?=__('Age/Gender')?>: </span><?=$this->person->age?> (<?=$this->person->displayGender?>)
+	</div>
+</div>
+<br style="clear:left;" />
+<div style="margin:10px;padding-top:4px;">
+	<div id="growthChartId" style="height:400px;width:100%;"></div>
+</div>
+<br style="clear:left;" />
+<div style="margin:10px;font-size:5pt;">
+Published May 30, 2000. SOURCE: Developed by the National Center for Health Statistics in collaboration with the National Center for Chronic Disease Prevention and Health Promotion (2000). http://www.cdc.gov/growthcharts
+</div>
+
+<script>
+var listCharts = {
+<?foreach ($this->listGrowthCharts as $key=>$value):?>
+	"<?=$key?>": {
+		"name": "<?=$value['name']?>",
+		"unit": "<?=$value['unit']?>",
+		"percentileName": "<?=$value['percentileName']?>",
+		"percentileUnit": "<?=$value['percentileUnit']?>",
+		"xMax": "<?=$value['xMax']?>",
+		"yMax": "<?=$value['yMax']?>",
+		"xMin": "<?=$value['xMin']?>",
+		"yMin": "<?=$value['yMin']?>",
+		"columns": {
+		<?foreach ($value['columns'] as $k=>$column):?>
+			"<?=$k?>": {
+				"name": "<?=$column['name']?>",
+				"percentiles": {
+				<?foreach ($column['percentiles'] as $y=>$x):?>
+					"<?=$y?>": "<?=$x?>",
+				<?endforeach;?>
+				},
+			},
+		<?endforeach;?>
+		},
+		"data": {
+		<?foreach ($value['data'] as $k=>$column):?>
+			"<?=$k?>": {
+				"x": "<?=$column['x']?>",
+				"y": "<?=$column['y']?>",
+			},
+		<?endforeach;?>
+		},
+	},
+<?endforeach;?>
+};
+
+function chartTypeOnChanged(value) {
+	if (!value) {
+		var chartType = dojo.byId("chartTypeId");
+		if (chartType.selectedIndex == -1) return;
+		value = chartType.options[chartType.selectedIndex].value;
+	}
+	growthChartsPlot(value);
+}
+
+var growthChart = null;
+function growthChartsPlot(chartType) {
+	dojo.setInnerHTML(dojo.byId("growthChartId"),"");
+	if (!listCharts[chartType]) return;
+	var chartData = listCharts[chartType];
+
+	if (growthChart != null) {
+		growthChart.destroy();
+	}
+
+	var xMax = parseInt(chartData.xMax);
+	var yMax = parseInt(chartData.yMax);
+
+	var xMin = 0;//parseInt(chartData.xMin);
+	var yMin = 0;//parseInt(chartData.yMin);
+
+	var yTickStep = parseInt(yMax / 10);
+	var xTickStep = parseInt(xMax / 20);
+
+	if (xTickStep < 1) {
+		xTickStep = 1;
+	}
+	if (yTickStep < 1) {
+		yTickStep = 1;
+	}
+	var tmp = 0;
+	while (yMax > 0 && tmp < yMax) {
+		tmp += yTickStep;
+	}
+	var diff = parseFloat(yMax) - parseFloat(tmp);
+	if (diff == 0) {
+		yMax = parseFloat(tmp) + parseFloat(yTickStep);
+	}
+	else if (diff < 0) {
+		yMax = parseFloat(yMax) - parseFloat(diff);
+	}
+	else {
+		yMax = parseFloat(yMax) + parseFloat(diff);
+	}
+
+	var series = [];
+	var xLabels = [];
+	//xLabels.push({value:xMin,text:""});
+	xLabels.push({value:xMin,text:"   <b>"+chartData.name+"</b><br />   ("+chartData.unit+")"});
+	//xLabels.push({value:xTickStep,text:"   <b>"+chartData.name+"</b><br />   ("+chartData.unit+")"});
+	xLabels.push({value:xMax,text:xMax});
+	var yLabels = [];
+	yLabels.push({value:yMin,text:""});
+	yLabels.push({value:yMax,text:"<b>"+chartData.percentileName+"</b><br />("+chartData.percentileUnit+")"});
+
+	growthChart = new dojox.charting.Chart2D("growthChartId");
+	growthChart.addAxis("x",{labels:xLabels,majorTickStep:xTickStep,minorTickStep:xTickStep,microTickStep:1});
+	growthChart.addAxis("y", {vertical:true,labels:yLabels,majorTickStep:yTickStep,minorTickStep:yTickStep,microTickStep:1});
+	growthChart.addPlot("grid",{type:"Grid",hMajorLines:true,hMinorLines:true,vMajorLines:true,vMinorLines:true});
+
+	series = [];
+	series.push({x:xMin,y:yMax});
+	series.push({x:xMin,y:yMin});
+	series.push({x:xMax,y:yMin});
+	growthChart.addPlot("imaginary",{type:"Lines",markers:false});
+	growthChart.addSeries("Imaginary Plot",series,{plot:"imaginary",stroke:{color:"white"}});
+
+	for (var i in chartData.columns) {
+		var column = chartData.columns[i];
+		series = [];
+		for (var j in column.percentiles) {
+			series.push({x:j,y:column.percentiles[j]});
+		}
+		growthChart.addPlot(i,{type:"Lines",tension:8});
+		growthChart.addSeries(column.name,series,{plot:i,stroke:{color:"#0000FF"}});
+	}
+
+	series = [];
+	for (var i in chartData.data) {
+		var column = chartData.data[i];
+		series.push({x:column["x"],y:column["y"]});
+	}
+	if (series.length > 0) {
+		growthChart.addPlot("vitals",{type:"Lines",tension:8});
+		growthChart.addSeries("Vitals",series,{plot:"vitals",stroke:{color:"#FF0000"}});
+	}
+
+	growthChart.render();
+}
+
+chartTypeOnChanged();
+</script>

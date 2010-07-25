@@ -1,0 +1,43 @@
+<script>
+function submitMessagingFilter() {
+	var filters = [];
+	var statusFilters = [];
+	var chkEl = document.getElementsByName("status[]");
+	for(var i=0; i<chkEl.length; i++) {
+		if (chkEl[i].checked) {
+			statusFilters.push(chkEl[i].value);
+		}
+	}
+	filters.push("status:"+statusFilters.join(","));
+	var messageFilters = [];
+	var chkEl = document.getElementsByName("message[]");
+	for(var i=0; i<chkEl.length; i++) {
+		if (chkEl[i].checked) {
+			messageFilters.push(chkEl[i].value);
+		}
+	}
+	filters.push("message:"+messageFilters.join(","));
+	messagingFilters = filters.join(";");
+	messagingGridReload();
+}
+</script>
+<div style="float:left;">
+<fieldset><legend><?=__('Status')?></legend>
+	<div class="formRow">
+	<?foreach ($this->statusOptions as $status):?>
+		<div style="float:left;"><input type="checkbox" name="status[]" value="<?=$status?>" /> <?=$status?> &nbsp; &nbsp;</div>
+	<?endforeach;?>
+	</div>
+</fieldset>
+<fieldset><legend><?=__('Message')?></legend>
+	<div class="formRow">
+	<?foreach ($this->messageOptions as $key=>$value):?>
+		<div style="float:left;"><input type="checkbox" name="message[]" value="<?=$key?>" /> <?=$value?> &nbsp; &nbsp;</div>
+	<?endforeach;?>
+	</div>
+</fieldset>
+	<br style="clear:left"/>
+	<div style="text-align:center;margin-top:10px;">
+		<input type="button" value="<?=__('OK')?>" onClick="submitMessagingFilter()" />
+	</div>
+</div>

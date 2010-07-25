@@ -80,11 +80,35 @@ function updateMgrApply(id) {
 	dojo.byId("updateMgrProgressId").innerHTML += "<br /><?=__('Applying update')?>: "+updateMsg+"...";
 	var params = ["updateFileId="+id];
 	var windowApplyUpdate = globalCreateWindow("winApplyUpdateId",params,"<?=$this->baseUrl?>/update-manager.raw/apply","<?=__('Apply Updates')?>",600,500);
-	//windowApplyUpdate.attachEvent("onClose", function(win) {
-	//	dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>";
-	//	updateMgrNext(id);
-	//	return true;
-	//});
+	windowApplyUpdate.button("close").hide();
+	windowApplyUpdate.attachEvent("onClose", function(win) {
+		//dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>. [<?=__('CANCELLED')?>]";
+		setTimeout("updateMgrNext('"+id+"');",500);
+		return true;
+	});
+	return;
+
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/update-manager.raw/apply",
+		handleAs: "json",
+		content: {
+			"id": id,
+		},
+		load: function (response) {
+			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
+			if (response !== true) {
+				alert(response);
+			}
+			if (!updateMgrExec()) {
+				dojo.byId("updateMgrGridId").style.display = "";
+				dojo.byId("updateMgrProgressId").style.display = "none";
+				updateMgrGridReload();
+			}
+		},
+		error: function (error) {
+			console.error ("Error: ", error);
+		}
+	});
 }
 
 function updateMgrExec() {
@@ -98,7 +122,8 @@ function updateMgrExec() {
 			if (updateMgrGrid.cells(id,indexUMApply).isChecked()) {
 				updateMgrGrid.cells(id,indexUMApply).setChecked(false);
 				updateMgrApply(id);
-				return true;
+				ret = true;
+				break;
 			}
 		}
 	}
