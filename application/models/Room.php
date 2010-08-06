@@ -46,8 +46,9 @@ class Room extends WebVista_Model_ORM {
 	}
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->building->populate();
+		return $ret;
 	}
 
 	public function setBuilding_id($val) {

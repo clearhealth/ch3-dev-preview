@@ -88,6 +88,9 @@ messagingGrid.attachEvent("onBeforeContextMenu",function(rowId,cellIndex){
 		messagingMenu.showItem("approved");
 		messagingMenu.showItem("denied");
 		messagingMenu.showItem("ms1");
+		if (this.getUserData(rowId,"unresolved") == "1") {
+			messagingMenu.showItem("markAsResolved");
+		}
 	}
 	return true;
 });
@@ -111,6 +114,22 @@ function messagingGridOnContextMenu(item,rowId) {
 		case "viewRawMessage":
 			globalCreateWindow("winViewRawMessage",params,"<?=$this->baseUrl?>/messaging.raw/view-raw-message","<?=__('View Raw Message')?>",500,500);
 			break;
+		case "markAsResolved":
+			if (!confirm("<?=__('Are you sure you are going to mark as resolved the selected item?')?>")) return;
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/messaging.raw/process-mark-resolved",
+				handleAs: "json",
+				content: {
+					"messagingId": messagingId,
+				},
+				load: function (data) {
+					messagingGridReload();
+				},
+				error: function (er) {
+					alert('err: ' + er);
+				}
+			});
+			break;
 		default:
 			alert(item);
 	}
@@ -133,9 +152,18 @@ function messagingRefillResponse(content) {
 	});
 }
 
+function messagingGridOnLoaded() {
+	messagingGrid.forEachRow(function(rowId){
+		this.setRowColor(rowId,"#90EE90"); // light green
+		if (this.getUserData(rowId,"unresolved") == "1") {
+			this.setRowColor(rowId,"#FF0000"); // light red
+		}
+	});
+}
+
 function messagingGridReload() {
 	messagingGrid.clearAll();
-	messagingGrid.load("<?=$this->baseUrl?>/messaging.raw/list?filters="+messagingFilters,"json");
+	messagingGrid.load("<?=$this->baseUrl?>/messaging.raw/list?filters="+messagingFilters,messagingGridOnLoaded,"json");
 }
 messagingGridReload();
 

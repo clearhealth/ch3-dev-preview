@@ -52,7 +52,7 @@ class AdminProvidersController extends WebVista_Controller_Action
 		$this->view->form = $this->_form;
 		$this->view->person = $this->_provider;
 
-		$stations = LegacyEnum::getEnumArray('routing_stations');
+		$stations = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		$stations = array_merge(array('' => ''),$stations);
 		$this->view->stations = $stations;
 

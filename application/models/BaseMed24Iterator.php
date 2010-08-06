@@ -30,6 +30,8 @@ class BaseMed24Iterator extends WebVista_Model_ORMIterator implements Iterator {
 
 	public function setFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
+		$config = Zend_Registry::get('config');
+		$dbname = $config->database->params->dbname;
 		$dbSelect = $db->select(null)
 			->from('chmed.basemed24')
 			->joinLeft('chmed.basemed24labels', 'basemed24labels.pkey = basemed24.pkey',null)
@@ -52,7 +54,7 @@ class BaseMed24Iterator extends WebVista_Model_ORMIterator implements Iterator {
 						$dbSelect->limit((int)$value);
 						break;
 					case 'formulary':
-                                        	$dbSelect->joinLeft('clearhealth.formulary' . preg_replace('/[^a-zA-Z0-9]+/','',ucfirst($value)) . ' as formulary', 'formulary.fullNDC = basemed24.full_ndc');
+                                        	$dbSelect->joinLeft($dbname.'.formulary' . preg_replace('/[^a-zA-Z0-9]+/','',ucfirst($value)) . ' as formulary', 'formulary.fullNDC = basemed24.full_ndc');
 						break;
 					//default:
 					//	$dbSelect->where("false");

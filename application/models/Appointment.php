@@ -59,7 +59,7 @@ class Appointment extends WebVista_Model_ORM {
 	}
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->patient = new Patient();
 		$this->patient->setPersonId($this->patientId);
 		$this->patient->populate();
@@ -70,6 +70,7 @@ class Appointment extends WebVista_Model_ORM {
 		$this->creator->populate();
 		$this->lastChange->userId = $this->lastChangeId;
 		$this->lastChange->populate();
+		return $ret;
 	}
 
     public static function getObject($mxdFilters = array()) {

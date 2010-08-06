@@ -75,6 +75,7 @@ class Handler extends DataIntegration {
 		$audit = new Audit();
 		$sqlSelect = $db->select()
 				->from($audit->_table)
+				->where('auditId != 0')
 				->group('objectClass')
 				->group('type');
 		$conditions = $audit->getIterator($sqlSelect);
@@ -148,40 +149,15 @@ class Handler extends DataIntegration {
 		$handlerName = self::normalizeHandlerName($this->name);
 
 		$conditionHandler = '';
-		$dataIntegrationDatasource = '';
-		$dataIntegrationAction = '';
 		$objectClass = $audit->objectClass;
-		if (strlen($objectClass) > 0 && class_exists($objectClass)) {
-			$tmp = new $objectClass();
 
+		if (strlen($objectClass) > 0 && class_exists($objectClass)) {
 			$conditionHandler .= <<<EOL
 		if (\$auditOrm->objectClass == '{$objectClass}' && \$auditOrm->type == '{$audit->type}') {
-			return true;
+			\$ret = true;
 		}
 EOL;
 
-			$dataIntegrationDatasource .= <<<EOL
-		if (class_exists('{$objectClass}')) {
-			\$orm = new {$objectClass}();
-EOL;
-			foreach ($tmp->_primaryKeys as $key) {
-				$dataIntegrationDatasource .= <<<EOL
-
-			\$orm->{$key} = {$audit->objectId};
-EOL;
-			}
-			$dataIntegrationDatasource .= <<<EOL
-
-			\$orm->populate();
-			\$ret = \$orm->toArray();
-		}
-EOL;
-
-			$dataIntegrationAction .= <<<EOL
-		\$orm = new {$objectClass}();
-		\$orm->populateWithArray(\$dataSourceData);
-		\$orm->persist();
-EOL;
 		}
 
 		$conditionObject = <<<EOL
@@ -189,32 +165,9 @@ EOL;
 class {$handlerName}ConditionHandler extends DataIntegrationConditionHandlerAbstract {
 	//abstract requires at least this method
 	public static function matchAudit(Audit \$auditOrm) {
+		\$ret = false;
 {$conditionHandler}
-		return false;
-	}
-}
-
-class {$handlerName}DataIntegrationDatasource extends DataIntegrationDatasourceAbstract {
-	//abstract requires at least this method
-	public static function sourceData(Audit \$auditOrm) {
-		\$ret = array();
-{$dataIntegrationDatasource}
 		return \$ret;
-	}
-}
-
-class {$handlerName}DataIntegrationAction extends DataIntegrationActionAbstract {
-	//abstract requires at least this method
-	public static function act(Audit \$auditOrm,array \$dataSourceData) {
-{$dataIntegrationAction}
-		return true;
-	}
-}
-
-class {$handlerName}DataIntegrationDestination extends DataIntegrationDestinationAbstract {
-	//abstract requires at least this method
-	public static function transmit(Audit \$auditOrm,DataIntegrationTemplate \$template) {
-		//place your destination code here
 	}
 }
 
@@ -376,9 +329,11 @@ EOL;
 	 */
 	public static function normalizeHandlerName($name) {
 		$name = ucwords($name);
-		$name = preg_replace('/([A-Z]{1})/',' \1',$name);
-		$name = preg_replace('/[^a-z0-9_]/i','',$name);
-		$name = preg_replace('/^(?P<digit>\d+)/','',$name); // remove prefix characters if it's digit/numeric
+		$name = preg_replace('/\ /','',$name);
+		$name = preg_replace('/[^a-z0-9]/i','_',$name);
+		if (is_numeric(substr($name,0,1))) {
+			$name = '_'.$name;
+		}
 		return $name;
 	}
 

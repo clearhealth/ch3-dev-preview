@@ -45,6 +45,7 @@ class EnumGenerator {
 		self::generatePaymentTypesEnum($force);
 		self::generateCodingPreferencesEnum($force);
 		self::generateFacilityCodesEnum($force);
+		self::generateIdentifierTypesEnum($force);
 	}
 
 	public static function generateDemographicsPreferencesEnum($force = true) {
@@ -108,6 +109,63 @@ class EnumGenerator {
 					array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => '1c310cc4-03f6-4d8b-b8ac-608ef4018c97'),
 					array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1, 'guid' => '615e6bc0-45ad-4a9b-9c02-2dfff8de4f86'),
 					array('key' => 'BLANK', 'name' => 'Blank', 'active' => 1, 'guid' => '7fce999f-6be1-4ce0-b968-2be6a92cd08d'),
+				)),
+				'ethnicity' => array('key' => 'ETHNICITY', 'name' => 'Ethnicity', 'active' => 1, 'guid' => 'f50951df-90ee-42ad-b08a-1a7c8c5122c4', 'data' => array(
+					array('key' => 'LATINO', 'name' => 'Hispanic or Latino', 'active' => 1, 'guid' => '5b90ddd4-8794-4d65-9237-1c2eebcb3537'),
+					array('key' => 'NOT_LATINO', 'name' => 'Not Hispanic or Latino', 'active' => 1, 'guid' => '6f993301-ec4d-4945-a320-ccdd6bb048f9'),
+				)),
+				'language' => array('key' => 'LANGUAGE', 'name' => 'Language', 'active' => 1, 'guid' => 'e452bcc4-a0f2-4f2f-bb95-66d670983748', 'data' => array(
+					array('key' => 'ENGLISH', 'name' => 'English', 'active' => 1, 'guid' => '9512b3ea-1210-4b7b-a75a-f2047f3a2775'),
+					array('key' => 'SPANISH', 'name' => 'Spanish', 'active' => 1, 'guid' => '20f08cf7-b573-49f8-b62b-0bad24d317d8'),
+					array('key' => 'CHINESE', 'name' => 'Chinese', 'active' => 1, 'guid' => '45ce96c7-c241-4792-96e1-1434a4c74f27'),
+					array('key' => 'JAPANESE', 'name' => 'Japanese', 'active' => 1, 'guid' => '8ef93020-0381-4ddc-a05e-ce44d95aa813'),
+					array('key' => 'KOREAN', 'name' => 'Korean', 'active' => 1, 'guid' => '9848c766-295b-417e-9d02-c8e62e275880'),
+					array('key' => 'PORTUGUESE', 'name' => 'Portuguese', 'active' => 1, 'guid' => '93a00654-a2e6-4a1f-80e9-5da28448981c'),
+					array('key' => 'RUSSIAN', 'name' => 'Russian', 'active' => 1, 'guid' => 'f870f5a5-e54c-47a2-b9c6-cc7e631fb7a5'),
+					array('key' => 'SIGN_LANG', 'name' => 'Sign Language', 'active' => 1, 'guid' => '0c77dd57-5c58-4595-b9b8-3795c010d956'),
+					array('key' => 'VIETNAMESE', 'name' => 'Vietnamese', 'active' => 1, 'guid' => '0a79fe88-af3d-4ee8-8eb7-e8cb1c27c585'),
+					array('key' => 'TAGALOG', 'name' => 'Tagalog', 'active' => 1, 'guid' => 'ae383284-facc-4b38-97d6-0d831664ddea'),
+					array('key' => 'PUNJABI', 'name' => 'Punjabi', 'active' => 1, 'guid' => 'ac3ab282-231e-482d-8dce-2d04cc47f37f'),
+					array('key' => 'HINDUSTANI', 'name' => 'Hindustani', 'active' => 1, 'guid' => '998ab60e-3f2e-4eda-b0cb-444a4ce284ca'),
+					array('key' => 'ARMENIAN', 'name' => 'Armenian', 'active' => 1, 'guid' => 'a5024c20-7661-4404-9866-a4cfb8e32b5d'),
+					array('key' => 'ARABIC', 'name' => 'Arabic', 'active' => 1, 'guid' => 'c1ef9422-2ac2-431a-b681-21e141f25db5'),
+					array('key' => 'LAOTIAN', 'name' => 'Laotian', 'active' => 1, 'guid' => '00da3f22-67bc-4429-9a4c-806d5744b5f5'),
+					array('key' => 'HMONG', 'name' => 'Hmong', 'active' => 1, 'guid' => '212d9021-afe6-4891-9812-d56843f01729'),
+					array('key' => 'CAMBODIAN', 'name' => 'Cambodian', 'active' => 1, 'guid' => '53e39301-5998-4f09-914e-7c7421f255dd'),
+					array('key' => 'FINNISH', 'name' => 'Finnish', 'active' => 1, 'guid' => 'e1d302bc-01f4-4bae-9c7f-80f31f017fac'),
+					array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => 'a6661d4f-92cc-4b82-96b0-9f1689696a44'),
+				)),
+				'educationLevel' => array('key' => 'EDUC_LEVEL', 'name' => 'Education Level', 'active' => 1, 'guid' => 'a6661d4f-92cc-4b82-96b0-9f1689696a44', 'data' => array(
+					array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1, 'guid' => 'f737387e-599a-46dd-ab4c-7c0aadd13584'),
+					array('key' => 'NONE-ILLIT', 'name' => 'None-illiterate', 'active' => 1, 'guid' => '92bfcada-ed34-4044-92ef-13d4159e9323'),
+					array('key' => 'SOME_ELEM', 'name' => 'Some Elementary Education', 'active' => 1, 'guid' => '32551954-6c18-472d-8ecc-70e1d70f00a2'),
+					array('key' => 'SOME_MID', 'name' => 'Some Middle School', 'active' => 1, 'guid' => '58fb8a74-4e2a-45dd-8b89-9b2dbf2b6f04'),
+					array('key' => 'SOME_HIGH', 'name' => 'Some High School', 'active' => 1, 'guid' => 'eb5acb09-9ddf-4885-9364-e99e09cb3439'),
+					array('key' => 'HIGHSCHOOL', 'name' => 'High School Degree', 'active' => 1, 'guid' => '538b0d13-53f3-4226-aa68-b2888f648dd2'),
+					array('key' => 'TECHSCHOOL', 'name' => 'Vocational/Tech School', 'active' => 1, 'guid' => 'fd89f00c-bbc0-4eb4-8cb2-14da21fe551b'),
+					array('key' => 'COLLEGE', 'name' => 'Some College', 'active' => 1, 'guid' => 'c1d862f3-d1e9-4bad-9023-c9a9d265a3fa'),
+					array('key' => 'ASSOC_DEG', 'name' => 'Associates Degree', 'active' => 1, 'guid' => '52110bf3-91c6-4d3f-a264-425296ba9c38'),
+					array('key' => 'BACHELORS', 'name' => 'Bachelors Degree', 'active' => 1, 'guid' => 'd34110cf-f939-4613-9f48-2dc287f57644'),
+					array('key' => 'POST_GRAD', 'name' => 'Post Grad College', 'active' => 1, 'guid' => 'b38794fd-efca-4849-97f3-6d63f8ec49b4'),
+					array('key' => 'MASTERS', 'name' => 'Masters Degree', 'active' => 1, 'guid' => '84bfe1c2-4886-4c18-8300-2efed7fbb985'),
+					array('key' => 'ADVANCED', 'name' => 'Advanced Degree', 'active' => 1, 'guid' => 'cb052923-6500-47e0-ad86-2d789d271ebe'),
+					array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => 'e280299d-3cc7-45c4-badd-02a0a47b625e'),
+				)),
+				'migrantStatus' => array('key' => 'MIG_STAT', 'name' => 'Migrant Status', 'active' => 1, 'guid' => '916a01eb-c140-4a64-a0a8-235a5e31d56e', 'data' => array(
+					array('key' => 'MIGRANT', 'name' => 'Migrant Worker', 'active' => 1, 'guid' => 'b0f7fad4-30f4-41fb-b1f8-aec3fbf7a23a'),
+					array('key' => 'SEASONAL', 'name' => 'Seasonal Worker', 'active' => 1, 'guid' => '7a1cfada-f7e4-4f17-a03f-b05f324eabd6'),
+					array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => '797b624c-5faa-4a4e-95a6-ae7a0e5bb7da'),
+				)),
+				'income' => array('key' => 'INCOME', 'name' => 'Income', 'active' => 1, 'guid' => 'f98a8288-60c3-4c8d-a695-af4c1b183bf4', 'data' => array(
+					array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1, 'guid' => '81a19dc7-aef8-4baf-8b8c-a9186d9893dd'),
+					array('key' => 'UNDER100', 'name' => 'Under 100% of Poverty', 'active' => 1, 'guid' => '43187d0a-b011-463c-bd23-63099426665d'),
+					array('key' => 'BET100-200', 'name' => '100-200% of Poverty', 'active' => 1, 'guid' => 'd41e3f67-ff32-42a5-94e7-752009bffe41'),
+					array('key' => 'ABOVE200', 'name' => 'Above 200% of Poverty', 'active' => 1, 'guid' => '271cd8a5-e98f-4d38-b2fe-235ebf48999b'),
+				)),
+				'employmentStatus' => array('key' => 'EMP_STATUS', 'name' => 'Employment Status', 'active' => 1, 'guid' => 'a14c35ce-3ac7-4283-9343-290f74da330d', 'data' => array(
+					array('key' => 'EMPLOYED', 'name' => 'Employed', 'active' => 1, 'guid' => 'da7effc9-4ea2-49d1-973a-de2ef96cc39f'),
+					array('key' => 'UNEMPLOYED', 'name' => 'Unemployed', 'active' => 1, 'guid' => '3ff2f365-d370-4097-b825-7c0f51bef1f3'),
+					array('key' => 'UNKNOWN', 'name' => 'Unknown', 'active' => 1, 'guid' => '43bc63aa-79aa-48c3-a141-dded6bf62d3a'),
 				)),
 			);
 
@@ -1685,6 +1743,49 @@ class EnumGenerator {
 
 			$level = array();
 			$level['guid'] = '22fb4e1e-a37a-4e7a-9dae-8e220ba939e8';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateIdentifierTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Identifier Type';
+			$key = 'IDENTIFIER';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => '4f69f0ee-8a9f-4789-a9d5-6fcd4406f8c0'),
+				array('key' => 'SSN', 'name' => 'SSN', 'active' => 1, 'guid' => '59086c0f-6666-4ac4-8008-e199e9da1310'),
+				array('key' => 'EIN', 'name' => 'EIN', 'active' => 1, 'guid' => 'd30e11a0-8600-414d-847f-ab69061e2c62'),
+				array('key' => 'NPI', 'name' => 'NPI', 'active' => 1, 'guid' => '2e2f5558-83bb-421d-be62-d1e5aaf1bb95'),
+				array('key' => 'UPIN', 'name' => 'UPIN', 'active' => 1, 'guid' => '116ec1bf-01bc-4f60-b11a-b17432a802c1'),
+				array('key' => 'OTHER_MRN', 'name' => 'Other MRN', 'active' => 1, 'guid' => '3ed75316-99b8-4dbf-916d-95184a890260'),
+				array('key' => 'DL', 'name' => 'DL', 'active' => 1, 'guid' => '1063b140-3759-4cb5-8e50-a0bc19d59ef7'),
+			);
+
+
+			$level = array();
+			$level['guid'] = '8c200e66-f97e-40e9-9e39-f102ad2c6c31';
 			$level['key'] = $key;
 			$level['name'] = $name;
 			$level['category'] = 'System';

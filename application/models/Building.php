@@ -49,8 +49,9 @@ class Building extends WebVista_Model_ORM {
 	}
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->practice->populate();
+		return $ret;
 	}
 
 	public function setPractice_id($val) {

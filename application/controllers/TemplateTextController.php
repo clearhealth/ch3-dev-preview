@@ -48,7 +48,7 @@ class TemplateTextController extends WebVista_Controller_Action {
 				preg_match('/{nsdr:(.*)}/',$namespace,$matches);
 				if (isset($matches[1])) {
 					$namespace = str_replace('[selectedPatientId]',$personId,$matches[1]);
-					$result = NSDR::populate($namespace);
+					$result = NSDR2::populate($namespace);
 					$objective .= $result[$namespace];
 				}
 			}
@@ -83,7 +83,7 @@ class TemplateTextController extends WebVista_Controller_Action {
 					$resultValue = __("Memcache server not started");
 				}
 				else {
-					$result = NSDR::populate($namespace);
+					$result = NSDR2::populate($namespace);
 					$resultValue = $result[$namespace];
 					if (is_array($resultValue) && isset($resultValue['error'])) {
 						$resultValue = $resultValue['error'];

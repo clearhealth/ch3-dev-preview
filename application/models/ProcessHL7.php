@@ -41,14 +41,31 @@ class ProcessHL7 extends ProcessAbstract {
 			       ->where('active = 1');
 		$handlerIterator = $handler->getIterator($dbSelect);
 		foreach ($handlerIterator as $item) {
+			$classes = array();
 			$conditionObject = $item->conditionObject;
 			if (!strlen($conditionObject) > 0) {
 				$conditionObject = $item->generateDefaultConditionObject();
 			}
-			$md5 = md5($conditionObject);
-			if (!in_array($md5,$cacheCodeObjects)) {
-				$cacheCodeObjects[] = $md5;
-				eval($conditionObject); // TODO: needs to be validated
+
+			$classConditionHandler = $item->normalizedName.'ConditionHandler';
+			$classDatasource = $item->dataIntegrationDatasource->normalizedName.'DataIntegrationDatasource';
+			$classDestination = $item->dataIntegrationDestination->normalizedName.'DataIntegrationDestination';
+			$classAction = $item->dataIntegrationAction->normalizedName.'DataIntegrationAction';
+
+			if (!class_exists($classConditionHandler) && strlen($conditionObject) > 0) {
+				$classes[] = $conditionObject;
+			}
+			if (!class_exists($classDatasource) && strlen($item->dataIntegrationDatasource->datasource) > 0) {
+				$classes[] = $item->dataIntegrationDatasource->datasource;
+			}
+			if (!class_exists($classDestination) && strlen($item->dataIntegrationDestination->connectInfo) > 0) {
+				$classes[] = $item->dataIntegrationDestination->connectInfo;
+			}
+			if (!class_exists($classAction) && strlen($item->dataIntegrationAction->action) > 0) {
+				$classes[] = $item->dataIntegrationAction->action;
+			}
+			foreach ($classes as $class) {
+				eval($class); // TODO: needs to be validated
 			}
 			$this->_handlers[] = $item;
 		}
@@ -84,34 +101,39 @@ class ProcessHL7 extends ProcessAbstract {
 	protected function _doProcess(Handler $handler,Audit $audit) {
 		$ret = false;
 
-		$handlerName = Handler::normalizeHandlerName($handler->name);
+		$handlerName = $handler->normalizedName;
+		$datasourceName = $handler->dataIntegrationDatasource->normalizedName;
+		$destinationName = $handler->dataIntegrationDestination->normalizedName;
+		$actionName = $handler->dataIntegrationAction->normalizedName;
 		$classConditionHandler = $handlerName.'ConditionHandler';
 		if (!parent::isParentOf($classConditionHandler,'DataIntegrationConditionHandlerAbstract')) {
 			return false;
 		}
 		if (call_user_func_array(array($classConditionHandler,'matchAudit'),array($audit))) {
 			do {
-				$classDatasource = $handlerName.'DataIntegrationDatasource';
+				$classDatasource = $datasourceName.'DataIntegrationDatasource';
 				if (!parent::isParentOf($classDatasource,'DataIntegrationDatasourceAbstract')) {
 					return false;
 				}
 				$data = call_user_func_array(array($classDatasource,'sourceData'),array($audit));
 				switch ($handler->direction) {
 					case 'INCOMING':
-						$classAction = $handlerName.'DataIntegrationAction';
+						$classAction = $actionName.'DataIntegrationAction';
 						if (!parent::isParentOf($classAction,'DataIntegrationActionAbstract')) {
 							return false;
 						}
 						$ret = call_user_func_array(array($classAction,'act'),array($audit,$data));
 						break;
 					case 'OUTGOING':
-						$classDestination = $handlerName.'DataIntegrationDestination';
+						$classDestination = $destinationName.'DataIntegrationDestination';
 						if (!parent::isParentOf($classDestination,'DataIntegrationDestinationAbstract')) {
 							return false;
 						}
 						$template = new DataIntegrationTemplate();
 						$template->dataIntegrationTemplateId = $handler->dataIntegrationTemplateId;
 						$template->populate();
+						$data['msh'] = HL7Message::generateMSHData($audit);
+						$template->template = TemplateXSLT::render($data,$template->template); // temporarily override the template
 						$ret = call_user_func_array(array($classDestination,'transmit'),array($audit,$template));
 						// temporarily set to true, transmit() skeleton does not provide boolean return
 						$ret = true;

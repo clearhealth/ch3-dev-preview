@@ -114,11 +114,9 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 	public function nsdrPopulate($tthis,$context,$data) {
 		$ret = array();
 		if ($context == '*') {
-			if (!class_exists('VitalSignGroupIterator')) {
-				$msg = __('* context not supported by nsdrPopulate method');
-				throw new Exception($msg);
+			foreach ($this->getIterator() as $row) {
+				$ret[] = $row->toArray();
 			}
-			// TODO: Use VitalSignGroupIterator to populates data
 		}
 		else {
 			if ((int)$context > 0) {

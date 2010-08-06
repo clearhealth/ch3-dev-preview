@@ -293,7 +293,12 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 			params.push("clinicalNoteId="+cnGrid.cells(clinicalNoteId,0).getValue());
 		}
 		else {
+			var x = clinicalNoteId.split(":");
+			clinicalNoteId = x[0];
 			params.push("clinicalNoteId="+clinicalNoteId);
+			if (x[1]) {
+				params.push("revisionId="+x[1]);
+			}
 		}
 		dojo.xhrGet({
 			url: "<?=$this->baseUrl?>/clinical-notes-form.raw/template?"+params.join("&"),
@@ -408,14 +413,6 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 	}
 	function closeNotesByCustomViewWindow() {
 		winNBCV.close();
-	}
-
-	function eSignWindow() {
-		winES = dhxWins.createWindow('windowESignId',60,10,450,450);
-		winES.setText('Review / Sign Documents');
-		winES.attachURL('<?=$this->baseUrl?>/e-sign.raw',true);
-		//winES.setModal(true);
-		winES.centerOnScreen();
 	}
 
 function cnvToolbarOnClicked(id) {

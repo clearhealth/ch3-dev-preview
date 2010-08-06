@@ -38,17 +38,23 @@ class Audit extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('auditId');
 	protected $_persistMode = WebVista_Model_ORM::INSERT;
 	protected $_ormPersist = false;
+	public static $_processedAudits = false;
+	public static $_synchronousAudits = false;
 
 	public function persist() {
 		if (!strlen($this->ipAddress) > 0 && isset($_SERVER['REMOTE_ADDR'])) {
 			$this->ipAddress = $_SERVER['REMOTE_ADDR'];
 		}
+		if (self::$_processedAudits) {
+			$this->startProcessing = date('Y-m-d H:i:s');
+			$this->endProcessing = date('Y-m-d H:i:s');
+		}
+		if (self::$_synchronousAudits || $this->_ormPersist) {
+			return parent::persist();
+		}
 		if ($this->shouldAudit()) {
 			$sql = $this->toSQL();
 			AuditLog::appendSql($sql);
-		}
-		if ($this->_ormPersist) {
-			parent::persist();
 		}
 	}
 

@@ -54,8 +54,9 @@ class PatientStatisticsDefinition extends WebVista_Model_ORM {
 	const TYPE_DATE = 4;
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->_origName = $this->name;
+		return $ret;
 	}
 
 	public function persist() {

@@ -73,6 +73,14 @@ function preSubmit<?=$this->form->getId()?> () {
 	    content: {'electronicSignatureIds': dojo.toJson(ids), 'signature':dojo.byId('signature').value },
 	    load: function(data){
 		esrdGridReload();
+		switch (mainTabbar.getActiveTab()) {
+			case "tab_Medications":
+				loadMedication();
+				break;
+			case "tab_Notes":
+				onButtonClick("refresh");
+				break;
+		}
 	     },
 	     error: function (error) {
 	        errObj = dojo.fromJson(error.responseText);

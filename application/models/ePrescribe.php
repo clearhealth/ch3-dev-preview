@@ -66,6 +66,7 @@ class ePrescribe {
 							$medication->medicationId = $medicationId;
 							$medication->populate();
 							$patientId = 0;
+							$unresolved = 0;
 							if (!$medication->personId > 0) { // PON not set or invalid PON, try to automatch based on name, dob, medication and dates in the refreq, if only one match automatically link with correct PON
 								// retrieve providerId using SPI
 								$SPI = (string)$xmlMessage->Body->RefillRequest->Prescriber->Identification->SPI;
@@ -135,6 +136,9 @@ class ePrescribe {
 									$patient->populate();
 									$messageInfo .= ' - automatched to \''.$patient->displayName.'\' MRN#'.$patient->recordNumber;
 								}
+								else {
+									$unresolved = 1;
+								}
 								$messageInfo .= ')';
 							}
 
@@ -160,6 +164,7 @@ class ePrescribe {
 
 							$messaging->personId = $patientId;
 							$messaging->providerId = $medication->prescriberPersonId;
+							$messaging->unresolved = $unresolved;
 						}
 						else if ($key == 'status') {
 							$relatesToMessageId = (string)$message->relatesToMessageId;

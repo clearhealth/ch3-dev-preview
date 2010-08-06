@@ -38,13 +38,14 @@ class Company extends WebVista_Model_ORM {
 	protected $_legacyORMNaming = true;
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$storageString = new StorageString();
 		$storageString->foreignKey = $this->companyId;
 		$storageString->valueKey = 'email';
 		$storageString->arrayIndex = 1; // start index at 1, may have problem with ORM
 		$storageString->populate();
 		$this->_companyEmail = $storageString->value;
+		return $ret;
 	}
 
 	public function persist() {

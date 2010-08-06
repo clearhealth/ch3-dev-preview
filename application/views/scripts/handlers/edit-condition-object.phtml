@@ -24,22 +24,26 @@
 	<?=$this->formHidden('type',$this->form->handlerType->getValue())?>
 	<?=$this->form->handlerTypeInput('FormHidden')?>
 	<?=$this->form->okInput()?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winConditionObjectEditId').close()"/>
+	<?=$this->formButton('cancelId',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
 </div>
 
 <script>
-function preSubmiteditconditionobject() {
+function preSubmit<?=$this->form->getId()?>() {
 <?if ($this->codeEdited):?>
-	var ret = false;
-	if (confirm('<?=__('Are you sure you want to overwrite?')?>')) {
-		ret = true;
+	if (!confirm('<?=__('Are you sure you want to overwrite?')?>')) {
+		return false;
 	}
-<?else:?>
-	var ret = true;
 <?endif?>
-	return ret;
+	var validName = "class "+globalNormalizedName(dojo.byId("<?=$this->form->name->getId()?>").value)+"ConditionHandler extends DataIntegrationConditionHandlerAbstract";
+	var conditionObject = dojo.byId("<?=$this->form->conditionObject->getId()?>").value;
+	if (conditionObject.substr(0,validName.length) != validName) {
+		alert("Must be defined as: \n"+validName);
+		return false;
+	}
+	return true;
 }
-function postSubmiteditconditionobject(data) {
+
+function postSubmit<?=$this->form->getId()?>(data) {
 	data = data + '';
 	data = data.substr(1,data.length-2);
 	var pos = data.indexOf('|');
@@ -48,7 +52,7 @@ function postSubmiteditconditionobject(data) {
 	}
 	var code = data.substr(0,pos);
 	if (code == 200) {
-		dhxWins.window('winConditionObjectEditId').close();
+		dhxWins.window('<?=$this->form->getWindow()?>').close();
 	}
 	else {
 		alert(data.substr(pos+1,data.length));

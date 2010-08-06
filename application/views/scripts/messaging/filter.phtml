@@ -17,6 +17,10 @@ function submitMessagingFilter() {
 		}
 	}
 	filters.push("message:"+messageFilters.join(","));
+	var resolution = dojo.byId("resolution");
+	if (resolution) {
+		filters.push("resolution:"+resolution.value);
+	}
 	messagingFilters = filters.join(";");
 	messagingGridReload();
 }
@@ -34,6 +38,12 @@ function submitMessagingFilter() {
 	<?foreach ($this->messageOptions as $key=>$value):?>
 		<div style="float:left;"><input type="checkbox" name="message[]" value="<?=$key?>" /> <?=$value?> &nbsp; &nbsp;</div>
 	<?endforeach;?>
+	</div>
+</fieldset>
+<fieldset><legend><?=__('Resolution')?></legend>
+	<div class="formRow">
+		<div style="float:left;"><input type="radio" id="resolution" name="resolution" value="2" /> Resolved &nbsp; &nbsp;</div>
+		<div style="float:left;"><input type="radio" id="resolution" name="resolution" value="1" /> Unresolved &nbsp; &nbsp;</div>
 	</div>
 </fieldset>
 	<br style="clear:left"/>

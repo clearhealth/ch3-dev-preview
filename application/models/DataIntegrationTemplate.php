@@ -32,6 +32,21 @@ class DataIntegrationTemplate extends DataIntegration {
 	protected $_table = 'dataIntegrationTemplates';
 	protected $_primaryKeys = array('dataIntegrationTemplateId');
 
+	public function persist() {
+		$db = Zend_Registry::get('dbAdapter');
+		$dataIntegrationTemplateId = (int)$this->dataIntegrationTemplateId;
+		$data = $this->toArray();
+		if ($dataIntegrationTemplateId > 0) {
+			$ret = $db->update($this->_table,$data,'dataIntegrationTemplateId = '.$dataIntegrationTemplateId);
+		}
+		else {
+			$this->dataIntegrationTemplateId = WebVista_Model_ORM::nextSequenceId();
+			$data['dataIntegrationTemplateId'] = $this->dataIntegrationTemplateId;
+			$ret = $db->insert($this->_table,$data);
+		}
+		return $ret;
+	}
+
 	public function getCustomIterator($dbSelect = null) {
 		if ($dbSelect === null) {
 			$db = Zend_Registry::get('dbAdapter');

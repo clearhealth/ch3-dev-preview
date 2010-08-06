@@ -299,6 +299,7 @@ function aclSaveTemplate() {
 		handleAs: "json",
 		form: "aclFormId",
 		load: function (data) {
+			alert("<?=__('Please reload Permissions Service to take effect')?>");
 			aclTemplateOnProcessed(data);
 		},
 		error: function (error) {

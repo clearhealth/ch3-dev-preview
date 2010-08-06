@@ -332,8 +332,8 @@ barcodeControllerClass.prototype.triggerAction = function(bcString) {
                 handleAs: 'json',
                 load: function (data) {
                         //todo: add notification icon on the toolbar in the posts/alerts section
-			if (typeof data.return == "object") {
-				var macro = {"barcodeString":bcString,"name":data.return.name,"regex":data.return.regex,"order":data.return.order};
+			if (typeof data.ret == "object") {
+				var macro = {"barcodeString":bcString,"name":data.ret.name,"regex":data.ret.regex,"order":data.ret.order};
 				var cacheIndex = thisClass.cacheMacros.length;
 				thisClass.cacheMacros[cacheIndex] = macro;
 				// insert macro code to head tag
@@ -341,7 +341,7 @@ barcodeControllerClass.prototype.triggerAction = function(bcString) {
 				var js = document.createElement('script');
 				js.setAttribute('language', 'javascript');
 				js.setAttribute('type', 'text/javascript');
-				js.text = data.return.macro;
+				js.text = data.ret.macro;
 				html_doc.appendChild(js);
 				thisClass.runMacro(cacheIndex);
 			}
@@ -412,6 +412,12 @@ function globalCreateWindow(winId,params,url,winText,width,height,prop) {
 			"attachURL": true,
 			"setModal": false,
 		};
+	}
+	if (!dhxWins) {
+		dhxWins = new dhtmlXWindows();
+		dhxWins.setImagePath(globalBaseUrl+"/img/");
+		dhxWins.pathPrefix = '';
+		dhxWins.setSkin('clear_silver');
 	}
 	if (dhxWins.isWindow(winId)) {
 		return dhxWins.window(winId);
@@ -1407,5 +1413,19 @@ drugScheduleClass.prototype.getDosage = function(quantity,daysSupply,schedule) {
 	if (isNaN(ret)) {
 		ret = 1;
 	}
+	return ret;
+}
+
+function globalNormalizedName(name) {
+	name += "";
+	var ret = name.replace(/^(.)|\s(.)/g,function($1){
+		return $1.toUpperCase();
+	});
+	ret = ret.replace(/\ /g,"");
+	var nonAlphaNum=/[^0-9,a-z,A-Z]/gi;
+	ret = ret.replace(nonAlphaNum,"_");
+	ret = ret.replace(/^\d(.)/g,function($1){
+		return "_"+$1;
+	});
 	return ret;
 }

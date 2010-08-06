@@ -106,27 +106,39 @@ function populateDetails(data,medPopulate) {
 	var doseOption = optionsDose[0];
 
 	optionsDose[0] = data.strengthUnit + " " + optionsDose[0];
-	buildOptions(optionsDose,'options-dose');
+	if (data.formularyDose.length > 0) {
+		dojo.byId("<?=$this->form->dose->getId()?>").value = data.formularyDose;
+		optionsDose.push(data.formularyDose);
+	}
+	buildOptions(optionsDose,"options-dose",dojo.byId("<?=$this->form->dose->getId()?>").value);
 
 	var optionsRoute = data.route.split(';');
-	buildOptions(optionsRoute,'options-route');
+	if (data.formularyRoute.length > 0) {
+		optionsRoute.push(data.formularyRoute);
+		dojo.byId("<?=$this->form->route->getId()?>").value = data.formularyRoute;
+	}
+	buildOptions(optionsRoute,"options-route",dojo.byId("<?=$this->form->route->getId()?>").value);
 
 	var optionsSchedule = new Array('<?=implode('\',\'',$this->scheduleOptions)?>');
-	buildOptions(optionsSchedule,'options-schedule',dojo.byId("medication-schedule").value);
+	if (data.formularySchedule.length > 0) {
+		dojo.byId("<?=$this->form->schedule->getId()?>").value = data.formularySchedule;
+		optionsSchedule.push(data.formularySchedule);
+	}
+	buildOptions(optionsSchedule,"options-schedule",dojo.byId("<?=$this->form->schedule->getId()?>").value);
 	if (!medPopulate && <?=(strlen($this->baseMed24->pkey) > 0)?'false':'true'?>) {
 		return;
 	}
-	if (optionsDose[0] != undefined) {
-		dojo.byId('medication-dose').value = optionsDose[0];
+	if (data.formularyDose.length <= 0 && optionsDose[0] != undefined) {
+		dojo.byId("<?=$this->form->dose->getId()?>").value = optionsDose[0];
 	}
-	if (optionsRoute[0] != undefined) {
-		dojo.byId('medication-route').value = optionsRoute[0];
+	if (data.formularyRoute.length <= 0 && optionsRoute[0] != undefined) {
+		dojo.byId("<?=$this->form->route->getId()?>").value = optionsRoute[0];
 	}
-	if (optionsSchedule[data.sched]) {
-		dojo.byId('medication-schedule').value = optionsSchedule[data.sched];
+	if (data.formularySchedule.length <= 0 && optionsSchedule[data.formularySchedule]) {
+		dojo.byId("<?=$this->form->schedule->getId()?>").value = optionsSchedule[data.formularySchedule];
 	}
-	else if (optionsSchedule[0] != undefined) {
-		dojo.byId('medication-schedule').value = optionsSchedule[0];
+	else if (data.formularySchedule.length <= 0 && optionsSchedule[0] != undefined) {
+		dojo.byId("<?=$this->form->schedule->getId()?>").value = optionsSchedule[0];
 	}
 	dojo.byId('medication-directions').value = data.directions;
 
@@ -168,13 +180,24 @@ function populateDetails(data,medPopulate) {
 	dojo.byId("medication-strength").value = data.strength;
 	dojo.byId("medication-unit").value = data.unit;
 
+	if (data.quantityQualifier.length > 0) {
+		doseOption = data.quantityQualifier;
+	}
 	doseOption = doseOption.toLowerCase();
 	var qualifierSelect = dojo.byId("<?=$this->form->quantityQualifier->getId()?>");
 	for (var i = 0; i < qualifierSelect.options.length; i++) {
 		if (qualifierSelect.options[i].text.toLowerCase() == doseOption) {
 			qualifierSelect.selectedIndex = i;
+			break;
 		}
 	}
+	if (data.description.length > 0) {
+		dojo.byId("<?=$this->form->description->getId()?>").value = data.description;
+	}
+	dojo.byId("<?=$this->form->prn->getId()?>").checked = (data.prn == 1)?true:false;
+	dojo.byId("<?=$this->form->refills->getId()?>").value = data.refills;
+	dojo.byId("<?=$this->form->daysSupply->getId()?>").value = data.daysSupply;
+	dojo.byId("<?=$this->form->substitution->getId()?>").checked = (data.substitution == 1)?true:false;
 }
 
 function prescribeSignMedication() {
@@ -625,5 +648,8 @@ function advancedOnClicked(obj) {
 <input type="hidden" id="medication-unit" name="medication[unit]" value="<?=$this->medication->unit?>" />
 <?if(isset($this->copy)):?>
 <input type="hidden" id="copy" name="copy" value="<?=$this->copy?>" />
+<?endif;?>
+<?if(isset($this->discontinue)):?>
+<input type="hidden" id="discontinue" name="discontinue" value="<?=$this->discontinue?>" />
 <?endif;?>
 </form>

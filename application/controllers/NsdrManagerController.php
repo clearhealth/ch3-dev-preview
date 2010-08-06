@@ -205,8 +205,9 @@ class NsdrManagerController extends WebVista_Controller_Action {
 		// cannot add method if alias exists (alias must be canonical)
 		if (strlen($this->_nsdrDefinition->aliasFor) > 0) {
 			$nsdr = new NSDRDefinition();
-			$nsdr->uuid = $this->_nsdrDefinition->aliasFor;
-			$nsdr->populate();
+			//$nsdr->uuid = $this->_nsdrDefinition->aliasFor;
+			//$nsdr->populate();
+			$nsdr->populateByNamespace($this->_nsdrDefinition->aliasFor);
 			if (strlen($nsdr->namespace) > 0) {
 				if (strlen($nsdr->aliasFor) > 0) {
 					$this->_nsdrDefinition->aliasFor = '';

@@ -81,7 +81,7 @@ class RoutingController extends WebVista_Controller_Action {
 		$routing = new Routing();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
-		$appointment = new LegacyAppointment();
+		$appointment = new Appointment();
 		$appointment->appointmentId = $appointmentId;
 		$appointment->populate();
 

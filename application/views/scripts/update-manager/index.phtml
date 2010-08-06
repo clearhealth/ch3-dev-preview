@@ -166,6 +166,27 @@ function updateMgrToolbarOnClick(id) {
 			var params = ["updateFileId="+rowId];
 			globalCreateWindow("winDetailsId",params,"<?=$this->baseUrl?>/update-manager.raw/view-details","<?=__('View Details')?>",400,400);
 			break;
+		case "delete":
+			var rowId = updateMgrGrid.getSelectedRowId()
+			if (rowId == null) {
+				alert("<?=__('No selected item')?>");
+				break;
+			}
+			if (!confirm("Are you sure you want to continue deleting selected items?")) break;
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/update-manager.raw/process-delete",
+				handleAs: "json",
+				content: {
+					"id": rowId,
+				},
+				load: function (response) {
+					updateMgrGridReload();
+				},
+				error: function (error) {
+					console.error ("Error: ", error);
+				}
+			});
+			break;
 		case "upload":
 			var params = [];
 			globalCreateWindow("winNewUploadId",params,"<?=$this->baseUrl?>/update-manager.raw/upload","<?=__('Upload New File')?>",300,300);
@@ -175,19 +196,20 @@ function updateMgrToolbarOnClick(id) {
 updateMgrToolbar.loadXML("<?=$this->baseUrl?>/update-manager.raw/toolbar");
 
 var indexUMName = 0;
-var indexUMApply = 1;
+var indexUMStatus = 1;
+var indexUMApply = 2;
 
 var updateMgrGrid = new dhtmlXGridObject("updateMgrGridId");
 updateMgrGrid.setImagePath("<?=$this->baseUrl?>/img/");
-updateMgrGrid.setHeader(",<?=__('Apply')?>");
-updateMgrGrid.setInitWidths("*,50");
-updateMgrGrid.setColTypes("tree,ch");
+updateMgrGrid.setHeader(",<?=__('Status')?>,<?=__('Apply')?>");
+updateMgrGrid.setInitWidths("*,200,50");
+updateMgrGrid.setColTypes("tree,ro,ch");
 updateMgrGrid.setSkin("xp");
+updateMgrGrid.enableMultiselect(true);
 updateMgrGrid.init();
 
-var updateMgrHasChecked = false;
 updateMgrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
-	if (cellIndex == 1) {
+	if (cellIndex == indexUMApply) {
 		updateMgrToolbar.disableItem("apply");
 		var id;
 		for (var i in updateMgrGrid.rowsAr) {
@@ -203,8 +225,10 @@ updateMgrGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
 });
 updateMgrGrid.attachEvent("onRowSelect",function(rowId,cellIndex){
 	updateMgrToolbar.disableItem("details");
+	updateMgrToolbar.disableItem("delete");
 	if (updateMgrGrid.getLevel(rowId) == 1) {
 		updateMgrToolbar.enableItem("details");
+		updateMgrToolbar.enableItem("delete");
 	}
 });
 
@@ -215,10 +239,15 @@ function updateMgrGridOnLoaded() {
 		if (level == 2) {
 			updateMgrGrid.cells(rowId,indexUMApply).cell.innerHTML = "";
 		}
+		var stats = updateMgrGrid.cells(rowId,indexUMStatus).getValue();
+		if (stats == "Completed" || stats == "Pending") {
+			updateMgrGrid.cells(rowId,indexUMApply).setDisabled(true);
+		}
 	});
 	if (!bootstrap) {
 		updateMgrToolbar.disableItem("apply");
 		updateMgrToolbar.disableItem("details");
+		updateMgrToolbar.disableItem("delete");
 	}
 	bootstrap = false;
 }
@@ -226,7 +255,6 @@ function updateMgrGridReload() {
 	dojo.byId("updateMgrGridId").style.display = "";
 	dojo.byId("updateMgrProgressId").style.display = "none";
 	updateMgrGrid.clearAll();
-	//updateMgrGrid.load("<?=$this->baseUrl?>/update-manager.raw/list",updateMgrGridOnLoaded,"json");
 	updateMgrGrid.load("<?=$this->baseUrl?>/update-manager.raw/list.xml",updateMgrGridOnLoaded,"xml");
 }
 var bootstrap = true;

@@ -63,6 +63,10 @@ class MessagingController extends WebVista_Controller_Action {
 			if (!isset($x[1])) continue;
 			$filters[$x[0]] = $x[1];
 		}
+		if (!count($filters) > 0) {
+			$filters['dateStatus'] = date('Y-m-d 00:00:00',strtotime('-7 days')).','.date('Y-m-d 23:59:59');
+			$filters['resolution'] = 1;
+		}
 		$messagingIterator = new MessagingIterator(null,false);
 		$messagingIterator->setFilters($filters);
 		$rows = array();
@@ -75,6 +79,7 @@ class MessagingController extends WebVista_Controller_Action {
 			$tmp['data'][] = nl2br($item->note);
 			$tmp['data'][] = $item->objectType;
 			$tmp['data'][] = $item->messageType;
+			$tmp['userdata']['unresolved'] = $item->unresolved;
 			$rows[] = $tmp;
 		}
 		$data = array();
@@ -196,6 +201,12 @@ class MessagingController extends WebVista_Controller_Action {
 	}
 
 	public function processCheckInboundAction() {
+		/*$inbound = new eFaxInbound();
+		$inbounds = array();
+		$ret = 0;//$inbound->checkInbounds();
+		if ($ret > 0) {
+			$inbounds[] = 'eFax: '.$ret;
+		}*/
 		$ret = ePrescribe::pull();
 		if ($ret > 0) {
 			$inbounds[] = 'ePrescribe: '.$ret;
@@ -427,6 +438,7 @@ class MessagingController extends WebVista_Controller_Action {
 			}
 			$messaging->personId = $personId;
 			$messaging->auditId = $auditId;
+			$messaging->unresolved = 0;
 			$messaging->note = str_replace('Missing PON','Missing PON - fixed',$messaging->note);
 			$messaging->persist();
 			$refillRequest = new MedicationRefillRequest();
@@ -434,6 +446,21 @@ class MessagingController extends WebVista_Controller_Action {
 			$refillRequest->populate();
 			$refillRequest->medicationId = $medicationId;
 			$refillRequest->persist();
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function processMarkResolvedAction() {
+		$messagingId = $this->_getParam('messagingId');
+		$messaging = new Messaging();
+		$messaging->messagingId = $messagingId;
+		$ret = false;
+		if ($messaging->populate()) {
+			$messaging->unresolved = 0;
+			$messaging->persist();
 			$ret = true;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');

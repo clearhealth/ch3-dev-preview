@@ -22,8 +22,9 @@
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->name->renderLabel()?>
-	<?$this->form->name->setAttrib('size',55)?>
+	<?$this->form->name->setAttrib('size',30)?>
 	<?=$this->form->nameInput()?>
+	<?=$this->formButton('generateId',__('Generate Code'),array('onClick'=>'generateDefaultAction()'))?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
@@ -36,18 +37,40 @@
 	<?=$this->formHidden('type',$this->form->handlerType->getValue())?>
 	<?=$this->form->handlerTypeInput('FormHidden')?>
 	<?=$this->form->okInput()?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winEditDataIntegrationActionId').close()"/>
+	<?=$this->formButton('cancelId',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
 </div>
 
 <script>
-function postSubmiteditaction(data) {
+var defaultAction = (<r><![CDATA[<?=$this->action->defaultTemplate()?>]]></r>).toString();
+
+function postSubmit<?=$this->form->getId()?>(data) {
 <?if (strlen($this->callback) > 0):?>
 	if (window.<?=$this->callback?>) {
 		window.<?=$this->callback?>(data);
 	}
 <?endif;?>
-	dhxWins.window('winEditDataIntegrationActionId').close();
+	dhxWins.window('<?=$this->form->getWindow()?>').close();
 	return false;
+}
+
+function preSubmit<?=$this->form->getId()?>() {
+	var validName = "class "+globalNormalizedName(dojo.byId("<?=$this->form->name->getId()?>").value)+"DataIntegrationAction";
+	var action = dojo.byId("<?=$this->form->action->getId()?>").value;
+	if (action.substr(0,validName.length) != validName) {
+		alert("Must be defined as: \n"+validName);
+		return false;
+	}
+	return true;
+}
+
+function generateDefaultAction() {
+	var name = dojo.byId("<?=$this->form->name->getId()?>").value;
+	if (name.length <= 0) {
+		alert("<?=__('Name must be supplied.')?>");
+		return;
+	}
+	if (!confirm("Continue?")) return;
+	dojo.byId("<?=$this->form->action->getId()?>").value = defaultAction.replace("class [[ClassName]]DataIntegrationAction","class "+globalNormalizedName(name)+"DataIntegrationAction");
 }
 </script>
 

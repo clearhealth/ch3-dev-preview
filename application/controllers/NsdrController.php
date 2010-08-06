@@ -227,23 +227,23 @@ class NsdrController extends WebVista_Controller_Action {
 
 	protected function systemStart() {
 		// clean cache data first
-		NSDR::systemUnload();
-		NSDR::systemStart();
+		NSDR2::systemUnload();
+		NSDR2::systemStart();
 		return __('System successfully started.');
 	}
 
 	protected function systemReload() {
-		NSDR::systemReload();
+		NSDR2::systemReload();
 		return __('System successfully reloaded.');
 	}
 
 	protected function systemUnload() {
-		NSDR::systemUnload();
+		NSDR2::systemUnload();
 		return __('System successfully unloaded.');
 	}
 
 	protected function systemStatus() {
-		$ret = NSDR::systemStatus();
+		$ret = NSDR2::systemStatus();
 		if ($ret === false) {
 			$ret = __("Stop");
 		}

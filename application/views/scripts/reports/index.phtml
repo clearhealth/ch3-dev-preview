@@ -79,6 +79,11 @@ function reportsSearchResults(viewId) {
 }
 
 function reportsGetResultsGrid(viewId) {
+	reportsResultsToolbar.forEachItem(function(itemId){
+		var value = reportsResultsToolbar.getValue(itemId);
+		if (value == null || itemId.substr(0,7) != "filter_") return;
+		filterValues[itemId] = value;
+	});
 	globVars.executed = true;
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/reports.raw/get-results?viewId="+viewId,

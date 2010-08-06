@@ -115,13 +115,16 @@ dhtmlXGridObject.prototype.toggleSubRow = function(obj) {
 	if (!cell) {
 		return;
 	}
+	var expanded = true;
 	if (cell._state == "plus") {
 		this.expandSubRow(cell);
 	}
 	else if (cell._state == "minus") {
 		this.collapseSubRow(cell);
+		expanded = false;
 	}
 	this._fixCssSubRow(cell);
+	cell._this.grid.callEvent("onSubRowOpen",[cell,expanded]);
 };
 
 dhtmlXGridObject.prototype._fixCssSubRow = function(cell) {
@@ -132,6 +135,15 @@ dhtmlXGridObject.prototype._fixCssSubRow = function(cell) {
 	var tr = td.parentNode;
 	var table = tr.parentNode.parentNode;
 	var divBox = table.parentNode;
+
+	var ctr = 1;
+	var node = null;
+	while (true) {
+		if (!td._this.grid.objBox.childNodes[ctr]) break;
+		td._this.grid.objBox.childNodes[ctr].origTop = null;
+		td._this.grid.objBox.childNodes[ctr].origLeft = null;
+		ctr++;
+	}
 
 	// fix the alignment of the opened subrow
 	var div = null;
@@ -159,6 +171,10 @@ dhtmlXGridObject.prototype._fixCssSubRow = function(cell) {
 		div.style.top = (d.offsetTop + topAllowance) + "px";
 		div.style.left = d.offsetLeft + "px";
 	}
+	if (tr.grid.parentGrid) {
+		this.setSizes();
+		tr.grid.callEvent("onGridReconstructed",[]);
+	}
 }
 
 dhtmlXGridObject.prototype.expandSubRow = function(cell) {
@@ -182,6 +198,7 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 	}
 
 	var div = null;
+	var nodeIndex = parseInt(td._this.grid.getRowIndex(cell.parentNode.idd)) + 1;
 
 	if (cell._annotationIndex && divBox.childNodes[cell._annotationIndex]) {
 		div = divBox.childNodes[cell._annotationIndex];
@@ -189,15 +206,38 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 	}
 	else {
 		div = document.createElement("DIV");
-		if (td._sub_row_type) {
+		if (td._sub_row_type && td._sub_row_type == "grid") {
 			td._this.renderSubRow(td,div);
-			td._this.grid.callEvent("onSubRowOpen",[td._this.cell,(!!td._this._expanded)]); // temporarily useless
 		}
 		else {
 			div.innerHTML = cell._value;
 		}
+		// fixed scrolling issue
+		var that = this;
+		td._this.grid.attachEvent("onScroll",function(scrollLeft,scrollTop){
+			if (!this.objBox.childNodes[nodeIndex].origTop) {
+				var origTop = this.objBox.childNodes[nodeIndex].style.top + "";
+				var x = origTop.toLowerCase().split("px");
+				this.objBox.childNodes[nodeIndex].origTop = parseInt(x[0]);
+			}
+			var tp = parseInt(this.objBox.childNodes[nodeIndex].origTop) - parseInt(scrollTop);
+			this.objBox.childNodes[nodeIndex].style.top = tp + "px";
+
+			if (!this.objBox.childNodes[nodeIndex].origLeft) {
+				var origLeft = this.objBox.childNodes[nodeIndex].style.left + "";
+				var x = origLeft.toLowerCase().split("px");
+				this.objBox.childNodes[nodeIndex].origLeft = parseInt(x[0]);
+			}
+			var lft = parseInt(this.objBox.childNodes[nodeIndex].origLeft) - parseInt(scrollLeft);
+			this.objBox.childNodes[nodeIndex].origLeft = scrollLeft;
+			this.objBox.childNodes[nodeIndex].style.left = lft + "px";
+		});
 		div.className = "dhx_sub_row";
 		div.style.cssText = "position:absolute;overflow:auto;font-family:Tahoma;font-size:8pt;margin-top:2px;margin-left:4px;";
+		if (td._sub_row_type == "grid") {
+			div.style.width = "96%";
+			div.style.marginLeft = "10px";
+		}
 
 		// get the size of the divBox and serve as the index of the annotation box
 		cell._annotationIndex = divBox.childNodes.length;
@@ -205,15 +245,13 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 		divBox.appendChild(div);
 	}
 
-	var state = "minus";
-	cell._this._setState(state,cell);
+	cell._this._setState("minus",cell);
 };
 
 dhtmlXGridObject.prototype.collapseSubRow = function(cell) {
 	if (!cell || cell._state != "minus") {
 		return;
 	}
-	var state = "plus";
 	var td = cell;
 	var tr = td.parentNode;
 	var table = tr.parentNode.parentNode;
@@ -234,22 +272,39 @@ dhtmlXGridObject.prototype.collapseSubRow = function(cell) {
 		obj.style.display = "none";
 	}
 
-	cell._this._setState(state,cell);
+	cell._this._setState("plus",cell);
+};
+
+dhtmlXGridObject.prototype.adjustHeightSubRow = function(cell,value) {
+	var ctr = 1;
+	var node = null;
+	while (true) {
+		if (!cell._this.grid.objBox.childNodes[ctr]) break;
+		cell._this.grid.objBox.childNodes[ctr].origTop = null;
+		cell._this.grid.objBox.childNodes[ctr].origLeft = null;
+
+		var t = cell._this.grid.objBox.childNodes[ctr].style.top;
+		var x = t.toLowerCase().split("px");
+		t = parseInt(x[0]) - (value||20);
+		cell._this.grid.objBox.childNodes[ctr].style.top = t + "px";
+		cell._this.grid.objBox.childNodes[ctr].origTop = t;
+		ctr++;
+	}
 };
 
 
-
 function eXcell_sub_row_grid(cell) {
-	this.base = eXcell_sub_row;
-	this.base(cell);
-}
-
+	if (cell) {
+		this.cell = cell;
+		this.cell._sub_row_type = "grid";
+		this.grid = this.cell.parentNode.grid;
+	}
+};
 eXcell_sub_row_grid.prototype = new eXcell_sub_row;
 
 eXcell_sub_row_grid.prototype.setValue = function(val) {
 	this.grid.setSubRowValue(this,val);
-	this.cell._sub_row_type = "grid";
-}
+};
 
 eXcell_sub_row_grid.prototype.renderSubRow = function(row,div) {
 	if (!row) {
@@ -258,17 +313,32 @@ eXcell_sub_row_grid.prototype.renderSubRow = function(row,div) {
 	if (!div) {
 		div = document.createElement("DIV");
 	}
+	var that = this;
 	div.ctrl = row;
 	var grid = row._this.grid;
 	row._sub_grid = new dhtmlXGridObject(div);
 	row._sub_grid.parentGrid = grid;
 	row._sub_grid.setImagePath(grid.imgURL);
 	row._sub_grid.enableAutoHeight(true);
+	row._sub_grid.attachEvent("onGridReconstructed",function(){
+		that._renderOnLoaded(row);
+		this.setSizes();
+		if (row._this.grid.parentGrid) {row._this.grid.callEvent("onGridReconstructed",[]);}
+	});
+	if (!grid.callEvent("onSubGridCreated",[row._sub_grid,row.parentNode.idd,row._cellIndex,row._value])) {
+		that._renderOnLoaded(row);
+		return;
+	}
 
 	row._sub_grid.loadXML(row._value,function() {
-		grid._fixCssSubRow(row);
-		row._sub_grid.objBox.style.overflow = "hidden";
-		row._sub_row_type = null;
+		if (!that._renderOnLoaded(row)) return;
 	});
 	return div;
+};
+
+eXcell_sub_row_grid.prototype._renderOnLoaded = function(row) {
+	var grid = row._this.grid;
+	row._sub_grid.objBox.style.overflow="hidden";
+	grid._fixCssSubRow(row);
+	return grid.callEvent("onSubGridLoaded",[row._sub_grid,row.parentNode.idd,row._cellIndex,row._value]);
 };

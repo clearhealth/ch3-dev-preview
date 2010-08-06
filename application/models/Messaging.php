@@ -39,6 +39,7 @@ class Messaging extends WebVista_Model_ORM {
 	protected $person;
 	protected $providerId;
 	protected $provider;
+	protected $unresolved; // 0 = unknown, 1 = unresolved, 2 = resolved
 
 	protected $_table = 'messaging';
 	protected $_primaryKeys = array('messagingId');

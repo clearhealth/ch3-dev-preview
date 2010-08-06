@@ -53,8 +53,9 @@ class ProcedureCodesCPT extends WebVista_Model_ORM {
 		$dbSelect = $db->select()
 			       ->from($this->_table)
 			       ->where('`code` = ?',$this->code);
-		$this->populateWithSql($dbSelect->__toString());
+		$ret = $this->populateWithSql($dbSelect->__toString());
 		$this->postPopulate();
+		return $ret;
 	}
 
 	public function ormVisitTypeEditMethod($ormId,$isAdd) {

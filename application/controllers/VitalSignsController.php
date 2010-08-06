@@ -242,7 +242,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 				}
 				break;
 		}
-		trigger_error(print_r($filterRange,true),E_USER_NOTICE);
+		//trigger_error(print_r($filterRange,true),E_USER_NOTICE);
 
 		$filters = array();
 		$filters['personId'] = $personId;

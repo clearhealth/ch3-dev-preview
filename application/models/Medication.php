@@ -76,10 +76,11 @@ class Medication extends WebVista_Model_ORM implements Document {
 	}
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->patient->populate();
 		$this->provider->populate();
 		$this->pharmacy->populate();
+		return $ret;
 	}
 
 	public function setPersonId($value) {

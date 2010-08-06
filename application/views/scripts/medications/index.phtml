@@ -130,10 +130,34 @@ function onButtonClick(itemId) {
 			winAbout.button("minmax2").hide();*/
 			loadMedication();
 			break;
+		case "delete":
+			medicationId = mGrid.getSelectedRowId();
+			if (medicationId == null) {
+				alert("<?=__('No selected item.')?>");
+				break;
+			}
+			if (!confirm("<?=__('Are you sure you want to delete selected medication?')?>")) break;
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/medications.raw/process-delete-medication",
+				content: {
+					"medicationId": medicationId,
+				},
+				handleAs: "json",
+				load: function (data) {
+					loadMedication();
+				},
+				error: function (er) {
+					alert("err: "+er);
+				}
+			});
+			break;
+		case "copyAndDiscontinue":
+			copyMedication(1);
+			break;
 	}
 }
 
-function openNewMedicationWindow(medicationId,duplicate) {
+function openNewMedicationWindow(medicationId,duplicate,discontinue) {
 	var label = '<?=__('New Medication')?>';
 	var additionalArgs = '';
 	if (medicationId != undefined) {
@@ -143,6 +167,10 @@ function openNewMedicationWindow(medicationId,duplicate) {
 	if (duplicate != undefined) {
 		label = '<?=__('Copy Medication')?>';
 		additionalArgs += '&copy=1';
+	}
+	if (discontinue != undefined) {
+		label += " and Discontinue";
+		additionalArgs += "&discontinue=1";
 	}
 	var url = "<?=$this->baseUrl?>/medications.raw/edit-medication?personId="+mainController.getActivePatient()+additionalArgs;
 	winNewMedObjects = globalCreateWindow("windowNewMedication",[],url,label,520,600);
@@ -186,6 +214,9 @@ function cancelMedication() {
 	if (medicationId == null) {
 		return;
 	}
+	if (!confirm("<?=__('Are you sure you want to discontinue selected medication?')?>")) {
+		return;
+	}
 	dojo.xhrPost ({
 		url: '<?=$this->baseUrl?>/medications.raw/ajax-discontinue-medication?medicationId='+medicationId,
 		handleAs: 'json',
@@ -203,12 +234,12 @@ function cancelMedication() {
 	});
 }
 
-function copyMedication() {
+function copyMedication(discontinue) {
 	medicationId = mGrid.getSelectedRowId();
 	if (medicationId == null) {
 		return;
 	}
-	openNewMedicationWindow(medicationId,true);
+	openNewMedicationWindow(medicationId,true,discontinue);
 }
 
 function transmitEPrescription(medicationId) {
@@ -300,9 +331,14 @@ dhtmlxEvent(mGrid.entBox,"contextmenu",function(e){
 });
 
 function rowSelectHandler(rowId,cellIndex) {
-	chToolbar.enableItem('medtbChangeMedication');
+	//chToolbar.enableItem('medtbChangeMedication');
 	chToolbar.enableItem('medtbCancelMedication');
 	chToolbar.enableItem('medtbCopyMedication');
+	chToolbar.disableItem("delete");
+	chToolbar.enableItem("copyAndDiscontinue");
+	if (mGrid.cells(rowId,3).getValue() == "<?=__('Unsigned')?>") {
+		chToolbar.enableItem("delete");
+	}
 
 	medcxMenu.showItem("medications_sign");
 	if (mGrid.cells(rowId,8).getValue() > 0) {

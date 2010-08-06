@@ -153,7 +153,7 @@ class ReportBase extends WebVista_Model_ORM {
 		$filterQueries = array();
 		$reportFilters = array();
 		foreach ($this->reportFilters as $key=>$filter) {
-			$filterQueries[$filter->query] = $filter->query;
+			if ($filter->type == 'QUERY') $filterQueries[$filter->query] = $filter->query;
 			$reportFilters['{{'.$filter->name.'}}'] = $filter;
 		}
 		//trigger_error(print_r($reportFilters,true),E_USER_NOTICE);
@@ -240,7 +240,7 @@ class ReportBase extends WebVista_Model_ORM {
 						}
 						$resultSetName = ReportView::extractNamespace($value);
 						$displayName = ReportView::metaDataPrettyName($resultSetName);
-						$nsdrResult = NSDR::populate($value);
+						$nsdrResult = NSDR2::populate($value);
 						$tmp = array('Name'=>$displayName,'Value'=>'');
 						$tmp['Value'] = $nsdrResult[$value];
 						$results[] = $tmp;

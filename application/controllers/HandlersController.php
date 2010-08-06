@@ -259,7 +259,7 @@ class HandlersController extends WebVista_Controller_Action {
 				$ret = __($classConditionHandler.' does not exists or not an instance of DataIntegrationConditionHandlerAbstract');
 				break;
 			}
-			$classDatasource = $handlerName.'DataIntegrationDatasource';
+			/*$classDatasource = $handlerName.'DataIntegrationDatasource';
 			if (!ProcessAlert::isParentOf($classDatasource,'DataIntegrationDatasourceAbstract')) {
 				$ret = __($classDatasource.' does not exists or not an instance of DataIntegrationDatasourceAbstract');
 				break;
@@ -277,7 +277,7 @@ class HandlersController extends WebVista_Controller_Action {
 			if (!ProcessAbstract::isParentOf($classDestination,'DataIntegrationDestinationAbstract')) {
 				$ret = __($classDestination.' does not exists or not an instance of DataIntegrationDestinationAbstract');
 				break;
-			}
+			}*/
 		} while(false);
 		return $ret;
 	}

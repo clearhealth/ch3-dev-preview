@@ -279,8 +279,9 @@ class CalendarController extends WebVista_Controller_Action {
 			$startDate = $filter->date;
 		}
 		else {
-			$x = explode(' ', $app->start);
-			$startDate = $x[0];
+			//$x = explode(' ', $app->start);
+			//$startDate = $x[0];
+			$startDate = $columnTo['dateFilter'];
 		}
 
 		$startTime = strtotime($app->start);
@@ -321,7 +322,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$menus[] = array('text'=>__('Cancel Move'), 'id'=>'cancel_move');
 		$menus[] = array('text'=>__('Find First'), 'id'=>'find_first');
 		$this->view->menus =  $menus;
-		$this->view->stations = LegacyEnum::getEnumArray('routing_stations');
+		$this->view->stations = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		header('Content-Type: application/xml;');
 		$this->render('ajax-get-menu');
 	}

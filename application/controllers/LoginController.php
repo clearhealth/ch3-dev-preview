@@ -46,59 +46,27 @@ class LoginController extends WebVista_Controller_Action
 		$this->render('complete');
 	}
 
-    public function processAction()
-    {
-        $authAdapter = new Zend_Auth_Adapter_DbTable(Zend_Registry::get('dbAdapter'));
-	$authAdapter
-		->setTableName('user')
-		->setIdentityColumn('username')
-		->setCredentialColumn('password')
-		->setIdentity($_POST['username'])
-		->setCredential($_POST['password']);
-
-
-        $auth = Zend_Auth::getInstance();
-
-        $result = $auth->authenticate($authAdapter);
-
-		$audit = new Audit();
-		$audit->objectClass = 'Login';
-		$audit->objectId = 0;
-
-	$data = array();
-        if ($result->isValid()) {
-        	unset($this->_session->messages);
-		$identity = $auth->getIdentity();
-
-		$user = new User();
-		$user->username = $identity;
-		$user->populateWithUsername();
-		Zend_Auth::getInstance() 
-                 ->getStorage() 
-                 ->write($user);
-
-		//$this->_redirect('login/complete');
-		//$this->_forward('index','main');
-		$data['msg'] = __("Login successful.");
-		$data['code'] = 200;
-		$audit->message = __('user') . ': ' . $_POST['username'] . ' ' . __('login successful');
-		$audit->userId = $user->userId;
-        } else {
-            $auth->clearIdentity();
-            $this->_session->messages = $result->getMessages();
-            //$this->_redirect('login');
-		$data['err'] = __("Invalid username/password.");
-		$data['code'] = 404;
-		$audit->message = __('user') . ': ' . $_POST['username'] . ' ' . __('login failed due to bad password');
-        }
-
-		$audit->dateTime = date('Y-m-d H:i:s');
-		$audit->_ormPersist = true;
-		$audit->persist();
+	public function processAction() {
+		User::processLogin($_POST['username'],$_POST['password']);
+		$data = array();
+		$auth = Zend_Auth::getInstance();
+		if ($auth->hasIdentity()) {
+			unset($this->_session->messages);
+			$identity = $auth->getIdentity();
+			//$this->_redirect('login/complete');
+			//$this->_forward('index','main');
+			$data['msg'] = __("Login successful.");
+			$data['code'] = 200;
+		} else {
+			$this->_session->messages = $result->getMessages();
+			//$this->_redirect('login');
+			$data['err'] = __("Invalid username/password.");
+			$data['code'] = 404;
+		}
 
 		header('Content-Type: application/xml;');
 		$this->view->data = $data;
 		$this->completeAction();
 		//$this->render();
-    }
+	}
 }

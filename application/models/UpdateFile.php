@@ -34,6 +34,8 @@ class UpdateFile extends WebVista_Model_ORM {
 	protected $channelId;
 	protected $channel;
 	protected $license;
+	protected $status = 'New';
+	protected $queue;
 
 	protected $_table = 'updateFiles';
 	protected $_primaryKeys = array('updateFileId');
@@ -100,24 +102,11 @@ class UpdateFile extends WebVista_Model_ORM {
 	}
 
 	public function getUploadDir() {
-		$basePath = Zend_Registry::get('basePath');
-		return $basePath . 'tmp/updates/';
+		return Zend_Registry::get('basePath').'data'.DIRECTORY_SEPARATOR.'updates'.DIRECTORY_SEPARATOR;
 	}
 
 	public function getUploadFilename() {
 		return $this->getUploadDir().$this->updateFileId.'.xml';
-	}
-
-	public function getData() {
-		static $data = null;
-		if ($data !== null) {
-			return $data;
-		}
-		$filename = $this->getUploadFilename();
-		if (file_exists($filename)) {
-			$data = file_get_contents($filename);
-		}
-		return $data;
 	}
 
 	public function getAllVersions() {
@@ -135,70 +124,58 @@ class UpdateFile extends WebVista_Model_ORM {
 		return $versions;
 	}
 
-	public function verify($data = null) {
-		if ($data === null) {
-			$data = file_get_contents($this->getUploadFilename());
+	public function verify($filename) {
+		if (!file_exists($filename)) {
+			throw new Exception('File '.$filename.' does not exists');
 		}
-		$doc = new DOMDocument();
-		$doc->formatOutput = true;
-		if (!$doc->loadXML($data)) {
-			throw new Exception('Generated XML is invalid');
+		$zd = gzopen($filename,'r');
+		if (!$zd) {
+			throw new Exception('Could not open gzip file '.$filename);
 		}
-		$rootNode = $doc->getElementsByTagName('mysqldump');
-		if ($rootNode->length <= 0) {
-			$node = $doc->createElement('mysqldump');
-			$rootDoc = $doc->appendChild($node);
+		$file = $this->getUploadFilename();
+		$fp = fopen($file,'w');
+		if (!$fp) {
+			throw new Exception('Could not write file '.$file);
 		}
-		else {
-			$rootDoc = $rootNode->item(0);
+		$signatureTag = '';
+		$ctr = 1;
+		while (!gzeof($zd)) {
+			$buffer = gzgets($zd,4096);
+			if ($signatureTag == '' && $ctr++ == 2) { // line 2 is expected to be a <signature> tag
+				$signatureTag = $buffer;
+				continue;
+			}
+			fwrite($fp,$buffer);
 		}
-		$nodeList = $rootDoc->getElementsByTagName('meta-data');
-		if ($nodeList->length <= 0) {
-			$node = $doc->createElement('meta-data');
-			$elem = $rootDoc->appendChild($node);
+		$signature = substr($signatureTag,11,strlen($signatureTag)-24);
+		gzclose($zd);
+		if ($signature == '') {
+			throw new Exception('Invalid signature');
 		}
-		else {
-			$elem = $nodeList->item(0);
-		}
-		if ($channelId = $elem->getAttribute('channelId')) {
-			$this->channelId = (int)$channelId;
-		}
-		if ($channel = $elem->getAttribute('channel')) {
-			$this->channel = $channel;
-		}
-		$signature = $elem->getAttribute('signature');
-		if ($version = $elem->getAttribute('version')) {
-			$this->version = $version;
-		}
-		$elem->setAttribute('signature','');
-		if ($name = $elem->getAttribute('name')) {
-			$this->name = $name;
-		}
-		if ($md5sum = $elem->getAttribute('md5sum')) {
-			$this->md5sum = $md5sum;
-		}
-		if ($description = $elem->getAttribute('description')) {
-			$this->description = $description;
-		}
-		if ($license = $elem->getAttribute('license')) {
-			$this->license = $license;
-		}
-		$newData = $doc->saveXML();
 
-		$hash = md5($newData);
-		$userKey = new UserKey();
-		$userKey->userId = $this->signingUserId;
-		$userKey->populate();
+		$hash = hash_file('sha256',$file);
 		$keyFile = Zend_Registry::get('basePath');
 		$keyFile .= Zend_Registry::get('config')->healthcloud->updateServerPubKeyPath;
 		$serverPublicKey = file_get_contents($keyFile);
 		$publicKey = openssl_get_publickey($serverPublicKey);
 		openssl_public_decrypt(base64_decode($signature),$verifyHash,$publicKey);
 		openssl_free_key($publicKey);
+		$verifyHash = trim($verifyHash);
 		if ($hash !== $verifyHash) {
-			throw new Exception('Data verification with signature failed.');
+			$error = __('Data verification with signature failed.');
+			trigger_error($error);
+			throw new Exception($error);
 		}
 		return true;
+	}
+
+	public function getIteratorByQueue() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('queue = 1')
+				->order('dateTime DESC');
+		return parent::getIterator($sqlSelect);
 	}
 
 }

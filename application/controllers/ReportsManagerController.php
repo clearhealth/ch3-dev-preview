@@ -264,7 +264,9 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$oFilter->defaultValue = $params['defaultValue'];
 		$oFilter->type = $params['type'];
 		$oFilter->options = $params['options'];
-		$oFilter->query = $params['query'];
+		$query = '';
+		if ($oFilter->type == 'QUERY') $query = $params['query'];
+		$oFilter->query = $query;
 		$oFilter->includeBlank = isset($params['includeBlank'])?1:0;
 		$oFilter->enumName = $params['enumName'];
 		$filters[$params['id']] = $oFilter;

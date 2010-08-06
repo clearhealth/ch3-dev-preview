@@ -81,6 +81,7 @@ class FormularyManagerController extends WebVista_Controller_Action {
 			$adminSchedules[$row->key] = $row->name;
 		}
 		$this->view->scheduleOptions = $scheduleOptions;
+		$this->view->quantityQualifiers = Medication::listQuantityQualifiersMapping();
 		$this->render();
 	}
 
@@ -258,7 +259,7 @@ class FormularyManagerController extends WebVista_Controller_Action {
 			$hash = $cache->load($cacheKey."_hash");
 			$lastModified = $cache->load($cacheKey."_lastModified");
 			$headers = getallheaders();
-			if (isset($headers['If-None-Match']) && ereg($hash, $headers['If-None-Match'])) {
+			if (isset($headers['If-None-Match']) && preg_match('/'.$hash.'/', $headers['If-None-Match'])) {
 				header("Last-Modified: " . $lastModified);
 				header('HTTP/1.1 304 Not Modified');
 				exit;
@@ -309,9 +310,17 @@ class FormularyManagerController extends WebVista_Controller_Action {
 			$tmp['data'][] = $row['externalUrl'];
 			$tmp['data'][] = $row['price'];
 			$tmp['data'][] = $row['qty'];
+			$tmp['data'][] = $row['quantityQualifier'];
 			$tmp['data'][] = $row['keywords'];
 			$tmp['data'][] = $row['deaSchedule'];
 			$tmp['data'][] = $row['print'];
+			$tmp['data'][] = $row['description'];
+			$tmp['data'][] = $row['dose'];
+			$tmp['data'][] = $row['route'];
+			$tmp['data'][] = $row['prn'];
+			$tmp['data'][] = $row['refills'];
+			$tmp['data'][] = $row['daysSupply'];
+			$tmp['data'][] = $row['substitution'];
 			$rows[] = $tmp;
 		}
 		/*
@@ -373,7 +382,7 @@ class FormularyManagerController extends WebVista_Controller_Action {
 			$hash = $cache->load($cacheKey."_hash");
 			$lastModified = $cache->load($cacheKey."_lastModified");
 			$headers = getallheaders();
-			if (isset($headers['If-None-Match']) && ereg($hash, $headers['If-None-Match'])) {
+			if (isset($headers['If-None-Match']) && preg_match('/'.$hash.'/', $headers['If-None-Match'])) {
 				header("Last-Modified: " . $lastModified);
 				header('HTTP/1.1 304 Not Modified');
 				exit;
@@ -426,7 +435,7 @@ class FormularyManagerController extends WebVista_Controller_Action {
 		$fullNDC = preg_replace('/[^0-9_a-z-\.]+/i','',$this->_getParam("id",""));
 		$formulary = new FormularyItem($tableName);
 		$field = $this->_getParam("field");
-		$value = preg_replace('/[^a-z_0-9- :\/\?\&=\.;]/i','',html_entity_decode($this->_getParam("value","")));
+		$value = preg_replace('/[^a-z_0-9-, :\/\?\&=\.;]/i','',html_entity_decode($this->_getParam("value","")));
 
 		if (in_array($field,$formulary->ormFields())) {
 			$formulary->fullNDC = $fullNDC;
@@ -493,8 +502,8 @@ class FormularyManagerController extends WebVista_Controller_Action {
 		$uploadFileName = $_FILES['uploadFile']['tmp_name'];
 		$row = 0;
 		if (($handle = fopen($uploadFileName,'r')) !== false) {
-			$template = array('fullNDC'=>'','directions'=>'','comments'=>'','schedule'=>'','labelId'=>'','externalUrl'=>'','price'=>'','qty'=>'','keywords'=>'');
-			$arrangements = array('fullNDC','directions','comments','schedule','labelId','externalUrl','price','qty','keywords');
+			$template = array(''=>'','fullNDC'=>'','directions'=>'','comments'=>'','schedule'=>'','labelId'=>'','externalUrl'=>'','price'=>'','qty'=>'','quantityQualifier'=>'','keywords'=>'','deaSchedule'=>'','print'=>'','description'=>'','dose'=>'','route'=>'','prn'=>'','refills'=>'','daysSupply'=>'','substitution'=>'');
+			$arrangements = array('','fullNDC','directions','comments','schedule','labelId','externalUrl','price','qty','quantityQualifier','keywords','deaSchedule','print','description','dose','route','prn','refills','daysSupply','substitution');
 			while (($data = fgetcsv($handle,0,',')) !== false) { // 0 = all chars in a line
 				$ctr = count($data);
 				$row++;
@@ -510,7 +519,7 @@ class FormularyManagerController extends WebVista_Controller_Action {
 					continue;
 				}
 				$formularyData = $template;
-				for ($i=0; $i < $ctr; $i++) {
+				for ($i=1; $i < $ctr; $i++) {
 					$formularyData[$arrangements[$i]] = $data[$i];
 				}
 				$formulary = new FormularyItem($name);
@@ -535,10 +544,12 @@ class FormularyManagerController extends WebVista_Controller_Action {
 		$name = preg_replace('/[^a-zA-Z]+/','',$this->_getParam('name',''));
 		$formularyItem = new FormularyItem($name);
 		$rows = array();
-		$header = array('NDC','Directions','Comments','Schedule','Label ID','External URL','Price','Qty','Keywords');
+		$header = array('Drug Name','NDC','Directions','Comments','Schedule','Label ID','External URL','Price','Qty','Qualifier','Keywords','DEA Schedule','Print','Description','Dose','Route','PRN','Refills','Days Supply','Substitution');
 		$rows[] = implode(',',$header);
 		foreach ($formularyItem->getAllRows() as $row) {
 			$tmp = array();
+			$drug = $row['fda_drugname'].' - '.$row['dose'].' - '.$row['strength'].' - '.$row['rxnorm'].' - '.$row['tradename'];
+			$tmp[] = $drug;
 			$tmp[] = $row['fullNDC'];
 			$tmp[] = $row['directions'];
 			$tmp[] = $row['comments'];
@@ -547,7 +558,17 @@ class FormularyManagerController extends WebVista_Controller_Action {
 			$tmp[] = $row['externalUrl'];
 			$tmp[] = $row['price'];
 			$tmp[] = $row['qty'];
+			$tmp[] = $row['quantityQualifier'];
 			$tmp[] = $row['keywords'];
+			$tmp[] = $row['deaSchedule'];
+			$tmp[] = $row['print'];
+			$tmp[] = $row['description'];
+			$tmp[] = $row['dose'];
+			$tmp[] = $row['route'];
+			$tmp[] = $row['prn'];
+			$tmp[] = $row['refills'];
+			$tmp[] = $row['daysSupply'];
+			$tmp[] = $row['substitution'];
 			$rows[] = implode(',',$this->_sanitizeCSV($tmp));
 		}
 		$data = implode("\n",$rows);

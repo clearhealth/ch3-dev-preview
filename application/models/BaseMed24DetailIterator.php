@@ -79,18 +79,26 @@ class BaseMed24DetailIterator extends WebVista_Model_ORMIterator implements Iter
 			$col++;
 		}
 
-		$data['sched'] = '';
+		$data['formularySchedule'] = '';
+		$data['formularyDose'] = '';
+		$data['formularyRoute'] = '';
 		$data['keywords'] = '';
 		$data['print'] = '';
 		$data['directions'] = '';
 		$data['comments'] = '';
-		$data['sched'] = '';
+
+		$data['description'] = '';
+		$data['prn'] = '';
+		$data['quantityQualifier'] = '';
+		$data['refills'] = '';
+		$data['daysSupply'] = '';
+		$data['substitution'] = '';
 		if (isset($extra['formulary']) && strlen($extra['formulary']['fullNDC']) > 0) { // override basemed24 with formulary
 			$formulary = $extra['formulary'];
 			// override basemed values
 			$data['directions'] = $formulary['directions'];
 			$data['comments'] = $formulary['comments'];
-			$data['sched'] = $formulary['schedule'];
+			$data['formularySchedule'] = $formulary['schedule'];
 			$data['price'] = $formulary['price'];
 			$data['labelId'] = $formulary['labelId'];
 			$data['externalUrl'] = $formulary['externalUrl'];
@@ -99,6 +107,15 @@ class BaseMed24DetailIterator extends WebVista_Model_ORMIterator implements Iter
 			$data['vaclass'] = $formulary['vaclass'];
 			$data['schedule'] = $formulary['deaSchedule'];
 			$data['print'] = $formulary['print'];
+			$data['formularyDose'] = $formulary['dose'];
+			$data['formularyRoute'] = $formulary['route'];
+
+			$data['description'] = $formulary['description'];
+			$data['prn'] = $formulary['prn'];
+			$data['quantityQualifier'] = $formulary['quantityQualifier'];
+			$data['refills'] = $formulary['refills'];
+			$data['daysSupply'] = $formulary['daysSupply'];
+			$data['substitution'] = $formulary['substitution'];
 		}
 		/*$ormObj = new $this->_ormClass();
 		$ormObj->populateWithArray($data);

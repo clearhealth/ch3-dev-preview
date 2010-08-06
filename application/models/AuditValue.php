@@ -33,12 +33,12 @@ class AuditValue extends WebVista_Model_ORM {
 	protected $_ormPersist = false;
 
 	public function persist() {
+		if ($this->_ormPersist) {
+			return parent::persist();
+		}
 		if ($this->shouldAudit()) {
 			$sql = $this->toSQL();
 			AuditLog::appendSql($sql);
-		}
-		if ($this->_ormPersist) {
-			parent::persist();
 		}
 	}
 }

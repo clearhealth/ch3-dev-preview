@@ -1,6 +1,6 @@
 <?php
 /*****************************************************************************
-*       DataIntegrationAction.php
+*       Radio.php
 *
 *       Author:  ClearHealth Inc. (www.clear-health.com)        2009
 *       
@@ -22,34 +22,11 @@
 *****************************************************************************/
 
 
-class DataIntegrationAction extends DataIntegration {
+/** Zend_Form_Element_Multi */
+require_once 'Zend/Form/Element/Multi.php';
 
-	protected $dataIntegrationActionId;
-	protected $guid;
-	protected $name;
-	protected $action;
-	protected $handlerType;
-	protected $_table = 'dataIntegrationActions';
-	protected $_primaryKeys = array('dataIntegrationActionId');
+class Zend_Form_Element_Radio extends Zend_Form_Element_Multi {
 
-	public function defaultTemplate() {
-		return <<<EOL
-class [[ClassName]]DataIntegrationAction extends DataIntegrationActionAbstract {
-	//abstract requires at least this method
-	public static function act(Audit \$auditOrm,array \$dataSourceData) {
-		\$orm = new HL7Message();
-		\$orm->populateWithArray(\$dataSourceData);
-		if (!strlen(\$orm->message)) {
-			trigger_error('Empty message');
-		}
-		else {
-			\$orm->persist();
-		}
-		return true;
-	}
-}
-
-EOL;
-	}
+	public $helper = 'formRadio';
 
 }

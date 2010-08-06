@@ -111,6 +111,7 @@ class DataIntegrationController extends WebVista_Controller_Action {
 		$this->_form->loadORM($this->_datasource,'datasource');
 		$this->_form->setWindow('winEditDataIntegrationDatasourceId');
 		$this->view->form = $this->_form;
+		$this->view->datasource = $this->_datasource;
 		$this->view->callback = $this->_getParam('callback','');
 		$this->render('edit-datasource');
 	}
@@ -177,6 +178,7 @@ class DataIntegrationController extends WebVista_Controller_Action {
 		$this->_form->loadORM($this->_action,'dataIntegrationAction');
 		$this->_form->setWindow('winEditDataIntegrationActionId');
 		$this->view->form = $this->_form;
+		$this->view->action = $this->_action;
 		$this->view->callback = $this->_getParam('callback','');
 		$this->render('edit-action');
 	}
@@ -210,6 +212,7 @@ class DataIntegrationController extends WebVista_Controller_Action {
 		$this->_form->loadORM($this->_destination,'destination');
 		$this->_form->setWindow('winEditDataIntegrationDestinationId');
 		$this->view->form = $this->_form;
+		$this->view->destination = $this->_destination;
 		$this->view->callback = $this->_getParam('callback','');
 		$this->render('edit-destination');
 	}

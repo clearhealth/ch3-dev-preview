@@ -254,7 +254,7 @@ class CacheFileController extends WebVista_Controller_Action {
             $lastModified = $cache->load($cacheKey."_lastModified");
             $headers = getallheaders();
             if (isset($headers['If-None-Match']) &&
-                ereg($hash, $headers['If-None-Match'])) {
+                preg_match('/'.$hash.'/', $headers['If-None-Match'])) {
                 header("Last-Modified: " . $lastModified);
                 header('HTTP/1.1 304 Not Modified');
                 exit;

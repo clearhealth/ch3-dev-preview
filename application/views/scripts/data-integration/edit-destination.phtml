@@ -22,8 +22,9 @@
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->name->renderLabel()?>
-	<?$this->form->name->setAttrib('size',55)?>
+	<?$this->form->name->setAttrib('size',30)?>
 	<?=$this->form->nameInput()?>
+	<?=$this->formButton('generateId',__('Generate Code'),array('onClick'=>'generateDefaultDestination()'))?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
@@ -42,18 +43,40 @@
 	<?=$this->formHidden('type',$this->form->handlerType->getValue())?>
 	<?=$this->form->handlerTypeInput('FormHidden')?>
 	<?=$this->form->okInput()?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winEditDataIntegrationDestinationId').close()"/>
+	<?=$this->formButton('cancelId',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
 </div>
 
 <script>
-function postSubmiteditdestination(data) {
+var defaultDestination = (<r><![CDATA[<?=$this->destination->defaultTemplate()?>]]></r>).toString();
+
+function postSubmit<?=$this->form->getId()?>(data) {
 <?if (strlen($this->callback) > 0):?>
 	if (window.<?=$this->callback?>) {
 		window.<?=$this->callback?>(data);
 	}
 <?endif;?>
-	dhxWins.window('winEditDataIntegrationDestinationId').close();
+	dhxWins.window('<?=$this->form->getWindow()?>').close();
 	return false;
+}
+
+function preSubmit<?=$this->form->getId()?>() {
+	var validName = "class "+globalNormalizedName(dojo.byId("<?=$this->form->name->getId()?>").value)+"DataIntegrationDestination";
+	var connectInfo = dojo.byId("<?=$this->form->connectInfo->getId()?>").value;
+	if (connectInfo.substr(0,validName.length) != validName) {
+		alert("Must be defined as: \n"+validName);
+		return false;
+	}
+	return true;
+}
+
+function generateDefaultDestination() {
+	var name = dojo.byId("<?=$this->form->name->getId()?>").value;
+	if (name.length <= 0) {
+		alert("<?=__('Name must be supplied.')?>");
+		return;
+	}
+	if (!confirm("Continue?")) return;
+	dojo.byId("<?=$this->form->connectInfo->getId()?>").value = defaultDestination.replace("class [[ClassName]]DataIntegrationDestination","class "+globalNormalizedName(name)+"DataIntegrationDestination");
 }
 </script>
 

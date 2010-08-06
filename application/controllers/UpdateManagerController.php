@@ -47,36 +47,6 @@ class UpdateManagerController extends WebVista_Controller_Action {
 		$this->render('toolbar');
 	}
 
-	public function listAction() {
-		$rows = array();
-		$updateFile = new UpdateFile();
-		$updateFileIterator = $updateFile->getIteratorActive();
-		$alterTable = new AlterTable();
-		foreach ($updateFileIterator as $item) {
-			$changes = $alterTable->generateChanges($item->blob['data']);
-			if (!count($changes) > 0) {
-				continue;
-			}
-			$row = array();
-			$row['id'] = $item->updateFileId;
-			$row['data'][] = $item->name.' (v'.$item->version.')';
-			$row['data'][] = '';
-			foreach ($changes as $key=>$val) {
-				$tmp = array();
-				$tmp['id'] = $item->updateFileId.'_'.$key;
-				$tmp['data'][] = $val;
-				$tmp['data'][] = '';
-				$row['rows'][] = $tmp;
-			}
-			$rows[] = $row;
-		}
-		$data = array();
-		$data['rows'] = $rows;
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
-		$json->direct($data);
-	}
-
 	public function listXmlAction() {
 		$baseStr = "<?xml version='1.0' standalone='yes'?><rows></rows>";
 		$xml = new SimpleXMLElement($baseStr);
@@ -100,6 +70,7 @@ class UpdateManagerController extends WebVista_Controller_Action {
 			$parent = $channelXml->addChild('row');
 			$parent->addAttribute('id',$item->updateFileId);
 			$parent->addChild('cell',$item->name.' (v'.$item->version.')');
+			$parent->addChild('cell',$item->status);
 			$parent->addChild('cell','');
 			//foreach ($changes as $key=>$val) {
 			//	$child = $parent->addChild('row');
@@ -149,21 +120,47 @@ EOL;
 		$updateFile = new UpdateFile();
 		$updateFile->updateFileId = $updateFileId;
 		$updateFile->populate();
-		$data = $updateFile->data;
-		$alterTable = new AlterTable();
-		$ret = $alterTable->generateSqlChanges($data);
-		if ($ret === true) {
-			$alterTable->executeSqlChanges();
-			$updateFile->active = 0;
-			$updateFile->persist();
-
-			$audit = new Audit();
-			$audit->objectClass = 'UpdateManager';
-			$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
-			$audit->message = 'License of update file '.$updateFile->name.' from '.$updateFile->channel.' channel was accepted and updates applied successfully.';
-			$audit->dateTime = date('Y-m-d H:i:s');
-			$audit->persist();
+		$filename = $updateFile->getUploadFilename();
+		if (file_exists($filename)) {
+			$size = sprintf("%u",filesize($filename));
+			$units = array('B','KB','MB','GB','TB');
+			$pow = floor(($size?log($size):0)/log(1024));
+			$pow = min($pow,count($units)-1);
+			$size /= pow(1024,$pow);
+			if (($pow == 2 && round($size,1) > 10) ||$pow > 2) { // queue if > 10 MB
+				$updateFile->queue = 1;
+				$updateFile->status = 'Pending';
+				$updateFile->persist();
+			}
 		}
+		$audit = new Audit();
+		$audit->objectClass = 'UpdateManager';
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$audit->message = 'License of update file '.$updateFile->name.' from '.$updateFile->channel.' channel was accepted';
+		$audit->dateTime = date('Y-m-d H:i:s');
+
+		if ($updateFile->queue) {
+			$audit->message .= ' and updates pending to apply.';
+			$ret = true;
+		}
+		else {
+			$updateFile->queue = 0;
+			$alterTable = new AlterTable();
+			$ret = $alterTable->generateSqlChanges($filename);
+			if ($ret === true) {
+				$alterTable->executeSqlChanges();
+				//$updateFile->active = 0;
+				$updateFile->status = 'Completed';
+				$updateFile->persist();
+				$audit->message .= ' and updates applied successfully.';
+			}
+			else {
+				$audit->message .= ' and updates failed to apply.';
+				$updateFile->status = 'Error: '.$ret;
+				$updateFile->persist();
+			}
+		}
+		$audit->persist();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
@@ -171,6 +168,7 @@ EOL;
 
 	public function checkAction() {
 		$data = array();
+		$sessVersions = array();
 		$output = $this->_fetch('check');
 		if ($output === false) {
 			$data['code'] = 400;
@@ -185,17 +183,20 @@ EOL;
 			}
 			else {
 				$data['code'] = 200;
-				$sessVersions = array();
 				$versions = array();
-				foreach ($xml as $version) {
-					$version = (string)$version;
-					$sessVersions[$version] = $version;
+				foreach ($xml as $update) {
+					$version = (string)$update->version;
+					$tmp = array();
+					foreach ($update as $key=>$value) {
+						$tmp[$key] = (string)$value;
+					}
+					$sessVersions[$version] = $tmp;
 					$versions[] = $version;
 				}
-				$this->_session->versions = $sessVersions;
 				$data['msg'] = $versions;
 			}
 		}
+		$this->_session->versions = $sessVersions;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -234,37 +235,32 @@ EOL;
 			try {
 				$filename = tempnam(sys_get_temp_dir(),'uf_');
 				file_put_contents($filename,$ret);
-				ob_start();
-				readgzfile($filename);
-				$ret = ob_get_clean();
-				unlink($filename);
-				$responseXml = simplexml_load_string($ret);
-				if (isset($responseXml->error)) {
-					$error = __('There was an error fetching update file');
-					$error .= ' Error code: '.$responseXml->error->errorCode.' Error Message: '.$responseXml->error->errorMsg;
-					$ret = (string)$responseXml->error->errorMsg;
-					trigger_error($error,E_USER_NOTICE);
-				}
-				else {
-					$updateFile->active = 1;
-					$updateFile->dateTime = date('Y-m-d H:i:s');
-					try {
-						$updateFile->verify($ret);
-						$updateFile->persist();
-						file_put_contents($updateFile->getUploadFilename(),$ret);
-						unset($this->_session->versions[$param]);
-						$ret = true;
-						$next = array_shift($this->_session->versions);
-						if ($next !== null) {
-							$ret = array('next'=>$next);
-						}
+
+				$updateFile->active = 1;
+				$updateFile->dateTime = date('Y-m-d H:i:s');
+				try {
+					$updateFile->populateWithArray($this->_session->versions[$param]);
+					if (substr($updateFile->name,-3) == '.gz') {
+						$updateFile->name = substr($updateFile->name,0,-3);
 					}
-					catch (Exception $e) {
-						$error = __('Invalid signature');
-						$ret = $error.': '.$e->getMessage();
-						trigger_error($ret,E_USER_NOTICE);
+					$updateFile->version = $version['version'];
+					$updateFile->persist();
+					$contents = $updateFile->verify($filename);
+					//file_put_contents($updateFile->getUploadFilename(),$contents);
+					unset($this->_session->versions[$param]);
+					$ret = true;
+					list($next,$val) = each($this->_session->versions);
+					if ($next !== null) {
+						$ret = array('next'=>$next);
 					}
 				}
+				catch (Exception $e) {
+					$updateFile->setPersistMode(WebVista_Model_ORM::DELETE);
+					$error = __('Invalid signature');
+					$ret = $error.': '.$e->getMessage();
+					trigger_error($ret,E_USER_NOTICE);
+				}
+				$updateFile->persist();
 			}
 			catch (Exception $e) {
 				$error = __('There was an error with the downloaded file');
@@ -301,7 +297,6 @@ EOL;
 		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
 		$ret = curl_exec($ch);
 		$curlErrno = curl_errno($ch);
-		$curlError = curl_errno($ch);
 		curl_close($ch);
 		if ($curlErrno) {
 			$ret = false;
@@ -325,8 +320,11 @@ EOL;
 		$updateFile = new UpdateFile();
 		$uploadDir = $updateFile->getUploadDir();
 
-		if (!is_writable($uploadDir)) {
-			$msg = 'tmp directory is not writable';
+		if (!is_dir($uploadDir)) {
+			$msg = $uploadDir.' directory does not exist';
+		}
+		else if (!is_writable($uploadDir)) {
+			$msg = $uploadDir.' directory is not writable';
 		}
 		else if (!isset($_FILES['uploadFile'])) {
 			$msg = __('No uploaded file');
@@ -339,29 +337,23 @@ EOL;
 		}
 		else {
 			$file = $_FILES['uploadFile'];
-			$data = file_get_contents($file['tmp_name']);
-			if (!$xml = simplexml_load_string($data)) {
-				$msg = __('Invalid xml format.');
-			}
 		}
 		if (isset($msg)) {
 			$this->_session->errMsg = $msg;
 			throw new Exception($msg);
 		}
 		$params = $this->_getParam('updateFile');
-		$md5sum = md5($data);
 		$updateFile->channelId = UpdateFile::USER_CHANNEL_ID;
 		$updateFile->channel = UpdateFile::USER_CHANNEL;
 		$updateFile->active = 1;
 		$updateFile->name = $file['name'];
 		$updateFile->mimeType = $file['type'];
-		$updateFile->md5sum = $md5sum;
+		$updateFile->md5sum = md5_file($file['tmp_name']);
 		$updateFile->description = $params['description'];
 		$updateFile->dateTime = date('Y-m-d H:i:s');
 		$updateFile->persist();
 
-		$filename = $updateFile->getUploadFilename();
-		file_put_contents($filename,$data);
+		move_uploaded_file($file['tmp_name'],$updateFile->getUploadFilename());
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -395,8 +387,28 @@ EOL;
 		$updateFile->populate();
 		$alterTable = new AlterTable();
 		$this->view->name = $updateFile->channel.': '.$updateFile->name;
-		$this->view->data = $alterTable->generateChanges($updateFile->data);
+		$this->view->data = $alterTable->generateChanges($updateFile->getUploadFilename());
 		$this->render('view-details');
+	}
+
+	public function processDeleteAction() {
+		$param = $this->_getParam('id');
+		$ids = explode(',',$param);
+		$ret = false;
+		foreach ($ids as $updateFileId) {
+			if (!$updateFileId > 0) continue;
+			$ret = true;
+			$updateFile = new UpdateFile();
+			$updateFile->updateFileId = (int)$updateFileId;
+			$updateFile->populate();
+			if (!strlen($updateFile->version) > 0) continue;
+			//$updateFile->active = 0;
+			$updateFile->setPersistMode(WebVista_Model_ORM::DELETE);
+			$updateFile->persist();
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 }

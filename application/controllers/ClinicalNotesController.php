@@ -351,7 +351,7 @@ EOL;
                         $row['data'][] = $note['noteTitle'];
                         $row['data'][] = $note['last_name'].', '.$note['first_name'].' '.substr($note['middle_name'],0,1);
 			$location = '';
-			$locationId = (int)$row['locationId'];
+			$locationId = (int)$note['locationId'];
 			if ($locationId > 0) {
 				$location = Room::location($locationId);
 			}
@@ -369,6 +369,7 @@ EOL;
 			foreach ($genericDataIterator as $data) {
 				if (!$firstData) {
 					$firstData = true;
+					$row['id'] .= ':'.$data->revisionId;
 					continue;
 				}
 				$tmp = array();

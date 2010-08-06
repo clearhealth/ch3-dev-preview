@@ -131,7 +131,7 @@ class FacilitiesController extends WebVista_Controller_Action {
 		$form->setWindow('windowEditRoomId');
 		$this->view->form = $form;
 
-		$routingStations = LegacyEnum::getEnumArray('routing_stations');
+		$routingStations = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		$routingStations = array_merge(array('' => ''),$routingStations);
 		$this->view->colors = Room::getColorList();
 		$this->view->routingStations = $routingStations;

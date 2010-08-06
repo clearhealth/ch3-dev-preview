@@ -13,7 +13,7 @@ enumItemsGrid.attachEvent("onDrop",enumItemsDropHandler);
 enumItemsGrid.attachEvent("onEditCell",enumItemsOnEditCell);
 enumItemsGrid.attachEvent("onCheck",enumItemsOnChecked);
 enumItemsGrid.attachEvent("onRowSelect",enumItemsOnRowSelected);
-enumItemsGrid.enableTreeGridLines(true);
+//enumItemsGrid.enableTreeGridLines(true);
 enumItemsGrid.init();
 enumItemsGrid.load('<?=$this->baseUrl?>/enumerations-manager.raw/list-items?enumerationId=<?=$this->enumerationId?>',enumItemsExpand,"xml");
 

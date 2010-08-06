@@ -55,9 +55,35 @@ class CHProcessingDaemon extends WebVista {
 	}
 
 	protected function _setupEnvironment() {
-		parent::_setupEnvironment();
 		// disable strict reporting
 		error_reporting(E_ALL);
+		set_include_path($this->getPath('library') . PATH_SEPARATOR 
+					. $this->getPath('models') . PATH_SEPARATOR
+					. $this->getPath('controllers') . PATH_SEPARATOR
+					. get_include_path());
+		require_once('WebVista/Model/ORM.php');
+		require_once('User.php');
+		require_once('Person.php');
+		require_once('Zend/Session.php');
+		require_once('WebVista/Session/SaveHandler.php');
+		Zend_Session::setSaveHandler(new WebVista_Session_SaveHandler());
+		Zend_Session::start();
+		require_once 'Zend/Loader.php';
+		Zend_Loader::registerAutoLoad();
+		$sessionTimeout = ini_get('session.gc_maxlifetime') - (5 * 60);
+		Zend_Registry::set('sessionTimeout',$sessionTimeout);
+		$this->_config = new Zend_Config_Ini($this->getPath('application') . "/config/app.ini", APPLICATION_ENVIRONMENT);
+		Zend_Registry::set('config', $this->_config);
+		Zend_Registry::set('baseUrl',substr($_SERVER['PHP_SELF'],0,strpos(strtolower($_SERVER['PHP_SELF']),'index.php')));
+		Zend_Registry::set('basePath',$this->getPath('base') . DIRECTORY_SEPARATOR);
+		try {
+			date_default_timezone_set(Zend_Registry::get('config')->date->timezone);
+		}
+		catch (Zend_Exception $e) {
+			die($e->getMessage());
+		}
+		Audit::$_synchronousAudits = true;
+		Audit::$_processedAudits = true;
 		return $this;
 	}
 
@@ -97,11 +123,18 @@ class CHProcessingDaemon extends WebVista {
 		$process->addProcess(new ProcessHL7());
 		$process->addProcess(new ProcessAlert());
 		$process->addProcess(new ProcessHSA());
+		$process->addProcess(new ProcessUpdateManager());
 		$process->startProcessing();
 		return $this;
 	}
+
+	public static function unlock() {
+		@unlink('/tmp/CHProcessingDaemon.lock');
+	}
+
 }
 
 touch('/tmp/CHProcessingDaemon.lock');
+register_shutdown_function(array('CHProcessingDaemon','unlock'));
 $CHProcessingDaemon = CHProcessingDaemon::getInstance();
 $CHProcessingDaemon->run();

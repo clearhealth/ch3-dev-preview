@@ -160,7 +160,10 @@ function postSubmitedit(data) {
 }
 
 <?if (isset($this->listDirections)):?>
-directionOnChanged();
+var directionSelect = dojo.byId("handler-direction");
+if (directionSelect.options[directionSelect.selectedIndex].value != 0) {
+	directionOnChanged();
+}
 <?endif;?>
 </script>
 

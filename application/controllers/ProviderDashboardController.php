@@ -265,7 +265,7 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 	public function appointmentsGridContextMenuAction() {
 		header('Content-Type: application/xml;');
 		$this->view->xmlHeader = '<?xml version="1.0" ?>';
-		$this->view->stations = LegacyEnum::getEnumArray('routing_stations');
+		$this->view->stations = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		$this->render();
 	}
 
@@ -289,7 +289,7 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 	);
     }
 /*	public function enumTestAction() {
-		$enum = LegacyEnum::getEnumArray('routing_stations');
+		$enum = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		var_dump($enum);
 		exit;	
 	}*/

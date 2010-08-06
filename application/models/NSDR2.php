@@ -375,6 +375,7 @@ class NSDR2 extends NSDR {
 
 	public static function extractNamespace($namespace) {
 		$x = explode('.',$namespace);
+		if (!isset($x[1])) return $namespace;
 		$first = array_shift($x);
 		$last = array_pop($x);
 		$fx = explode('::',$first);

@@ -40,6 +40,14 @@ class FormularyItem extends WebVista_Model_ORM {
 	protected $vaclass;
 	protected $deaSchedule;
 	protected $print;
+	protected $description;
+	protected $dose;
+	protected $route;
+	protected $prn;
+	protected $quantityQualifier;
+	protected $refills;
+	protected $daysSupply;
+	protected $substitution;
 	protected $_table = 'formularyDefault';
 	protected $_primaryKeys = array("fullNDC");
 
@@ -431,7 +439,7 @@ trigger_error($sql,E_USER_NOTICE);
 		if (is_null($dbSelect)) {
                 	$dbSelect = $db->select()
 				->from(array('f'=>$this->_table))
-				->join(array('hbm24'=>'chmed.basemed24'),'hbm24.full_ndc = f.fullNDC',array('fda_drugname','dose','strength','rxnorm','tradename'));
+				->join(array('hbm24'=>'chmed.basemed24'),'hbm24.full_ndc = f.fullNDC',array('fda_drugname','chmed_dose'=>'dose','strength','rxnorm','tradename'));
 		}
 		return $db->query($dbSelect)->fetchAll();
 	}

@@ -1,6 +1,6 @@
 <?php
 /*****************************************************************************
-*       ProcedureCodesImmunization.php
+*       ProcessUpdateManager.php
 *
 *       Author:  ClearHealth Inc. (www.clear-health.com)        2009
 *       
@@ -22,39 +22,33 @@
 *****************************************************************************/
 
 
-class ProcedureCodesImmunization extends WebVista_Model_ORM {
+class ProcessUpdateManager extends ProcessAbstract {
 
-	protected $code;
-	protected $textShort;
-	protected $textLong;
-	protected $_table = "procedureCodesImmunization";
-	protected $_primaryKeys = array("code");
-
-	public function persist() {
-		if ($this->_persistMode === WebVista_Model_ORM::DELETE) {
-			$db = Zend_Registry::get('dbAdapter');
-			$sql = $this->toSQL();
-			$code = preg_replace('/[^a-z_0-9- \.]/i','',$this->code);
-			$sql .= " AND `code` = '{$code}'";
-			$db->query($sql);
-			$this->postPersist();
-			if ($this->shouldAudit()) {
-				WebVista_Model_ORM::audit($this);
+	/**
+	 * Process condition and do action
+	 * @param Handler $handler Handler ORM
+	 * @param Audit $audit Audit ORM
+	 * @return boolean Return TRUE if successful, FALSE otherwise
+	 */
+	public function process(Audit $audit) {
+		$ret = true;
+		$update = new UpdateFile();
+		$updateIterator = $update->getIteratorByQueue();
+		foreach ($updateIterator as $updateFile) {
+			$updateFile->queue = 0;
+			$alterTable = new AlterTable();
+			$ret = $alterTable->generateSqlChanges($updateFile->getUploadFilename());
+			if ($ret === true) {
+				$alterTable->executeSqlChanges();
+				//$updateFile->active = 0;
+				$updateFile->status = 'Completed';
+				$updateFile->persist();
+			}
+			else {
+				$updateFile->status = 'Error: '.$ret;
+				$updateFile->persist();
 			}
 		}
-		else {
-			parent::persist();
-		}
-		return $this;
-	}
-
-	public function populate() {
-		$db = Zend_Registry::get('dbAdapter');
-		$dbSelect = $db->select()
-			       ->from($this->_table)
-			       ->where('`code` = ?',$this->code);
-		$ret = $this->populateWithSql($dbSelect->__toString());
-		$this->postPopulate();
 		return $ret;
 	}
 

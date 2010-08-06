@@ -75,6 +75,9 @@ class MessagingIterator extends WebVista_Model_ORMIterator implements Iterator {
 					$x[1] = date('Y-m-d 23:59:59',strtotime($x[1]));
 					$sqlSelect->where("`dateStatus` BETWEEN '".date('Y-m-d H:i:s',strtotime($x[0]))."' AND '".date('Y-m-d H:i:s',strtotime($x[1]))."'");
 					break;
+				case 'resolution':
+					$sqlSelect->where('unresolved = ?',(int)$value);
+					break;
 			}
 		}
 		trigger_error($sqlSelect->__toString(),E_USER_NOTICE);

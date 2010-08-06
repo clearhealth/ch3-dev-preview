@@ -136,24 +136,68 @@ dojo.connect(fscb,"onChange",'getFormularyCHMedDetails');
 // Formulary Grid
 var formularyGrid =  new dhtmlXGridObject("formularyGridContainer");
 formularyGrid.setImagePath("<?=$this->baseUrl?>/img/");
-formularyGrid.setHeader("<?=__('Drug')?>,<?=__('Directions')?>,<?=__('Comments')?>,<?=__('Schedule')?>,<?=__('Label Id')?>,<?=__('External Url')?>,<?=__('Price')?>,<?=__('Qty')?>,<?=__('Keywords')?>,<?=__('DEA Schedule')?>,<?=__('Print')?>");
-formularyGrid.setColTypes("ro,ed,ed,coro,ed,ed,ed,ed,ed,coro,ch");
+formularyGrid.setHeader("<?=__('Drug')?>,<?=__('Directions')?>,<?=__('Comments')?>,<?=__('Schedule')?>,<?=__('Label Id')?>,<?=__('External Url')?>,<?=__('Price')?>,<?=__('Qty')?>,<?=__('Qualifier')?>,<?=__('Keywords')?>,<?=__('DEA Sched')?>,<?=__('Print')?>,<?=__('Description')?>,<?=__('Dose')?>,<?=__('Route')?>,<?=__('PRN')?>,<?=__('Refills')?>,<?=__('Days Supply')?>,<?=__('Subs')?>");
+formularyGrid.setColTypes("ro,ed,ed,co,ed,ed,ed,ed,co,ed,co,ch,ed,co,co,ch,ed,ed,ch");
 formularyGrid.setSkin("xp");
-formularyGrid.setInitWidths("*,*,*,70,50,*,50,50,*,85,50");
-formularyGrid.setColAlign("right,left,right,center,center,center,left,center,left,left,left,center");
+formularyGrid.setInitWidths("*,*,*,50,50,*,50,30,50,*,50,30,*,50,50,30,50,50,30");
 formularyGrid.init();
 
-formularyGrid.getCombo(3).put("","");
+var indexDrug = 0;
+var indexDirections = 1;
+var indexComments = 2;
+var indexSchedule = 3;
+var indexLabelId = 4;
+var indexExternalUrl = 5;
+var indexPrice = 6;
+var indexQty = 7;
+var indexQuantityQualifier = 8;
+var indexKeywords = 9;
+var indexDEASchedule = 10;
+var indexPrint = 11;
+var indexDescription = 12;
+var indexDose = 13;
+var indexRoute = 14;
+var indexPRN = 15;
+var indexRefills = 16;
+var indexDaysSupply = 17;
+var indexSubstitutions = 18;
+
+var fieldNameLookup = [];
+fieldNameLookup[indexDirections] = "directions";
+fieldNameLookup[indexComments] = "comments";
+fieldNameLookup[indexSchedule] = "schedule";
+fieldNameLookup[indexLabelId] = "labelId";
+fieldNameLookup[indexExternalUrl] = "externalUrl";
+fieldNameLookup[indexPrice] = "price";
+fieldNameLookup[indexQty] = "qty";
+fieldNameLookup[indexQuantityQualifier] = "quantityQualifier";
+fieldNameLookup[indexKeywords] = "keywords";
+fieldNameLookup[indexDEASchedule] = "deaSchedule";
+fieldNameLookup[indexPrint] = "print";
+fieldNameLookup[indexDescription] = "description";
+fieldNameLookup[indexDose] = "dose";
+fieldNameLookup[indexRoute] = "route";
+fieldNameLookup[indexPRN] = "prn";
+fieldNameLookup[indexRefills] = "refills";
+fieldNameLookup[indexDaysSupply] = "daysSupply";
+fieldNameLookup[indexSubstitutions] = "substitution";
+
+formularyGrid.getCombo(indexSchedule).put("","");
 <?foreach ($this->scheduleOptions as $key=>$value):?>
-formularyGrid.getCombo(3).put("<?=$key?>","<?=$value?>");
+formularyGrid.getCombo(indexSchedule).put("<?=$key?>","<?=$value?>");
 <?endforeach;?>
 
-formularyGrid.getCombo(9).put("0","");
-formularyGrid.getCombo(9).put("1","I");
-formularyGrid.getCombo(9).put("2","II");
-formularyGrid.getCombo(9).put("3","III");
-formularyGrid.getCombo(9).put("4","IV");
-formularyGrid.getCombo(9).put("5","V");
+formularyGrid.getCombo(indexQuantityQualifier).put("","");
+<?foreach ($this->quantityQualifiers as $key=>$value):?>
+formularyGrid.getCombo(indexQuantityQualifier).put("<?=$key?>","<?=$key?>");
+<?endforeach;?>
+
+formularyGrid.getCombo(indexDEASchedule).put("0","");
+formularyGrid.getCombo(indexDEASchedule).put("1","I");
+formularyGrid.getCombo(indexDEASchedule).put("2","II");
+formularyGrid.getCombo(indexDEASchedule).put("3","III");
+formularyGrid.getCombo(indexDEASchedule).put("4","IV");
+formularyGrid.getCombo(indexDEASchedule).put("5","V");
 
 function formularyGridOnLoaded() {
 	var downloadCSV = dojo.byId("downloadCSVId");
@@ -163,11 +207,11 @@ function formularyGridOnLoaded() {
 		downloadCSV.disabled = false;
 	}
 	formularyGrid.forEachRow(function(rowId){
-		if (this.cells(rowId,9).getValue() > 0) {
-			this.cells(rowId,10).setDisabled(true);
+		if (this.cells(rowId,indexDEASchedule).getValue() > 0) {
+			this.cells(rowId,indexPrint).setDisabled(true);
 		}
 		else {
-			this.cells(rowId,10).setDisabled(false);
+			this.cells(rowId,indexPrint).setDisabled(false);
 		}
 	});
 }
@@ -214,18 +258,6 @@ function formularyOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 	switch (stage) {
 		case 2:
 			if (cellIndex > 0 && newValue != oldValue) {
-				var field = '';
-				var fieldNameLookup = new Array();
-				fieldNameLookup[1] = 'directions';
-				fieldNameLookup[2] = 'comments';
-				fieldNameLookup[3] = 'schedule';
-				fieldNameLookup[4] = 'labelId';
-				fieldNameLookup[5] = 'externalUrl';
-				fieldNameLookup[6] = 'price';
-				fieldNameLookup[7] = 'qty';
-				fieldNameLookup[8] = 'keywords';
-				fieldNameLookup[9] = "deaSchedule";
-				fieldNameLookup[10] = "print";
 				formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
 			}
 			break;
@@ -238,7 +270,7 @@ function formularyGridOnChecked(rowId,cellIndex,value) {
 	if (value) {
 		newValue = 1;
 	}
-	formularySingleUpdate("print",rowId,newValue,formularyOnUpdated);
+	formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
 }
 
 var formularyMenu = new dhtmlXMenuObject(null,'standard');

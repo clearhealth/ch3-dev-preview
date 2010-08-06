@@ -47,4 +47,28 @@ class DataIntegrationDatasource extends DataIntegration {
 		return parent::getIterator($dbSelect);
 	}
 
+	public function defaultTemplate() {
+		return <<<EOL
+class [[ClassName]]DataIntegrationDatasource extends DataIntegrationDatasourceAbstract {
+	//abstract requires at least this method
+	public static function sourceData(Audit \$auditOrm) {
+		\$ret = array();
+		\$objectClass = \$auditOrm->objectClass;
+		if (class_exists(\$objectClass)) {
+			\$orm = new \$objectClass();
+			\$primaryKeys = \$orm->_primaryKeys;
+			\$key = \$primaryKeys[0];
+			\$orm->\$key = \$auditOrm->objectId;
+			if (!\$orm->populate()) {
+				trigger_error('Failed to populate');
+			}
+			\$ret = \$orm->toArray();
+		}
+		return \$ret;
+	}
+}
+
+EOL;
+	}
+
 }

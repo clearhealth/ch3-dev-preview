@@ -224,6 +224,28 @@ function enableButtons(enabled) {
 	}
 	var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
 	pscb = new custom.SelectComboBox({name:"appointment[patient]",value:'<?=$this->patient?>',autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
+	pscb._onKeyPress = function(evt) {
+		this.inherited("_onKeyPress",arguments);
+		if (evt.keyCode == dojo.keys.ENTER) {
+			pscbCheckStore();
+		}
+	};
+	dojo.connect(pscb,"onBlur","pscbCheckStore");
+	function pscbCheckStore() {
+		var patientId = dojo.byId("appointment-patientId").value;
+		var value = pscb.getDisplayedValue();
+		if (pscb.store && pscb.store._items.length > 0) {
+			for (var i = 0; i < pscb.store._items.length; i++) {
+				var item = pscb.store._items[i].i;
+				if (item.name != value) continue;
+				if (item.label != patientId) {
+					pscb.selectedKey = item.label;
+					getDetails(item.label);
+				}
+				break;
+			}
+		}
+	}
 	dojo.connect(pscb,"onChange",'getDetails');
 	function getDetails(args) {
 		// don't need args coz it holds the selected value

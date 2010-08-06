@@ -34,7 +34,7 @@ class Service {
 		$id = 'nsdr';
 		$service['id'] = $id;
 		$service['name'] = 'NSDR';
-		$nsdrStatus = NSDR::systemStatus();
+		$nsdrStatus = NSDR2::systemStatus();
 		if ($nsdrStatus === false) {
 			$ok = false;
 			$nsdrStatus = 'stopped';

@@ -270,4 +270,12 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 		return $ret;
 	}
 
+	public static function encodeNamespace($value) {
+		return strtr(base64_encode($value),'+/=','___');
+	}
+
+	public static function decodeNamespace($value) {
+		return base64_decode(strtr($value,'___','+/='));
+	}
+
 }

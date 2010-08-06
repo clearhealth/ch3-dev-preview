@@ -393,4 +393,8 @@ class DataIntegration extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function getNormalizedName() {
+		return Handler::normalizeHandlerName($this->name);
+	}
+
 }

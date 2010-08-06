@@ -103,6 +103,7 @@ class ProblemList extends WebVista_Model_ORM implements NSDRMethods {
 			}
 		}
 		$this->postPopulate();
+		return isset($rows[0]);
 	}
 
 	public function persist() {
@@ -129,6 +130,7 @@ class ProblemList extends WebVista_Model_ORM implements NSDRMethods {
 	}
 
 	public function nsdrPopulate($tthis,$context,$data) {
+		$ret = array();
 		return $ret;
 	}
 

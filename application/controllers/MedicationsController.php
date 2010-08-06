@@ -60,19 +60,28 @@ class MedicationsController extends WebVista_Controller_Action {
 		$unsigned = array();
 		$signed = array();
 		$discontinued = array();
+		$patientReported = array();
 		foreach ($medicationIterator as $medication) {
-			if ($medication->transmit == '') {
+			if ($medication->daysSupply == -1 && $medication->dateDiscontinued != '0000-00-00 00:00:00') {
 				$discontinued[] = $medication;
 				continue;
 			}
 			if ($medication->eSignatureId > 0) { // signed
 				$signed[] = $medication;
 			}
-			else { // unsigned
-				$unsigned[] = $medication;
+			else {
+				if ($medication->patientReported) { // unsigned
+					$patientReported[] = $medication;
+				}
+				else {
+					$unsigned[] = $medication;
+				}
 			}
 		}
-		$medications = array_merge($unsigned,$signed,$discontinued);
+		krsort($signed);
+		krsort($patientReported);
+		krsort($discontinued);
+		$medications = array_merge($unsigned,$signed,$patientReported,$discontinued);
 		foreach ($medications as $medication) {
 			$expiration = '';
 			if ($medication->daysSupply == -1 && $medication->dateDiscontinued != '0000-00-00 00:00:00') {
@@ -112,6 +121,7 @@ class MedicationsController extends WebVista_Controller_Action {
 		$medicationId = (int)$this->_getParam('medicationId');
 		$refillRequestId = $this->_getParam('refillRequestId');
 		$copy = $this->_getParam('copy');
+		$discontinue = $this->_getParam('discontinue');
 
 		$patient = new Patient();
 		$patient->personId = $personId;
@@ -119,6 +129,10 @@ class MedicationsController extends WebVista_Controller_Action {
 
 		if (strlen($copy) > 0) {
 			$this->view->copy = $copy;
+		}
+
+		if (strlen($discontinue) > 0) {
+			$this->view->discontinue = $discontinue;
 		}
 
 		$patient = new Patient();
@@ -158,6 +172,12 @@ class MedicationsController extends WebVista_Controller_Action {
 		}
 		if (!strlen($this->_medication->pharmacyId) > 0) {
 			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
+		}
+
+		if (strlen($discontinue) > 0) {
+			$this->_medication->daysSupply = -1;
+			$this->_medication->dateDiscontinued = date('Y-m-d H:i:s');
+			$this->_medication->persist();
 		}
 
 		if (strlen($copy) > 0) {
@@ -207,6 +227,7 @@ class MedicationsController extends WebVista_Controller_Action {
 		$personId = (int)$this->_getParam('personId');
 		$medicationId = (int)$this->_getParam('medicationId');
 		$copy = $this->_getParam('copy');
+		$discontinue = (int)$this->_getParam('discontinue');
 		$forced = (int)$this->_getParam('forced');
 
 		$patient = new Patient();
@@ -293,7 +314,7 @@ class MedicationsController extends WebVista_Controller_Action {
 			$hash = $cache->load($cacheKey."_hash");
 			$lastModified = $cache->load($cacheKey."_lastModified");
 			$headers = getallheaders();
-			if (isset($headers['If-None-Match']) && ereg($hash, $headers['If-None-Match'])) {
+			if (isset($headers['If-None-Match']) && preg_match('/'.$hash.'/', $headers['If-None-Match'])) {
 				header("Last-Modified: " . $lastModified);
 				header('HTTP/1.1 304 Not Modified');
 				exit;
@@ -774,6 +795,17 @@ EOL;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
+	}
+
+	public function processDeleteMedicationAction() {
+		$medicationId = (int)$this->_getParam('medicationId');
+		$medication = new Medication();
+		$medication->medicationId = (int)$medicationId;
+		$medication->setPersistMode(WebVista_Model_ORM::DELETE);
+		$medication->persist();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(true);
 	}
 
 }

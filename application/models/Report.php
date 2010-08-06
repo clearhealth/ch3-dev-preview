@@ -63,7 +63,7 @@ class Report extends WebVista_Model_ORM {
 
 	}
 	function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$db = Zend_Registry::get('dbAdapter'); 
 		$repSelect = $db->select()
                         ->from('reportQueries')
@@ -84,6 +84,7 @@ class Report extends WebVista_Model_ORM {
                         $rt->populateWithArray($row);
                         $this->reportTemplates[] = $rt;
                 }
+		return $ret;
 	}
 
 

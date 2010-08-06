@@ -92,11 +92,11 @@ printHtml = '';
 				->where("objectClass = 'ClinicalNote'")
 				->where('objectId = ?',(int)$cn->clinicalNoteId);
 		if ($revisionId > 0) {
-			$cndSelect->where('revisionId = ?',$revisionId);
+			$cndSelect->where('revisionId = ?',(int)$revisionId);
 		}
 		trigger_error($cndSelect->__toString(),E_USER_NOTICE);
 		foreach($db->query($cndSelect)->fetchAll() as $row) {
-			$formData[$row['name']] = $row['value'];
+			$formData[ClinicalNote::encodeNamespace($row['name'])] = $row['value'];
 		}
 
 		$eSignatureId = ESignature::retrieveSignatureId(get_class($cn),$revisionId);
@@ -185,7 +185,7 @@ printHtml = '';
 				$gd->objectClass = $objectClass;
 				$gd->objectId = $clinicalNoteId;
 				$gd->dateTime = $saveDate;
-				$gd->name = $name;
+				$gd->name = ClinicalNote::decodeNamespace($name);
 				$gd->value = $value;
 				$gd->revisionId = $revisionId;
 				$otm->addORM($gd);
@@ -232,29 +232,56 @@ printHtml = '';
 					$type = 'drawing';
                                 }
 
-				//$elementName = preg_replace('/[-\.]/','_',(string)$dataPoint->attributes()->namespace);
-				$elementName = $this->_encodeNamespace((NSDR2::extractNamespace((string)$dataPoint->attributes()->namespace)));
-				$element = $this->_form->createElement($type,$elementName, array('label' => (string)$dataPoint->attributes()->label));
+				$elementName = ClinicalNote::encodeNamespace((NSDR2::extractNamespace((string)$dataPoint->attributes()->namespace)));
 				if ($this->_form->getElement($elementName) instanceof Zend_Form_Element) {
-                                        $element =$this->_form->getElement($elementName);
+                                        $element = $this->_form->getElement($elementName);
                                 }
-				if ((string)$dataPoint->attributes()->src) {
-					$element->setAttrib("src",(string)$dataPoint->attributes()->src);
+				else {
+					$element = $this->_form->createElement($type,$elementName, array('label' => (string)$dataPoint->attributes()->label));
 				}
-				if ((string)$dataPoint->attributes()->class) {
-					$element->setAttribute("class",(string)$dataPoint->attributes()->class);
-				}
+
+				$reservedAttributes = array(
+					'templateText'=>'templateText',
+					'label'=>'label',
+					'value'=>'value',
+					'containerStyle'=>'containerStyle',
+					'type'=>'type',
+					'draw'=>'draw',
+					'namespace'=>'namespace',
+					'default'=>'default',
+					'radioGroup'=>'radioGroup',
+					'radioGroupDefault'=>'radioGroupDefault',
+				);
+
                                 if ((string)$dataPoint->attributes()->type == "radio" || $type == "select") {
+					$attributes = array();
+					foreach ($dataPoint->attributes() as $k=>$v) {
+						if (isset($reservedAttributes[$k])) continue;
+						$attributes[$k] = $v;
+					}
                                         $element->setLabel("");
                                         $element->setSeparator("&nbsp;&nbsp;");
-                                        $element->addMultiOption((string)$dataPoint->attributes()->value,(string)$dataPoint->attributes()->label);
+					if ((string)$dataPoint->attributes()->type == 'radio') {
+						$optionLabels = array('label'=>(string)$dataPoint->attributes()->label,'attributes'=>$attributes); // composed of label and attributes
+                                        	$element->addMultiOption((string)$dataPoint->attributes()->value,$optionLabels);
+					}
+					else {
+						$element->setAttribs($attributes);
+                                        	$element->addMultiOption((string)$dataPoint->attributes()->value,(string)$dataPoint->attributes()->label);
+					}
                                         if ((string)$dataPoint->attributes()->default == true) {
-                                                $element->setValue((string)$dataPoint->attributes()->value);     
+                                                $element->setValue((string)$dataPoint->attributes()->value);
                                         }
                                 }
+				else {
+					foreach ($dataPoint->attributes() as $k=>$v) {
+						if (isset($reservedAttributes[$k])) continue;
+						$element->setAttrib($k,$v);
+					}
+				}
                                 if ((string)$dataPoint->attributes()->type == "checkbox") {
-					$element->AddDecorator('Label', array('placement' => 'APPEND'));
-					$element->AddDecorator('HtmlTag', array('placement' => 'PREPEND', 'tag' => '<br />'));
+					$element->addDecorator('Label', array('placement' => 'APPEND'));
+					$element->addDecorator('HtmlTag', array('placement' => 'PREPEND', 'tag' => '<br />'));
 					if ((string)$dataPoint->attributes()->radioGroup) {
 						$radioGroup = preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
 						$innerHTML = '';
@@ -330,14 +357,6 @@ function '.$radioGroup.'(name) {
 				}
 			}
 		}
-	}
-
-	protected function _encodeNamespace($value) {
-		return strtr(base64_encode($value),'+/=','___');
-	}
-
-	protected function _decodeNamespace($value) {
-		return base64_decode(strtr($value,'___','+/='));
 	}
 
 }

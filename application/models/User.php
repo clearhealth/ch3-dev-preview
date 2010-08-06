@@ -121,4 +121,40 @@ class User extends WebVista_Model_ORM {
 		return $this->_xmlPreferences;
 	}
 
+	public static function processLogin($username, $password, Zend_Auth_Adapter_Interface $authAdapter = null) {
+		if ($authAdapter === null) {
+			$authAdapter = new Zend_Auth_Adapter_DbTable(Zend_Registry::get('dbAdapter'));
+		}
+		$authAdapter->setTableName('user')
+			->setIdentityColumn('username')
+			->setCredentialColumn('password')
+			->setIdentity($username)
+			->setCredential($password);
+
+		$auth = Zend_Auth::getInstance();
+		$result = $auth->authenticate($authAdapter);
+
+		$audit = new Audit();
+		$audit->objectClass = 'Login';
+		$audit->objectId = 0;
+
+		if ($result->isValid()) {
+			$identity = $auth->getIdentity();
+			$user = new User();
+			$user->username = $identity;
+			$user->populateWithUsername();
+			$auth->getStorage()->write($user);
+			$audit->userId = $user->userId;
+			$message = __('user') . ': ' . $user->username . ' ' . __('login successful');
+		} else {
+			$auth->clearIdentity();
+			$message = __('user') . ': ' . $username . ' ' . __('login failed due to bad password');
+		}
+
+		$audit->message = $message;
+		$audit->dateTime = date('Y-m-d H:i:s');
+		$audit->_ormPersist = true;
+		$audit->persist();
+	}
+
 }
