@@ -29,7 +29,7 @@
 class Processingd {
 
 	protected static $_instance = null;
-	protected $_sleepInterval = 5;
+	protected $_sleepInterval = 30;
 	protected $_processes = array();
 	protected $_audits = array();
 
@@ -100,10 +100,11 @@ class Processingd {
 
 		$infinite = (bool)$infinite;
 		do {
-
+			$ctr = ePrescribe::pull();
+			WebVista::log('ePrescribe messages received: '.$ctr);
 			$this->_populateAudits();
 			foreach ($this->_audits as $audit) {
-
+				WebVista::log('start processing auditId:['.$audit->auditId.'], objectClass:['.$audit->objectClass.'], objectId:['.$audit->objectId.']');
 				$audit->_persistMode = WebVista_Model_ORM::REPLACE;
 				$audit->_ormPersist = true;
 				if ($audit->startProcessing == '0000-00-00 00:00:00') {

@@ -188,10 +188,4 @@ class ProceduresController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generateProcedurePreferencesEnum();
-		echo 'Done';
-		die;
-	}
-
 }

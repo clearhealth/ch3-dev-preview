@@ -15,7 +15,7 @@ $this->origDefaultLocationId = $this->defaultLocationId;
 $this->origDefaultPracticeId = $this->defaultPracticeId;
 $this->origCurrentUserPersonId = $this->currentUserPersonId;
 $this->origCurrentActivePayer = $this->currentActivePayer;
-$this->origDefaultDateOfService = $this->defaultDateOfService;
+$this->origDefaultDateOfTreatment = $this->defaultDateOfTreatment;
 // override defaults if visit exists
 if ($this->visit !== null) {
 	$this->defaultBuildingId = $this->visit->buildingId;
@@ -23,7 +23,7 @@ if ($this->visit !== null) {
 	$this->defaultPracticeId = $this->visit->practiceId;
 	$this->currentUserPersonId = $this->visit->treatingPersonId;
 	$this->currentActivePayer = $this->visit->activePayerId;
-	$this->defaultDateOfService = $this->visit->dateOfService;
+	$this->defaultDateOfTreatment = $this->visit->dateOfTreatment;
 	$closedVisit = (boolean)$this->visit->closed;
 	$voidVisit = (boolean)$this->visit->void;
 }
@@ -94,8 +94,8 @@ function setBuildingRooms(practiceId) {
 		</div>
 		<br style="clear:left"/>
 		<div class="formRow">
-			<dt><label for="visit-dateOfService"><?=__('Date of Service')?></label></dt>
-			<?=$this->formDateText('visit[dateOfService]',$this->defaultDateOfService)?>
+			<dt><label for="visit-dateOfTreatment"><?=__('Date of Treatment')?></label></dt>
+			<?=$this->formDateText('visit[dateOfTreatment]',$this->defaultDateOfTreatment)?>
 		</div>
 	</div>
 	<div style="float:left;margin-left:20px;">
@@ -204,6 +204,20 @@ visitListGrid.attachEvent("onRowSelect",function(rowId,cellIndex){
 		}
 	}
 	dojo.byId("visit-visitId").value = rowId;
+	var value = this.cells(rowId,0).getValue()
+	// format: 2010-09-01
+	var yyyy = parseInt(value.substr(0,4));
+	var mm = value.substr(5,2);
+	if (mm.substr(0,1) == "0") {
+		mm = mm.substr(1,1);
+	}
+	mm = parseInt(mm) - 1;
+	var dd = value.substr(8,2);
+	if (dd.substr(0,1) == "0") {
+		dd = dd.substr(1,1);
+	}
+	dd = parseInt(dd);
+	boxVisitDateOfTreatment.setValue(new Date(yyyy,mm,dd));
 });
 
 function resetBuildingRoom() {
@@ -253,9 +267,9 @@ function cancelNewVisit() {
 	resetBuildingRoom();
 
 	var d = new Date();
-	<?$x = explode('-',date('Y-m-d',strtotime($this->defaultDateOfService)))?>
+	<?$x = explode('-',date('Y-m-d',strtotime($this->defaultDateOfTreatment)))?>
 	d.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-	boxVisitDateOfService.setValue(d);
+	boxVisitDateOfTreatment.setValue(d);
 
 	resetInputSelect("visit-providerId","<?=$this->currentUserPersonId?>");
 	resetInputSelect("visit-activePayerId","<?=$this->currentActivePayer?>");
@@ -278,9 +292,9 @@ function clearSelectToAddNew() {
 	resetBuildingRoom();
 
 	var d = new Date();
-	<?$x = explode('-',date('Y-m-d',strtotime($this->origDefaultDateOfService)))?>
+	<?$x = explode('-',date('Y-m-d',strtotime($this->origDefaultDateOfTreatment)))?>
 	d.setFullYear(<?=$x[0]?>,<?=($x[1]-1)?>,<?=$x[2]?>);
-	boxVisitDateOfService.setValue(d);
+	boxVisitDateOfTreatment.setValue(d);
 
 	resetInputSelect("visit-providerId","<?=$this->origCurrentUserPersonId?>");
 	resetInputSelect("visit-activePayerId","<?=$this->origCurrentActivePayer?>");

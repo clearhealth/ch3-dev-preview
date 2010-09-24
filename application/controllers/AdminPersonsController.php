@@ -114,7 +114,7 @@ class AdminPersonsController extends WebVista_Controller_Action {
 		$this->view->practices = $practices;
 
 		$genders = array(''=>'');
-		$gender = Enumeration::getEnumArray('Gender','enumerationId');
+		$gender = Enumeration::getEnumArray('Gender','key');
 		foreach ($gender as $key=>$value) {
 			$genders[$key] = $value;
 		}
@@ -232,10 +232,16 @@ class AdminPersonsController extends WebVista_Controller_Action {
 			case 'address':
 				$obj = new Address();
 				$obj->person_id = $personId;
+				if (!$id > 0) {
+					$obj->active = 1;
+				}
 				break;
 			case 'phone':
 				$obj = new PhoneNumber();
 				$obj->person_id = $personId;
+				if (!$id > 0) {
+					$obj->active = 1;
+				}
 				break;
 			default:
 				break;

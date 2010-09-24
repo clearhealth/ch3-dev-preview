@@ -31,4 +31,8 @@ class CompanyType extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('company_id','company_type');
 	protected $_legacyORMNaming = true;
 
+	public function getCompanyTypeId() {
+		return $this->company_id;
+	}
+
 }

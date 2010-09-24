@@ -81,4 +81,8 @@ class ProcedureCodesCPT extends WebVista_Model_ORM {
 		return $view->action('edit-type','visit-details',null,$params);
 	}
 
+	public function getProcedureCodesCPTId() {
+		return $this->code;
+	}
+
 }

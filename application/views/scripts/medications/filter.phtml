@@ -1,0 +1,30 @@
+<div style="width:100%;">
+	<fieldset><legend><?=__('Filter Medication')?></legend>
+		<div style="float:left;"><input type="checkbox" id="filterActive" name="filterActive" <?=($this->active)?'checked="checked"':''?> /> <?=__('Show Active')?></div>
+		<div style="float:left;margin-left:10px;"><input type="checkbox" id="filterDiscontinued" name="filterDiscontinued" <?=($this->discontinued)?'checked="checked"':''?> /> <?=__('Show Discontinued')?></div>
+	</fieldset>
+	<?=$this->formButton('ok',__('OK'),array('onClick'=>'setFilter()'))?>
+</div>
+<script>
+function setFilter() {
+	var active = 0;
+	if (dojo.byId("filterActive").checked) active = 1;
+	var discontinued = 0;
+	if (dojo.byId("filterDiscontinued").checked) discontinued = 1;
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/medications.raw/set-session-filter",
+		handleAs: "json",
+		content: {
+			"filterActive": active,
+			"filterDiscontinued": discontinued,
+		},
+		load: function (data) {
+			if (loadMedication) loadMedication();
+			dhxWins.window("winFilterId").close();
+		},
+		error: function (er) {
+			alert("err: " + er.responseText);
+		}
+	});
+}
+</script>

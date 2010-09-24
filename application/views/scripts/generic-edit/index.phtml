@@ -16,13 +16,13 @@ if (is_object($this->form) && $this->form instanceof WebVista_Form):
 ?>
 	<br /><br/>
 	<?=$this->form->okInput()?>
-	<input type="button" value="Cancel" onClick="dhxWins.window('windowEditORMObjectId').close()" />
+	<?=$this->formButton('cancel',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
 
 	<?=$this->form->renderClose()?>
 
 	<script>
 	function postSubmiteditobject() {
-		dhxWins.window('windowEditORMObjectId').close();
+		dhxWins.window("<?=$this->form->getWindow()?>").close();
 		return false;
 	}
 	</script>

@@ -46,9 +46,10 @@ class EnumGenerator {
 		self::generateCodingPreferencesEnum($force);
 		self::generateFacilityCodesEnum($force);
 		self::generateIdentifierTypesEnum($force);
+		self::generateDiscountTypesEnum($force);
 	}
 
-	public static function generateDemographicsPreferencesEnum($force = true) {
+	public static function generateDemographicsPreferencesEnum($force = false) {
 		$ret = false;
 		do {
 			$name = 'Demographics';
@@ -186,7 +187,7 @@ class EnumGenerator {
 		return $ret;
 	}
 
-	public static function generateGeographyPreferencesEnum($force = true) {
+	public static function generateGeographyPreferencesEnum($force = false) {
 		$ret = false;
 		do {
 			$name = 'Geography';
@@ -531,7 +532,7 @@ class EnumGenerator {
 		return $ret;
 	}
 
-	public static function generateCalendarPreferencesEnum($force = true) {
+	public static function generateCalendarPreferencesEnum($force = false) {
 		$ret = false;
 		do {
 			$name = 'Calendar';
@@ -587,7 +588,7 @@ class EnumGenerator {
 		return $ret;
 	}
 
-	public static function generateClinicalPreferencesEnum($force = true) {
+	public static function generateClinicalPreferencesEnum($force = false) {
 		$ret = false;
 		do {
 			$name = 'Clinical';
@@ -1672,6 +1673,33 @@ class EnumGenerator {
 				)),
 				array('key' => 'PROCEDURE', 'name' => 'Procedure Sections', 'active' => 1, 'guid' => '8e6a2456-1710-46be-a018-2afb0ec2829f', 'ormClass' => 'ProcedureCodesCPT', 'ormEditMethod' => 'ormEditMethod'),
 				array('key' => 'DIAGNOSIS', 'name' => 'Diagnosis Sections', 'active' => 1, 'guid' => 'fac51e51-95fd-485e-a8f3-62e1228057ad', 'ormClass' => 'DiagnosisCodesICD', 'ormEditMethod' => 'ormEditMethod'),
+				array('key' => 'PROC_MOD', 'name' => 'Procedure Modifiers', 'active' => 1, 'guid' => '2b15d494-dce4-4d27-89b5-ddd6f6fc1439', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod', 'data' => array(
+					array('key' => '21', 'name' => 'Prolonged E/M services', 'active' => 1, 'guid' => 'd446165b-a3d3-420b-9a06-3e27157c93b1', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '22', 'name' => 'Unusual procedural services', 'active' => 1, 'guid' => '1a84e436-d261-490e-8df1-f9b42300f1d7', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '23', 'name' => 'A procedure that usually requires either no anesthesia', 'active' => 1, 'guid' => '252f7fe3-7342-4bcc-9ff0-7c9b8ceb1cba', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '24', 'name' => 'Unrelated E/M service', 'active' => 1, 'guid' => '00ceaa2a-ec9d-434e-84e5-f1f1398acd0f', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '25', 'name' => 'Significant and separately identifiable E/M services', 'active' => 1, 'guid' => '86d41d14-c49e-46de-8ed1-e97b32d01a74', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '26', 'name' => 'Some procedures have a combined professional and technical component', 'active' => 1, 'guid' => 'e1f8c2da-f3b9-492f-b120-d9a3cc60ceaf', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '32', 'name' => 'Preauthorization procedure', 'active' => 1, 'guid' => 'b220cd4b-f0d4-40be-b3ab-984d2f95f82b', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '50', 'name' => 'Bilateral procedures', 'active' => 1, 'guid' => '4b46ab73-8244-449c-b090-decab022f221', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '51', 'name' => 'Multiple procedures', 'active' => 1, 'guid' => '72cdbab2-1a1d-4d41-87ae-57a995393c83', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '52', 'name' => 'Reduced services', 'active' => 1, 'guid' => '383a4ce7-9b59-485a-8a68-71e655cef73d', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '53', 'name' => 'Discontinued procedure', 'active' => 1, 'guid' => '87e7543c-8569-4c27-b755-2ffae1759715', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '54', 'name' => 'Surgical care only', 'active' => 1, 'guid' => '2dc17176-22ba-43f7-ac65-730156f362d7', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '55', 'name' => 'Postoperative management only', 'active' => 1, 'guid' => '8897fe57-6be2-4ac0-b850-f4ae7fba5ddd', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '56', 'name' => 'Preoperative management only', 'active' => 1, 'guid' => '1d7dda18-1199-4284-bd02-fe0cdf789795', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '57', 'name' => 'Decision for surgery', 'active' => 1, 'guid' => '2730f7b4-b4c0-42cf-9afb-a7b4484428ab', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '58', 'name' => 'Staged or related procedure or service', 'active' => 1, 'guid' => '9b4a5fbd-e752-4e93-95f9-b2dc21a1c45f', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '59', 'name' => 'Distinct procedural service', 'active' => 1, 'guid' => '0a27711e-7806-4b98-b9e8-a60fd6a54309', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '62', 'name' => 'Two surgeons', 'active' => 1, 'guid' => 'cd205567-2d1c-4040-b8ee-1c40d1ba1ac2', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '63', 'name' => 'Procedure performed on infants less than 4kg.', 'active' => 1, 'guid' => '18bdcdb2-3eba-4ead-bbf2-80e9d39ce98f', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '79', 'name' => 'Unrelated procedure or service', 'active' => 1, 'guid' => 'a2695f53-ad13-4036-85ea-6f0bc5b0c1bc', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '81', 'name' => 'Minimum assist surgeon', 'active' => 1, 'guid' => '6b98b909-9f15-4f54-b1fe-596f2c0262c6', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '82', 'name' => 'Assistant surgeon when qualified resident surgeon is not available', 'active' => 1, 'guid' => '0df38af4-eceb-4792-b6a4-61d9692038d1', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '90', 'name' => 'Reference/outside laboratory', 'active' => 1, 'guid' => 'f4e47e05-e0b4-4003-a5fe-87ddab39fae9', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '91', 'name' => 'Repeat clinical diagnostic test', 'active' => 1, 'guid' => 'd79ae5c8-c618-455d-9a7f-0075608d2658', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+					array('key' => '99', 'name' => 'Multiple modifiers', 'active' => 1, 'guid' => '2056a929-5670-48e4-8c48-1ffeb7dfc13f', 'ormClass' => '', 'ormEditMethod' => 'ormEditMethod'),
+				)),
 			);
 
 			$level = array();
@@ -1786,6 +1814,46 @@ class EnumGenerator {
 
 			$level = array();
 			$level['guid'] = '8c200e66-f97e-40e9-9e39-f102ad2c6c31';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateDiscountTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = DiscountTable::DISCOUNT_TYPE_ENUM_NAME;
+			$key = DiscountTable::DISCOUNT_TYPE_ENUM_KEY;
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => DiscountTable::DISCOUNT_TYPE_FLAT_VISIT, 'name' => 'Flat Rate Fee for Visit', 'active' => 1, 'guid' => '57233584-7719-44db-9ff8-8f8ba97e9cd2'),
+				array('key' => DiscountTable::DISCOUNT_TYPE_FLAT_CODE, 'name' => 'Flat Rate Fee for Code', 'active' => 1, 'guid' => '0f4e6978-ae24-4859-bc90-4b14c08eda0f'),
+				array('key' => DiscountTable::DISCOUNT_TYPE_PERC_VISIT, 'name' => 'Percentage Discount on Visit', 'active' => 1, 'guid' => '44f4daca-8caa-42d5-a15c-487de47c0a0b'),
+				array('key' => DiscountTable::DISCOUNT_TYPE_PERC_CODE, 'name' => 'Percentage Discount on Code', 'active' => 1, 'guid' => 'c4c5c67a-cc3d-4873-b697-0e3905e9f2a0'),
+			);
+
+
+			$level = array();
+			$level['guid'] = '31c0815d-0e7f-4f0a-9100-c910505259a6';
 			$level['key'] = $key;
 			$level['name'] = $name;
 			$level['category'] = 'System';

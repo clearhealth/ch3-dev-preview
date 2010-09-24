@@ -85,6 +85,7 @@ class NsdrController extends WebVista_Controller_Action {
 	 * 1) form-encoded POST
 	 * 2) GET QUERY
 	 * 3) POST with XML payload (informal REST style) or JSON
+	 * @todo: this method is temporarily not complete
 	 */
 	public function persistAction() {
 		$method = strtoupper($this->_getParam('method'));
@@ -93,20 +94,25 @@ class NsdrController extends WebVista_Controller_Action {
 			throw new Exception($msg);
 		}
 		$persistMethod = "persist{$method}";
-		$ret= $this->$populateMethod();
+		$ret = $this->$persistMethod();
 	}
 
 	/**
 	 * persist given a GET request
 	 */
 	protected function persistGET() {
-		return NSDR::persist($this->_nsdrNamespace);
+		return NSDR2::persist($this->_nsdrNamespace);
 	}
 
 	/**
 	 * persist given a POST request
+	 * @todo: this method is temporarily not complete
 	 */
 	protected function persistPOST() {
+		$ret = array();
+		foreach ($this->_nsdrNamespace as $key=>$namespace) {
+			$ret[$namespace] = NSDR2::persist($namespace,$this->_nsdrNamespaceValue[$key]);
+		}
 	}
 
 	/**
@@ -133,6 +139,7 @@ class NsdrController extends WebVista_Controller_Action {
 	 * 1) JSON
 	 * 2) PHP array
 	 * 3) XML
+	 * @todo: this method is temporarily not complete
 	 */
 	public function populateAction() {
 		$method = strtoupper($this->_getParam('method'));
@@ -142,15 +149,13 @@ class NsdrController extends WebVista_Controller_Action {
 		}
 		$populateMethod = "populate{$method}";
 		$ret = $this->$populateMethod();
-
-		die('ret: '.$ret);
 	}
 
 	/**
 	 * Returns an array
 	 */
 	protected function populateGET() {
-		return NSDR::populate($this->_nsdrNamespace);
+		return NSDR2::populate($this->_nsdrNamespace);
 		$result = '';
 		$key = $this->_nsdrNamespace;
 		// extract method name from namespace

@@ -89,7 +89,9 @@ function ajaxUploadFile() {
 			dojo.byId('fileUploadFormId').style.display = "block";
 			document.addCNMAttachmentsForm.reset();
 		},
-		error: function (er) {alert('err: ' + er)}	
+		error: function (er) {
+			alert("ERROR: " + er.responseText);
+		}
 	});
 		initProgressBar();
 }
@@ -111,8 +113,10 @@ function initProgressBar(progressKey) {
 			dojo.byId('uploadProgressBarId').style.width = data + '%';
 			progressTimer = setTimeout("initProgressBar(progressKey)", 1000);
 		}, 
-		error: function (er) {alert('err: ' + er)}}
-	);
+		error: function (er) {
+			alert("ERROR: " + er.responseText);
+		}
+	});
 }
 </script>
 

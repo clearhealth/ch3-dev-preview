@@ -196,6 +196,10 @@ function pharmacySubmit() {
 					<?=$this->form->preferred->renderLabel()?>
 					<input type="checkbox" name="<?=$this->form->preferred->getFullyQualifiedName()?>" id="<?=$this->form->preferred->getId()?>" value="0" <?=($this->form->preferred->getValue() > 0)?'checked="checked"':''?> /> 
 				</div>
+				<div class="formRow" style="padding-top:4px;">
+					<?=$this->form->print->renderLabel()?>
+					<input type="checkbox" name="<?=$this->form->print->getFullyQualifiedName()?>" id="<?=$this->form->print->getId()?>" value="1" <?=($this->form->print->getValue() > 0)?'checked="checked"':''?> /> 
+				</div>
 			</div>
 
 			<br style="clear:left"/>

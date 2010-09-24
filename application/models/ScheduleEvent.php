@@ -37,6 +37,7 @@ class ScheduleEvent extends WebVista_Model_ORM {
 	protected $buildingId;
     protected $_table = "scheduleEvents";
     protected $_primaryKeys = array("scheduleEventId");
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		parent::__construct();
@@ -150,6 +151,34 @@ class ScheduleEvent extends WebVista_Model_ORM {
 		trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$ret = $row['ctr'];
+		}
+		return $ret;
+	}
+
+	public static function getScheduleEventByFields($providerId,$roomId,$dateStart,$dateEnd,$fields) {
+		$ret = array();
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('roomId = ?',(int)$roomId)
+				->where('providerId = ?',(int)$providerId)
+				->where('start >= ?',$dateStart)
+				->where('end <= ?',$dateEnd);
+		trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				if (!is_array($fields)) {
+					$tmp = $row[$fields];
+				}
+				else {
+					$tmp = array();
+					foreach ($fields as $field) {
+						$tmp[$field] = $row[$field];
+					}
+				}
+				$ret[] = $tmp;
+			}
 		}
 		return $ret;
 	}

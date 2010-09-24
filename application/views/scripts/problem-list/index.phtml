@@ -17,7 +17,7 @@ function openLookupProblemWindow() {
 
 function selectedProblemLookup(code,description) {
 	dojo.byId('problemList-code').value = code;
-	dojo.byId('problemList-code-text-short').value = description + ' ('+code+')';
+	dojo.byId('problemList-code-text-short').value = description; // + ' ('+code+')';
 }
 
 function openViewProblemWindow(id) {
@@ -45,7 +45,7 @@ function editProblem(id) {
 	if (id != undefined) {
 		url += "&problemListId=" + id;
 	}
-	winViewProblem = globalCreateWindow("windowProblem",[],url,label + " <?=__('Problem')?>",510,500);
+	winEditProblem = globalCreateWindow("windowEditProblem",[],url,label + " <?=__('Problem')?>",510,500);
 
 	if (id == undefined) {
 		openLookupProblemWindow();
@@ -249,7 +249,7 @@ function viewProblem(id) {
 	plGrid = new dhtmlXGridObject('problemsListContainer');
 	plGrid.setImagePath("<?=$this->baseUrl?>/img/");
 	plGrid.setHeader('Status,,Flags,Description,Diagnosis Code,Onset Date,Provider,Location,Last Updated');
-	plGrid.setInitWidths("75,25,75,*,100,125,150,100,125");
+	plGrid.setInitWidths("75,25,75,*,100,80,150,100,125");
 	plGrid.setColTypes("ro,sub_row,ro,ro,ro,ro,ro,ro,ro");
 	plGrid.setSkin("xp");
 	plGrid.enableAlterCss("even","uneven");

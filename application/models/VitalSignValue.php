@@ -26,6 +26,7 @@ class VitalSignValue extends WebVista_Model_ORM {
 
 	protected $vitalSignValueId;
 	protected $vitalSignGroupId;
+	protected $vitalSignGroup;
 	protected $unavailable;
 	protected $refused;
 	protected $vital;
@@ -33,6 +34,17 @@ class VitalSignValue extends WebVista_Model_ORM {
 	protected $units;
 	protected $_primaryKeys = array('vitalSignValueId');
 	protected $_table = "vitalSignValues";
+	protected $_cascadePersist = false;
+
+	public function __construct() {
+		$this->vitalSignGroup = new VitalSignGroup();
+		$this->vitalSignGroup->_cascadePersist = false;
+	}
+
+	public function setVitalSignGroupId($id) {
+		$this->vitalSignGroupId = (int)$id;
+		$this->vitalSignGroup->vitalSignGroupId = $this->vitalSignGroupId;
+	}
 
 	public static function convertValuesHeadCircumference($value,$unit) {
 		return self::convertValuesHeight($value,$unit);
@@ -106,6 +118,58 @@ class VitalSignValue extends WebVista_Model_ORM {
 		$vitalSignValue = new self();
 		if (method_exists($vitalSignValue,$methodName)) {
 			return $vitalSignValue->$methodName($value,$unit);
+		}
+		return false;
+	}
+
+	public static function unitTypeHeadCircumference($unit,$converted=false) {
+		return self::unitTypeHeight($unit,$converted);
+	}
+
+	public static function unitTypeHeight($unit,$converted=false) {
+		$ret = null;
+		switch ($unit) {
+			case 'IN': // Inch - USS
+				$ret = ($converted)?'metric':'uss';
+				break;
+			case 'CM': // Centimeter - Metric
+				$ret = ($converted)?'uss':'metric';
+				break;
+		}
+		return $ret;
+	}
+
+	public static function unitTypeWeight($unit,$converted=false) {
+		$ret = null;
+		switch ($unit) {
+			case 'LB': // Pound - USS
+				$ret = ($converted)?'metric':'uss';
+				break;
+			case 'KG': // Kilogram - Metric
+				$ret = ($converted)?'uss':'metric';
+				break;
+		}
+		return $ret;
+	}
+
+	public static function unitTypeTemperature($unit,$converted=false) {
+		$ret = null;
+		switch ($unit) {
+			case 'F': // Fahrenheit - USS
+				$ret = ($converted)?'metric':'uss';
+				break;
+			case 'C': // Celsius - Metric
+				$ret = ($converted)?'uss':'metric';
+				break;
+		}
+		return $ret;
+	}
+
+	public static function unitType($vital,$unit,$converted=false) {
+		$methodName = 'unitType'.ucfirst($vital);
+		$vitalSignValue = new self();
+		if (method_exists($vitalSignValue,$methodName)) {
+			return $vitalSignValue->$methodName($unit,$converted);
 		}
 		return false;
 	}

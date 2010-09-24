@@ -38,7 +38,6 @@ class Visit extends WebVista_Model_ORM {
 	protected $current_payer;
 	protected $room_id;
 	protected $practice_id;
-	protected $dateOfService;
 	protected $activePayerId;
 	protected $closed;
 	protected $void;
@@ -74,14 +73,6 @@ class Visit extends WebVista_Model_ORM {
 
 	public function setVisitId($id) {
 		$this->encounter_id = $id;
-	}
-
-	public function getDisplayDateOfService() {
-		$date = '';
-		if ($this->dateOfService != '' && $this->dateOfService != '0000-00-00 00:00:00') {
-			$date = date('Y-m-d',strtotime($this->dateOfService));
-		}
-		return $date;
 	}
 
 	public function getInsuranceProgram() {

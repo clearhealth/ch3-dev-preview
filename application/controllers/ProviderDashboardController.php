@@ -60,7 +60,7 @@ class ProviderDashboardController extends WebVista_Controller_Action {
 	public function listAppointmentsAction() {
 		$providerId = (int) $this->_getParam('providerId');
 		$db = Zend_Registry::get('dbAdapter');
-                $sql = "select *
+                $sql = "select *, appointment_id as appointmentId
                                 from appointment app
                                 inner join event ev on ev.event_id = app.event_id
 				inner join person per on per.person_id = app.patient_id

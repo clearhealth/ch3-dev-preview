@@ -36,4 +36,8 @@ class TemplatedText extends WebVista_Model_ORM {
 		$this->postPopulate();
 		return $retval;
 	}
+
+	public function getTemplatedTextId() {
+		return $this->templateId;
+	}
 }

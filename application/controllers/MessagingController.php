@@ -24,6 +24,12 @@
 
 class MessagingController extends WebVista_Controller_Action {
 
+	protected $_session;
+
+	public function init() {
+		$this->_session = new Zend_Session_Namespace(__CLASS__);
+	}
+
 	public function indexAction() {
 		$this->render('index');
 	}
@@ -50,22 +56,46 @@ class MessagingController extends WebVista_Controller_Action {
 		$json->direct($ret);
 	}
 
-	public function dateRangeAction() {
-		$this->render('date-range');
-	}
-
-	public function listAction() {
+	public function setFiltersAction() {
 		$params = $this->_getParam('filters');
-		$filters = array();
+		$filters = $this->_session->filters;
+		if (!$filters) {
+			$filters = array();
+		}
 		$filterList = explode(';',$params);
 		foreach ($filterList as $filter) {
 			$x = explode(':',$filter);
-			if (!isset($x[1])) continue;
+			//if (!isset($x[1])) continue;
 			$filters[$x[0]] = $x[1];
 		}
-		if (!count($filters) > 0) {
-			$filters['dateStatus'] = date('Y-m-d 00:00:00',strtotime('-7 days')).','.date('Y-m-d 23:59:59');
-			$filters['resolution'] = 1;
+		$this->_session->filters = $filters;
+		$ret = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	protected function _initDefaultFilters() {
+		$filters = array();
+		$filters['dateStatus'] = date('Y-m-d 00:00:00',strtotime('-7 days')).','.date('Y-m-d 23:59:59');
+		$statusOptions = array();
+		$messagingIterator = new MessagingIterator(null,false);
+		$messagingIterator->setFilters(array('optionGroup'=>'status'));
+		foreach ($messagingIterator as $message) {
+			$statusOptions[] = $message->status;
+		}
+		$filters['status'] = implode(',',$statusOptions);
+		$messageOptions = array('EPrescribes','InboundFaxes','OutboundFaxes');
+		$filters['message'] = implode(',',$messageOptions);
+		$filters['resolution'] = 0;
+		$this->_session->filters = $filters;
+		return $filters;
+	}
+
+	public function listAction() {
+		$filters = $this->_session->filters;
+		if (!$filters) {
+			$filters = $this->_initDefaultFilters();
 		}
 		$messagingIterator = new MessagingIterator(null,false);
 		$messagingIterator->setFilters($filters);
@@ -95,13 +125,14 @@ class MessagingController extends WebVista_Controller_Action {
 		$messaging->messagingId = $messagingId;
 		$messaging->populate();
 		$missingPON = '';
-		$prettyPrint = '';
-		$xml = new SimpleXMLElement($messaging->rawMessage);
 		if ($messaging->objectClass == 'MedicationRefillRequest' && preg_match('/\(Invalid\/Missing PON\)/',$messaging->note)) {
 			$missingPON = $messagingId;
 		}
 		$relatedMessage = '';
-		if (strtolower($messaging->messageType) == 'error') {
+		$prettyPrint = __('There is no more information available about this message');
+		//if (strtolower($messaging->messageType) == 'error' && strlen($messaging->rawMessage) > 0) {
+		if (strlen($messaging->rawMessage) > 0) {
+			$xml = new SimpleXMLElement($messaging->rawMessage);
 			$relatesToMessageID = (string)$xml->Header->RelatesToMessageID;
 			$tmpMsg = new Messaging();
 			$tmpMsg->messagingId = $relatesToMessageID;
@@ -111,8 +142,8 @@ class MessagingController extends WebVista_Controller_Action {
 				$relatedMessage = Messaging::convertXMLMessage($tmlXmlMsg->Body->NewRx,$relatedMessage);
 				$relatedMessage = implode("\n",$relatedMessage);
 			}
+			$prettyPrint = $this->_generateRefillRequestDetails($xml->Body,$tmp);
 		}
-		$prettyPrint = $this->_generateRefillRequestDetails($xml->Body,$prettyPrint);
 		$this->view->prettyPrint = $prettyPrint;
 		$this->view->missingPON = $missingPON;
 		$this->view->messaging = $messaging;
@@ -414,6 +445,36 @@ class MessagingController extends WebVista_Controller_Action {
 		$messageOptions = array('EPrescribes'=>'EPrescribe','InboundFaxes'=>'InboundFax','OutboundFaxes'=>'OutboundFax');
 		$this->view->statusOptions = $statusOptions;
 		$this->view->messageOptions = $messageOptions;
+
+		$filters = $this->_session->filters;
+		$message = array();
+		$status = array();
+		$resolution = '';
+		if (isset($filters['message'])) {
+			foreach (explode(',',$filters['message']) as $val) {
+				$message[$val] = $val;
+			}
+		}
+		if (isset($filters['status'])) {
+			foreach (explode(',',$filters['status']) as $val) {
+				$status[$val] = $val;
+			}
+		}
+		if (isset($filters['resolution'])) {
+			$resolution = $filters['resolution'];
+		}
+		$dateBegin = date('Y-m-d',strtotime('-7days'));
+		$dateEnd = date('Y-m-d');
+		if (isset($filters['dateStatus'])) {
+			$x = explode(',',$filters['dateStatus']);
+			$dateBegin = date('Y-m-d',strtotime($x[0]));
+			$dateEnd = date('Y-m-d',strtotime($x[1]));
+		}
+		$this->view->message = $message;
+		$this->view->status = $status;
+		$this->view->resolution = $resolution;
+		$this->view->dateBegin = $dateBegin;
+		$this->view->dateEnd = $dateEnd;
 		$this->render('filter');
 	}
 
@@ -466,6 +527,34 @@ class MessagingController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
+	}
+
+	public function processDirectDeniedAction() {
+		$messagingId = $this->_getParam('messagingId');
+		$code = $this->_getParam('code');
+		$refillResponse = new MedicationRefillResponse();
+		$refillResponse->messageId = $messagingId;
+		$reasonCodes = $this->getDenialReasonCodes();
+		if (!isset($reasonCodes[$code])) {
+			$code = 'AA';
+		}
+		$inputs = array(
+			'reason' => $reasonCodes[$code],
+			'reasonCode' => $code,
+		);
+		$ret = $refillResponse->send('denied',$inputs);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function viewGatewayResponseRawMessageAction() {
+		$messagingId = $this->_getParam('messagingId');
+		$messaging = new Messaging();
+		$messaging->messagingId = $messagingId;
+		$messaging->populate();
+		$this->view->gatewayResponseRawMessage = $messaging->rawMessageResponse;
+		$this->render();
 	}
 
 }

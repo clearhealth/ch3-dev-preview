@@ -71,7 +71,7 @@ function convertComma(str) {
 
 <div class="formRow" style="padding-top:4px;">
 	<dt><label for="problemList-code"><?=__("Problem")?></label></dt>
-	<input type="text" name="problemList[codeTextShort]" id="problemList-code-text-short" readonly="readonly" style="width:400px" value="<?=$this->form->codeTextShort->getValue()?> (<?=$this->form->code->getValue()?>)" />
+	<input type="text" name="problemList[codeTextShort]" id="problemList-code-text-short" readonly="readonly" style="width:400px" value="<?=$this->form->codeTextShort->getValue()?>" />
 	<input type="hidden" name="problemList[code]" id="problemList-code" value="<?=$this->form->code->getValue()?>" />
 	<input type="button" onClick="openLookupProblemWindow()" value="..." />
 </div>
@@ -173,10 +173,10 @@ toggleImmediacy(stats);
 			form: 'editProblem',
 			load: function (data) {
 				filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
-				closeProblemWindow();
+				dhxWins.window("<?=$this->form->getWindow()?>").close();
 			},
 			error: function (er) {
-				alert('err: ' + er)
+				alert('err: ' + er.responseText);
 			}
 		});
 	}
@@ -196,7 +196,7 @@ toggleImmediacy(stats);
 <div class="formRow" style="padding-top:8px;">
 	<input type="hidden" name="problemList[problemListId]" id="problemList-problem-list-id" value="<?=$this->problemList->problemListId?>" />
 	<input type="button" value="<?=__('Save')?>" style="width:150px;" onClick="saveForm()" />
-	<input type="button" value="<?=__('Cancel')?>" style="width:150px;margin-top:10px;" onClick="closeProblemWindow()"/>
+	<input type="button" value="<?=__('Cancel')?>" style="width:150px;margin-top:10px;" onClick="dhxWins.window('<?=$this->form->getWindow()?>').close();"/>
 </div>
 	<?=$this->form->renderClose()?>
 

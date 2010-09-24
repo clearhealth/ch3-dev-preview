@@ -11,7 +11,6 @@ div.gridbox_xp table.obj td {
 </div>
 
 <script>
-var messagingFilters = "";
 var messagingToolbar = new dhtmlXToolbarObject("messagingToolbarId","ClearSilver");
 messagingToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 function messagingToolbarOnClicked(id) {
@@ -20,9 +19,6 @@ function messagingToolbarOnClicked(id) {
 	switch (id) {
 		case "filter":
 			globalCreateWindow("winFilterId",params,"<?=$this->baseUrl?>/messaging.raw/filter","<?=__('Filter')?>",400,350);
-			break;
-		case "dateRange":
-			globalCreateWindow("winDateRangeId",params,"<?=$this->baseUrl?>/messaging.raw/date-range","<?=__('Date Range')?>",175,150);
 			break;
 		case "patient":
 			alert("Not yet implemented");
@@ -81,7 +77,7 @@ messagingGrid.enableContextMenu(messagingMenu);
 messagingGrid.attachEvent("onBeforeContextMenu",function(rowId,cellIndex){
 	var messageType = messagingGrid.cells(rowId,5).getValue();
 	messagingMenu.forEachItem(function(itemId){
-		if (itemId == "viewRawMessage") return;
+		if (itemId == "viewRawMessage" || itemId == "viewGatewayResponseRawMessage" || itemId.substr(0,13) == "directDenied_") return;
 		messagingMenu.hideItem(itemId);
 	});
 	if (messageType == "RefillRequest") {
@@ -90,6 +86,7 @@ messagingGrid.attachEvent("onBeforeContextMenu",function(rowId,cellIndex){
 		messagingMenu.showItem("ms1");
 		if (this.getUserData(rowId,"unresolved") == "1") {
 			messagingMenu.showItem("markAsResolved");
+			messagingMenu.showItem("directDenied");
 		}
 	}
 	return true;
@@ -104,6 +101,27 @@ function messagingGridOnContextMenu(item,rowId) {
 
 	var params = [];
 	params.push("messagingId="+messagingId);
+
+	if (item.substr(0,13) == "directDenied_") {
+		var code = item.substr(13);
+		if (!confirm("<?=__('Are you sure you want to directly deny selected item?')?>")) return;
+		dojo.xhrPost({
+			url: "<?=$this->baseUrl?>/messaging.raw/process-direct-denied",
+			handleAs: "json",
+			content: {
+				"messagingId": messagingId,
+				"code": code,
+			},
+			load: function (data) {
+				messagingGridReload();
+			},
+			error: function (er) {
+				alert('err: ' + er);
+			}
+		});
+		return;
+	}
+
 	switch (item) {
 		case "approved":
 			globalCreateWindow("winRefillResponseApproved",params,"<?=$this->baseUrl?>/messaging.raw/refill-response-approved","<?=__('Refill Response - Approved')?>",500,500);
@@ -113,6 +131,9 @@ function messagingGridOnContextMenu(item,rowId) {
 			break;
 		case "viewRawMessage":
 			globalCreateWindow("winViewRawMessage",params,"<?=$this->baseUrl?>/messaging.raw/view-raw-message","<?=__('View Raw Message')?>",500,500);
+			break;
+		case "viewGatewayResponseRawMessage":
+			globalCreateWindow("winViewGatewayResponseRawMessage",params,"<?=$this->baseUrl?>/messaging.raw/view-gateway-response-raw-message","<?=__('View Gateway Response Raw Message')?>",500,500);
 			break;
 		case "markAsResolved":
 			if (!confirm("<?=__('Are you sure you are going to mark as resolved the selected item?')?>")) return;
@@ -144,7 +165,14 @@ function messagingRefillResponse(content) {
 			if (data != true) {
 				alert(data);
 			}
-			messagingGridReload();
+			switch (mainTabbar.getActiveTab()) {
+				case "tab_Medications":
+					rrGridReload();
+					break;
+				case "tab_Messaging":
+					messagingGridReload();
+					break;
+			}
 		},
 		error: function (er) {
 			alert('err: ' + er);
@@ -163,7 +191,7 @@ function messagingGridOnLoaded() {
 
 function messagingGridReload() {
 	messagingGrid.clearAll();
-	messagingGrid.load("<?=$this->baseUrl?>/messaging.raw/list?filters="+messagingFilters,messagingGridOnLoaded,"json");
+	messagingGrid.load("<?=$this->baseUrl?>/messaging.raw/list",messagingGridOnLoaded,"json");
 }
 messagingGridReload();
 

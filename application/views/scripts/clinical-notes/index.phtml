@@ -87,7 +87,7 @@ dojo.xhrGet({
 		cnFilterOptions.options[len++] = new Option("<?=__('Selected visit')?> (["+data.selectedVisit+"])","bySelectedVisit");
 	},
 	error: function (er) {
-		alert("err: " + er);
+		alert("ERROR: " + er.responseText);
 	}
 });
 
@@ -140,7 +140,10 @@ function contextMenuClickHandler(id) {
 			var rowId = cnGrid.getSelectedRowId();
 			var clinicalNoteId = 0;
 			if (rowId != null) {
-				clinicalNoteId = rowId;
+				if (cnGrid.getLevel(rowId) != 0) {
+					rowId = cnGrid.getParentId(rowId);
+				}
+				clinicalNoteId = cnGrid.getUserData(rowId,"docId");
 			}
 			windowReviewSignDocuments(clinicalNoteId);
 			break;
@@ -162,7 +165,7 @@ leftLayout.cells("a").attachObject(dojo.byId('upperLeftContainer'));
 cnGrid = new dhtmlXGridObject('clinicalNotesContainer');
 cnGrid.setImagePath("<?=$this->baseUrl?>/img/");
 cnGrid.setHeader(',Date,Title,Author,Location');
-cnGrid.setInitWidths("25,70,120,150,*");
+cnGrid.setInitWidths("20,120,120,150,*");
 //alGrid.setColAlign("left");
 cnGrid.setColTypes("tree,ro,ro,ro,ro");
 cnGrid.setSkin("xp");
@@ -242,11 +245,15 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 			var revisionId = 0;
 			if (cnGrid.getLevel(clinicalNoteId) != 0) {
 				revisionId = clinicalNoteId;
-				clinicalNoteId = cnGrid.cells(clinicalNoteId,0).getValue();
+				clinicalNoteId = cnGrid.getParentId(clinicalNoteId);
 			}
-			dojo.xhrGet({
-				url: "<?=$this->baseUrl?>/clinical-notes.raw/process-edit-note?clinicalNoteId="+clinicalNoteId+"&revisionId="+revisionId,
+			dojo.xhrPost({
+				url: "<?=$this->baseUrl?>/clinical-notes.raw/process-edit-note",
 				handleAs: "json",
+				content: {
+					"clinicalNoteId": clinicalNoteId,
+					"revisionId": revisionId,
+				},
 				load: function (data) {
 					if (data === true) {
 						onButtonClick("refresh");
@@ -256,7 +263,7 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 					}
 				},
 				error: function (er) {
-					alert("err: " + er);
+					alert("ERROR: " + er.responseText);
 				}
 			});
 		}
@@ -320,14 +327,9 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 				if (dataChanged) {
 					alert(dataChanged.value);
 				}
-				/*var templateRevision = document.getElementsByName("templateRevisionId[]");
-				if (templateRevision && templateRevision.length > 0) {
-				}
-				else {
-				}*/
 			},
 			error: function (er) {
-				alert("err: " + er);
+				alert("ERROR: " + er.responseText);
 			}
 		});
 		cnAttachmentsGrid.clearAll();

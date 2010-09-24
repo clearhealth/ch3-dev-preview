@@ -31,4 +31,8 @@ class PatientVisitType extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('providerId','patientId');
 	protected $_table = 'patientVisitTypes';
 
+	public function getPatientVisitTypeId() {
+		return $this->providerId;
+	}
+
 }

@@ -56,9 +56,26 @@ class PhoneNumber extends WebVista_Model_ORM {
 				->from($this->_table)
 				->where('active = ?',(int)$active)
 				->where('person_id = ?',(int)$patientId);
-		$iter = $this->getIterator();
-		$iter->setDbSelect($sqlSelect);
-		return $iter;
+		return new PhoneNumberIterator($sqlSelect);
+	}
+
+	public function getIteratorByPersonId($personId=null) {
+		if ($personId === null) {
+			$personId = $this->person_id;
+		}
+		$config = Zend_Registry::get('config');
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('n'=>$this->_table))
+				->order('n.displayOrder ASC');
+		$orWhere = '';
+		if (strtolower($config->patient->detailsView2x) == 'true') {
+			$sqlSelect->joinLeft(array('pn'=>'person_number'),'pn.number_id=n.number_id',null);
+			$orWhere = ' OR pn.person_id = '.$personId;
+		}
+		$personId = (int)$personId;
+		$sqlSelect->where('n.person_id = '.$personId.$orWhere);
+		return new PhoneNumberIterator($sqlSelect);
 	}
 
 	public function getPhoneNumberId() {
@@ -67,23 +84,6 @@ class PhoneNumber extends WebVista_Model_ORM {
 
 	public function setPhoneNumberId($id) {
 		$this->number_id = $id;
-	}
-
-	public function __isset($key) {
-		$ret = false;
-		if (method_exists($this,"get" . ucfirst($key))) {
-			$ret = true;
-		}
-		elseif ($this->_legacyORMNaming == true && strpos($key,'_') === false) {
-			$newKey = strtolower(preg_replace('/([A-Z]{1})/','_\1',$key));
-			if (strpos($newKey,'_') !== false && in_array($newKey,$this->ORMFields())) {
-				$ret = true;
-			}
-		}
-		if (isset($this->$key)) {
-			$ret = true;
-		}
-		return $ret;
 	}
 
         public function populateWithPersonId() {
@@ -134,13 +134,13 @@ class PhoneNumber extends WebVista_Model_ORM {
 	}
 
 	public function getPhoneNumbers() {
-		$phoneNumberIterator = $this->getIteratorByPatientId(null,true);
+		$phoneNumberIterator = $this->getIteratorByPersonId();
 		$phones = array();
 		foreach ($phoneNumberIterator as $number) {
 			//if (!strlen($number->number) > 0) continue;
 			// SS Type options: BN - Beeper, CP - Cellular, FX - Fax, HP - Home, NP - Night, TE – Telephone*, WP – Work
 			$type = '';
-			switch ($number->type) {
+			switch ($number->getType()) {
 				case self::TYPE_HOME:
 				case self::TYPE_HOME_DAY:
 					$type = 'HP'; 
@@ -240,7 +240,31 @@ class PhoneNumber extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	protected function _isv2x($numberId=null) {
+		$ret = false;
+		$config = Zend_Registry::get('config');
+		if (strtolower($config->patient->detailsView2x) != 'true') {
+			return $ret;
+		}
+		if ($numberId === null) {
+			$numberId = $this->number_id;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('person_number')
+				->where('number_id = ?',(int)$numberId);
+		$ret = false;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		return $ret;
+	}
+
 	public function persist() {
+		if ($this->number_id > 0 && $this->_isv2x()) { // check if 2.x
+			WebVista::debug('Unable to alter because 2.x phone number detected');
+			return false;
+		}
 		if ($this->_persistMode != WebVista_Model_ORM::DELETE && (int)$this->displayOrder <= 0) {
 			$this->displayOrder = self::nextDisplayOrder($this->personId);
 		}
@@ -264,7 +288,7 @@ class PhoneNumber extends WebVista_Model_ORM {
 			$practiceId = $this->practiceId;
 		}
 		if ($type === null) {
-			$type = $this->type;
+			$type = $this->getType();
 		}
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
@@ -272,6 +296,39 @@ class PhoneNumber extends WebVista_Model_ORM {
 				->where('practiceId = ?',(int)$practiceId)
 				->where('type = ?',$type);
 		$this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public function getType() { // 2.x to 3.x conversion
+		static $detailsView2x = null;
+		$type = $this->type;
+		if ($detailsView2x === null) {
+			$config = Zend_Registry::get('config');
+			$detailsView2x = strtolower((string)$config->patient->detailsView2x);
+		}
+		if ($detailsView2x != 'true') {
+			return $type;
+		}
+		switch ($type) {
+			case '1': // home
+				$type = self::TYPE_HOME;
+				break;
+			case '2': // mobile
+				$type = self::TYPE_MOBILE;
+				break;
+			case '3': // work
+				$type = self::TYPE_WORK;
+				break;
+			case '4': // emergency
+				$type = self::TYPE_EMERGENCY;
+				break;
+			case '5': // fax
+				$type = self::TYPE_FAX;
+				break;
+			case '6': // alt
+				$type = self::TYPE_BILLING;
+				break;
+		}
+		return $type;
 	}
 
 }

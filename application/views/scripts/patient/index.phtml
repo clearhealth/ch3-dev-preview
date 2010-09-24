@@ -59,7 +59,7 @@ div.gridbox_xp table.obj td {
 			</div>
 			<div class="formRow" style="margin-left:20px;">
 			<?=$this->form->formPerson->gender->renderLabel()?>
-			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
+			<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','key')))?>
 			</div>
 			<br class="formRowDivider">
 			<div class="formRow">

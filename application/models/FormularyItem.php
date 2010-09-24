@@ -443,5 +443,10 @@ trigger_error($sql,E_USER_NOTICE);
 		}
 		return $db->query($dbSelect)->fetchAll();
 	}
+
+	public function getFormularyItemId() {
+		return $this->fullNDC;
+	}
+
 }
 

@@ -119,10 +119,15 @@ class Zend_View_Helper_FormRadio extends Zend_View_Helper_FormElement {
         // add radio buttons to the list.
         require_once 'Zend/Filter/Alnum.php';
         $filter = new Zend_Filter_Alnum();
+        $origAttribs = $attribs;
         foreach ($options as $opt_value => $optLabels) {
 
-            $opt_label = $optLabels['label'];
-            $attribs = $optLabels['attributes'];
+            $opt_label = $optLabels;
+            $attribs = $origAttribs;
+            if (is_array($optLabels)) {
+                if (isset($optLabels['label'])) $opt_label = $optLabels['label'];
+                if (isset($optLabels['attributes'])) $attribs = $optLabels['attributes'];
+            }
             // Should the label be escaped?
             if ($escape) {
                 $opt_label = $this->view->escape($opt_label);

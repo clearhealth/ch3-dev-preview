@@ -36,6 +36,7 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 
 	protected $_table = 'medicationRefillRequests';
 	protected $_primaryKeys = array('messageId');
+	protected $_cascadePersist = false;
 
 	function __construct() {
 		parent::__construct();
@@ -43,6 +44,28 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 		$this->medication->_cascadePersist = false;
 		$this->refillResponse = new MedicationRefillResponse();
 		$this->refillResponse->_cascadePersist = false;
+	}
+
+	public function populate() {
+		$sql = "SELECT * from " . $this->_table . " WHERE 1 ";
+		$doPopulate = false;
+		foreach($this->_primaryKeys as $key) {
+			$doPopulate = true;
+			$sql .= " and $key = '" . preg_replace('/[^0-9a-z_A-Z-\.]/','',$this->$key) . "'";
+		}
+		if ($doPopulate == false) return false;
+		$retval = false;
+		$retval = $this->populateWithSql($sql);
+		$this->postPopulate();
+		return $retval;
+	}
+
+	public function getMedicationRefillRequestId() {
+		return $this->messageId;
+	}
+
+	public function setMedicationRefillRequestId($id) {
+		$this->setMessageId($id);
 	}
 
 	public function setMessageId($id) {
@@ -61,12 +84,78 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 				->from(array('r'=>$this->_table))
 				->joinLeft(array('m'=>'medications'),'m.medicationId = r.medicationId')
 				->joinLeft(array('msg'=>'messaging'),'msg.messagingId = r.messageId',array('personId','rawMessage'))
-				->where('msg.personId = ?',(int)$personId)
-				//->where('m.personId = ?',(int)$personId)
+				->where('m.personId = ?',(int)$personId)
 				->order('r.dateTime DESC')
 				->group('r.messageId');
 		//trigger_error($sqlSelect->__toString());
 		return $this->getIterator($sqlSelect);
+	}
+
+	public static function refillRequestDatasourceHandler(Audit $auditOrm,$eachTeam=false) {
+		$ret = array();
+		if ($auditOrm->objectClass != 'MedicationRefillRequest') {
+			WebVista::debug('Audit:objectClass is not MedicationRefillRequest');
+			return $ret;
+		}
+
+		$orm = new self();
+		$orm->messageId = $auditOrm->objectId;
+		if (!$orm->populate()) {
+			WebVista::debug('Failed to populate');
+			return $ret;
+		}
+		$personId = (int)$orm->medication->personId;
+		$alert = new GeneralAlert();
+		$filters = array();
+		$filters['objectClass'] = $auditOrm->objectClass;
+		//$filters['objectId'] = $personId;
+		if ($eachTeam) {
+			$filters['teamId'] = $orm->medication->patient->teamId;
+		}
+		else {
+			$filters['userId'] = (int)$orm->medication->prescriberPersonId;
+		}
+		$alert->populateOpenedAlertByFilters($filters);
+		$messages = array();
+		if (strlen($alert->message) > 0) { // existing general alert
+			$messages[] = $alert->message;
+		}
+		else { // new general alert
+			$alert->urgency = 'High';
+			$alert->status = 'new';
+			$alert->dateTime = date('Y-m-d H:i:s');
+			$alert->objectClass = $auditOrm->objectClass;
+			$alert->objectId = $auditOrm->objectId;
+			if ($eachTeam) {
+				$alert->teamId = $orm->medication->patient->teamId;
+			}
+			else {
+				$alert->userId = (int)$orm->medication->prescriberPersonId;
+			}
+		}
+		$messages[] = 'Refill request pending. '.$orm->details;
+		$alert->message = implode("\n",$messages);
+		return $alert->toArray();
+	}
+
+	public static function refillRequestActionHandler(Audit $auditOrm,array $dataSourceData) {
+		if (!count($dataSourceData) > 0) {
+			WebVista::debug('Received an empty datasource');
+			return false;
+		}
+		$orm = new GeneralAlert();
+		$orm->populateWithArray($dataSourceData);
+		$orm->persist();
+		return true;
+
+	}
+
+	public static function getControllerName() {
+		return 'MedicationsController';
+	}
+
+	public function getPersonId() {
+		return $this->medication->personId;
 	}
 
 }

@@ -79,7 +79,7 @@ function reportsManagerEdit(baseId) {
 }
 
 function reportsManagerDelete(baseId) {
-	if (!confirm("<?=__('Are you sure you want to delete report')?>: "+reportsManagerGrid.cells(baseId,0).getValue()+"?")) {
+	if (!confirm("<?=__('Are you sure you want to delete selected report(s)?')?>")) {
 		return;
 	}
 	dojo.xhrPost({

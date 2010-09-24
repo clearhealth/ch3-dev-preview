@@ -69,6 +69,10 @@ chToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 chToolbar.loadXML("<?=$this->baseUrl?>/medications.raw/toolbar");
 
 function chToolbarOnClicked(itemId) {
+	if (mainController.getActivePatient() <= 0) {
+		alert("<?=__('No patient selected.')?>");
+		return;
+	}
 	if (itemId == "medtbNewMedication" || itemId == "medtbChangeMedication" || itemId == "medtbCopyMedication") {
 		dojo.xhrPost({
 			url: "<?=$this->baseUrl?>/medications.raw/ajax-check-patient-info?personId="+mainController.getActivePatient(),
@@ -144,7 +148,12 @@ function onButtonClick(itemId) {
 				},
 				handleAs: "json",
 				load: function (data) {
-					loadMedication();
+					if (data != true) {
+						alert(data);
+					}
+					else {
+						loadMedication();
+					}
 				},
 				error: function (er) {
 					alert("err: "+er);
@@ -153,6 +162,9 @@ function onButtonClick(itemId) {
 			break;
 		case "copyAndDiscontinue":
 			copyMedication(1);
+			break;
+		case "filter":
+			var winFilter = globalCreateWindow("winFilterId",[],"<?=$this->baseUrl?>/medications.raw/filter","<?=__('Filter Medication')?>",300,200);
 			break;
 	}
 }
@@ -336,7 +348,7 @@ function rowSelectHandler(rowId,cellIndex) {
 	chToolbar.enableItem('medtbCopyMedication');
 	chToolbar.disableItem("delete");
 	chToolbar.enableItem("copyAndDiscontinue");
-	if (mGrid.cells(rowId,3).getValue() == "<?=__('Unsigned')?>") {
+	if (mGrid.cells(rowId,8).getValue() <= 0) { // not signed
 		chToolbar.enableItem("delete");
 	}
 
@@ -510,7 +522,14 @@ function messagingRefillResponse(content) {
 			if (data != true) {
 				alert(data);
 			}
-			rrGridReload();
+			switch (mainTabbar.getActiveTab()) {
+				case "tab_Medications":
+					rrGridReload();
+					break;
+				case "tab_Messaging":
+					messagingGridReload();
+					break;
+			}
 		},
 		error: function (er) {
 			alert('err: ' + er);

@@ -39,4 +39,8 @@ class PatientExam extends WebVista_Model_ORM {
 	const ENUM_OTHER_PARENT_NAME = 'Other Exam Preferences';
 	const ENUM_RESULT_PARENT_NAME = 'Exam Result Preferences';
 
+	public function getPatientExamId() {
+		return $this->code;
+	}
+
 }

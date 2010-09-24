@@ -35,6 +35,7 @@ class ReportQuery extends WebVista_Model_ORM {
 
 	protected $_primaryKeys = array('reportQueryId');
 	protected $_table = 'reportQueries';
+	protected $_cascadePersist = false;
 	protected $_data = array();
 
 	const TYPE_SQL = 'SQL';

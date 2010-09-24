@@ -251,10 +251,4 @@ class HealthStatusController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function generateTestDataAction() {
-		HealthStatusHandler::generateTestData();
-		echo 'Done';
-		die;
-	}
-
 }

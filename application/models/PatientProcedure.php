@@ -37,4 +37,17 @@ class PatientProcedure extends WebVista_Model_ORM {
 
 	const ENUM_PARENT_NAME = 'Procedure Preferences';
 
+	public function getPatientProcedureId() {
+		return $this->code;
+	}
+
+	public function getIteratorByPatientId($patientId=null) {
+		if ($patientId === null) $patientId = $this->patientId;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('patientId = ?',(int)$patientId);
+		return new PatientProcedureIterator($sqlSelect);
+	}
+
 }

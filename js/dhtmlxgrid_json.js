@@ -12,9 +12,9 @@ dhtmlXGridObject.prototype._process_json=function(data){
 		this._parsing=true;
 	
 		if (data&&data.xmlDoc)
-			eval("data="+data.xmlDoc.responseText+";");
+			data = JSON.parse(data.xmlDoc.responseText);
 		else if (typeof data == "string")
-			eval("data="+data+";");
+			data = JSON.parse(data);
 			
 			
 		var cr = parseInt(data.pos||0);
@@ -39,9 +39,192 @@ dhtmlXGridObject.prototype._process_json=function(data){
 			this.rowsAr[id]=data[i];
 		//this.callEvent("onRowCreated",[r.idd]);
 		}
-		this.render_dataset();
+		if (this.dynLoad) {
+			this._initDynamicLoading();
+		}
+		else {
+			this.render_dataset();
+		}
 		this._parsing=false;
 }
+
+dhtmlXGridObject.prototype.setOffsetHeight = function(height){
+	this._offsetHeight = parseInt(height);
+};
+
+dhtmlXGridObject.prototype._initDynamicLoading = function(){
+	var offsetHeight = parseInt(this._offsetHeight||this.entBox.offsetHeight);
+	var rowHeight = (this.skin_name == "xp")?22:20;
+	var displayRows = Math.floor(offsetHeight / rowHeight);
+	var quartDisplay = Math.ceil(displayRows / 4);
+	var extraRows = parseInt(displayRows + quartDisplay);
+	var rowsLimit = parseInt(displayRows + extraRows);
+	var min = 0;
+	var max = (this.rowsBuffer.length > rowsLimit)? rowsLimit : this.rowsBuffer.length;
+	if (this._ch_debug) console.error("rowsLimit: "+rowsLimit);
+	if (this._ch_debug) console.error("rowsBuffer: "+this.rowsBuffer.length);
+	if (this._ch_debug) console.error("max: "+max);
+	var end = parseInt(max - 1);
+	this._ch_data = (this._ch_data || {
+		"max": max,
+		"displayRows": displayRows,
+		"rowHeight": rowHeight, // default grid's row height, depending on grid style. xp skin is 22px
+		"extraRows": extraRows,
+		"start": 0,
+		"end": end,
+	});
+	this._ch_debug = (this._ch_debug||false);
+	if (this._ch_debug) console.error("render dataset from 0 to "+max);
+	this.render_dataset(0,max);
+	if (this._ch_debug) console.error("buffer len: "+this.rowsBuffer.length);
+	if (max > this.rowsBuffer.length) {
+		max = this.rowsBuffer.length;
+		this._ch_data["max"] = max;
+	}
+	if (this.rowsBuffer.length > 0 && this.dynLoad && max < this.rowsBuffer.length) {
+		this.rowsBuffer[0].style.height = rowHeight+"px";
+		// set the height of the last row based
+		var height = parseInt(this.rowsBuffer.length - max) * rowHeight;
+		var index = parseInt(max - 1);
+		this.rowsBuffer[index].style.height = height+"px";
+		this.rowsBuffer[index].style.display = "";
+		this.attachEvent("onScroll",this._processOnScroll);
+	}
+};
+
+dhtmlXGridObject.prototype.enableDynamicLoading = function(mode){
+	this.dynLoad = mode;
+};
+
+dhtmlXGridObject.prototype._mergeRows = function(/*row index start*/start, /*row index end*/end, /*row index old start*/oldStart, /*row index old end*/oldEnd){
+	if (this._ch_debug) console.error("_mergeRows: index start="+start+" index end="+end+ " index old start="+oldStart+" index old end="+oldEnd);
+	var bufferLen = parseInt(this.rowsBuffer.length - 1);
+	if (start < 0) start = 0;
+	else if (start > this.rowsBuffer.length) start = bufferLen;
+	if (oldStart < 0) oldStart = 0;
+	else if (oldStart > this.rowsBuffer.length) oldStart = bufferLen;
+	if (end < 0) end = 0;
+	else if (end > this.rowsBuffer.length) end = bufferLen;
+	if (oldEnd < 0) oldEnd = 0;
+	else if (oldEnd > this.rowsBuffer.length) oldEnd = bufferLen;
+	this._ch_data["start"] = start;
+	this._ch_data["end"] = end;
+
+	// set height of old start and end to default
+	var rowHeight = parseInt(this._ch_data["rowHeight"]||20);
+	if (this._ch_debug) console.error("_mergeRows: set oldStart index "+oldStart+" height from "+this.rowsBuffer[oldStart].style.height+" to "+rowHeight);
+	this.rowsBuffer[oldStart].style.height = rowHeight + "px";
+	if (this._ch_debug) console.error("_mergeRows: set oldEnd index "+oldEnd+" height from "+this.rowsBuffer[oldEnd].style.height+" to "+rowHeight);
+	this.rowsBuffer[oldEnd].style.height = rowHeight + "px";
+
+
+	var startHeight = start * rowHeight;
+	if (startHeight <= 0) startHeight = rowHeight;
+	if (this._ch_debug) console.error("_mergeRows: set start index "+start+" height to "+startHeight);
+	this.rowsBuffer[start].style.height = startHeight + "px";
+	this.rowsBuffer[start].style.display = "";
+
+	var diffEnd = parseInt(this.rowsBuffer.length - end);
+	var endHeight = diffEnd * rowHeight;
+	if (endHeight <= 0) endHeight = rowHeight;
+	if (this._ch_debug) console.error("_mergeRows: set end index "+end+" height to "+endHeight);
+	this.rowsBuffer[end].style.height = endHeight + "px";
+	this.rowsBuffer[end].style.display = "";
+
+	// set height of start and end based on difference
+	if (oldStart < start) { // scroll down
+		for (var i = oldEnd; i < end; i++) {
+			if (!this.rowsBuffer[i]) continue;
+			var tr = this.rowsBuffer[i];
+			if (!tr.style) continue;
+			if (this._ch_debug) console.error("_mergeRows: show end index "+i);
+			tr.style.display = "";
+		}
+		for (var i = parseInt(oldStart-1); i < start; i++) {
+			if (!this.rowsBuffer[i]) continue;
+			var tr = this.rowsBuffer[i];
+			if (!tr.style) continue;
+			if (this._ch_debug) console.error("_mergeRows: hide start index "+i);
+			tr.style.display = "none";
+		}
+	}
+	else { // scroll up
+		for (var i = oldStart; i > start; i--) {
+			if (!this.rowsBuffer[i]) continue;
+			var tr = this.rowsBuffer[i];
+			if (!tr.style) continue;
+			if (this._ch_debug) console.error("_mergeRows: show start index "+i);
+			tr.style.display = "";
+		}
+		for (var i = parseInt(oldEnd+1); i > end; i--) {
+			if (!this.rowsBuffer[i]) continue;
+			var tr = this.rowsBuffer[i];
+			if (!tr.style) continue;
+			if (this._ch_debug) console.error("_mergeRows: hide end index "+i);
+			tr.style.display = "none";
+		}
+	}
+};
+
+dhtmlXGridObject.prototype._processOnScroll = function(scrollLeft,scrollTop){
+	if (this._dynLoadTimer) window.clearTimeout(this._dynLoadTimer);
+	var that = this;
+	this._dynLoadTimer = window.setTimeout(function(){
+		that._doUpdateView(scrollTop);
+	},100);
+};
+
+dhtmlXGridObject.prototype._doUpdateView = function(scrollTop){
+	if (!scrollTop) scrollTop = this.objBox.scrollTop;
+	var rowHeight = parseInt(this._ch_data["rowHeight"]||20);
+	if (this._ch_debug) console.error("scrollTop: "+scrollTop);
+	var scrollDiff = Math.ceil(scrollTop/rowHeight);
+	if (this._ch_debug) console.error("DIFF: "+scrollDiff);
+	var max = parseInt(this._ch_data["max"]||0);
+
+	var displayRows = parseInt(this._ch_data["displayRows"]||0);
+	// scrollDiff = topmost portion of scrollbar that signifies the row index
+	var oldStart = parseInt(this._ch_data["start"]);
+	var oldEnd = parseInt(this._ch_data["end"]);
+	var extraRows = parseInt(this._ch_data["extraRows"]||0);
+	var start = parseInt(scrollDiff - extraRows);
+	if (start < 0) start = 0;
+	var end = parseInt(scrollDiff + displayRows + extraRows);
+	if (end > this.rowsBuffer.length) end = this.rowsBuffer.length;
+	this._ch_data["start"] = start;
+	this._ch_data["end"] = end;
+	if (this._ch_debug) console.error("oldStart: "+oldStart+"; newStart: "+start);
+	if (this._ch_debug) console.error("oldEnd: "+oldEnd+"; newEnd: "+end);
+
+	if (this._ch_debug) console.error("start: "+start+"; end: "+end);
+	if (this._ch_debug) console.error("displayRows: "+displayRows+"; extraRows: "+extraRows);
+	var max = this._ch_data["max"];
+	if (end > max) {
+		this._ch_data["max"] = end;
+	}
+	var min = null;
+	for (var i = start; i < end; i++) {
+		if (!this.rowsBuffer[i].style) {
+			if (min == null) min = i;
+		}
+		else if (min != null) {
+			var max = parseInt(i + 1);
+			max = i;
+			if (this._ch_debug) console.error("infor render dataset from "+min+" to "+max);
+			this.render_dataset(min,max);
+			min = null;
+		}
+	}
+	if (min != null) {
+		var max = parseInt(end + 1);
+		max = end;
+		if (this._ch_debug) console.error("inif render dataset from "+min+" to "+max);
+		this.render_dataset(min,max);
+		min = null;
+	}
+	this._mergeRows(start,(end-1),oldStart,oldEnd);
+	if (this._ch_debug) console.error("START: "+start+"; END: "+end);
+};
 
 dhtmlXGridObject.prototype._process_tree_json=function(data,top,pid){
 	this._parsing=true;

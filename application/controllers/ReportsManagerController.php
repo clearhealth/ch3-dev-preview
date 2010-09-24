@@ -139,11 +139,14 @@ class ReportsManagerController extends WebVista_Controller_Action {
 	}
 
 	public function processDeleteBaseAction() {
-		$baseId = (int)$this->_getParam('baseId');
+		$params = $this->_getParam('baseId');
+		$baseIds = explode(',',$params);
 		$reportBase = new ReportBase();
-		$reportBase->reportBaseId = $baseId;
-		$reportBase->setPersistMode(WebVista_Model_ORM::DELETE);
-		$reportBase->persist();
+		foreach ($baseIds as $baseId) {
+			$reportBase->reportBaseId = $baseId;
+			$reportBase->setPersistMode(WebVista_Model_ORM::DELETE);
+			$reportBase->persist();
+		}
 		$data = true;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -264,9 +267,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$oFilter->defaultValue = $params['defaultValue'];
 		$oFilter->type = $params['type'];
 		$oFilter->options = $params['options'];
-		$query = '';
-		if ($oFilter->type == 'QUERY') $query = $params['query'];
-		$oFilter->query = $query;
+		if ($oFilter->type == 'QUERY') $oFilter->query = $params['query'];
 		$oFilter->includeBlank = isset($params['includeBlank'])?1:0;
 		$oFilter->enumName = $params['enumName'];
 		$filters[$params['id']] = $oFilter;

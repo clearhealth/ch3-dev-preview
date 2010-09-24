@@ -43,4 +43,8 @@ class PatientEducation extends WebVista_Model_ORM {
 	const ENUM_EDUC_SECTION_COMMON_NAME = 'Common';
 	const ENUM_EDUC_LEVEL_NAME = 'Level';
 
+	public function getPatientEducationId() {
+		return $this->code;
+	}
+
 }

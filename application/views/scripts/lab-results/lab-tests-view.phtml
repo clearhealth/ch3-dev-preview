@@ -69,6 +69,7 @@ resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=
 resultsGrid.setInitWidths("120,*,*,*,*,60,50,0,0");
 resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro");
 resultsGrid.setSkin("xp");
+resultsGrid.enableDynamicLoading(true);
 resultsGrid.init();
 //resultsGrid.load('<?=$this->baseUrl?>/lab-results.raw/results.json?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd'),onPostLoad,"json");
 reloadLabResultsGrid();
@@ -145,6 +146,55 @@ function clearChart() {
 	dojo.setInnerHTML(dojo.byId('graphLegend'),'');
 	dojo.setInnerHTML(dojo.byId('graphChart'),'');
 	chartData = {};
+}
+
+// convert date format yyyy-mm-dd hh:mm:ss to JS date object
+function labResultsConvertToDate(value) {
+	// 2010-09-01 22:17:39
+	var yyyy = parseInt(value.substr(0,4));
+	var mm = value.substr(5,2);
+	if (mm.substr(0,1) == "0") {
+		mm = mm.substr(1,1);
+	}
+	mm = parseInt(mm) - 1;
+	var dd = value.substr(8,2);
+	if (dd.substr(0,1) == "0") {
+		dd = dd.substr(1,1);
+	}
+	dd = parseInt(dd);
+
+	var hr = value.substr(11,2);
+	if (hr.length > 0) {
+		if (hr.substr(0,1) == "0") {
+			hr = hr.substr(1,1);
+		}
+		hr = parseInt(hr);
+	}
+	else {
+		hr = 0;
+	}
+	var min = value.substr(14,2);
+	if (min.length > 0) {
+		if (min.substr(0,1) == "0") {
+			min = min.substr(1,1);
+		}
+		min = parseInt(min);
+	}
+	else {
+		min = 0;
+	}
+	var ss = value.substr(17,2);
+	if (ss.length > 0) {
+		if (ss.substr(0,1) == "0") {
+			ss = ss.substr(1,1);
+		}
+		ss = parseInt(ss);
+	}
+	else {
+		ss = 0;
+	}
+
+	return new Date(yyyy,mm,dd,hr,min,ss);
 }
 
 function addSelectedResultsToChart() {
@@ -277,20 +327,12 @@ function addSelectedResultsToChart() {
 
 	var series = [];
 
-	var dateStart = hAxes[0];
-	var yyyy = parseInt(dateStart.substr(0,4));
-	var mm = parseInt(dateStart.substr(5,2)) - 1;
-	var dd = parseInt(dateStart.substr(8,2));
-	var dStart = new Date(yyyy,mm,dd);
+	var dStart = labResultsConvertToDate(hAxes[0]);
 
 	// 1 day = 86400000 ms
 	var dayMs = 86400000;
 
-	var dateEnd = hAxes[(hAxes.length-1)];
-	yyyy = parseInt(dateEnd.substr(0,4));
-	mm = parseInt(dateEnd.substr(5,2)) - 1;
-	dd = parseInt(dateEnd.substr(8,2));
-	var dEnd = new Date(yyyy,mm,dd);
+	var dEnd = labResultsConvertToDate(hAxes[(hAxes.length-1)]);
 
 	var daysDiff = (dEnd.getTime() - dStart.getTime()) / dayMs;
 
@@ -410,10 +452,7 @@ function addSelectedResultsToChart() {
 
 				// yLabel == yValue
 				yIndex = yLabel;
-				yyyy = parseInt(xLabel.substr(0,4));
-				mm = parseInt(xLabel.substr(5,2)) - 1;
-				dd = parseInt(xLabel.substr(8,2));
-				var dTmp = new Date(yyyy,mm,dd);
+				var dTmp = labResultsConvertToDate(xLabel);
 				xIndex = ((dTmp.getTime() - dStartTime) / dayMs) / xIntDiff;
 
 				if (!(nameKey in arrPlots)) {

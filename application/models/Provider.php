@@ -305,4 +305,8 @@ class Provider extends WebVista_Model_ORM {
 		}
 	}
 
+	public function getProviderId() {
+		return $this->person_id;
+	}
+
 }

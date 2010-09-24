@@ -96,4 +96,9 @@ class MenuItem extends WebVista_Model_ORM {
 		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
 		return $db->fetchAll($sqlSelect);
 	}
+
+	public function getMenuItemId() {
+		return $this->menuId;
+	}
+
 }

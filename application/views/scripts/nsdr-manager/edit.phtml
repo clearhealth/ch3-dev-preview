@@ -161,6 +161,7 @@ function postSubmit<?=$this->form->getId()?>() {
 	// reload all children on parent items
 	nsdrDataPointsTree.loadXML("<?=$this->baseUrl?>/nsdr-manager.raw/data-points.xml?id=<?=$this->parentId?>");
 	dojo.setInnerHTML(dojo.byId('nsdrDefinition'),'');
+	alert("<?=__('You must restart NSDR service for the changes to take effect.')?>");
 	return false;
 }
 </script>

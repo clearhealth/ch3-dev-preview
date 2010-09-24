@@ -37,6 +37,8 @@ class NSDR2 extends NSDR {
 			'populate' => 'return "";',
 			'aggregateDisplay' => 'return "";',
 			'aggregateDisplayByLine' => 'return "";',
+			'iterator' => 'return array();',
+			'mostRecent' => 'return array();',
 		);
 
 		$nsdrDefinition = new NSDRDefinition();
@@ -51,6 +53,7 @@ class NSDR2 extends NSDR {
 			else if (self::hasORMClass($row)) {
 				$ORMClass = 'ORMCLASS:'.$row->ORMClass; // prefix with ORMCLASS
 			}
+			// default methods
 			foreach ($methods as $method=>$value) {
 				$keySuffix = '['.$method.'()]';
 				$key = $row->namespace.$keySuffix;
@@ -61,6 +64,17 @@ class NSDR2 extends NSDR {
 					$value = $ORMClass; // override $value
 				}
 				trigger_error('NSDR: '.$key.' = '.$value);
+				$memcache->set($key,$value);
+			}
+			// user-defined NSDR methods
+			$nsdrMethods = $row->methods;
+			if ($namespaceAlias !== null) continue;
+			foreach ($nsdrMethods as $method) {
+				if (!strlen($method->methodName) > 0 || !strlen($method->method) > 0) continue;
+				$value = $method->method;
+				$keySuffix = '['.$method->methodName.'()]';
+				$key = $row->namespace.$keySuffix;
+				trigger_error('NSDR Method: '.$key.' = '.$value);
 				$memcache->set($key,$value);
 			}
 		}
@@ -113,7 +127,7 @@ class NSDR2 extends NSDR {
 	 * @param int $level Prevents loops for alias
 	 * @return mixed
 	 */
-	protected static function _populateMethod(NSDRBase $nsdrBase,$context,$namespace,$data = null,$level = 0) {
+	/*protected static function _populateMethod(NSDRBase $nsdrBase,$context,$namespace,$data = null,$level = 0) {
 		// $namespace here is in the form of space.name[method()]
 		$memcache = Zend_Registry::get('memcache');
 		// retrieves logic code in memcache
@@ -157,6 +171,7 @@ class NSDR2 extends NSDR {
 				}
 			}
 			else {
+				self::_createShutdownHandler($namespace,'populate');
 				$nsdrBase->methods[$namespace] = create_function('$tthis,$context,$data',$result);
 				return $nsdrBase->methods[$namespace]($nsdrBase,$context,$data);
 			}
@@ -165,6 +180,30 @@ class NSDR2 extends NSDR {
 			$msg = __('Namespace does not exist in memcache').': '.$namespace;
 		}
 		throw new Exception($msg);
+	}*/
+
+	protected static function _createShutdownHandler($namespace,$method) {
+		$code = 'if ($error === null) return;
+			$type = $error[\'type\'];
+			$message = $error[\'message\'];
+			$file = $error[\'file\'];
+			if (!preg_match(\'/runtime-created function/\',$file)) return;
+			if ($type == E_ERROR || $type == E_CORE_ERROR || $type == E_COMPILE_ERROR) { // catch fatal errors';
+		if ($method == 'populate') {
+			$code .= '
+				die(\'Retreiving the data for query : \'.$namespace.\' timed out, please contact the administrator\');';
+		}
+		else if ($method == 'persist') {
+			$code .= '
+				die(\'Persisting the data for query : \'.$namespace.\' timed out, please contact the administrator\');';
+		}
+		else {
+			$code .= '
+				die(\'Data for query : \'.$namespace.\' timed out, please contact the administrator\');';
+		}
+		$code .= '
+			}';
+		register_shutdown_function(create_function('$func','$func(error_get_last(),\''.$namespace.'\');'),create_function('$error,$namespace',$code));
 	}
 
 	/**
@@ -182,6 +221,7 @@ class NSDR2 extends NSDR {
 			return $ret;
 		}
 		$memcache = Zend_Registry::get('memcache');
+		$request = trim($request);
 		// $request is in the form of 1234::com.clearhealth.person[populate()]
 		// tokenize $request
 		if (self::systemStatus() != self::$_states[0] && self::systemStatus() != self::$_states[2]) {
@@ -194,29 +234,13 @@ class NSDR2 extends NSDR {
 		$context = $tokens[0]; // contains context
 		$namespace = $tokens[1]; // set second token to $namespace as default value
 
-		$methods = array('populate()'); // set default populate() method, this must exist
-		$attributes = array();
-
+		$methods = array(); //array('populate()'); // set default populate() method, this must exist
 		if (preg_match('/(.*)\[(.*)\]$/',$tokens[1],$matches)) {
 			if (isset($matches[1])) { // namespace exists name.space
 				$namespace = $matches[1]; // override $namespace default value
 			}
-			if (isset($matches[2])) { // functions/arguments exists @optional=fieldvalue,orMethod()
-				$hasDefaultPersist = false;
-				$x = explode(',',$matches[2]);
-				foreach ($x as $v) {
-					if ($v == 'populate()') continue;
-					if (substr($v,0,1) == '@') { // attribute in the form of @key=value
-						$x = explode('=',substr($v,1));
-						if (!isset($x[1])) {
-							$x[1] = '';
-						}
-						$attributes[$x[0]] = $x[1];
-					}
-					else {
-						$methods[] = $v;
-					}
-				}
+			if (isset($matches[2])) { // functions/arguments exists method1(@arg1=arg1value,@argn=argnvalue),methodn(@arg1=arg1value,@argn=argnvalue)
+				$methods = self::_extractMethods($matches[2],'populate');
 			}
 		}
 
@@ -224,9 +248,10 @@ class NSDR2 extends NSDR {
 		$nsdrBase = new NSDRBase();
 		$nsdrBase->_nsdrNamespace = $namespace;
 		$nsdrBase->_aliasedNamespace = $request;
-		$nsdrBase->_attributes = $attributes;
 		foreach ($methods as $method) {
-			$key = $namespace.'['.$method.']';
+			$nsdrBase->_attributes = $method['attributes'];
+			$key = $namespace.'['.$method['name'].']';
+			//trigger_error('METHOD: '.$method['name'].' ATTRIBS: '.print_r($method['attributes'],true));
 			if ($result !== null) {
 				$result = self::_execMethod('populate',$nsdrBase,$context,$key,$result);
 			}
@@ -235,6 +260,55 @@ class NSDR2 extends NSDR {
 			}
 		}
 		return $result;
+	}
+
+	protected static function _extractAttributes($data) {
+		$attributes = array();
+		$arrAttribs = preg_split('/,\ {0,}@/',$data);
+		if (isset($arrAttribs[0])) {
+			$arrAttribs[0] = substr($arrAttribs[0],1); // remove @
+			foreach ($arrAttribs as $attr) {
+				if (!strlen($attr) > 0) continue;
+				$equalPos = strpos($attr,'=');
+				$attribKey = $attr;
+				$attribVal = '';
+				if ($equalPos !== false) {
+					$attribKey = substr($attr,0,$equalPos);
+					$attribVal = substr($attr,($equalPos+1));
+				}
+				$attributes[$attribKey] = $attribVal;
+			}
+		}
+		return $attributes;
+	}
+
+	protected static function _extractMethods($data,$defaultMethod='populate') {
+		$methods = array();
+		$attributes = array();
+		$arrData = preg_split('/\)\ {0,},/',$data);
+		foreach ($arrData as $v) {
+			$val = trim($v);
+			if (!strlen($val) > 0) continue;
+			if (substr($val,0,1) == '@') { // considered as attributes
+				$attribs = $val;
+				$attributes = self::_extractAttributes($attribs);
+				$methods[] = array('name'=>$defaultMethod.'()','attributes'=>$attributes);
+				continue;
+			}
+			// extract method name
+			$attributes = array();
+			$pos = strpos($val,'(');
+			if ($pos !== false) {
+				$attribs = substr($val,($pos+1)); // +1 = exclude character (
+				$attributes = self::_extractAttributes($attribs);
+				$val = substr($val,0,$pos);
+			}
+			$methods[] = array('name'=>$val.'()','attributes'=>$attributes);
+		}
+		if (!isset($methods[0])) {
+			$methods = array('name'=>$defaultMethod.'()','attributes'=>$attributes); // set default method, this must exist
+		}
+		return $methods;
 	}
 
 	/**
@@ -271,6 +345,27 @@ class NSDR2 extends NSDR {
 						$obj = new $value();
 						$methodCall = 'nsdr'.$defaultMethod;
 						if (isset($nsMethod)) {
+							if ($nsMethod == 'Iterator') {
+								$getIterMethods = array();
+								$getIterMethods[] = 'getIterator';
+								$getIterMethods[] = 'getIter';
+								$setFilterMethods = array();
+								$setFilterMethods[] = 'setFilter';
+								$setFilterMethods[] = 'setFilters';
+								foreach ($getIterMethods as $iterMethod) {
+									if (!method_exists($obj,$iterMethod)) continue;
+									$iter = $obj->$iterMethod();
+									foreach ($setFilterMethods as $filterMethod) {
+										if (!method_exists($iter,$filterMethod)) continue;
+										if (!is_array($context)) {
+											$context = array($context);
+										}
+										$iter->$filterMethod($context);
+										break;
+									}
+									return $iter;
+								}
+							}
 							if (method_exists($obj,'nsdr'.$nsMethod)) {
 								$methodCall = 'nsdr'.$nsMethod;
 							}
@@ -297,6 +392,7 @@ class NSDR2 extends NSDR {
 				}
 			}
 			else {
+				self::_createShutdownHandler($namespace,$method);
 				$nsdrBase->methods[$namespace] = create_function('$tthis,$context,$data',$result);
 				return $nsdrBase->methods[$namespace]($nsdrBase,$context,$data);
 			}
@@ -316,8 +412,9 @@ class NSDR2 extends NSDR {
 	 * @return boolean
 	 * @throw Exception
 	 */
-	public static function persist($request,Array $data) {
+	public static function persist($request,$data) {
 		$memcache = Zend_Registry::get('memcache');
+		$request = trim($request);
 		// $request is in the form of 1234::com.clearhealth.person[populate()]
 		// tokenize $request
 		if (self::systemStatus() != self::$_states[0] && self::systemStatus() != self::$_states[2]) {
@@ -330,29 +427,14 @@ class NSDR2 extends NSDR {
 		$context = $tokens[0]; // contains context
 		$namespace = $tokens[1]; // set second token to $namespace as default value
 
-		$methods = array('persist()'); // set default persist() method, this must exist
-		$attributes = array();
 
+		$methods = array(); //array('persist()'); // set default persist() method, this must exist
 		if (preg_match('/(.*)\[(.*)\]$/',$tokens[1],$matches)) {
 			if (isset($matches[1])) { // namespace exists name.space
 				$namespace = $matches[1]; // override $namespace default value
 			}
-			if (isset($matches[2])) { // functions/arguments exists @optional=fieldvalue,orMethod()
-				$hasDefaultPersist = false;
-				$x = explode(',',$matches[2]);
-				foreach ($x as $v) {
-					if ($v == 'persist()') continue;
-					if (substr($v,0,1) == '@') { // attribute in the form of @key=value
-						$x = explode('=',substr($v,1));
-						if (!isset($x[1])) {
-							$x[1] = '';
-						}
-						$attributes[$x[0]] = $x[1];
-					}
-					else {
-						$methods[] = $v;
-					}
-				}
+			if (isset($matches[2])) { // functions/arguments exists method1(@arg1=arg1value,@argn=argnvalue),methodn(@arg1=arg1value,@argn=argnvalue)
+				$methods = self::_extractMethods($matches[2],'persist');
 			}
 		}
 
@@ -360,14 +442,14 @@ class NSDR2 extends NSDR {
 		$nsdrBase = new NSDRBase();
 		$nsdrBase->_nsdrNamespace = $namespace;
 		$nsdrBase->_aliasedNamespace = $request;
-		$nsdrBase->_attributes = $attributes;
 		foreach ($methods as $method) {
-			$key = $namespace.'['.$method.']';
+			$nsdrBase->_attributes = $method['attributes'];
+			$key = $namespace.'['.$method['name'].']';
 			if ($result !== null) {
 				$result = self::_execMethod('persist',$nsdrBase,$context,$key,$result);
 			}
 			else {
-				$result = self::_execMethod('persist',$nsdrBase,$context,$key,$data);
+				$result = self::_execMethod('persist',$nsdrBase,$context,$key);
 			}
 		}
 		return $result;

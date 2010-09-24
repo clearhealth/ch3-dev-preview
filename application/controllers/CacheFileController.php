@@ -362,6 +362,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxcss'][] = 'dhtmlxaccordion_dhx_blue';
 		$files['dhtmlxcss'][] = 'dhtmlxmenu_standard';
 		$files['dhtmlxcss'][] = 'dhtmlxfolders';
+		$files['dhtmlxcss'][] = 'dhtmlxcalendar';
 
 		return $files;
 	}
@@ -496,6 +497,9 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxgrid';
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
 		$files['dhtmlxjs'][] = 'ch3grid_excell_sub_row';
+		$files['dhtmlxjs'][] = 'dhtmlxcalendar';
+		$files['dhtmlxjs'][] = 'excells-dhtmlxgrid_excell_dhxcalendar';
+		$files['dhtmlxjs'][] = 'excells-dhtmlxgrid_excell_grid';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_drag';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';

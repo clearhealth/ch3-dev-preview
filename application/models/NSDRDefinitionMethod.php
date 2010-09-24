@@ -67,4 +67,55 @@ class NSDRDefinitionMethod extends WebVista_Model_ORM {
 			       ->where('`nsdrDefinitionUuid` = ?',$id);
 		return parent::getIterator($dbSelect);
 	}
+
+	public function getNSDRDefinitionMethodId() {
+		return $this->uuid;
+	}
+
+	public function isMethodNameExists() {
+		$ret = false;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table,'uuid')
+				->where('`nsdrDefinitionUuid` = ?',$this->nsdrDefinitionUuid)
+				->where('`methodName` = ?',$this->methodName);
+		if (strlen($this->uuid) > 0) {
+			$sqlSelect->where('`uuid` != ?',$this->uuid);
+		}
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		return $ret;
+	}
+
+	public static function normalizeMethodName($name) {
+		$name = ucwords($name);
+		$name = preg_replace('/\ /','',$name);
+		$name = preg_replace('/[^a-z0-9]/i','_',$name);
+		$name = lcfirst($name);
+		if (is_numeric(substr($name,0,1))) {
+			$name = '_'.$name;
+		}
+		return $name;
+	}
+
+	public static function isPHPCodeValid($code,$methodName) {
+		$ret = true;
+		$file = tempnam('/tmp','tmp_');
+		$code = '<?php '.$code;
+		if (file_put_contents($file,$code)) {
+			$cmd = 'php -l '.$file;
+			$result = shell_exec($cmd);
+			$result = str_replace($file,$methodName,trim($result));
+			if (!preg_match('/^No syntax errors detected(.*)/i',$result)) {
+				$ret = $result;
+			}
+		}
+		else {
+			trigger_error('Unable to write file to '.$file);
+		}
+		unlink($file);
+		return $ret;
+	}
+
 }

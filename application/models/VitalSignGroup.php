@@ -25,16 +25,32 @@
 class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 	protected $vitalSignGroupId;
 	protected $personId;
+	protected $person;
 	protected $dateTime;
 	protected $enteringUserId;
+	protected $user;
 	protected $visitId;
 	protected $vitalSignTemplateId;
 	protected $vitalSignValues = array();
 	protected $_primaryKeys = array('vitalSignGroupId');
 	protected $_table = "vitalSignGroups";
-	
+	protected $_cascadePersist = false;
+
 	function __construct($context = '') {
-		parent::__construct();
+		$this->person = new Person();
+		$this->person->_cascadePersist = false;
+		$this->user = new User();
+		$this->user->_cascadePersist = false;
+	}
+
+	public function setPersonId($id) {
+		$this->personId = (int)$id;
+		$this->person->personId = $this->personId;
+	}
+
+	public function setEnteringUserId($id) {
+		$this->enteringUserId = (int)$id;
+		$this->user->userId = $this->enteringUserId;
 	}
 
 	function setVitalSignValues(array $vitalSigns) {

@@ -64,6 +64,32 @@ function openLookupAllergy() {
 	globalCreateWindow("winLookupAllergiesId",params,"<?=$this->baseUrl?>/allergies.raw/lookup","<?=__('Lookup Allergy/ADR')?>",400,400);
 }
 
+function allergiesMarkActive(active,rowId) {
+	if (!rowId) {
+		rowId = allergiesGrid.getSelectedRowId();
+	}
+	if (rowId == null) {
+		alert("<?=__('No allergy selected')?>");
+		return;
+	}
+	var act = (active)?"1":"0";
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/allergies.raw/process-mark-active",
+		handleAs: "json",
+		content: {
+			"id": rowId,
+			"active": act
+		},
+		load: function (data) {
+			allergiesGridReload();
+		},
+		error: function (error) {
+			alert(error.responseText);
+			console.error ('Error: ', error);
+		}
+	});
+}
+
 var allergiesMenu = new dhtmlXMenuObject(null,"standard");
 allergiesMenu.setImagePath("<?=$this->baseUrl?>/img/");
 allergiesMenu.renderAsContextMenu();
@@ -79,28 +105,40 @@ function allergiesMenuOnClicked(menuItemId,type) {
 		case "nka":
 			allergiesMarkNoKnownAllergies();
 			break;
+		case "markActive":
+			allergiesMarkActive(true);
+			break;
+		case "markInactive":
+			allergiesMarkActive(false);
+			break;
+		case "showing_active":
+		case "showing_inactive":
+			allergiesGridReload();
+			break;
 	}
 }
 allergiesMenu.attachEvent("onClick",allergiesMenuOnClicked);
 function allergiesMenuOnLoaded() {
+	allergiesMenu.setCheckboxState("showing_active",<?=(int)$this->active?>);
+	allergiesMenu.setCheckboxState("showing_inactive",<?=(int)$this->inactive?>);
 }
 allergiesMenu.loadXML("<?=$this->baseUrl?>/allergies.raw/get-context-menu",allergiesMenuOnLoaded);
 
 var allergiesGrid = new dhtmlXGridObject("allergiesGridId");
 allergiesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 allergiesGrid.setHeader("<?=__('Allergy')?>,<?=__('Severity')?>,<?=__('Signs/Symptoms')?>");
-allergiesGrid.setInitWidths("*,*,*");
+allergiesGrid.setInitWidths("*,100,*");
 allergiesGrid.setColAlign("left,left,left");
 allergiesGrid.setColTypes("ro,ro,ro");
 allergiesGrid.setSkin("xp");
 
 function allergiesGridOnDoubleClicked(rowId,colIndex) {
 	var allergyName = allergiesGrid.cells(rowId,0).getValue();
-	var params = new Array();
+	var params = [];
 	params.push("id="+rowId);
-	globalCreateWindow("winDetailsAllergyId",params,"<?=$this->baseUrl?>/allergies.raw/details",allergyName,400,400);
+	globalCreateWindow("winAddAllergyId",params,"<?=$this->baseUrl?>/allergies.raw/edit","<?=__('Edit Allergy or Adverse Reaction')?>",400,550);
 }
-//allergiesGrid.attachEvent("onRowDblClicked",allergiesGridOnDoubleClicked);
+allergiesGrid.attachEvent("onRowDblClicked",allergiesGridOnDoubleClicked);
 function allergiesOnRowSelected(rowId,cellIndex) {
 }
 allergiesGrid.attachEvent("onRowSelect",allergiesOnRowSelected);
@@ -115,13 +153,28 @@ allergiesMenu.attachEvent("onContextMenu",function(id){
 	allergiesMenu.forEachItem(function (itemId) { allergiesMenu.hideItem(itemId); });
 	var rowId = allergiesGrid.getSelectedRowId();
 	allergiesMenu.showItem("newAllergy");
+	allergiesMenu.showItem("showing");
+	allergiesMenu.showItem("showing_active");
+	allergiesMenu.showItem("showing_inactive");
 	if (rowId != null) {
 		allergiesMenu.showItem("enteredInError");
+		if (allergiesGrid.getUserData(rowId,"active") == "1") {
+			allergiesMenu.showItem("markInactive");
+		}
+		else {
+			allergiesMenu.showItem("markActive");
+		}
 	}
 	var gridRowsize = allergiesGrid.getRowsNum();
  	if (gridRowsize == 0) {
 		allergiesMenu.showItem("nka");
 	}
+});
+allergiesMenu.attachEvent("onCheckboxClick",function(id,state,zoneId,casState){
+	this.setCheckboxState(id,!state);
+	allergiesGridReload();
+	this.hideContextMenu();
+	return false;
 });
 
 
@@ -134,8 +187,25 @@ function allergiesGridOnLoaded() {
 }
 
 function allergiesGridReload() {
+	// defaults are checked
+	var showActive = "<?=$this->active?>";
+	var showInactive = "<?=$this->inactive?>";
+	var active = allergiesMenu.getCheckboxState("showing_active");
+	if (active) {
+		showActive = 1;
+	}
+	else if (active == false) {
+		showActive = 0;
+	}
+	var inactive = allergiesMenu.getCheckboxState("showing_inactive");
+	if (inactive) {
+		showInactive = 1;
+	}
+	else if (inactive == false) {
+		showInactive = 0;
+	}
 	allergiesGrid.clearAll();
-	allergiesGrid.load("<?=$this->baseUrl?>/allergies.raw/list?personId="+mainController.getActivePatient(),allergiesGridOnLoaded,"json");
+	allergiesGrid.load("<?=$this->baseUrl?>/allergies.raw/list?personId="+mainController.getActivePatient()+"&active="+showActive+"&inactive="+showInactive,allergiesGridOnLoaded,"json");
 }
 
 allergiesGridReload();

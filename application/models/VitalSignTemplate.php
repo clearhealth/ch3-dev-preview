@@ -28,8 +28,22 @@ class VitalSignTemplate extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('vitalSignTemplateId');
 	protected $_table = "vitalSignTemplates";
 	
-	function __construct() {
-		parent::__construct();
+	public static function generateVitalSignsTemplateKeyValue($vitalSignTemplateId = 1) {
+		$vitalSignTemplate = new self();
+		$vitalSignTemplate->vitalSignTemplateId = $vitalSignTemplateId;
+		$vitalSignTemplate->populate();
+		$vitals = array();
+		try {
+			$template = new SimpleXMLElement($vitalSignTemplate->template);
+			foreach ($template as $vital) {
+				$title = (string)$vital->attributes()->title;
+				$vitals[$title] = (string)$vital->attributes()->label;
+			}
+		}
+		catch (Exception $e) {
+			WebVista::debug($e->getMessage());
+		}
+		return $vitals;
 	}
 
 }

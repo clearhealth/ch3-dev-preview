@@ -36,4 +36,8 @@ class PatientDiagnosis extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('code','patientId');
 	protected $_table = 'patientDiagnosis';
 
+	public function getPatientDiagnosisId() {
+		return $this->code;
+	}
+
 }

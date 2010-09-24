@@ -147,10 +147,16 @@ class PatientController extends WebVista_Controller_Action {
 			case 'address':
 				$obj = new Address();
 				$obj->person_id = $personId;
+				if (!$id > 0) {
+					$obj->active = 1;
+				}
 				break;
 			case 'phone':
 				$obj = new PhoneNumber();
 				$obj->person_id = $personId;
+				if (!$id > 0) {
+					$obj->active = 1;
+				}
 				break;
 			case 'note':
 				$obj = new PatientNote();
@@ -234,13 +240,8 @@ class PatientController extends WebVista_Controller_Action {
 		$patientId = (int)$this->_getParam('patientId');
 		$rows = array();
 		$tmp = array();
-		$db = Zend_Registry::get('dbAdapter');
-		$sqlSelect = $db->select()
-				->from('number')
-				->where('person_id = ?',$patientId)
-				->order('displayOrder ASC');
-		$phoneNumberIterator = new PhoneNumberIterator();
-		$phoneNumberIterator->setDbSelect($sqlSelect);
+		$phoneNumber = new PhoneNumber();
+		$phoneNumberIterator = $phoneNumber->getIteratorByPersonId($patientId);
 		foreach ($phoneNumberIterator as $phone) {
 			$tmp = array();
 			$tmp['id'] = $phone->number_id;
@@ -259,13 +260,8 @@ class PatientController extends WebVista_Controller_Action {
 	public function ajaxListAddressesAction() {
 		$patientId = (int)$this->_getParam('patientId');
 		$rows = array();
-		$db = Zend_Registry::get('dbAdapter');
-		$sqlSelect = $db->select()
-				->from('address')
-				->where('person_id = ?',$patientId)
-				->order('displayOrder ASC');
-		$addressIterator = new AddressIterator();
-		$addressIterator->setDbSelect($sqlSelect);
+		$address = new Address();
+		$addressIterator = $address->getIteratorByPersonId($patientId);
 		foreach ($addressIterator as $addr) {
 			$tmp = array();
 			$tmp['id'] = $addr->address_id;

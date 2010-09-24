@@ -61,6 +61,7 @@ class Medication extends WebVista_Model_ORM implements Document {
 	protected $_table = 'medications';
 	protected $_primaryKeys = array('medicationId');
 	protected $_cascadePopulate = false;
+	protected $_cascadePersist = false;
 
 	const ENUM_PARENT_NAME = 'Medication Preferences';
 	const ENUM_ADMIN_SCHED = 'Administration Schedules';

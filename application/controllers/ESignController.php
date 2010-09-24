@@ -51,7 +51,10 @@ class ESignController extends WebVista_Controller_Action {
 		$eSignIterator->setFilter((int)Zend_Auth::getInstance()->getIdentity()->personId,'signList');
 		$counter = 0;
                 foreach($eSignIterator as $row) {
-			$counter++;
+			$objectClass = $row->objectClass;
+			$orm = new $objectClass();
+			$orm->documentId = $row->objectId;
+			if ($orm->populate()) $counter++;
                 }
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -77,6 +80,11 @@ class ESignController extends WebVista_Controller_Action {
 				. PATH_SEPARATOR . get_include_path());
                 foreach($eSignIterator as $row) {
 			$row = $row->toArray();
+			$obj = new $row['objectClass']();
+			foreach ($obj->_primaryKeys as $key) {
+				$obj->$key = $row['objectId'];
+			}
+			if (!$obj->populate()) continue; // signing but actual object does not exists
 			if ($currentCat != $row['objectClass']) {
 				$currentCat = $row['objectClass'];
 				$category = $xml->addChild("row");
@@ -104,11 +112,6 @@ class ESignController extends WebVista_Controller_Action {
 			//$leaf->addChild('cell',$this->buildJSJumpLink($row['objectId'],$row['signingUserId']));
 			// for patientId hidden column, not sure if this is the correct field.
 			//$leaf->addChild('cell',$row['signingUserId']);
-			$obj = new $row['objectClass']();
-			foreach ($obj->_primaryKeys as $key) {
-				$obj->$key = $row['objectId'];
-			}
-			$obj->populate();
 			$patientId = $obj->personId;
 			$userdata = $leaf->addChild('userdata',$patientId);
 			$userdata->addAttribute('name','patientId');
@@ -224,12 +227,68 @@ class ESignController extends WebVista_Controller_Action {
                 $this->render();
 	}
 
+	protected function _checkCurrentLocation(Medication $medication) {
+		$identity = Zend_Auth::getInstance()->getIdentity();
+		$personId = (int)$identity->personId;
+		$building = Building::getBuildingDefaultLocation($personId);
+		$ret = false;
+		if ($building->buildingId > 0) {
+			$eprescriber = new EPrescriber();
+			$eprescriber->populateWithBuildingProvider((int)$building->buildingId,$personId);
+			$location = 'for location: '.$building->practice->name.'->'.$building->name;
+			$err = $medication->summary.' could not be signed because: ';
+			if (!strlen($eprescriber->SSID) > 0) {
+				$ret = $err.'Medication will be ePrescribed and you do not have an SPI '.$location;
+			}
+			else {
+				$tmp = array();
+				$line1Len = strlen($building->line1);
+				if (!$line1Len > 0 || $line1Len > 35) {
+					$tmp[] = 'Address line1 field must be supplied and not more than 35 characters';
+				}
+				$line2Len = strlen($building->line2);
+				if ($line2Len > 0 && $line2Len > 35) {
+					$tmp[] = 'Address line2 must not be more than 35 characters';
+				}
+				$cityLen = strlen($building->city);
+				if (!$cityLen > 0 || $cityLen > 35) {
+					$tmp[] = 'Address city field must be supplied and not more than 35 characters';
+				}
+				if (strlen($building->state) != 2) {
+					$tmp[] = 'Address state field must be supplied and not more than 2 characters';
+				}
+				$zipCodeLen = strlen($building->zipCode);
+				if ($zipCodeLen != 5 && $zipCodeLen != 9) {
+					$tmp[] = 'Address zipcode must be supplied and must be 5 or 9 digit long';
+				}
+				$phoneNumber = PhoneNumber::autoFixNumber($building->phoneNumber);
+				$fax = PhoneNumber::autoFixNumber($building->fax);
+				if (strlen($phoneNumber) < 11) {
+					$tmp[] = 'Phone number \''.$phoneNumber.'\' is invalid';
+				}
+				$faxLen = strlen($fax);
+				if ($faxLen > 0 && $faxLen < 11) {
+					$tmp[] = 'Fax number \''.$fax.'\' is invalid';
+				}
+				if (count($tmp) > 0) {
+					$ret = $err."\n".implode("\n",$tmp).' '.$location;
+				}
+			}
+		}
+		else {
+			$ret = $medication->summary.' could not be signed because: Medication will be ePrescribed and you do not have a default location.';
+		}
+		return $ret;
+	}
+
 	function editSignItemsAction() {
 		$eSigIds = Zend_Json::decode(($this->_getParam('electronicSignatureIds')));
 		if (strlen($eSigIds) <= 0) {
 			$msg = __('No selected signature.');
 			throw new Exception($msg);
 		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+               	$json->suppressExit = true;
 		$eSigIds = explode(',',$eSigIds);
 		$signature = $this->_getParam('signature');
 		foreach ($eSigIds as $eSigId) {
@@ -239,13 +298,25 @@ class ESignController extends WebVista_Controller_Action {
 			$esig = new ESignature();
 			$esig->eSignatureId = (int)$eSigId;
 			$esig->populate();
+			$objectClass = $esig->objectClass;
+			if ($objectClass == 'Medication') { // check for possible eprescribed
+				$medication = new Medication();
+				$medication->medicationId = (int)$esig->objectId;
+				$medication->populate();
+				if ($medication->transmit == 'ePrescribe') {
+					$result = $this->_checkCurrentLocation($medication);
+					if ($result !== false) {
+						$this->getResponse()->setHttpResponseCode(500);
+						$json->direct(array('error' => $result));
+						return;
+					}
+				}
+			}
 			$signedDate =  date('Y-m-d H:i:s');
 			$esig->signedDateTime = $signedDate;
 			$obj = new $esig->objectClass();
 			$obj->documentId = $esig->objectId;
 			$obj->eSignatureId = $esig->eSignatureId;
-			$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-               		$json->suppressExit = true;
 			try {
 				$esig->sign($obj, $signature);
 			}

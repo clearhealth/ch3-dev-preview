@@ -34,7 +34,7 @@ class LabOrder extends WebVista_Model_ORM implements Document {
 	protected $encounter_id;
 	protected $external_id;
 	protected $person_id;
-	protected $description;
+	protected $orderDescription;
 	protected $eSignatureId;
 	protected $_table = "lab_order";
 	protected $_primaryKeys = array("lab_order_id");
@@ -60,7 +60,7 @@ class LabOrder extends WebVista_Model_ORM implements Document {
 	}
 
 	public function getSummary() {
-                return $this->description;
+                return $this->orderDescription;
 	}
 
 	public function getDocumentId() {

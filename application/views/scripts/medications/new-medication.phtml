@@ -96,6 +96,7 @@ function populateDetails(data,medPopulate) {
 	}
 
 	// first item in the dose contains quantity
+	if (data.dose == undefined) data.dose = "";
 	var origDose = data.dose;
 	var dose = data.dose.split(" ");
 	var medQty = dose[0];
@@ -232,6 +233,10 @@ function prescribeMedication(sign) {
 		alert("<?=__("The patient does not have a default pharmacy set and no pharmacy was selected. You must select a pharmacy to ePrescribe or fax")?>.");
 		return false;
 	}
+	<?if(!$this->enabledePrescribe):?>
+	dojo.byId("<?=$this->form->transmit->getId()?>").value = "Print";
+	alert("Medication will be printed because you are not enabled as an electronic prescriber for location: <?=$this->location?>");
+	<?endif;?>
 
 /*	if (spinMedicationDaysSupply.getValue() > 30 && !confirm("<?=__('In most cases pharmacies will not accept a prescription for a scheduled drug for more than 30 days supply')?>")) {
 		return false;

@@ -50,7 +50,7 @@ input,select {
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->formPerson->gender->renderLabel()?>
-					<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','enumerationId')))?>
+					<?=$this->form->formPerson->genderInput('FormSelect',array("options" => Enumeration::getEnumArray('Gender','key')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->recordNumber->renderLabel()?>

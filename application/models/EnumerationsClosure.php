@@ -260,4 +260,8 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 		return $depth;
 	}
 
+	public function getEnumerationsClosureId() {
+		return $this->ancestor;
+	}
+
 }

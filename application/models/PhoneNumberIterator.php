@@ -65,4 +65,15 @@ class PhoneNumberIterator extends WebVista_Model_ORMIterator implements Iterator
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}
+
+	public function current() {
+		$ormObj = new $this->_ormClass();
+		$row = $this->_dbStmt->fetch(null,null,$this->_offset);
+		if (isset($row['number_type']) && (int)$row['number_type'] > 0) {
+			$row['type'] = $row['number_type'];
+		}
+		$ormObj->populateWithArray($row);
+		return $ormObj;
+	}
+
 }

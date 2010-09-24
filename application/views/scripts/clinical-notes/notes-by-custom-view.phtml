@@ -10,7 +10,9 @@
 				cnGrid.parse(data,'json');
 				closeNotesByCustomViewWindow();
 			},
-			error: function (er) {alert('err: ' + er)}
+			error: function (er) {
+				alert("ERROR: " + er.responseText);
+			}
 		});
 	}
 	function toggleDates(filter) {

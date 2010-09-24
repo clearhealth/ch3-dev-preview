@@ -97,40 +97,5 @@ class MainController extends WebVista_Controller_Action {
 		return $mainTabs;
 	}
 
-	public function generateTestDataAction() {
-		// Patient Test Data
-		$person = new Person();
-		$person->lastName = 'Test';
-		$person->firstName = 'One';
-		$person->persist();
-
-		$patient = new Patient();
-		$patient->personId = $person->personId;
-		$patient->person = $person;
-		$patient->persist();
-
-
-		// Provider Test Data
-		$person = new Person();
-		$person->lastName = 'Provider';
-		$person->firstName = 'ClearHealth';
-		$person->persist();
-
-		$provider = new Provider();
-		$provider->personId = $person->personId;
-		$provider->person = $person;
-		$provider->persist();
-
-		// set provider as user
-		$user = new User();
-		$user->username = 'provider';
-		$user->password = 'provider';
-		$user->person = $person;
-		$user->persist();
-
-		echo 'Done.';
-		die;
-	}
-
 }
 

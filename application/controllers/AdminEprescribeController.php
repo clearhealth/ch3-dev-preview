@@ -302,10 +302,14 @@ class AdminEprescribeController extends WebVista_Controller_Action {
 				elseif (isset($responseXml->data)) {
 					$xml = new SimpleXMLElement($responseXml->data);
 					$prescriber = $xml->AddPrescriberResponse->Prescriber;
+					if (isset($xml->AddPrescriberLocationResponse)) {
+						$prescriber = $xml->AddPrescriberLocationResponse->Prescriber;
+					}
 					$prescriberSPI = (string)$prescriber->Identification->SPI;
 				}
 				if (isset($responseXml->rawMessage)) {
 					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$responseXml->rawMessageResponse);
 				}
 			}
 			catch (Exception $e) {
@@ -412,12 +416,7 @@ class AdminEprescribeController extends WebVista_Controller_Action {
 		$patientData['LastName'] = $patient->person->lastName;
 		$patientData['FirstName'] = $patient->person->firstName;
 
-		$enumeration = new Enumeration();
-		$enumeration->enumerationId = $patient->person->gender;
-		$enumeration->populate();
-		$gender = $enumeration->key;
-
-		$patientData['Gender'] = $gender;
+		$patientData['Gender'] = $patient->person->gender;
 		$patientData['DateOfBirth'] = date('Ymd',strtotime($patient->person->dateOfBirth));
 		$address = new Address();
 		$address->personId = $patient->personId;

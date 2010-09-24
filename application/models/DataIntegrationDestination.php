@@ -37,7 +37,7 @@ class DataIntegrationDestination extends DataIntegration {
 		return <<<EOL
 class [[ClassName]]DataIntegrationDestination extends DataIntegrationDestinationAbstract {
 	//abstract requires at least this method
-	public static function transmit(Audit \$auditOrm,DataIntegrationTemplate \$template) {
+	public static function transmit(Audit \$auditOrm,DataIntegrationTemplate \$template,Array \$dataSource=array()) {
 		/* sample code below
 		\$query = http_build_query(array('template'=>\$template->template));
 		\$ch = curl_init();

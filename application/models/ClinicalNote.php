@@ -73,23 +73,12 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
                 return $this->clinicalNoteDefinition->title;
 	}
 
-	public function getDocumentId() { // revisionId is used instead of clinicalNoteId
-		$documentId = GenericData::getUnsignedRevisionId(get_class($this),$this->clinicalNoteId);
-		if (!$documentId > 0) {
-			$documentId = $this->buildDefaultGenericData();
-			//$documentId = $this->clinicalNoteId;
-		}
-		return $documentId;
+	public function getDocumentId() {
+		return $this->clinicalNoteId;
 	}
 
-	function setDocumentId($id) { // revisionId is used instead of clinicalNoteId
-		$revisionId = (int)$id;
-		$clinicalNoteId = $revisionId;
-		$objectId = GenericData::getObjectIdByRevisionId($revisionId);
-		if ($objectId > 0) {
-			$clinicalNoteId = $objectId;
-		}
-		$this->clinicalNoteId = $clinicalNoteId;
+	function setDocumentId($id) {
+		$this->clinicalNoteId = (int)$id;
 	}
 
 	function getContent() {
@@ -145,19 +134,18 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 					$value = $result[$key];
 				}
 				// this MUST coincide with the $elementName of ClinicalNotesFormController::_buildForm()
-				$elementName = preg_replace('/[-\.]/','_',$namespace);
+				$elementName = ClinicalNote::encodeNamespace($namespace);
 				$ret[$elementName] = $value;
 			}
 		}
 		return $ret;
 	}
 
-	public static function processNSDRPersist(SimpleXMLElement $xml,self $clinicalNote,Array $data) {
+	public static function processNSDRPersist(SimpleXMLElement $xml,self $clinicalNote,Array $data,$revisionId=0) {
 		$ret = false;
 		if ((string)$xml->attributes()->useNSDR != 'true') {
 			$ret = false;
 		}
-		$revisionId = GenericData::getUnsignedRevisionId(get_class($clinicalNote),$clinicalNote->clinicalNoteId);
 		$requests = array();
 		foreach ($xml as $questions) {
 			foreach($questions as $key => $item) {
@@ -186,7 +174,7 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 				$val = array();
 				$namespace = NSDR2::extractNamespace($namespace);
 				// this MUST coincide with the $elementName of ClinicalNotesFormController::_buildForm()
-				$elementName = preg_replace('/[-\.]/','_',$namespace);
+				$elementName = ClinicalNote::encodeNamespace($namespace);
 				if (isset($data[$elementName])) {
 					$val = $data[$elementName];
 				}
@@ -227,7 +215,7 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 			foreach($question as $key => $item) {
 				if ($key != 'dataPoint') continue;
 				$namespace = NSDR2::extractNamespace((string)$item->attributes()->namespace);
-				$name = preg_replace('/[-\.]/','_',$namespace);
+				$name = $namespace;
 				$value = '';
 
 				if (strlen((string)$item->attributes()->templateText) > 0) {

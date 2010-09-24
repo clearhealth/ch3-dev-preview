@@ -44,12 +44,12 @@ class Models_PHPModulesTest extends TestCase {
 		$this->_modulesList['simplexml_load_string'] = 'php-xml';
 		$this->_modulesList['mysql_connect'] = 'php-mysql';
 		$this->_modulesList['XSLTProcessor'] = 'php-xsl';
+		$this->_modulesList['uuid_create'] = 'php-uuid';
 	}
 
 	public function testPHPModulesExist() {
 		foreach ($this->_modulesList as $moduleFunc => $module) {
-			$this->assertTrue((boolean)(function_Exists($moduleFunc) | class_exists($moduleFunc)),"Module: {$module} must be installed.");
-			//$this->assertTrue(function_exists($moduleFunc),"Module  {$module} must be installed.");
+			$this->assertTrue((function_exists($moduleFunc) || class_exists($moduleFunc)),"Module: {$module} must be installed.");
 		}
 	}
 

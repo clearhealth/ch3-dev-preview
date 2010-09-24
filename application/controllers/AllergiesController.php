@@ -28,6 +28,12 @@
 class AllergiesController extends WebVista_Controller_Action {
 
 	protected $_patientAllergy = null;
+	protected $_form = null;
+	protected $_session;
+
+	public function init() {
+		$this->_session = new Zend_Session_Namespace(__CLASS__);
+	}
 
 	public function indexAction() {
 		// temporarily redirect request to patient action
@@ -47,6 +53,14 @@ class AllergiesController extends WebVista_Controller_Action {
 			$reasons[$ctr++] = $enum->name;
 		}
 		$this->view->reasons = $reasons;
+		if (!isset($this->_session->active)) {
+			$this->_session->active = 1;
+		}
+		if (!isset($this->_session->inactive)) {
+			$this->_session->inactive = 1;
+		}
+		$this->view->active = $this->_session->active;
+		$this->view->inactive = $this->_session->inactive;
 		$this->render('patient');
 	}
 
@@ -72,6 +86,10 @@ class AllergiesController extends WebVista_Controller_Action {
 
 	public function listAction() {
 		$personId = (int)$this->_getParam('personId');
+		$showActive = (int)$this->_getParam('active');
+		$showInactive = (int)$this->_getParam('inactive');
+		$this->_session->active = $showActive;
+		$this->_session->inactive = $showInactive;
 
 		$enumeration = new Enumeration();
 		$listSeverities = array();
@@ -92,8 +110,18 @@ class AllergiesController extends WebVista_Controller_Action {
 			$listSymptoms[$enum->key] = $enum->name;
 		}
 
+		$active = null;
+		if ($showActive && !$showInactive) {
+			$active = 1;
+		}
+		else if ($showInactive && !$showActive) {
+			$active = 0;
+		}
+		else if (!$showInactive && !$showActive) {
+			$active = 2; // invalid so no items will be retrieved
+		}
 		$patientAllergy = new PatientAllergy();
-		$patientAllergyIterator = $patientAllergy->getIteratorByPatient($personId);
+		$patientAllergyIterator = $patientAllergy->getIteratorByPatient($personId,0,null,$active);
 		$rows = array();
 		foreach ($patientAllergyIterator as $allergy) {
 			if ($allergy->noKnownAllergies) {
@@ -111,6 +139,7 @@ class AllergiesController extends WebVista_Controller_Action {
 			$tmp['data'][] = $severity;
 			$tmp['data'][] = implode(', ',$symptoms);
 			$tmp['data'][] = $allergy->comments;
+			$tmp['userdata']['active'] = (int)$allergy->active;
 			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -188,7 +217,17 @@ class AllergiesController extends WebVista_Controller_Action {
 		$this->_patientAllergy = new PatientAllergy();
 		$this->_patientAllergy->patientId = (int)$this->_getParam('personId');
 		$this->_patientAllergy->causativeAgent = $this->_getParam('allergy','');
+		$this->_edit();
+	}
 
+	public function editAction() {
+		$this->_patientAllergy = new PatientAllergy();
+		$this->_patientAllergy->patientAllergyId = (int)$this->_getParam('id');
+		$this->_patientAllergy->populate();
+		$this->_edit();
+	}
+
+	protected function _edit() {
 		$this->_form = new WebVista_Form(array('name'=>'add'));
 		$this->_form->setAction(Zend_Registry::get('baseUrl') . 'allergies.raw/process-add');
 		$this->_form->loadORM($this->_patientAllergy,'allergy');
@@ -249,6 +288,7 @@ class AllergiesController extends WebVista_Controller_Action {
 		$params['symptoms'] = implode(',',$params['symptoms']);
 		$params['dateTimeCreated'] = date('Y-m-d H:i:s');
 		$this->_patientAllergy->populateWithArray($params);
+		if (!$this->_patientAllergy->patientAllergyId > 0) $this->_patientAllergy->active = 1; // temporarily set to active for new allergy
 		$this->_patientAllergy->persist();
 		$this->view->message = __('Record saved successfully');
 		$this->render('add');
@@ -288,11 +328,20 @@ class AllergiesController extends WebVista_Controller_Action {
 		$json->direct(true);
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generateReactionTypePreferencesEnum();
-		Enumeration::generateSeverityPreferencesEnum();
-		Enumeration::generateSymptomPreferencesEnum();
-		echo 'Done';
-		die;
+	public function processMarkActiveAction() {
+		$id = (int)$this->_getParam('id');
+		$active = (int)$this->_getParam('active');
+		$patientAllergy = new PatientAllergy();
+		$patientAllergy->patientAllergyId = $id;
+		$ret = false;
+		if ($patientAllergy->populate()) {
+			$patientAllergy->active = $active;
+			$patientAllergy->persist();
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
+
 }

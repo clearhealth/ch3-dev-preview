@@ -67,21 +67,19 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	public static function getControllerName() {
 		return "ProviderDashboardController";
 	}
+
 	public function getDisplayGender() {
-		$enumeration = new Enumeration();
-		$enumeration->enumerationId = $this->gender;
-		$enumeration->populate();
-		return $enumeration->name;
-		$gender = "";
-		switch ($this->gender) {
-			case "1":
-				$gender = "M";
+		$gender = $this->gender;
+		switch ($gender) {
+			case '1':
+				$gender = 'M';
 				break;
-			case "2":
-				$gender = "F";
+			case '2':
+				$gender = 'F';
 				break;
-			case "3":
-				$gender = "O";
+			case '3':
+			case 'O':
+				$gender = 'U';
 				break;
 		}
 		return $gender;
@@ -196,6 +194,31 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		$enumerationsClosure = new EnumerationsClosure();
 		$ret = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1)->toArray('key','name');
 		return $ret;
+	}
+
+	public function getGender() { // 2.x to 3.x conversion
+		static $detailsView2x = null;
+		$gender = $this->gender;
+		if ($detailsView2x === null) {
+			$config = Zend_Registry::get('config');
+			$detailsView2x = strtolower((string)$config->patient->detailsView2x);
+		}
+		if ($detailsView2x != 'true') {
+			return $gender;
+		}
+		switch ($gender) {
+			case '1':
+				$gender = 'M';
+				break;
+			case '2':
+				$gender = 'F';
+				break;
+			case '3':
+			case 'O':
+				$gender = 'U';
+				break;
+		}
+		return $gender;
 	}
 
 }

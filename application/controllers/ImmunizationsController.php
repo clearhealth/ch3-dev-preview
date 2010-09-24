@@ -58,14 +58,14 @@ class ImmunizationsController extends WebVista_Controller_Action {
 			$filter = array();
 			$filter['patientId'] = $patientId;
 			$patientImmunizationIterator->setFilter($filter);
-			$existingImmunizations = $patientImmunizationIterator->toArray('code','immunization');
+			$existingImmunizations = $patientImmunizationIterator->toArray('patientImmunizationId','immunization');
 			if (is_array($immunizations)) {
-				foreach ($immunizations as $code=>$immunization) {
-					if (isset($existingImmunizations[$code])) {
-						unset($existingImmunizations[$code]);
+				foreach ($immunizations as $patientImmunizationId=>$immunization) {
+					if (isset($existingImmunizations[$patientImmunizationId])) {
+						unset($existingImmunizations[$patientImmunizationId]);
 					}
 					$patientImmunization = new PatientImmunization();
-					$immunization['code'] = $code;
+					$immunization['patientImmunizationId'] = $patientImmunizationId;
 					$immunization['patientId'] = $patientId;
 					trigger_error(print_r($immunization,true),E_USER_NOTICE);
 					$patientImmunization->populateWithArray($immunization);
@@ -73,9 +73,9 @@ class ImmunizationsController extends WebVista_Controller_Action {
 				}
 			}
 			// delete un-used records
-			foreach ($existingImmunizations as $code=>$immunization) {
+			foreach ($existingImmunizations as $patientImmunizationId=>$immunization) {
 				$patientImmunization = new PatientImmunization();
-				$patientImmunization->code = $code;
+				$patientImmunization->patientImmunizationId = $patientImmunizationId;
 				$patientImmunization->setPersistMode(WebVista_Model_ORM::DELETE);
 				$patientImmunization->persist();
 			}
@@ -87,6 +87,21 @@ class ImmunizationsController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
+	protected function _generateImmunizationRowData(PatientImmunization $pi) {
+		$ret = array();
+		$ret['id'] = $pi->patientImmunizationId;
+		$ret['data'][] = $pi->dateAdministered;
+		$ret['data'][] = $pi->lot;
+		$ret['data'][] = $pi->route;
+		$ret['data'][] = $pi->site;
+		$ret['data'][] = $pi->series;
+		$ret['data'][] = $pi->reaction;
+		$ret['data'][] = $pi->immunization;
+		$ret['data'][] = (int)$pi->patientReported;
+		$ret['data'][] = $pi->comment;
+		return $ret;
+	}
+
 	public function listPatientImmunizationsJsonAction() {
 		$patientId = (int)$this->_getParam("patientId");
 		$rows = array();
@@ -95,7 +110,9 @@ class ImmunizationsController extends WebVista_Controller_Action {
 			$filter = array();
 			$filter['patientId'] = $patientId;
 			$patientImmunizationIterator->setFilter($filter);
-			$rows = $patientImmunizationIterator->toJsonArray('code',array('dateAdministered','lot','route','site','series','reaction','immunization','patientReported','comment'));
+			foreach ($patientImmunizationIterator as $pi) {
+				$rows[] = $this->_generateImmunizationRowData($pi);
+			}
 		}
 		$data = array();
 		$data['rows'] = $rows;
@@ -105,22 +122,31 @@ class ImmunizationsController extends WebVista_Controller_Action {
 	}
 
 	public function processEditImmunizationAction() {
-		$immunizations = $this->_getParam("immunizations");
+		$params = $this->_getParam('immunizations');
 		$patientImmunization = new PatientImmunization();
-		$patientImmunization->populateWithArray($immunizations);
+		if (isset($params['patientImmunizationId'])) {
+			$patientImmunization->patientImmunizationId = (int)$params['patientImmunizationId'];
+			$patientImmunization->populate();
+		}
+		else {
+			$patientImmunization->dateAdministered = date('Y-m-d');
+		}
+		$patientImmunization->populateWithArray($params);
 		$patientImmunization->persist();
-		$data = true;
+		$data = $this->_generateImmunizationRowData($patientImmunization);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
 	}
 
 	public function processDeleteImmunizationAction() {
-		$code = $this->_getParam('code');
+		$params = $this->_getParam('id');
 		$patientImmunization = new PatientImmunization();
-		$patientImmunization->code = $code;
 		$patientImmunization->setPersistMode(WebVista_Model_ORM::DELETE);
-		$patientImmunization->persist();
+		foreach (explode(',',$params) as $id) {
+			$patientImmunization->patientImmunizationId = $id;
+			$patientImmunization->persist();
+		}
 		$data = true;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

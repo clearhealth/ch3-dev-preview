@@ -11,15 +11,15 @@
                         adminAccordion.addItem("systemObjects","System Objects");
 			sysObjectsTree = adminAccordion.cells('systemObjects').attachTree();
 			sysObjectsTree.setImagePath("<?=$this->baseUrl?>/img/");
-			//sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
-			sysObjectsTree.attachEvent('onClick',onSystemObjectsTreeItemSelect);
 
 			sysObjectsTree.attachEvent('onClick',onSystemObjectsTreeItemSelect);
 			sysObjectsTree.insertNewChild(0,21,"<?=__('Appointment Rules')?>");
 			//sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
 			sysObjectsTree.insertNewChild(0,20,"<?=__('Dashboard Components Manager')?>");
 			//sysObjectsTree.insertNewChild(0,13,'Data Integration Logs');
+			sysObjectsTree.insertNewChild(0,26,"Discount Table Manager");
 			sysObjectsTree.insertNewChild(0,9,'Enumeration Manager');
+			sysObjectsTree.insertNewChild(0,25,"Fee Schedule Manager");
 			sysObjectsTree.insertNewChild(0,8,'Formulary Manager');
 			sysObjectsTree.insertNewChild(0,14,'General Alerts');
 			sysObjectsTree.insertNewChild(0,15,'Health Status Alerts');
@@ -119,6 +119,12 @@ function onSystemObjectsTreeItemSelect(itemId) {
 			break;
 		case 23: // Statistics Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/statistics-manager.raw');
+			break;
+		case 25: // Fee Schedule Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/fee-schedule-manager.raw');
+			break;
+		case 26: // Discount Table Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/discount-table-manager.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');

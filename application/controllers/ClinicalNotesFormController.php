@@ -47,7 +47,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		}
 		$this->_cn = $cn;
 		$templateId = $cn->clinicalNoteTemplateId;
-		assert("$templateId > 0");
+		assert('$templateId > 0');
 		$cnTemplate = $cn->clinicalNoteDefinition->clinicalNoteTemplate;
 		$this->_form = new WebVista_Form(array('name' => 'cn-template-form'));
 		$this->_form->setWindow('dummyWindowId');
@@ -79,10 +79,6 @@ printHtml = '';
 			//$this->_form->removeElement('ok');
 			$this->_form->removeElement('clinicalNoteOKId');
 		}
-		else {
-			$revisionId = GenericData::getUnsignedRevisionId(get_class($cn),$cn->clinicalNoteId);
-			//$revisionId = $cn->clinicalNoteId;
-		}
 
 		$this->_form->addElement($this->_form->createElement('hidden','revisionId', array('value' => (int)$revisionId)));
 
@@ -99,12 +95,11 @@ printHtml = '';
 			$formData[ClinicalNote::encodeNamespace($row['name'])] = $row['value'];
 		}
 
-		$eSignatureId = ESignature::retrieveSignatureId(get_class($cn),$revisionId);
-		if ($eSignatureId > 0) { // On signed notes generic data is shown
+		if ((int)$cn->eSignatureId > 0) { // On signed notes generic data is shown
 			//$this->_form->removeElement('ok');
 			$this->_form->removeElement('clinicalNoteOKId');
 			$esig = new ESignature();
-			$esig->eSignatureId = $eSignatureId;
+			$esig->eSignatureId = $cn->eSignatureId;
 			$esig->populate();
 			$signPerson = new Person();
 			$signPerson->personId = $esig->signingUserId;
@@ -129,13 +124,6 @@ printHtml = '';
 		$this->_form->populate($formData);
 
 		$this->view->form = $this->_form;
-
-		$templateRevisions = array();
-		$gdIterator = GenericData::getAllRevisions(get_class($cn),$cn->clinicalNoteId);
-		foreach ($gdIterator as $gd) {
-			$templateRevisions[$gd->revisionId] = $gd->dateTime;
-		}
-		$this->view->templateRevisions = $templateRevisions;
         }
 
 	function processAction() {
@@ -148,11 +136,7 @@ printHtml = '';
 		$cn->clinicalNoteId = $clinicalNoteId;
 		$cn->populate();
 
-		if (!$revisionId > 0) {
-			$revisionId = GenericData::getUnsignedRevisionId(get_class($cn),$cn->clinicalNoteId);
-		}
-		$eSignatureId = ESignature::retrieveSignatureId(get_class($cn),$revisionId);
-		if ($eSignatureId > 0) {
+		if ((int)$cn->eSignatureId > 0) {
 			$msg = __('Failed to save. Note is already signed');
 		}
 		else {
@@ -195,7 +179,7 @@ printHtml = '';
 			}
 
 			if ((string)$xml->attributes()->useNSDR && (string)$xml->attributes()->useNSDR == 'true') {
-				if (!ClinicalNote::processNSDRPersist($xml,$cn,$data)) {
+				if (!ClinicalNote::processNSDRPersist($xml,$cn,$data,$revisionId)) {
 					$msg = __('Failed to save.');
 				}
 			}

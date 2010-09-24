@@ -96,10 +96,4 @@ class AppointmentTemplatesController extends WebVista_Controller_Action {
 		$this->render('get-context-menu');
 	}
 
-	public function generateTestEnumDataAction() {
-		Enumeration::generateAppointmentReasonEnum();
-		echo 'Done';
-		die;
-	}
-
 }

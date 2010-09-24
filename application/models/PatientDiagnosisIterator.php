@@ -32,7 +32,9 @@ class PatientDiagnosisIterator extends WebVista_Model_ORMIterator {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from('patientDiagnosis')
-			       ->where('patientId = ?',$filter['patientId']);
+			       ->where('patientId = ?',$filter['patientId'])
+				->order('isPrimary DESC')
+				->order('code');
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}

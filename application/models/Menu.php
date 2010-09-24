@@ -70,6 +70,7 @@ class Menu {
 			       ->where('e.active = 1')
 			       ->order('ec.weight ASC')
 			       ->order('m.displayOrder ASC');
+
 		if ($rowset = $db->fetchAll($dbSelect)) {
 			$item = null;
 			foreach ($rowset as $row) {
@@ -428,10 +429,10 @@ class Menu {
 		$mainTabs['Labs']['hrefMode'] =  'ajax-html';
 		$mainTabs['Reports']['url']   = $baseUrl.'/reports.raw';
 		$mainTabs['Reports']['hrefMode'] =  'ajax-html';
-		$mainTabs['Admin']['url']   = $baseUrl.'/admin.raw';
-		$mainTabs['Admin']['hrefMode'] =  'ajax-html';
 		$mainTabs['Messaging']['url']   = $baseUrl.'/messaging.raw';
 		$mainTabs['Messaging']['hrefMode'] =  'ajax-html';
+		$mainTabs['Admin']['url']   = $baseUrl.'/admin.raw';
+		$mainTabs['Admin']['hrefMode'] =  'ajax-html';
 
 		foreach ($mainTabs as $tabName => $url) {
 			if (self::userHasPermissionForTab($tabName) === false) {

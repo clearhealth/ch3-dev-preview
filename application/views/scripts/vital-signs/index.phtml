@@ -160,6 +160,47 @@ function vitalSignsSetFilterGraph(filterGraph,doc) {
 	}
 }
 
+// convert date format mm/dd/yyyy hh:mmAP to JS date object
+function vitalSignsConvertToDate(value) {
+	// 09/01/2010 09:17PM
+	var yyyy = parseInt(value.substr(6,4));
+	var mm = value.substr(0,2);
+	if (mm.substr(0,1) == "0") {
+		mm = mm.substr(1,1);
+	}
+	mm = parseInt(mm) - 1;
+	var dd = value.substr(3,2);
+	if (dd.substr(0,1) == "0") {
+		dd = dd.substr(1,1);
+	}
+	dd = parseInt(dd);
+
+	var hr = value.substr(11,2);
+	if (hr.length > 0) {
+		if (hr.substr(0,1) == "0") {
+			hr = hr.substr(1,1);
+		}
+		hr = parseInt(hr);
+	}
+	else {
+		hr = 0;
+	}
+	var min = value.substr(14,2);
+	if (min.length > 0) {
+		if (min.substr(0,1) == "0") {
+			min = min.substr(1,1);
+		}
+		min = parseInt(min);
+	}
+	else {
+		min = 0;
+	}
+	var ap = value.substr(16,2);
+	if (ap == "PM") hr += 12;
+
+	return new Date(yyyy,mm,dd,hr,min);
+}
+
 function vitalSignsGenerateGraph(filtersData,doc) {
 	if (!doc) {
 		doc = document;
@@ -259,20 +300,12 @@ function vitalSignsGenerateGraph(filtersData,doc) {
 
 	var series = [];
 
-	var dateStart = hAxes[0];
-	var yyyy = parseInt(dateStart.substr(6,4));
-	var mm = parseInt(dateStart.substr(0,2)) - 1;
-	var dd = parseInt(dateStart.substr(3,2));
-	var dStart = new Date(yyyy,mm,dd);
+	var dStart = vitalSignsConvertToDate(hAxes[0]);
 
 	// 1 day = 86400000 ms
 	var dayMs = 86400000;
 
-	var dateEnd = hAxes[(hAxes.length-1)];
-	yyyy = parseInt(dateEnd.substr(6,4));
-	mm = parseInt(dateEnd.substr(0,2)) - 1;
-	dd = parseInt(dateEnd.substr(3,2));
-	var dEnd = new Date(yyyy,mm,dd);
+	var dEnd = vitalSignsConvertToDate(hAxes[(hAxes.length-1)]);
 
 	var daysDiff = (dEnd.getTime() - dStart.getTime()) / dayMs;
 
@@ -372,14 +405,7 @@ function vitalSignsGenerateGraph(filtersData,doc) {
 				}
 			}
 			if (x != 0) {
-				yyyy = parseInt(x.substr(6,4));
-				mm = parseInt(x.substr(0,2)) - 1;
-				dd = parseInt(x.substr(3,2));
-				var hr = parseInt(x.substr(11,2));
-				var min = parseInt(x.substr(14,2));
-				var ap = parseInt(x.substr(16,2));
-				if (ap == "PM") hr += 12;
-				var dTmp = new Date(yyyy,mm,dd,hr,min);
+				var dTmp = vitalSignsConvertToDate(x);
 				x = ((dTmp.getTime() - dStartTime) / dayMs) / xIntDiff;
 			}
 			series.push({x:x,y:y});

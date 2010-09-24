@@ -48,6 +48,7 @@ class MessagingIterator extends WebVista_Model_ORMIterator implements Iterator {
 				->order('dateStatus DESC')
 				->order('objectType ASC')
 				->order('objectClass ASC');
+		$orWhere = array();
 		foreach ($filters as $key=>$value) {
 			switch ($key) {
 				case 'optionGroup':
@@ -56,15 +57,19 @@ class MessagingIterator extends WebVista_Model_ORMIterator implements Iterator {
 				case 'status':
 					$x = explode(',',$value);
 					foreach ($x as $v) {
-						$sqlSelect->orWhere('`status` = ?',$v);
+						$orWhere[] = '`status` = '.$db->quote($v);
 					}
 					break;
 				case 'message':
-					$messageOptions = array('EPrescribes'=>'EPrescribe','InboundFaxes'=>'InboundFax','OutboundFaxes'=>'OutboundFax');
+					$messageOptions = array('EPrescribes'=>Messaging::TYPE_EPRESCRIBE,'InboundFaxes'=>Messaging::TYPE_INBOUND_FAX,'OutboundFaxes'=>Messaging::TYPE_OUTBOUND_FAX);
 					$x = explode(',',$value);
+					$optWhere = array();
 					foreach ($x as $v) {
 						if (!isset($messageOptions[$v])) continue;
-						$sqlSelect->joinUsing('messaging'.$v,'messagingId');
+						$optWhere[] = '`objectType` = '.$messageOptions[$v];
+					}
+					if (isset($optWhere[0])) {
+						$sqlSelect->where(implode(' OR ',$optWhere));
 					}
 					break;
 				case 'dateStatus':
@@ -79,6 +84,9 @@ class MessagingIterator extends WebVista_Model_ORMIterator implements Iterator {
 					$sqlSelect->where('unresolved = ?',(int)$value);
 					break;
 			}
+		}
+		if (isset($orWhere[0])) {
+			$sqlSelect->where(implode(' OR ',$orWhere));
 		}
 		trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $sqlSelect;

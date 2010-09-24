@@ -46,6 +46,8 @@ class Appointment extends WebVista_Model_ORM {
     protected $_table = "appointments";
     protected $_primaryKeys = array("appointmentId");
 
+	protected $_cascadePersist = false;
+
 	function __construct() {
 		parent::__construct();
 		$this->patient = new Patient();

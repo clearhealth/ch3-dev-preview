@@ -85,4 +85,9 @@ class UserKey extends WebVista_Model_ORM {
 		}
 		return rtrim($plainText, "\0");
 	}
+
+	public function getUserKeyId() {
+		return $this->userId;
+	}
+
 }

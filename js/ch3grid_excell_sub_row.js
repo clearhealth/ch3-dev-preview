@@ -117,13 +117,13 @@ dhtmlXGridObject.prototype.toggleSubRow = function(obj) {
 	}
 	var expanded = true;
 	if (cell._state == "plus") {
-		this.expandSubRow(cell);
+		cell._this.grid.expandSubRow(cell);
 	}
 	else if (cell._state == "minus") {
-		this.collapseSubRow(cell);
+		cell._this.grid.collapseSubRow(cell);
 		expanded = false;
 	}
-	this._fixCssSubRow(cell);
+	cell._this.grid._fixCssSubRow(cell);
 	cell._this.grid.callEvent("onSubRowOpen",[cell,expanded]);
 };
 
@@ -239,10 +239,19 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 			div.style.marginLeft = "10px";
 		}
 
+		// fixed auto expand
+		var lastObj = null;
+		var lastIndex = divBox.childNodes.length - 1;
+		if (lastIndex > -1 && divBox.childNodes[lastIndex].tagName == "IMG") {
+			lastObj = divBox.childNodes[lastIndex];
+			divBox.removeChild(lastObj); // remove image object, re-add after
+		}
+
 		// get the size of the divBox and serve as the index of the annotation box
 		cell._annotationIndex = divBox.childNodes.length;
 		// append this to divclass="objbox"
 		divBox.appendChild(div);
+		if (lastObj) divBox.appendChild(lastObj); // re-add
 	}
 
 	cell._this._setState("minus",cell);
@@ -276,6 +285,7 @@ dhtmlXGridObject.prototype.collapseSubRow = function(cell) {
 };
 
 dhtmlXGridObject.prototype.adjustHeightSubRow = function(cell,value) {
+	if (!value) value = (this.skin_name == "xp")?22:20;
 	var ctr = 1;
 	var node = null;
 	while (true) {
@@ -284,8 +294,11 @@ dhtmlXGridObject.prototype.adjustHeightSubRow = function(cell,value) {
 		cell._this.grid.objBox.childNodes[ctr].origLeft = null;
 
 		var t = cell._this.grid.objBox.childNodes[ctr].style.top;
+		if (t.length == 0) {
+			t = value+"px";
+		}
 		var x = t.toLowerCase().split("px");
-		t = parseInt(x[0]) - (value||20);
+		t = parseInt(x[0]) - value;
 		cell._this.grid.objBox.childNodes[ctr].style.top = t + "px";
 		cell._this.grid.objBox.childNodes[ctr].origTop = t;
 		ctr++;

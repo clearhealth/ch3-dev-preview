@@ -7,15 +7,19 @@ enumItemsGrid.setSkin("xp");
 enumItemsGrid.setHeader("<?=__('Name')?>,<?=__('Category')?>,<?=__('Active')?>,ORM");
 enumItemsGrid.setInitWidths("*,100,50,40");
 enumItemsGrid.setColAlign("left,left,left,left");
-enumItemsGrid.setColTypes("tree,ed,ch,ro");
+enumItemsGrid.setColTypes("tree,coro,ch,ro");
 enumItemsGrid.attachEvent("onDrag",enumItemsDragHandler);
 enumItemsGrid.attachEvent("onDrop",enumItemsDropHandler);
 enumItemsGrid.attachEvent("onEditCell",enumItemsOnEditCell);
 enumItemsGrid.attachEvent("onCheck",enumItemsOnChecked);
 enumItemsGrid.attachEvent("onRowSelect",enumItemsOnRowSelected);
-//enumItemsGrid.enableTreeGridLines(true);
+enumItemsGrid.enableTreeGridLines(true);
 enumItemsGrid.init();
-enumItemsGrid.load('<?=$this->baseUrl?>/enumerations-manager.raw/list-items?enumerationId=<?=$this->enumerationId?>',enumItemsExpand,"xml");
+enumItemsGrid.load("<?=$this->baseUrl?>/enumerations-manager.raw/list-items?enumerationId=<?=$this->enumerationId?>",enumItemsExpand,"xml");
+
+enumItemsGrid.getCombo(1).put("","");
+enumItemsGrid.getCombo(1).put("System","System");
+enumItemsGrid.getCombo(1).put("User","User");
 
 function enumItemsOnRowSelected(rowId,cellIndex) {
 	// get the orm hidden column
@@ -148,6 +152,9 @@ function enumItemsMenuClickHandler(id) {
 		case "import2xFacilities":
 			if (!confirm("<?=__('Are you sure you want to continue importing 2.x facilities?')?>")) break;
 			import2xFacilities(rowId);
+			break;
+		case "delete":
+			enumerationDelete(rowId);
 			break;
 	}
 }

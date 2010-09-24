@@ -49,7 +49,7 @@ class TemplateTextController extends WebVista_Controller_Action {
 				if (isset($matches[1])) {
 					$namespace = str_replace('[selectedPatientId]',$personId,$matches[1]);
 					$result = NSDR2::populate($namespace);
-					$objective .= $result[$namespace];
+					$objective .= $result;
 				}
 			}
 		}
@@ -83,12 +83,7 @@ class TemplateTextController extends WebVista_Controller_Action {
 					$resultValue = __("Memcache server not started");
 				}
 				else {
-					$result = NSDR2::populate($namespace);
-					$resultValue = $result[$namespace];
-					if (is_array($resultValue) && isset($resultValue['error'])) {
-						$resultValue = $resultValue['error'];
-						$resultValue = __('No current data for: ').$val;
-					}
+					$resultValue = NSDR2::populate($namespace);
 				}
 				$template = preg_replace('/{nsdr:(.*)}/',$resultValue,$template,1);
 		        }

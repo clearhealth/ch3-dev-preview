@@ -90,8 +90,13 @@ class AdminUsersController extends WebVista_Controller_Action {
 		else {
 			$password = $params['newPassword'];
 			$user->password = $password;
-			$user->persist();
-			$ret = true;
+			try {
+				$user->persist();
+				$ret = true;
+			}
+			catch (Exception $e) {
+				$ret = $e->getMessage();
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -139,8 +144,13 @@ class AdminUsersController extends WebVista_Controller_Action {
 						break;
 					}
 				}
-				$newUserKey->persist();
-				$ret = true;
+				try {
+					$newUserKey->persist();
+					$ret = true;
+				}
+				catch (Exception $e) {
+					$ret = $e->getMessage();
+				}
 			} while (false);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -371,13 +381,18 @@ class AdminUsersController extends WebVista_Controller_Action {
 				elseif (isset($responseXml->data)) {
 					$xml = new SimpleXMLElement($responseXml->data);
 					$prescriber = $xml->AddPrescriberResponse->Prescriber;
-					if ($type == 'addLocation') {
+					//if ($type == 'addLocation') {
+					if (isset($xml->AddPrescriberLocationResponse)) {
 						$prescriber = $xml->AddPrescriberLocationResponse->Prescriber;
 					}
 					$prescriberSPI = (string)$prescriber->Identification->SPI;
+					if (!strlen($prescriberSPI) > 0) {
+						$error = 'Registration failed for location '.$ePrescriber->building->name;
+					}
 				}
 				if (isset($responseXml->rawMessage)) {
 					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$responseXml->rawMessageResponse);
 				}
 			}
 			catch (Exception $e) {

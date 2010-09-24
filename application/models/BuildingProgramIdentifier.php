@@ -52,4 +52,8 @@ class BuildingProgramIdentifier extends WebVista_Model_ORM {
 		return $this->getIterator($dbSelect);
 	}
 
+	public function getBuildingProgramIdentifierId() {
+		return $this->building_id;
+	}
+
 }

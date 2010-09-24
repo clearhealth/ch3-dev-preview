@@ -113,4 +113,8 @@ class Report extends WebVista_Model_ORM {
         return  $ret;
     }
 
+	public function getReportId() {
+		return $this->id;
+	}
+
 }

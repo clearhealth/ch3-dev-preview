@@ -81,6 +81,11 @@ class ProcessHL7 extends ProcessAbstract {
 	public function process(Audit $audit) {
 		$this->_populateHandlers();
 
+		$data = DataIntegration::handlerSSSourceData($audit);
+		if (isset($data['_audit'])) {
+			DataIntegration::handlerSSAct($audit,$data);
+		}
+
 		$ret = true;
 		foreach ($this->_handlers as $handler) {
 			$result = $this->_doProcess($handler,$audit);
@@ -134,7 +139,7 @@ class ProcessHL7 extends ProcessAbstract {
 						$template->populate();
 						$data['msh'] = HL7Message::generateMSHData($audit);
 						$template->template = TemplateXSLT::render($data,$template->template); // temporarily override the template
-						$ret = call_user_func_array(array($classDestination,'transmit'),array($audit,$template));
+						$ret = call_user_func_array(array($classDestination,'transmit'),array($audit,$template,$data));
 						// temporarily set to true, transmit() skeleton does not provide boolean return
 						$ret = true;
 						break;

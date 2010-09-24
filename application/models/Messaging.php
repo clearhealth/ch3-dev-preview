@@ -39,11 +39,13 @@ class Messaging extends WebVista_Model_ORM {
 	protected $person;
 	protected $providerId;
 	protected $provider;
-	protected $unresolved; // 0 = unknown, 1 = unresolved, 2 = resolved
+	protected $unresolved; // 0 = resolved , 1 = unresolved
+	protected $rawMessageResponse;
 
 	protected $_table = 'messaging';
 	protected $_primaryKeys = array('messagingId');
 	protected $_cascadePopulate = false;
+	protected $_cascadePersist = false;
 
 	const AUTO_ATTACH = 'messagingAutoAttach';
 	const DEFAULT_CLINICAL_NOTE = 'messagingDefaultClinicalNote';

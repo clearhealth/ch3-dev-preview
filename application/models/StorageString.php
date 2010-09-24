@@ -33,4 +33,8 @@ class StorageString extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('foreign_key','value_key','array_index');
 	protected $_legacyORMNaming = true;
 
+	public function getStorageStringId() {
+		return $this->foreign_key;
+	}
+
 }

@@ -97,4 +97,8 @@ class HealthStatusHandlerPatient extends WebVista_Model_ORM {
 		return $ok;
 	}
 
+	public function getHealthStatusHandlerPatientId() {
+		return $this->healthStatusHandlerId;
+	}
+
 }

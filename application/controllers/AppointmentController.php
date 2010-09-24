@@ -71,7 +71,6 @@ class AppointmentController extends WebVista_Controller_Action {
 			$visit->encounterReason = $appointment->reason;
 			$visit->dateOfTreatment = $appointment->createdDate;
 			$visit->timestamp = date('Y-m-d H:i:s');
-			$visit->dateOfService = date('Y-m-d H:i:s');
 
 			$visit->appointmentId = $appointment->appointmentId;
 			$visit->persist();

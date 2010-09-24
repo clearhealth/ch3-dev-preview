@@ -79,16 +79,28 @@ class NsdrManagerController extends WebVista_Controller_Action {
 	 * Process the modified NSDR method
 	 */
 	public function processEditMethodAction() {
-		$this->editMethodAction();
 		$params = $this->_getParam('nsdrDefinitionMethod');
-		$this->_nsdrDefinitionMethod->populateWithArray($params);
-		$id = $params['uuid'];
-		if (!strlen($id) > 0) {
-			$this->_nsdrDefinitionMethod->uuid = NSDR::create_guid();
+		$nsdrDefinitionMethod = new NSDRDefinitionMethod();
+		$nsdrDefinitionMethod->populateWithArray($params);
+		if (!strlen($nsdrDefinitionMethod->uuid) > 0) {
+			$nsdrDefinitionMethod->uuid = NSDR::create_guid();
 		}
-		$this->_nsdrDefinitionMethod->persist();
-		$this->view->message = __('Record successfully saved.');
-		$this->render('edit-method');
+		$nsdrDefinitionMethod->methodName = NSDRDefinitionMethod::normalizeMethodName($nsdrDefinitionMethod->methodName);
+		$validCode = NSDRDefinitionMethod::isPHPCodeValid($nsdrDefinitionMethod->method,$nsdrDefinitionMethod->methodName);
+		// check for method duplicates
+		if ($nsdrDefinitionMethod->isMethodNameExists()) {
+			$data = 'Method name "'.$nsdrDefinitionMethod->methodName.'" already exists.';
+		}
+		else if ($validCode !== true) {
+			$data = $validCode;
+		}
+		else {
+			$nsdrDefinitionMethod->persist();
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 	/**
@@ -234,14 +246,6 @@ class NsdrManagerController extends WebVista_Controller_Action {
 		$this->view->message = $message;
 		$this->view->code = $code;
 		$this->render('edit');
-	}
-
-	/*
-	 * Sample TEST data
-	 */
-	public function generateTestDataAction() {
-		NSDR::generateTestData();
-		die('done');
 	}
 
 	/**

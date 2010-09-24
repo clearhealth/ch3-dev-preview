@@ -4244,6 +4244,16 @@ dhtmlXGridObject.prototype={
 	*   @type:  public
 	*/			
 	load:function(url, call, type){
+		var img = document.createElement("img");
+		img.src = globalBaseUrl+"/img/loading.gif";
+		img.style.marginLeft = "5px";
+		img.style.marginTop = "5px";
+		img.alt = "Loading...";
+		for (var i = 0, ctr = this.objBox.childNodes.length; i < ctr; i++) {
+			if (!this.objBox.childNodes[i].isEqualNode(img)) continue;
+			this.objBox.removeChild(this.objBox.childNodes[i]);
+		}
+		this.objBox.appendChild(img);
 		this.callEvent("onXLS", [this]);
 		if (arguments.length == 2 && typeof call != "function"){
 			type=call;
@@ -4263,6 +4273,7 @@ dhtmlXGridObject.prototype={
 				call();
 				call=null;
 			}
+			that.objBox.removeChild(img);
 		}
 		this.xmlLoader.loadXML(url);
 	},
@@ -5075,6 +5086,21 @@ dhtmlXGridObject.prototype={
 			];
 	}
 }
+
+// ClearHealth hacks: renders row in grid
+dhtmlXGridObject.prototype.renderRowData = function(row) {
+	if (!row.id) return false;
+	if (!this.doesRowExist(row.id)) {
+		this.addRow(row.id,"");
+	}
+	for (var i in row.data) {
+		this.cells(row.id,i).setValue(row.data[i]);
+	}
+	for (var i in row.userdata) {
+		this.setUserData(row.id,i,row.userdata[i]);
+	}
+	return true;
+};
 
 
 /* just a merge test :: 80512 */		

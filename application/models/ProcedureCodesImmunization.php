@@ -58,4 +58,8 @@ class ProcedureCodesImmunization extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function getProcedureCodesImmunizationId() {
+		return $this->code;
+	}
+
 }

@@ -34,9 +34,11 @@ class Order extends WebVista_Model_ORM {
 	protected $eSignatureId;
 	protected $_table = "orders";
 	protected $_primaryKeys = array("orderId");
+	protected $_cascadePersist = false;
 
 	function __construct() {
 		$this->provider = new Provider();
+		$this->provider->_cascadePersist = false;
                 parent::__construct();
         }
 

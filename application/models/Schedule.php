@@ -36,6 +36,7 @@ class Schedule extends WebVista_Model_ORM {
 	protected $_table = 'schedule';
 	protected $_primaryKeys = array('schedule_id');
 	protected $_legacyORMNaming = true;
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		parent::__construct();

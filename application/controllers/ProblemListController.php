@@ -63,6 +63,10 @@ class ProblemListController extends WebVista_Controller_Action {
 		$tmp['id'] = 'removed_problems';
 		$tmp['data'][] = __('Removed Problems');
 		$rows[] = $tmp;
+		$tmp = array();
+		$tmp['id'] = 'resolved_problems';
+		$tmp['data'][] = __('Resolved Problems');
+		$rows[] = $tmp;
 
 		$data = array();
 		$data['rows'] = $rows;
@@ -97,6 +101,9 @@ class ProblemListController extends WebVista_Controller_Action {
 			case 'removed_problems':
 				$filters['status'] = 'Removed';
 				break;
+			case 'resolved_problems':
+				$filters['status'] = 'Resolved';
+				break;
 		}
 		$filters['personId'] = $personId;
 		$rows = array();
@@ -114,7 +121,7 @@ class ProblemListController extends WebVista_Controller_Action {
 			$tmp['data'][] = $problem->flags;
 			$tmp['data'][] = $problem->codeTextShort;
 			$tmp['data'][] = $problem->code;
-			$tmp['data'][] = $problem->dateOfOnset;
+			$tmp['data'][] = date('Y-m-d',strtotime($problem->dateOfOnset));
 			$tmp['data'][] = $problem->provider->getOptionName();
 			$tmp['data'][] = $problem->service;
 			$tmp['data'][] = date('m/d/Y',strtotime($problem->lastUpdated));
@@ -141,6 +148,10 @@ class ProblemListController extends WebVista_Controller_Action {
 		$this->_problem->problemListId = $problemListId;
 		$this->_problem->personId = $personId;
 		$this->_problem->populate();
+		if (!$this->_problem->providerId > 0) {
+			$auth = Zend_Auth::getInstance();
+			$this->_problem->providerId = (int)$auth->getIdentity()->personId;
+		}
 		$this->_form->loadORM($this->_problem, "ProblemList");
 		$this->_form->setWindow('windowEditProblem');
 		$this->view->form = $this->_form;

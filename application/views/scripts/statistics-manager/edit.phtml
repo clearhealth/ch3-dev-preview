@@ -23,7 +23,7 @@ input,select {
 		<br style="clear:left"/>
 		<div class="formRow" style="padding-top:4px;">
 			<?=$this->form->value->renderLabel()?>
-			<div id="statsEnumNameAutoCompleteDivId"></div>
+			<?=$this->form->valueInput()?>
 		</div>
 	</div>
 	<br style="clear:left"/>
@@ -44,6 +44,9 @@ input,select {
 function preSubmit<?=$this->form->getId()?>() {
 	var active = dojo.byId("<?=$this->form->active->getId()?>");
 	active.value = 0;
+	if (!valueChanged) {
+		fencb.valueNode.value = "<?=$this->form->value->getValue()?>";
+	}
 	if (active.checked) {
 		active.value = 1;
 	}
@@ -75,24 +78,26 @@ function statsTypeOnChanged(value) {
 	}
 }
 
-var fencb = dijit.byId("statsEnumNameAutoCompleteDivId");
+var fencb = dijit.byId("<?=$this->form->value->getId()?>");
 if (fencb != undefined) { 
 	fencb.destroyRecursive();
 	fencb = null;
 }
 var fenac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/enumerations-manager.raw/auto-complete-enum",requestMethod:"get"},"statsEnumNameAutoComplete");
-fencb = new dijit.form.FilteringSelect({name:"<?=$this->form->value->getFullyQualifiedName()?>",autocomplete:true,store:fenac},"statsEnumNameAutoCompleteDivId");
+fencb = new dijit.form.FilteringSelect({name:"<?=$this->form->value->getFullyQualifiedName()?>",autocomplete:true,store:fenac},"<?=$this->form->value->getId()?>");
 fencb.validate = function() {
 	return true;
 };
 
+var valueChanged = false;
 dojo.connect(fencb,"onChange","statsEnumGetDetails");
 function statsEnumGetDetails(args) {
 	if (args === undefined) return;
+	valueChanged = true;
 	fencb.setValue(args);
 }
 fencb.setDisplayedValue("<?=$this->ORM->displayedValue?>");
-fencb.setValue("<?=$this->form->value->getValue()?>");
+fencb.valueNode.value = "<?=$this->form->value->getValue()?>";
 fencb.domNode.style.width = "25em";
 
 var statsType = dojo.byId("<?=$this->form->type->getId()?>");

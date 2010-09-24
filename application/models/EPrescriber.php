@@ -36,6 +36,7 @@ class EPrescriber extends WebVista_Model_ORM {
 
 	protected $_table = 'ePrescribers';
 	protected $_primaryKeys = array('ePrescriberId');
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		parent::__construct();

@@ -156,4 +156,8 @@ class NSDRDefinition extends WebVista_Model_ORM {
 		return true;
 	}
 
+	public function getNSDRDefinitionId() {
+		return $this->uuid;
+	}
+
 }

@@ -260,5 +260,38 @@ class WebVista {
 		return $this;
 	}
 
+	public static function debug($msg,$level = E_USER_NOTICE) {
+		$config = Zend_Registry::get('config');
+		if (strtolower($config->error->logDebugMessages) == 'true') {
+			if (is_object($msg) || is_array($msg)) {
+				$msg = print_r($msg,true);
+			}
+			switch ($level) { // level only works for E_USER family
+				case E_USER_ERROR:
+				case E_USER_WARNING:
+				case E_USER_NOTICE:
+					break;
+				case E_ERROR:
+					$level = E_USER_ERROR;
+					break;
+				case E_WARNING:
+					$level = E_USER_WARNING;
+					break;
+				case E_NOTICE:
+				default:
+					$level = E_USER_NOTICE;
+			}
+			trigger_error($msg,$level);
+		}
+	}
+
+	public static function log($msg,$level = E_USER_NOTICE) {
+		$client = '127.0.0.1';
+		if (isset($_SERVER['REMOTE_ADDR'])) {
+			$client = $_SERVER['REMOTE_ADDR'];
+		}
+		self::debug('['.date('D M d H:i:s Y').'] [client '.$client.'] '.$msg,$level); // temporarily set as alias for debug
+	}
+
 }
 

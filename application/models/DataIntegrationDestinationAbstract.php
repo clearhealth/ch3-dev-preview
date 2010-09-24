@@ -24,7 +24,7 @@
 
 abstract class DataIntegrationDestinationAbstract {
 
-	abstract public static function transmit(Audit $auditOrm,DataIntegrationTemplate $template);
+	abstract public static function transmit(Audit $auditOrm,DataIntegrationTemplate $template,Array $dataSource=array());
 
 }
 

@@ -62,6 +62,7 @@ class Pharmacy extends WebVista_Model_ORM {
 	protected $Version;
 	protected $NPI;
 	protected $preferred;
+	protected $print;
 
 	protected $_table = "pharmacies";
 	protected $_primaryKeys = array("pharmacyId");
@@ -76,49 +77,49 @@ class Pharmacy extends WebVista_Model_ORM {
 		if (($this->ServiceLevel & 1) == 1) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getRefReqSupport() {
 		if (($this->ServiceLevel &  2) == 2) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getRxFillSupport() {
 		if (($this->ServiceLevel & 4) == 4) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getRxChgSupport() {
 		if (($this->ServiceLevel & 8) == 8) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getCanRx() {
 		if (($this->ServiceLevel & 16) == 16) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getRxHisSupport() {
 		if (($this->ServiceLevel & 32) == 32) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 
 	function getRxEligSupport() {
 		if (($this->ServiceLevel & 64) == 64) {
 			return 'Y';
 		}
-		return 'F';
+		return 'N';
 	}
 	function getServiceLineDisplay() {
 		$serviceStr = "";
@@ -201,6 +202,7 @@ class Pharmacy extends WebVista_Model_ORM {
 				}
 				if (isset($responseXml->rawMessage)) {
 					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$responseXml->rawMessageResponse);
 				}
 			}
 			catch (Exception $e) {
@@ -244,6 +246,217 @@ class Pharmacy extends WebVista_Model_ORM {
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$this->pharmacyId = $row['pharmacyId'];
 		}
+	}
+
+	public static function activateDownload($daily) {
+		$data = array();
+		$data['daily'] = (int)$daily;
+		//$data['clinicName'] = $practice->name;
+		$type = 'full';
+		if ($data['daily']) {
+			$type = 'daily';
+		}
+
+		$messaging = new Messaging();
+		//$messaging->messagingId = '';
+		$messaging->messageType = 'DirectoryDownload';
+		$messaging->populate();
+		//$messaging->objectId = '';
+		//$messaging->objectClass = '';
+		$messaging->status = 'Downloading';
+		$messaging->note = 'Downloading pharmacy ('.$type.')';
+		$messaging->dateStatus = date('Y-m-d H:i:s');
+		//$messaging->auditId = '';
+		$messaging->persist();
+		trigger_error($messaging->note,E_USER_NOTICE);
+
+		$ch = curl_init();
+		$pharmacyActivateURL = Zend_Registry::get('config')->healthcloud->URL;
+		$pharmacyActivateURL .= 'ss-manager.raw/activate-pharmacy-download?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
+		$cookieFile = tempnam(sys_get_temp_dir(),'ssddcookies_');
+		trigger_error('URL: '.$pharmacyActivateURL,E_USER_NOTICE);
+		trigger_error('COOKIEFILE: '.$cookieFile,E_USER_NOTICE);
+		trigger_error('DATA: '.print_r($data,true));
+		curl_setopt($ch,CURLOPT_URL,$pharmacyActivateURL);
+		curl_setopt($ch,CURLOPT_POST,true);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,$data);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true); 
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
+		curl_setopt($ch,CURLOPT_COOKIEJAR,$cookieFile); 
+		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
+		$output = curl_exec ($ch);
+		$error = "";
+		$downloadURL = "";
+		$messaging->status = 'Downloaded';
+		$messaging->note = 'Pharmacy downloaded ('.$type.')';
+		if (!curl_errno($ch)) {
+			try {
+				$responseXml = simplexml_load_string($output);
+				if (isset($responseXml->error)) {
+					$error = (string)$responseXml->error->messageCode.': '.(string)$responseXml->error->message;
+					trigger_error("There was an error activating synchronization of pharmacies, Error code: " . $responseXml->error->code . " Error Message: " . $responseXml->error->message,E_USER_NOTICE);
+				}
+				elseif (isset($responseXml->data->SSDirectoryDownloadUrl)) {
+					$downloadURL = $responseXml->data->SSDirectoryDownloadUrl;
+					trigger_error('DOWNLOAD URL: '.$downloadURL,E_USER_NOTICE);
+				}
+				if (isset($responseXml->rawMessage)) {
+					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$responseXml->rawMessageResponse);
+				}
+			}
+			catch (Exception $e) {
+				$error = __("There was an error connecting to HealthCloud to activate synchronization of pharmacies. Please try again or contact the system administrator.");
+				trigger_error("Curl error connecting to healthcloud to activate pharmacy sync: " . curl_error($ch),E_USER_NOTICE);
+			}
+		}
+		else {
+			$error = __("There was an error connecting to HealthCloud to activate synchronization of pharmacies. Please try again or contact the system administrator.");
+			trigger_error("Curl error connecting to healthcloud to activate pharmacy sync: " . curl_error($ch),E_USER_NOTICE);
+		}
+		curl_close ($ch);
+		if (strlen($error) > 0) {
+			$messaging->status = 'Error';
+			$messaging->note .= ' ERROR: '.$error;
+			$ret = false;
+		}
+		if ($messaging->resend) {
+			$messaging->resend = 0;
+		}
+		$messaging->retries++;
+		$messaging->dateStatus = date('Y-m-d H:i:s');
+		$messaging->persist();
+		trigger_error($messaging->note,E_USER_NOTICE);
+		return array('downloadUrl'=>$downloadURL,'cookieFile'=>$cookieFile,'error'=>$error);
+	}
+
+	public static function downloadPharmacy($downloadURL,$cookieFile) {
+		$pharmUpdateFileName = tempnam(sys_get_temp_dir(),'ssdd_');
+		trigger_error('URL: '.$downloadURL,E_USER_NOTICE);
+		trigger_error('COOKIEFILE: '.$cookieFile,E_USER_NOTICE);
+		$pharmUpdateFile = fopen($pharmUpdateFileName,'w');
+		$ch = curl_init();
+		curl_setopt($ch,CURLOPT_COOKIEFILE,$cookieFile);
+		curl_setopt($ch,CURLOPT_URL,$downloadURL);
+		curl_setopt($ch,CURLOPT_POST,false);
+		curl_setopt($ch,CURLOPT_HTTPGET,true);
+		curl_setopt($ch,CURLOPT_FILE,$pharmUpdateFile);
+		curl_setopt($ch,CURLOPT_FOLLOWLOCATION,true);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
+		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
+		$output = curl_exec($ch);
+		$error = "";
+		fclose($pharmUpdateFile);
+		$pharmaciesData = "";
+		if (!curl_errno($ch)) {
+			try {
+				$zip = zip_open($pharmUpdateFileName);
+				if ($zip) {
+					while ($zipEntry = zip_read($zip)) {
+						$name = zip_entry_name($zipEntry);
+						zip_entry_open($zip,$zipEntry,'r');
+						$pharmaciesData = zip_entry_read($zipEntry,zip_entry_filesize($zipEntry));
+						zip_entry_close($zipEntry);
+					}
+					zip_close($zip);
+				}
+				else {
+					$error = __("There was an unpacking the pharmacy data returned from HealthCloud. Please try again or contact the system administrator.");
+					trigger_error("Zip error unpacking pharmacy data: " . $zip,E_USER_NOTICE);
+
+				}
+			}
+			catch (Exception $e) {
+				//todo add exceptions in above try
+			}
+		}
+		curl_close ($ch);
+		$tmpFileName = tempnam(sys_get_temp_dir(),'ssdddata_');
+		$pharmDataTmp = fopen($tmpFileName,'w');
+		fwrite($pharmDataTmp,$pharmaciesData);
+		fclose($pharmDataTmp);
+		return $tmpFileName;
+	}
+
+	public static function loadPharmacy($filename) {
+		trigger_error('before loading pharmacies: '.calcTS(),E_USER_NOTICE);
+		set_time_limit(300); // 5 minutes
+		$filename = sys_get_temp_dir().DIRECTORY_SEPARATOR.preg_replace('/.*(\/|\\ee)/','',$filename);
+		$pharmDataTmp = fopen($filename,'r');
+
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('pharmacies',array('pharmacyId','NCPDPID','preferred'));
+		$pharmacies = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$pharmacies[$row['NCPDPID']] = array('pharmacyId'=>$row['pharmacyId'],'preferred'=>$row['preferred']);
+			}
+		}
+
+		fseek($pharmDataTmp,0);
+		$counter = 0;
+		while($line = fgets($pharmDataTmp)) {
+			$pharmacy = array();
+			$pharmacy['NCPDPID'] = substr($line,0,7); 
+			$pharmacy['StoreNumber'] = substr($line,7,35);
+			$pharmacy['ReferenceNumberAlt1'] = substr($line,42,35);
+			$pharmacy['ReferenceNumberAlt1Qualifier'] = substr($line,77,3);
+			$pharmacy['StoreName'] = substr($line,80,35);
+			$pharmacy['AddressLine1'] = substr($line,115,35);
+			$pharmacy['AddressLine2'] = substr($line,150,35);
+			$pharmacy['City'] = substr($line,185,35);
+			$pharmacy['State'] = substr($line,220,2);
+			$pharmacy['Zip'] = substr($line,222,11);
+			$pharmacy['PhonePrimary'] = substr($line,233,25);
+			$pharmacy['Fax'] = substr($line,258,25);
+			$pharmacy['Email'] = substr($line,283,80); 
+			$pharmacy['PhoneAlt1'] = substr($line,363,25);
+			$pharmacy['PhoneAlt1Qualifier'] = substr($line,388,3);
+			$pharmacy['PhoneAlt2'] = substr($line,391,25);
+			$pharmacy['PhoneAlt2Qualifier'] = substr($line,416,3);
+			$pharmacy['PhoneAlt3'] = substr($line,419,25);
+			$pharmacy['PhoneAlt3Qualifier'] = substr($line,444,3);
+			$pharmacy['PhoneAlt4'] = substr($line,447,25);
+			$pharmacy['PhoneAlt4Qualifier'] = substr($line,472,3);
+			$pharmacy['PhoneAlt5'] = substr($line,475,25);
+			$pharmacy['PhoneAlt5Qualifier'] = substr($line,500,3);
+			$pharmacy['ActiveStartTime'] = substr($line,503,22);
+			$pharmacy['ActiveEndTime'] = substr($line,525,22);
+			$pharmacy['ServiceLevel'] = substr($line,547,5);
+			$pharmacy['PartnerAccount'] = substr($line,552,35);
+			$pharmacy['LastModifiedDate'] = substr($line,587,22);
+			$pharmacy['TwentyFourHourFlag'] = substr($line,609,1);
+			$pharmacy['Available CrossStreet'] = substr($line,610,35);
+			$pharmacy['RecordChange'] = substr($line,645,1);
+			$pharmacy['OldServiceLevel'] = substr($line,646,5); 
+			$pharmacy['TextServiceLevel'] = substr($line,651,100);
+			$pharmacy['TextServiceLevelChange'] = substr($line,751,100);
+			$pharmacy['Version'] = substr($line,851,5);
+			$pharmacy['NPI'] = substr($line,856,10);
+			$data = array();
+			foreach ($pharmacy as $key=>$value) {
+				$data[$key] = trim($value);
+			}
+			$p = new Pharmacy();
+			$p->_shouldAudit = false;
+			$p->populateWithArray($data);
+			if (isset($pharmacies[$p->NCPDPID])) {
+				$p->pharmacyId = $pharmacies[$p->NCPDPID]['pharmacyId'];
+				$p->preferred = $pharmacies[$p->NCPDPID]['preferred'];
+			}
+			//$p->populatePharmacyIdWithNCPDPID();
+			$p->persist();
+			$counter++;
+		}
+		fclose($pharmDataTmp);
+		unlink($filename);
+
+		trigger_error('Number of rows updated: '.$counter,E_USER_NOTICE);
+		trigger_error('after loading pharmacies: '.calcTS(),E_USER_NOTICE);
+		return $counter;
 	}
 
 }

@@ -93,7 +93,7 @@ function reportsGetResultsGrid(viewId) {
 			return reportsBuildResultsGrid(data);
 		},
 		error: function (error) {
-			alert(error);
+			alert(error.responseText);
 			console.error("Error: ",error);
 		}
 	});
@@ -137,36 +137,6 @@ function reportsViewsRun(rowId) {
 	}
 }
 
-function reportsBuildSmart(index,offset,limit) {
-	dojo.xhrGet({
-		url: "<?=$this->baseUrl?>/reports.raw/get-next-results",
-		handleAs: "json",
-		content: {
-			"index": index,
-			"offset": offset,
-			"limit": limit,
-		},
-		load: function (data) {
-			if (data.rows.length <= 0) {
-				grids[index].userHasRows = false;
-				return;
-			}
-			for (var i in data.rows) {
-				var rowId = i;
-				grids[index].addRow(rowId,"");
-				var ctr = 0;
-				for (var j in data.rows[i]) {
-					grids[index].cells(rowId,ctr++).setValue(data.rows[i][j]);
-				}
-			}
-		},
-		error: function (error) {
-			alert(error);
-			console.error("Error: ",error);
-		}
-	});
-}
-
 function reportsBuildResultsGrid(data) {
 	var parentDiv = dojo.byId("reportsResultsGridContainerId");
 	parentDiv.innerHTML = "";
@@ -190,23 +160,26 @@ function reportsBuildResultsGrid(data) {
 
 		grids[index] = new dhtmlXGridObject("reportsResultsGridId"+index);
 		grids[index].setImagePath(globalBaseUrl+"/img/");
+		grids[index].enableDynamicLoading(true);
+		grids[index]._offsetHeight = 100;
 		var headers = [];
 		var widths = ["*"];
 		var colTypes = ["ro"];
 		var colSorts = ["str"];
-		for (var i in query.rows) {
-			for (var j in query.rows[i]) {
+		for (var i in query.headers) {
+			var j = query.headers[i];
+			if (!query.reportQuery.customColNames) {
 				var name = j.replace(/_/," ");
 				var prettyName = name.replace(/([A-Z])(?![A-Z])/," $1");
 				prettyName = prettyName.replace(/^(.)|\s(.)/g,function ($1) {
 					return $1.toUpperCase();
 				});
-				headers.push(prettyName);
-				widths.push("*");
-				colTypes.push("ro");
-				colSorts.push("str");
+				j = prettyName;
 			}
-			break;
+			headers.push(j);
+			widths.push("*");
+			colTypes.push("ro");
+			colSorts.push("str");
 		}
 		grids[index].setHeader(headers.join(","));
 		grids[index].setInitWidths(widths.join(","));
@@ -215,36 +188,13 @@ function reportsBuildResultsGrid(data) {
 		grids[index].setSkin("xp");
 		grids[index].enableAutoHeight(true,"100",true);
 		grids[index].init();
-		for (var i in query.rows) {
-			var rowId = i;
-			grids[index].addRow(rowId,"");
-			var ctr = 0;
-			for (var j in query.rows[i]) {
-				grids[index].cells(rowId,ctr++).setValue(query.rows[i][j]);
-			}
-		}
+		grids[index].parse({"rows":query.rows},"json");
+
 		grids[index].userScrollTop = 0;
 		grids[index].userOffset = 0;
 		grids[index].userHasRows = true;
 		grids[index].userIndex = index;
 		grids[index].displayName = query.reportQuery.displayName;
-		grids[index].attachEvent("onScroll",function(scrollLeft,scrollTop){
-			if (!this.userHasRows) {
-				return;
-			}
-			if (scrollTop > this.userScrollTop) {
-				var limit = 5; // set number of rows to 10
-				this.userScrollTop = scrollTop;
-				// width 100px renders only 5 rows; 65 = 5 rows (13 per row)
-				var diff = scrollTop / 13 / 5;
-				var absDiff = Math.ceil(diff);
-				if (absDiff > this.userOffset) {
-					this.userOffset++;
-					// fetch the next set after scrolling the next 5 rows
-					reportsBuildSmart(this.userIndex,(this.userOffset*limit),limit);
-				}
-			}
-		});
 		dhtmlxEvent(grids[index].entBox,"contextmenu",function(e){
 			(e||event).cancelBubble=true;
 			return false;
@@ -312,6 +262,18 @@ function reportsGetResults(baseId) {
 						reportsResultsToolbar.addButtonSelect(filter.id,ctr++,prettyName,opts,"filter.png","filter.png");
 						reportsResultsToolbar.setItemToolTip(filter.id,prettyName);
 						break;
+					case "<?=ReportBase::FILTER_TYPE_LIST_BUILDING?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_PRACTICE?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_PROVIDER?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_ROOM?>":
+						var opts = [];
+						for (var j in filter.lists) {
+							var list = filter.lists[j];
+							opts.push(["filter_"+filter.id+"_"+list.id,"obj",list.name,"blank.gif"]);
+						}
+						reportsResultsToolbar.addButtonSelect(filter.id,ctr++,prettyName,opts,"filter.png","filter.png");
+						reportsResultsToolbar.setItemToolTip(filter.id,prettyName);
+						break;
 				}
 			}
 			reportsResultsToolbar.addButton("executeQueries",ctr++,"<?=__('Execute')?>","save.png","save.png");
@@ -340,7 +302,7 @@ function reportsGetResults(baseId) {
 			}
 		},
 		error: function (error) {
-			alert(error);
+			alert(error.responseText);
 			console.error ('Error: ', error);
 		}
 	});

@@ -37,6 +37,7 @@ class User extends WebVista_Model_ORM {
 	protected $_table = "user";
 	protected $_primaryKeys = array("user_id");
 	protected $_legacyORMNaming = true;
+	protected $_cascadePersist = false;
 
 	protected $_xmlPreferences = null; // placeholder for simplexml object
 
@@ -56,6 +57,10 @@ class User extends WebVista_Model_ORM {
 		$this->person_id = (int)$id;
 		$this->user_id = $this->person_id;
 		$this->person->personId = $this->person_id;
+	}
+
+	public function getUserId() {
+		return $this->person_id;
 	}
 
 	public function setUserId($id) {
@@ -155,6 +160,7 @@ class User extends WebVista_Model_ORM {
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->_ormPersist = true;
 		$audit->persist();
+		return $result;
 	}
 
 }

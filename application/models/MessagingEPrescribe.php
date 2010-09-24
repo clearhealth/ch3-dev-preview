@@ -38,6 +38,7 @@ class MessagingEPrescribe extends WebVista_Model_ORM {
 
 	protected $_table = 'messagingEPrescribes';
 	protected $_primaryKeys = array('messagingId');
+	protected $_cascadePersist = false;
 	protected static $_messageTypes = array(
 		'newRx'=>'NewRx',
 		'refillRequest'=>'RefillRequest',
@@ -77,6 +78,10 @@ class MessagingEPrescribe extends WebVista_Model_ORM {
 	public function setMedicationId($value) {
 		$this->medicationId = (int)$value;
 		$this->medication->medicationId = $this->medicationId;
+	}
+
+	public function getMessagingEPrescribeId() {
+		return $this->messagingId;
 	}
 
 }

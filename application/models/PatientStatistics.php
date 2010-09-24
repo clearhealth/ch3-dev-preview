@@ -44,4 +44,9 @@ class PatientStatistics extends WebVista_Model_ORM {
 	function getDisplayEthnicity() {
 
 	}
+
+	public function getPatientStatisticsId() {
+		return $this->person_id;
+	}
+
 }

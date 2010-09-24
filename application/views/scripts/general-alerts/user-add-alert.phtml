@@ -12,6 +12,7 @@ function userAddAlertSubmit() {
 		load: function (data) {
 			if (data == true) {
 				alert("<?=('Alert sucessfully added')?>");
+				alertsReload();
 				dhxWins.window("winAddAlertId").close();
 			}
 			else {

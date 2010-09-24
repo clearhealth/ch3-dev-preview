@@ -77,4 +77,8 @@ class CompanyNumber extends WebVista_Model_ORM {
 		return parent::__set($key,$value);
 	}
 
+	public function getCompanyNumberId() {
+		return $this->company_id;
+	}
+
 }

@@ -33,6 +33,7 @@ class MedicationRefillResponse extends WebVista_Model_ORM {
 
 	protected $_table = 'medicationRefillResponses';
 	protected $_primaryKeys = array('messageId');
+	protected $_cascadePersist = false;
 
 	protected $_validResponses = array('approved'=>'Approved','approvedWithChanges'=>'Approved With Changes','denied'=>'Denied','deniedNewPrescriptionToFollow'=>'Denied New Prescription To Follow');
 
@@ -157,6 +158,10 @@ class MedicationRefillResponse extends WebVista_Model_ORM {
 		}
 		//trigger_error($sqlSelect->__toString());
 		return $ret;
+	}
+
+	public function getMedicationRefillResponseId() {
+		return $this->messageId;
 	}
 
 }

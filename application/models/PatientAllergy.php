@@ -38,6 +38,7 @@ class PatientAllergy extends WebVista_Model_ORM {
 	protected $noKnownAllergies;
 	protected $enteredInError;
 	protected $drugAllergy;
+	protected $active;
 
 	protected $_primaryKeys = array('patientAllergyId');
 	protected $_table = 'patientAllergies';
@@ -46,7 +47,7 @@ class PatientAllergy extends WebVista_Model_ORM {
 	const ENUM_SEVERITY_PARENT_NAME = 'Severity Preferences';
 	const ENUM_SYMPTOM_PARENT_NAME = 'Symptom Preferences';
 
-	public function getIteratorByPatient($patientId = null,$enteredInError = 0,$noKnownAllergies = null) {
+	public function getIteratorByPatient($patientId = null,$enteredInError = 0,$noKnownAllergies = null,$active = null) {
 		if ($patientId === null) {
 			$patientId = $this->patientId;
 		}
@@ -54,7 +55,10 @@ class PatientAllergy extends WebVista_Model_ORM {
 		$filters['patientId'] = (int)$patientId;
 		$filters['enteredInError'] = (int)$enteredInError;
 		if ($noKnownAllergies !== null) {
-			$filters['patientId'] = (int)$noKnownAllergies;
+			$filters['noKnownAllergies'] = (int)$noKnownAllergies;
+		}
+		if ($active !== null) {
+			$filters['active'] = (int)$active;
 		}
 		$iterator = new PatientAllergyIterator();
 		$iterator->setFilters($filters);

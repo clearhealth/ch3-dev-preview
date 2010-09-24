@@ -29,10 +29,9 @@ class UsersController extends WebVista_Controller_Action {
 
 	public function init() {
 		$auth = Zend_Auth::getInstance();
-		$userId = $auth->getIdentity()->userId;
 		$user = new User();
-		$user->userId = $userId;
-		$user->populate();
+		$user->personId = (int)$auth->getIdentity()->personId;
+		$user->populateWithPersonId();
 		if (strlen($user->preferences) > 0) {
 			$this->xmlPreferences = new SimpleXMLElement($user->preferences);
 		}

@@ -15,9 +15,51 @@ function vitalsOnAdded() {
 
 var vitalsListGrid = new dhtmlXGridObject("vitalsListContainer");
 vitalsListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-vitalsListGrid.setHeader("<?=__('Data & Time')?>,<?=__('Vital')?>,<?=__('USS Value')?>,<?=__('Metric Value')?>,<?=__('Qualifiers')?>,<?=__('Entering User')?>");
-vitalsListGrid.setInitWidths("165,*,*,*,*,*");
+var indexVitalsDateTime = 0;
+var indexVitalsVital = 1;
+var indexVitalsUSSValue = 2;
+var indexVitalsMetricValue = 3;
+var indexVitalsQualifiers = 4;
+var indexVitalsUser = 5;
+var indexVitalsConvertible = 6;
+vitalsListGrid.setHeader("<?=__('Date & Time')?>,<?=__('Vital')?>,<?=__('USS Value')?>,<?=__('Metric Value')?>,<?=__('Qualifiers')?>,<?=__('Entering User')?>,");
+vitalsListGrid.setInitWidths("165,*,*,*,*,*,0");
+vitalsListGrid.setColTypes("ed,ro,ed,ed,ro,ro,ro");
+//vitalsListGrid.setColTypes("dhxCalendar,ro,ed,ed,ro,ro,ro");
+//vitalsListGrid._dtmask = "%m/%d/%Y"; // hacks for calendar date forma
 vitalsListGrid.setSkin("xp");
 vitalsListGrid.init();
+vitalsListGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
+	if (stage == 0 && this.cells(rowId,indexVitalsConvertible).getValue() == "0" && this.cells(rowId,cellIndex).getValue().length == 0 && cellIndex == indexVitalsMetricValue) {
+		return false;
+	}
+	else if (stage == 2 && newValue != oldValue) {
+		var conversion = this.cells(rowId,indexVitalsConvertible).getValue();
+		var field = "value";
+		if (cellIndex == indexVitalsDateTime) {
+			field = "date";
+		}
+		dojo.xhrPost({
+			url: "<?=$this->baseUrl?>/vital-signs.raw/process-edit-vital-sign-value-field",
+			handleAs: "json",
+			content: {
+				"id": rowId,
+				"field": field,
+				"value": newValue,
+				"conversion": conversion,
+			},
+			load: function (data) {
+				if (data) {
+					vitalsOnAdded();
+				}
+			},
+			error: function (error) {
+				alert(error.responseText);
+				console.error("Error: ", error);
+			}
+		});
+	}
+	return true;
+});
 vitalsOnAdded();
 </script>

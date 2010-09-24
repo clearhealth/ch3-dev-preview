@@ -41,6 +41,7 @@ class Building extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('id');
 	protected $_cascadePopulate = false; // disable to prevent assigning buildingId as practiceId since buildings.id != practices.id
 	protected $_legacyORMNaming = true;
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		parent::__construct();
@@ -112,6 +113,44 @@ class Building extends WebVista_Model_ORM {
 
 	public function getZipCode() {
 		return preg_replace('/[^0-9]*/','',$this->postalCode);
+	}
+
+	public function getPhoneNumbers() {
+		$ret = array();
+		$phoneNumber = PhoneNumber::autoFixNumber($this->phone_number); // TE
+		$ret[] = array('number'=>$phoneNumber,'type'=>'TE');
+		$fax = PhoneNumber::autoFixNumber($this->fax); // FX
+		if (strlen($fax) > 0) {
+			$ret[] = array('number'=>$fax,'type'=>'FX');
+		}
+		return $ret;
+	}
+
+	public static function getBuildingDefaultLocation($personId) { // get default building given user's person id
+		$user = new User();
+		$user->personId = $personId;
+		$user->populateWithPersonId();
+		$user->populate();
+		$building = null;
+		if (strlen($user->preferences) > 0) {
+			$xmlPreferences = new SimpleXMLElement($user->preferences);
+			$room = new Room();
+			$room->roomId = (int)$xmlPreferences->currentLocation;
+			if ($room->populate()) {
+				$building = $room->building;
+			}
+		}
+		if ($building === null) {
+			$building = new Building();
+			$building->buildingId = (int)$user->defaultBuildingId;
+			$building->populate();
+		}
+		return $building;
+	}
+
+	public function getDisplayName() {
+		if (!strlen($this->practice->name) > 0) $this->practice->populate();
+		return $this->practice->name.'->'.$this->name;
 	}
 
 }

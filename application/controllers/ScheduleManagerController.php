@@ -143,21 +143,6 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		if (!strlen($match) > 0) $this->_helper->autoCompleteDojo($matches);
 		$db = Zend_Registry::get('dbAdapter');
 		$match = $db->quote($match.'%');
-		/*$sqlSelect = $db->select()
-				->from('provider')
-				->joinUsing('person','person_id')
-				->where('person.last_name LIKE '.$match)
-				->orWhere('person.first_name LIKE '.$match)
-				->order('person.last_name DESC')
-				->order('person.first_name DESC');
-		$providerResults = $db->fetchAll($sqlSelect);
-		$data = array();
-		foreach ($providerResults as $row) {
-			$name = ucwords(strtolower($row['last_name'] . ', ' . $row['first_name'] . ' ' . substr($row['middle_name'],0,1))) . ' ' . $row['suffix'];
-			$matches['pid'.$row['person_id']] = $name;
-		}*/
-
-		// if every provider MUST have a corresponding user data, then the below query is not required
 		$sqlSelect = $db->select()
 				->from('user')
 				->joinUsing('person','person_id')

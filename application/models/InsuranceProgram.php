@@ -61,7 +61,8 @@ class InsuranceProgram extends WebVista_Model_ORM {
 		$dbSelect = $db->select()
 			       ->from(array('ip'=>'insurance_program'),array('insurance_program_id','name'))
 			       ->join(array('c'=>'company'),'c.company_id = ip.company_id',array('company_name'=>'name'))
-			       ->order('c.name');
+			       ->order('c.name')
+			       ->order('ip.name');
 		$insurancePrograms = array();
 		foreach ($db->fetchAll($dbSelect) as $row) {
 			$insurancePrograms[$row['insurance_program_id']] = $row['company_name'].'->'.$row['name'];
@@ -76,7 +77,8 @@ class InsuranceProgram extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from($this->_table)
-			       ->where('company_id = ?',(int)$companyId);
+			       ->where('company_id = ?',(int)$companyId)
+			       ->order('name');
 		return $this->getIterator($dbSelect);
 	}
 
@@ -106,12 +108,34 @@ class InsuranceProgram extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from(array('ip'=>'insurance_program'),array('insurance_program_id','name'))
 				->join(array('c'=>'company'),'c.company_id = ip.company_id',array('company_name'=>'name'))
-				->where('ip.insurance_program_id = ?',(int)$insuranceProgramId);
+				->where('ip.insurance_program_id = ?',(int)$insuranceProgramId)
+				->order('c.name')
+				->order('ip.name');
 		$insuranceProgram = '';
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$insuranceProgram = $row['company_name'].'->'.$row['name'];
 		}
 		return $insuranceProgram;
+	}
+
+	public static function getInsuranceProgramsByIds($ids) {
+		$x = explode(',',$ids);
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('ip'=>'insurance_program'),array('insurance_program_id','name'))
+				->join(array('c'=>'company'),'c.company_id = ip.company_id',array('company_name'=>'name'))
+				->order('c.name')
+				->order('ip.name');
+		foreach ($x as $id) {
+			$sqlSelect->orWhere('ip.insurance_program_id = ?',(int)$id);
+		}
+		$insurancePrograms = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$insurancePrograms[$row['insurance_program_id']] = $row['company_name'].'->'.$row['name'];
+			}
+		}
+		return $insurancePrograms;
 	}
 
 }

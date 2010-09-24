@@ -51,6 +51,7 @@ class DataIntegration extends WebVista_Model_ORM {
 		$eSignature->eSignatureId = $audit->objectId;
 		$eSignature->populate();
 		if ($eSignature->objectClass != 'Medication' || !strlen($eSignature->signature) > 0) {
+			WebVista::log('esignature is not signed or medication');
 			return $data;
 		}
 
@@ -59,31 +60,23 @@ class DataIntegration extends WebVista_Model_ORM {
 		$medication->medicationId = (int)$eSignature->objectId;
 		$medication->populate();
 		if ($medication->transmit != 'ePrescribe' || $medication->isScheduled()) {
+			WebVista::log('medication is either scheduled or not an eprescribe');
 			return $data;
 		}
 
+		WebVista::log('generating source data');
 		$data['_audit'] = $audit;
 		$uuid = uuid_create();
 		$data['messageId'] = str_replace('-','',$uuid);
 		$data['prescriberOrderNumber'] = $medication->medicationId.'_'.$audit->auditId;
 		$data['rxReferenceNumber'] = $medication->rxReferenceNumber;
+		WebVista::log('messageId:['.$data['messageId'].'] prescriberOrderNumber:['.$data['prescriberOrderNumber'].'], rxReferenceNumber:['.$data['rxReferenceNumber'].']');
 
 		$medData = array();
 		$medData['description'] = $medication->description;
-		//$medData['strength'] = $medication->strength;
-		//$dose = '';
-		//if (preg_match('/^[0-9]*/',trim($medication->dose),$matches)) {
-		//	$dose = $matches[0];
-		//}
-		//$medData['strength'] = $dose;
 		$medData['strength'] = $medication->dose;
 		$qualifiers = Medication::listQuantityQualifiersMapping();
 		$medData['strengthUnits'] = $qualifiers[$medication->quantityQualifier];// temporarily set to the same with quantity
-		//$qty = '';
-		//if (preg_match('/^[0-9]*/',trim($medication->quantity),$matches)) {
-		//	$qty = $matches[0];
-		//}
-		//$medData['quantity'] = $qty;
 		$medData['quantity'] = $medication->quantity;
 		$medData['quantityUnits'] = $qualifiers[$medication->quantityQualifier];
 		$medData['daysSupply'] = $medication->daysSupply;
@@ -107,6 +100,7 @@ class DataIntegration extends WebVista_Model_ORM {
 		$medData['drugDBQualifier'] = ''; //'pkey'; valid options: "E|G|FG|FS|MC|MD|MG|MM"
 		$medData['note'] = $medication->comment;
 		$data['Medication'] = $medData;
+		WebVista::log('medication data: '.print_r($medData,true));
 
 		// PHARMACY DATA
 		$pharmacy = new Pharmacy();
@@ -137,6 +131,7 @@ class DataIntegration extends WebVista_Model_ORM {
 		$phones[] = array('number'=>$pharmacy->PhoneAlt5,'type'=>$pharmacy->PhoneAlt5Qualifier);
 		$pharmacyData['phones'] = $phones;
 		$data['Pharmacy'] = $pharmacyData;
+		WebVista::log('pharmacy data: '.print_r($pharmacyData,true));
 
 		// PRESCRIBER DATA
 		$provider = new Provider();
@@ -144,7 +139,6 @@ class DataIntegration extends WebVista_Model_ORM {
 		$provider->populate();
 		$prescriberData = array();
 		$prescriberData['DEANumber'] = $provider->deaNumber;
-		$prescriberData['SPI'] = $provider->sureScriptsSPI;
 		// it has conflicts with DEANumber
 		//$prescriberData['stateLicenseNumber'] = $provider->stateLicenseNumber;
 		$prescriberData['fileId'] = $provider->personId;
@@ -154,9 +148,6 @@ class DataIntegration extends WebVista_Model_ORM {
 		if (strlen($identifierType) > 0) {
 		//	$prescriberData[$identifierType] = $provider->identifier;
 		}
-		$phoneNumber = new PhoneNumber();
-		$phoneNumber->personId = $provider->personId;
-		$prescriberData['phones'] = $phoneNumber->phoneNumbers;
 
 		$prescriberData['lastName'] = $provider->person->lastName;
 		$prescriberData['firstName'] = $provider->person->firstName;
@@ -170,15 +161,20 @@ class DataIntegration extends WebVista_Model_ORM {
 			$specialtyQualifier = 'AM';
 		}
 		$prescriberData['specialtyQualifier'] = $specialtyQualifier;
-		$address = new Address();
-		$address->personId = $provider->personId;
-		$address->populateWithType('MAIN');
-		$prescriberData['addressLine1'] = $address->line1;
-		$prescriberData['addressLine2'] = $address->line2;
-		$prescriberData['city'] = $address->city;
-		$prescriberData['state'] = $address->state;
-		$prescriberData['zip'] = $address->zipCode;
+		$building = Building::getBuildingDefaultLocation((int)$provider->personId);
+		$ePrescriber = new EPrescriber();
+		$ePrescriber->providerId = (int)$provider->personId;
+		$ePrescriber->buildingId = (int)$building->buildingId;
+		$ePrescriber->populateWithBuildingProvider();
+		$prescriberData['SPI'] = $ePrescriber->SSID;
+		$prescriberData['addressLine1'] = $building->line1;
+		$prescriberData['addressLine2'] = $building->line2;
+		$prescriberData['city'] = $building->city;
+		$prescriberData['state'] = $building->state;
+		$prescriberData['zip'] = $building->zipCode;
+		$prescriberData['phones'] = $building->phoneNumbers;
 		$data['Prescriber'] = $prescriberData;
+		WebVista::log('prescriber data: '.print_r($prescriberData,true));
 
 		// PATIENT DATA
 		$patient = new Patient();
@@ -199,12 +195,7 @@ class DataIntegration extends WebVista_Model_ORM {
 			$patientData[$identifierType] = $patient->identifier;
 		}
 
-		$enumeration = new Enumeration();
-		$enumeration->enumerationId = $patient->person->gender;
-		$enumeration->populate();
-		$gender = $enumeration->key;
-
-		$patientData['gender'] = $gender;
+		$patientData['gender'] = $patient->person->getDisplayGender();
 		$dateOfBirth = date('Ymd',strtotime($patient->person->dateOfBirth));
 		if ($patient->person->dateOfBirth == '0000-00-00') {
 			$dateOfBirth = '';
@@ -212,7 +203,10 @@ class DataIntegration extends WebVista_Model_ORM {
 		$patientData['dateOfBirth'] = $dateOfBirth;
 		$address = new Address();
 		$address->personId = $patient->personId;
-		$address->populateWithType('MAIN');
+		$addressIterator = $address->getIteratorByPersonId();
+		foreach ($addressIterator as $address) {
+			break; // retrieves the top address
+		}
 		$patientData['addressLine1'] = $address->line1;
 		$patientData['addressLine2'] = $address->line2;
 		$patientData['city'] = $address->city;
@@ -222,17 +216,23 @@ class DataIntegration extends WebVista_Model_ORM {
 		$phoneNumber->personId = $patient->personId;
 		$patientData['phones'] = $phoneNumber->phoneNumbers;
 		$data['Patient'] = $patientData;
+		WebVista::log('patient data: '.print_r($patientData,true));
 
 		// CHECK for attending/supervisor
-		$attendingId = TeamMember::getAttending($patient->teamId);
-		if ($attendingId > 0) {
+		$attendingId = (int)TeamMember::getAttending($patient->teamId);
+		$building = Building::getBuildingDefaultLocation($attendingId);
+		$ePrescriber = new EPrescriber();
+		$ePrescriber->providerId = $attendingId;
+		$ePrescriber->buildingId = (int)$building->buildingId;
+		$ePrescriber->populateWithBuildingProvider();
+		if ($attendingId > 0 && strlen($ePrescriber->SSID) > 0) {
 			// SUPERVISOR
 			$provider = new Provider();
 			$provider->personId = $attendingId;
 			$provider->populate();
 			$supervisorData = array();
 			$supervisorData['DEANumber'] = $provider->deaNumber;
-			$supervisorData['SPI'] = $provider->sureScriptsSPI;
+			$supervisorData['SPI'] = $ePrescriber->SSID;
 			// it has conflicts with DEANumber
 			//$supervisorData['stateLicenseNumber'] = $provider->stateLicenseNumber;
 			$supervisorData['fileId'] = $provider->personId;
@@ -258,15 +258,14 @@ class DataIntegration extends WebVista_Model_ORM {
 				$specialtyQualifier = 'AM';
 			}
 			$supervisorData['specialtyQualifier'] = $specialtyQualifier;
-			$address = new Address();
-			$address->personId = $provider->personId;
-			$address->populateWithType('MAIN');
-			$supervisorData['addressLine1'] = $address->line1;
-			$supervisorData['addressLine2'] = $address->line2;
-			$supervisorData['city'] = $address->city;
-			$supervisorData['state'] = $address->state;
-			$supervisorData['zip'] = $address->zipCode;
+			$supervisorData['addressLine1'] = $building->line1;
+			$supervisorData['addressLine2'] = $building->line2;
+			$supervisorData['city'] = $building->city;
+			$supervisorData['state'] = $building->state;
+			$supervisorData['zip'] = $building->zipCode;
+			$supervisorData['phones'] = $building->phoneNumbers;
 			$data['Supervisor'] = $supervisorData;
+			WebVista::log('supervisor data: '.print_r($supervisorData,true));
 		}
 
 		return $data;
@@ -274,12 +273,14 @@ class DataIntegration extends WebVista_Model_ORM {
 
 	public static function handlerSSAct(Audit $audit,Array $sourceData) {
 		if (!isset($sourceData['_audit']) || $audit->objectClass != 'ESignature') {
+			WebVista::log('unable to send: _audit index does not exists or audit objectClass not ESignature ');
 			return false;
 		}
 		$eSignature = new ESignature();
 		$eSignature->eSignatureId = $audit->objectId;
 		$eSignature->populate();
 		if ($eSignature->objectClass != 'Medication' || !strlen($eSignature->signature) > 0) {
+			WebVista::log('unable to send: signature is not signed or objectClass not Medication');
 			return false;
 		}
 
@@ -291,6 +292,7 @@ class DataIntegration extends WebVista_Model_ORM {
 
 		$patientInfo = $sourceData['Patient']['lastName'].', '.$sourceData['Patient']['firstName'].' '.$sourceData['Patient']['middleName'].' MRN#'.$sourceData['Patient']['fileId'];
 		$patientInfo .= ' - '.$sourceData['Medication']['description'].' #'.date('m/d/Y',strtotime($sourceData['Medication']['writtenDate']));
+		WebVista::log('patient info: '.$patientInfo);
 
 		$audit = $sourceData['_audit'];
 		unset($sourceData['_audit']);
@@ -328,6 +330,8 @@ class DataIntegration extends WebVista_Model_ORM {
 		$ch = curl_init();
 		$ePrescribeURL = Zend_Registry::get('config')->healthcloud->URL;
 		$ePrescribeURL .= 'ss-manager.raw/new-rx?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
+		WebVista::log('SS URL: '.$ePrescribeURL);
+		WebVista::log('URL Query: '.$query);
 		curl_setopt($ch,CURLOPT_URL,$ePrescribeURL);
 		curl_setopt($ch,CURLOPT_POST,true);
 		curl_setopt($ch,CURLOPT_POSTFIELDS,$query);
@@ -339,8 +343,9 @@ class DataIntegration extends WebVista_Model_ORM {
 		$output = curl_exec($ch);
 		$error = '';
 		$messaging->status = 'Sent';
-		$messaging->note = 'newRx sent';
-		trigger_error('RESPONSE:'.$output,E_USER_NOTICE);
+		$messaging->note = 'newRx pending';
+		$messaging->unresolved = 1;
+		WebVista::log('RESPONSE: '.$output);
 		if (!curl_errno($ch)) {
 			try {
 				$responseXml = new SimpleXMLElement($output);
@@ -357,13 +362,19 @@ class DataIntegration extends WebVista_Model_ORM {
 					trigger_error('There was an error prescribing new medication, Error code: '.$errorCode.' Error Message: '.$errorMsg,E_USER_NOTICE);
 				}
 				else if (isset($responseXml->status)) {
+					$messaging->note = 'newRx awaiting confirmation';
 					if ((string)$responseXml->status->code == '010') { // value 000 is for free standing error?
 						$messaging->status .= ' and Verified';
-						$messaging->note .= ' and verified';
+						$messaging->note = 'newRx sent and verified';
+						$messaging->unresolved = 0;
 					}
+				}
+				else {
+					$error = 'Unrecognized HealthCloud response: '.$output;
 				}
 				if (isset($responseXml->rawMessage)) {
 					$messaging->rawMessage = base64_decode((string)$responseXml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$responseXml->rawMessageResponse);
 				}
 			}
 			catch (Exception $e) {
@@ -381,7 +392,10 @@ class DataIntegration extends WebVista_Model_ORM {
 		$ret = true;
 		if (strlen($error) > 0) {
 			$messaging->status = 'Error';
-			$messaging->note = $error;
+			$patientInfo = $sourceData['Patient']['lastName'].', '.$sourceData['Patient']['firstName'].' '.$sourceData['Patient']['middleName'].' MRN#'.$sourceData['Patient']['fileId'];
+			$providerInfo = $sourceData['Prescriber']['lastName'].', '.$sourceData['Prescriber']['firstName'].' '.$sourceData['Prescriber']['middleName'];
+			$medicationInfo = $sourceData['Medication']['description'].' #'.date('m/d/Y',strtotime($sourceData['Medication']['writtenDate']));
+			$messaging->note = $error.' Patient: '.$patientInfo.' Provider: '.$providerInfo.' Medication: '.$medicationInfo;
 			$ret = false;
 		}
 		if ($messaging->resend) {

@@ -51,6 +51,7 @@ class VitalSignGroupsIterator extends WebVista_Model_ORMIterator implements Iter
 		if (isset($this->_currentRow)) {
 			$row = $this->_currentRow;
 			$this->_currentRow = null;
+			$this->_offset--;
 		}
 		else  {
 			$row = $this->_dbStmt->fetch(null,null,$this->_offset);

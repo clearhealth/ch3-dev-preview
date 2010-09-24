@@ -80,6 +80,10 @@ class WebVista_Model_ORM implements ORM,Iterator {
 		return $ret;
 	}
 
+	public function __isset($key) {
+		return $this->__get($key);
+	}
+
 	public function populateWithArray($array) {
 		//$fields = $this->ormFields();
 		foreach($array as $key => $value) {
@@ -98,7 +102,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 		$sql = "SELECT * from " . $this->_table . " WHERE 1 ";
 		$doPopulate = false;
 		foreach($this->_primaryKeys as $key) {
-			if ($this->$key > 0 || strlen($this->$key) == 32) {
+			if ($this->$key > 0 || strlen($this->$key) > 0) {
 				$doPopulate = true;
 				$sql .= " and $key = '" . preg_replace('/[^0-9a-z_A-Z-\.]/','',$this->$key) . "'";
 			}
@@ -313,7 +317,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 			//echo "setting: " . get_class($this)  ." " .  $field ."<br />";
 			$val = $this->__get($field);
 			if (is_object($val)) {
-				if ($val instanceof ORM && $val->_cascadePersist) {
+				if ($val instanceof ORM && $this->_cascadePersist == true) {
 					$val->setPersistMode($this->_persistMode);
 					$val->persist();
 				}

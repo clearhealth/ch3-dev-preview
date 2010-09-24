@@ -52,4 +52,23 @@ class GeneralAlert extends WebVista_Model_ORM {
 		return parent::getIterator($dbSelect);
 	}
 
+	public function populateOpenedAlertByFilters(Array $filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where("status = 'new'")
+				->limit(1);
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'objectClass':
+				case 'objectId':
+				case 'teamId':
+				case 'userId':
+					$sqlSelect->where($key.' = ?',(string)$value);
+					break;
+			}
+		}
+		return $this->populateWithSql($sqlSelect->__toString());
+	}
+
 }

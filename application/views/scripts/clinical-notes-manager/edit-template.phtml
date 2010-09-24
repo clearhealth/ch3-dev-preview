@@ -78,7 +78,7 @@ function preSubmit<?=$this->form->getId()?>() {
 			noteTemplatePostSubmit(autoAdd);
 		},
 		error: function (error) {
-			console.error ("Error: ",error);
+			alert("ERROR: " + error.responseText);
 		}
 	});
 	return false;
@@ -107,7 +107,7 @@ function noteTemplatePostSubmit(autoAdd) {
 			dhxWins.window("windowEditTemplateId").close();
 		},
 		error: function (error) {
-			console.error ("Error: ",error);
+			alert("ERROR: " + error.responseText);
 		}
 	});
 	return false;

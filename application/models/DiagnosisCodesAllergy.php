@@ -30,4 +30,8 @@ class DiagnosisCodesAllergy extends WebVista_Model_ORM {
 	protected $_table = 'diagnosisCodesAllergies';
 	protected $_primaryKeys = array('code');
 
+	public function getDiagnosisCodesAllergyId() {
+		return $this->code;
+	}
+
 }

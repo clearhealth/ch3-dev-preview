@@ -32,4 +32,8 @@ class DiagnosisCodesSNOMED extends WebVista_Model_ORM {
 	protected $_table = "diagnosisCodesSNOMED";
 	protected $_primaryKeys = array("snomedId");
 
+	public function getDiagnosisCodesSNOMEDId() {
+		return $this->snomedId;
+	}
+
 }

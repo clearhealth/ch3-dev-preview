@@ -24,6 +24,7 @@
 
 class PatientImmunization extends WebVista_Model_ORM {
 
+	protected $patientImmunizationId;
 	protected $code;
 	protected $patientId;
 	protected $reportedNotAdministered;
@@ -38,7 +39,7 @@ class PatientImmunization extends WebVista_Model_ORM {
 	protected $route;
 	protected $site;
 
-	protected $_primaryKeys = array("code");
+	protected $_primaryKeys = array('patientImmunizationId');
 	protected $_table = "patientImmunizations";
 
 	const ENUM_PARENT_NAME = 'Immunization Preferences';

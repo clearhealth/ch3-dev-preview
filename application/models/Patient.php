@@ -194,10 +194,7 @@ class Patient extends WebVista_Model_ORM {
 			$ret[] = 'First Name field must be supplied and not more than 35 characters';
 		}
 
-		$enumeration = new Enumeration();
-		$enumeration->enumerationId = $person->gender;
-		$enumeration->populate();
-		$gender = $enumeration->key;
+		$gender = $person->gender;
 		// Gender options = M, F, U
 		$genderList = array('M'=>'Male','F'=>'Female','U'=>'Unknown');
 		if (!isset($genderList[$gender])) {
@@ -213,7 +210,11 @@ class Patient extends WebVista_Model_ORM {
 		// Have appropriate validation on patient address/phone as required by SS docs
 		$address = new Address();
 		$address->personId = $this->personId;
-		$address->populateWithType('MAIN');
+		$addressIterator = $address->getIteratorByPersonId();
+		foreach ($addressIterator as $address) {
+			break; // retrieves the top address
+		}
+		//$address->populateWithType('MAIN');
 		$line1Len = strlen($address->line1);
 		if (!$line1Len > 0 || $line1Len > 35) {
 			$ret[] = 'Address line1 field must be supplied and not more than 35 characters';
@@ -241,7 +242,7 @@ class Patient extends WebVista_Model_ORM {
 		foreach ($phones as $phone) {
 			if ($phone['type'] == 'TE') {
 				$hasTE = true;
-				$break;
+				break;
 			}
 			if (strlen($phone['number']) < 11) {
 				$ret[] = 'Phone number \''.$phone['number'].'\' is invalid';
@@ -252,6 +253,10 @@ class Patient extends WebVista_Model_ORM {
 		}
 
 		return $ret;
+	}
+
+	public function getPatientId() {
+		return $this->person_id;
 	}
 
 }

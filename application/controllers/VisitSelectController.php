@@ -46,7 +46,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 			$defaultLocationId = (int)$identity->default_location_id;
 		}
 		$defaultPracticeId = 0;
-		$defaultBuildingId = 0;
+		$defaultBuildingId = (int)$user->defaultBuildingId;
 		if ($defaultLocationId > 0) {
 			$room = new Room();
 			$room->roomId = $defaultLocationId;
@@ -58,7 +58,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$this->view->defaultBuildingId = $defaultBuildingId;
 		$this->view->currentUserPersonId = $currentUserPersonId;
 		$this->view->defaultLocationId = $defaultLocationId;
-		$this->view->defaultDateOfService = date('Y-m-d');
+		$this->view->defaultDateOfTreatment = date('Y-m-d');
 
 		$facilityIterator = new FacilityIterator();
 		$providerIterator = new ProviderIterator();
@@ -100,6 +100,8 @@ class VisitSelectController extends WebVista_Controller_Action {
 
 	public function claimAction() {
 		$visitId = (int)$this->_getParam('visitId');
+		$insurancePrograms = array();
+		$insuranceProgramId = 0;
 		$listPayments = array();
 		$listCharges = array();
 		if ($visitId > 0) {
@@ -110,7 +112,17 @@ class VisitSelectController extends WebVista_Controller_Action {
 			$appointment = new Appointment();
 			$appointment->appointmentId = $visit->appointmentId;
 			$appointment->populate();
-			$personId = (int)$appointment->patientId;
+			$personId = (int)$visit->patientId;
+
+			$patientProcedureIterator = new PatientProcedureIterator();
+			$patientProcedureIterator->setFilters(array('patientId'=>$personId));
+			foreach ($patientProcedureIterator as $proc) {
+				if (ClaimLine::doesVisitProcedureRowExist($visitId,$proc->code)) continue;
+				$claimLine = new ClaimLine();
+				$claimLine->visitId = $visitId;
+				$claimLine->procedureCode = $proc->code;
+				$claimLine->persist();
+			}
 
 			$payment = new Payment();
 			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
@@ -134,10 +146,32 @@ class VisitSelectController extends WebVista_Controller_Action {
 					$row['note'], // note
 				);
 			}
+
+			$insuredRelationship = new InsuredRelationship();
+			$insuredRelationship->personId = (int)$visit->patientId;
+			$insurancePrograms = $insuredRelationship->getProgramList();
+			$insuranceProgramId = (int)$visit->activePayerId;
 		}
 		$this->view->listPayments = $listPayments;
 		$this->view->listCharges = $listCharges;
+		$this->view->visitId = $visitId;
+		$this->view->insurancePrograms = $insurancePrograms;
+		$this->view->insuranceProgramId = $insuranceProgramId;
 		$this->render();
+	}
+
+	public function processSetInsuranceProgramAction() {
+		$visitId = (int)$this->_getParam('visitId');
+		$payerId = (int)$this->_getParam('payerId');
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		if ($visit->populate()) {
+			$visit->activePayerId = $payerId;
+			$visit->persist();
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($visit->activePayerId);
 	}
 
 	public function vitalsAction() {
@@ -262,7 +296,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 		foreach ($visitIterator as $visit) {
 			$row = array();
 			$row['id'] = $visit->visitId;
-			$row['data'][] = $visit->displayDateOfService;
+			$row['data'][] = $visit->dateOfTreatment;
 			$row['data'][] = $visit->locationName;
 			$row['data'][] = $visit->providerDisplayName;
 			$row['data'][] = $visit->insuranceProgram;

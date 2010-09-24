@@ -172,12 +172,6 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function generateTestDataAction() {
-		GeneralAlertHandler::generateTestData();
-		echo 'Done';
-		die;
-	}
-
 	public function userAddAlertAction() {
 		$this->render();
 	}

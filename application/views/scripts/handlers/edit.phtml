@@ -155,6 +155,7 @@ function postSubmitedit(data) {
 		window.<?=$this->callback?>(data);
 	}
 <?endif;?>
+	alert("<?=__('You must restart CHProcessingDaemon for the changes to take effect.')?>");
 	dhxWins.window('winEditHandlerId').close();
 	return false;
 }

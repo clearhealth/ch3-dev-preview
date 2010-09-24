@@ -4,7 +4,7 @@ var globalAccessDeniedLabel = '<label style="color:red;"><?=__('Access denied')?
 var globalAccessDenied = "<?=__('Access denied')?>";
 
 // temporarily set the dojo's baseUrl to cater the template rendering
-dojo.baseUrl = '<?=$this->view->baseUrl?>/js<?=$this->view->baseUrl?>/';
+dojo.baseUrl = "<?=$this->view->baseUrl?>/js/js/";
 
 // en and en-us are the same
 dojo.provide("dojo.cldr.nls.en.gregorian");

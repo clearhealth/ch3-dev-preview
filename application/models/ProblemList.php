@@ -41,6 +41,7 @@ class ProblemList extends WebVista_Model_ORM implements NSDRMethods {
 	protected $previousStatus;
 	protected $_table = "problemLists";
 	protected $_primaryKeys = array("problemListId");
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		$this->person = new Person();

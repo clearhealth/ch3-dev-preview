@@ -1,4 +1,10 @@
 <style>
+dt {
+	display:block;
+}
+dd {
+	display:block;
+}
 input,select,#markDuplicateId {
 	margin: 0em 0.1em;
 	border:1px solid #b3b3b3;
@@ -100,7 +106,7 @@ function pdRemove(id,type,callback) {
 					</div>
 					<div>
 						<?=$this->form->formPerson->gender->renderLabel()?>
-						<?=$this->form->formPerson->genderInput('FormSelect',array('options'=>Enumeration::getEnumArray('Gender','enumerationId'),'style'=>'width:90px;'))?>
+						<?=$this->form->formPerson->genderInput('FormSelect',array('options'=>Enumeration::getEnumArray('Gender','key'),'style'=>'width:90px;'))?>
 					</div>
 					<div>
 						<?=$this->form->formPerson->maritalStatus->renderLabel()?>
@@ -114,7 +120,7 @@ function pdRemove(id,type,callback) {
 					<?=__('Active')?> <input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> /></div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->confidentiality->renderLabel()?>
-					<?=$this->form->confidentialityInput('FormSelect',array('options'=>Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
+					<?=$this->form->confidentialityInput('FormSelect',array('options'=>Enumeration::getEnumArray('Confidentiality','enumerationId'),'style'=>'width:120px;'))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<dt><label for="markDuplicateId" class="optional">&nbsp;</label></dt>
@@ -125,11 +131,11 @@ function pdRemove(id,type,callback) {
 			<div class="formRow">
 				<div style="float:left;">
 					<?=$this->form->formPerson->primaryPracticeId->renderLabel()?>
-					<?=$this->form->formPerson->primaryPracticeIdInput('FormSelect',array('options'=>$this->facilityIterator->toArray('practiceId','name')))?>
+					<?=$this->form->formPerson->primaryPracticeIdInput('FormSelect',array('options'=>$this->facilityIterator->toArray('practiceId','name'),'style'=>'width:120px;'))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->defaultProvider->renderLabel()?>
-					<?=$this->form->defaultProviderInput('FormSelect',array('options'=>Provider::getArray()))?>
+					<?=$this->form->defaultProviderInput('FormSelect',array('options'=>Provider::getArray(),'style'=>'width:120px;'))?>
 				</div>
 			</div>
 			<br class="formRowDivider" />

@@ -24,7 +24,7 @@
 	<input type="button" value="<?=__("Cancel")?>" onClick="parent.closeWindowNewNote()"/>
 	<input type="button" value="<?=__("Select")?>" onClick="dojo.xhrPost ({url: '<?=$this->baseUrl?>/clinical-notes.raw/process-add-note?personId=<?=$this->personId?>',form: 'addNewNoteForm', handleAs: 'json', load: function (data) {
 if (typeof addedNewNote == 'function') {addedNewNote(data.clinicalNoteId);} else { dashboardInnerLayout.dhxWins.getTopmostWindow().close();  }
-}, error: function (er) {alert('err: ' + er)}});" />
+}, error: function (er) {alert('ERROR: ' + er.responseText);}});" />
 </div>
 </form>
 </div>

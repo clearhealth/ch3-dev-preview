@@ -188,6 +188,7 @@ class PatientSelectController extends WebVista_Controller_Action
 					->joinUsing('person','person_id')
 					->orWhere('identifier = ? ', $match)
 					->order('person.last_name ASC')
+					->order('person.first_name ASC')
 					->limit(50);
 		if (preg_match('/([a-zA-Z]*)\ ([a-zA-Z].*)/',$match,$nameParts)) { 
 			$patSelect->orWhere('first_name like ?', $nameParts[2] .'%');

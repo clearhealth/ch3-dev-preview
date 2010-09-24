@@ -179,8 +179,18 @@ class ePrescribe {
 							$tmpMsg = new Messaging();
 							$tmpMsg->messagingId = $relatesToMessageId;
 							if ($tmpMsg->populate()) { // populate for newRx details
-								$tmpMsg->status .= ' and Verified';
-								$tmpMsg->note .= ' and verified';
+								$tmpMsg->status = 'Sent and Verified';
+								$x = explode('(',$tmpMsg->note);
+								$tmpMsg->note = 'newRx';
+								if ($tmpMsg == 'MedicationRefillResponse') {
+									$tmpMsg->note = 'Refill response';
+								}
+								$tmpMsg->note .= ' sent and verified';
+								if (isset($x[1])) {
+									unset($x[0]);
+									$tmpMsg->note .= ' ('.implode('(',$x);
+								}
+								$tmpMsg->unresolved = 0;
 								$tmpMsg->persist();
 								$messaging->auditId = $tmpMsg->auditId;
 								$messaging->objectId = $tmpMsg->objectId;
@@ -211,8 +221,18 @@ class ePrescribe {
 							$tmpMsg = new Messaging();
 							$tmpMsg->messagingId = $relatesToMessageId;
 							if ($tmpMsg->populate()) { // populate for newRx details
-								$tmpMsg->status .= ' and Verified';
-								$tmpMsg->note .= ' and verified';
+								$tmpMsg->status = 'Sent and Verified';
+								$x = explode('(',$tmpMsg->note);
+								$tmpMsg->note = 'newRx';
+								if ($tmpMsg == 'MedicationRefillResponse') {
+									$tmpMsg->note = 'Refill response';
+								}
+								$tmpMsg->note .= ' sent and verified';
+								if (isset($x[1])) {
+									unset($x[0]);
+									$tmpMsg->note .= ' ('.implode('(',$x);
+								}
+								$tmpMsg->unresolved = 0;
 								$tmpMsg->persist();
 								$messaging->auditId = $tmpMsg->auditId;
 								$messaging->objectId = $tmpMsg->objectId;
@@ -234,6 +254,7 @@ class ePrescribe {
 							continue;
 						}
 						$messaging->rawMessage = $rawMessage;
+						$messaging->rawMessageResponse = base64_decode((string)$message->rawMessageResponse);
 						$messaging->status = 'Received';
 						$messaging->dateStatus = date('Y-m-d H:i:s');
 						$messaging->persist();
@@ -343,14 +364,11 @@ class ePrescribe {
 		$rawMessage = '';
 
 		$messaging->status = 'Sent';
-		$messaging->note = 'RefillResponse sent';
+		$messaging->note = 'Refill response pending';
+		$messaging->unresolved = 1;
 		if (!curl_errno($ch)) {
 			try {
 				$xml = new SimpleXMLElement($output);
-				if (isset($xml->error)) {
-					$ret = (string)$xml->error->code.': '.(string)$xml->error->message;
-					$messaging->note = 'Refill response sent';
-				}
 				if (isset($xml->error)) {
 					$errorCode = (string)$xml->error->code;
 					$errorMsg = (string)$xml->error->message;
@@ -364,22 +382,28 @@ class ePrescribe {
 					trigger_error('There was an error sending refill response, Error code: '.$errorCode.' Error Message: '.$errorMsg,E_USER_NOTICE);
 				}
 				else if (isset($xml->status)) {
+					$messaging->note = 'Refill response awaiting confirmation';
 					if ((string)$xml->status->code == '010') { // value 000 is for free standing error?
 						$messaging->status .= ' and Verified';
-						$messaging->note .= ' and verified';
+						$messaging->note = 'Refill response sent and verified';
+						$messaging->unresolved = 0;
 					}
+				}
+				else {
+					$error = 'Unrecognized HealthCloud response: '.$output;
 				}
 				if (isset($xml->rawMessage)) {
 					$messaging->rawMessage = base64_decode((string)$xml->rawMessage);
+					$messaging->rawMessageResponse = base64_decode((string)$xml->rawMessageResponse);
 				}
 			}
 			catch (Exception $e) {
-				$ret = __('There was an error, the response couldn\'t be parsed as XML: '.$output);
-				trigger_error($ret,E_USER_NOTICE);
+				$error = __('There was an error, the response couldn\'t be parsed as XML: '.$output);
+				trigger_error($error,E_USER_NOTICE);
 			}
 		}
 		else {
-			$ret = __('There was an error connecting to HealthCloud. Please try again or contact the system administrator.');
+			$error = __('There was an error connecting to HealthCloud. Please try again or contact the system administrator.');
 			trigger_error('Curl error connecting to healthcare: '.curl_error($ch),E_USER_NOTICE);
 		}
 		$messaging->note .= ' ('.$messageInfo.')';

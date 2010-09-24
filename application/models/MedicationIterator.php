@@ -37,8 +37,12 @@ class MedicationIterator extends WebVista_Model_ORMIterator implements Iterator 
 				->order('datePrescribed ASC');
 		foreach ($filters as $filter => $value) {
 			switch($filter) {
-				case 'patientId' :
+				case 'patientId':
 					$dbSelect->where('personId = ?',(int)$value);
+					break;
+				case 'active':
+					$operator = ((int)$value)?'!=':'=';
+					$dbSelect->where('daysSupply '.$operator.' -1');
 					break;
 			}
 		}

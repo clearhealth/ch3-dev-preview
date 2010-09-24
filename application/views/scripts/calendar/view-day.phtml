@@ -60,8 +60,8 @@ function calendarLoadEvents(columns) {
 	});
 }
 
-function expandAppointment(appointmentId,obj) {
-	obj.style.height = "100px";
+function expandAppointment(appointmentId,obj,height) {
+	if (height <= 22) obj.style.height = "auto";
 	obj.style.zIndex = 9999;
 }
 
@@ -236,12 +236,9 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			apptFlag = false;
 			return;
 		}
-		if (!appointmentId) {
+		if (!appointmentId && globalAppointmentId != null) {
 			appointmentId = globalAppointmentId;
 			globalAppointmentId = null;
-			if (appointmentId == null) {
-				appointmentId = gridObjects[columnIndex].getUserData(rowId,'appointmentId');
-			}
 		}
 		var providerId = gridObjects[columnIndex].getUserData(gridObjects[columnIndex].getRowId(0),'providerId');
 		if (providerId == 'placeHolderId') {

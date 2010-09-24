@@ -134,6 +134,7 @@ function deleteTemplate() {
 			}
 		},
 		error: function(response, ioArgs) {
+			alert("ERROR: " + response.responseText);
 			console.error("HTTP status code: ", ioArgs.xhr.status);
 			return response;
 		}
@@ -163,6 +164,7 @@ function deleteDefinition() {
 			}
 		},
 		error: function(response, ioArgs) {
+			alert("ERROR: " + response.responseText);
 			console.error("HTTP status code: ", ioArgs.xhr.status);
 			return response;
 		}

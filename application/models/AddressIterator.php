@@ -65,4 +65,15 @@ class AddressIterator extends WebVista_Model_ORMIterator implements Iterator {
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}
+
+	public function current() {
+		$ormObj = new $this->_ormClass();
+		$row = $this->_dbStmt->fetch(null,null,$this->_offset);
+		if (isset($row['address_type']) && (int)$row['address_type'] > 0) {
+			$row['type'] = $row['address_type'];
+		}
+		$ormObj->populateWithArray($row);
+		return $ormObj;
+	}
+
 }

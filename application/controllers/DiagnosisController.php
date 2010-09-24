@@ -75,10 +75,12 @@ class DiagnosisController extends WebVista_Controller_Action {
 
 	public function lookupDiagnosisAction() {
 		$q = $this->_getParam('q');
+		$rawParam = $q;
 		$q = preg_replace('/[^a-zA-Z0-9\%\.]/','',$q);
 
 		$rows = array();
-		if (strlen($q) > 0) {
+		$rows[] = array('id'=>'','data'=>array($rawParam,''));
+		if (strlen($q) > 3) {
 			$diagnosisCodeIterator = new DiagnosisCodesICDIterator();
 			$diagnosisCodeIterator->setFilter($q);
 			$icd = $diagnosisCodeIterator->toJsonArray('code',array('textShort','code'));
@@ -86,7 +88,7 @@ class DiagnosisController extends WebVista_Controller_Action {
 			$diagnosisCodeSNOMEDIterator = new DiagnosisCodesSNOMEDIterator();
 			$diagnosisCodeSNOMEDIterator->setFilter($q);
 			$snomed = $diagnosisCodeSNOMEDIterator->toJsonArray('snomedId',array('description','snomedId'));
-			$rows = array_merge($icd,$snomed);
+			$rows = array_merge($rows,$icd,$snomed);
 		}
 
 		$data = array();

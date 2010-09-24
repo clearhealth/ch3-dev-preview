@@ -36,6 +36,7 @@ class ExternalTeamMember extends WebVista_Model_ORM {
 
 	protected $_primaryKeys = array('externalTeamMemberId');
 	protected $_table = 'externalTeamMembers';
+	protected $_cascadePersist = false;
 
 	public function __construct() {
 		parent::__construct();

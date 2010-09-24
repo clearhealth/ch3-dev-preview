@@ -47,7 +47,7 @@ class LoginController extends WebVista_Controller_Action
 	}
 
 	public function processAction() {
-		User::processLogin($_POST['username'],$_POST['password']);
+		$result = User::processLogin($_POST['username'],$_POST['password']);
 		$data = array();
 		$auth = Zend_Auth::getInstance();
 		if ($auth->hasIdentity()) {

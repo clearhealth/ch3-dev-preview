@@ -10,9 +10,9 @@ service unlisted
                      protocol            = tcp
                      wait                = no
                      server              = /usr/bin/php
-                     server_args        = /tmp/handleSmtp.php
+                     server_args         = daemons/handleSMTP.php
                      port                = 25
-                     user               = root
+                     user                = root
               }
 
 ***********************************************************/

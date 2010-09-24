@@ -42,7 +42,8 @@ class GenericEditController extends WebVista_Controller_Action {
 		$ormEditMethod = $enumeration->ormEditMethod;
 
 		if (!class_exists($ormClass)) {
-			throw new Exception("ORM Class {$ormClass} does not exists");
+			$ormClass = 'Enumeration';
+			$ormEditMethod = 'ormEditMethod';
 		}
 		$ormObject = new $ormClass();
 		if (!$ormObject instanceof ORM) {

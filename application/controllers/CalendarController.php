@@ -186,6 +186,21 @@ class CalendarController extends WebVista_Controller_Action {
 			$data['header'] .= $room->name;
 			$title .= ' -> '.$room->name;
 		}
+		$dateStart = $column['dateFilter'].' 00:00:00';
+		$dateEnd = $column['dateFilter'].' 23:59:59';
+		$buildingIds = ScheduleEvent::getScheduleEventByFields($providerId,$roomId,$dateStart,$dateEnd,'buildingId');
+		if (count($buildingIds) > 0) {
+			$buildings = array();
+			foreach ($buildingIds as $buildingId) {
+				$building = new Building();
+				$building->buildingId = $buildingId;
+				$building->populate();
+				$buildings[] = $building->displayName;
+			}
+			$eventBuilding = implode(', ',$buildings);
+			$data['header'] .= '<br>('.$eventBuilding.')';
+			$title .= ' -> ('.$eventBuilding.')';
+		}
 		$data['header'] = '<label title="'.$title.'">'.$data['header'].'</label>';
 		return $data;
 	}
@@ -768,8 +783,6 @@ class CalendarController extends WebVista_Controller_Action {
 	// hold the temporary data counter
 	$tmpDataCtr = array();
 	$colMultiplier = 1;
-	$patient = new Patient();
-	$room = new Room();
 	$zIndex = 0;
 	foreach ($appointmentIterator as $row) {
 		$startToTime = strtotime($row->start);
@@ -825,9 +838,11 @@ class CalendarController extends WebVista_Controller_Action {
 			$colMultiplier = $multiplier;
 		}
 
+		$patient = new Patient();
 		$patient->setPersonId($row->patientId);
 		$patient->populate();
 		$person = $patient->person;
+		$room = new Room();
 		$room->setRoomId($row->roomId);
 		$room->populate();
 		$this->_session->currentAppointments[$columnIndex][$row->appointmentId] = $row;
@@ -862,9 +877,11 @@ class CalendarController extends WebVista_Controller_Action {
 			$routingStatuses[] = __('Station').': '.$routing->stationId;
 		}
 		$routingStatus = implode(' ',$routingStatuses);
-
-		//$columnData[$tmpIndex]['data'][0] .= "<div onclick=\"setAppointmentId('$row->appointmentId')\" ondblclick=\"appointmentEdit('$columnIndex','{$columnData[$tmpIndex]['id']}',0,'$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this);\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} <a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$row->patientId})</a> {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
-		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"setAppointmentId('$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this);\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} <a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$row->patientId})</a> {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
+		$nameLink = '';
+		if ($row->patientId > 0) {
+			$nameLink = "<a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$patient->recordNumber})</a>";
+		}
+		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"setAppointmentId('$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this,{$height});\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} {$nameLink} {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\">{$row->title} {$mark}</div></div>";
 		$columnData[$tmpIndex]['userdata']['visitId'] = $visit->visitId;
 		$columnData[$tmpIndex]['userdata']['appointmentId'] = $row->appointmentId;
 		$columnData[$tmpIndex]['userdata']['length'] = $j;
@@ -881,6 +898,7 @@ class CalendarController extends WebVista_Controller_Action {
 	}
 	$columnData[0]['userdata']['roomId'] = $roomId;
 
+	$buildings = array();
 	foreach($scheduleEventIterator as $event) {
 		$x = explode(' ', $event->start);
 		$eventTimeStart = strtotime($x[1]);
@@ -900,7 +918,13 @@ class CalendarController extends WebVista_Controller_Action {
 			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
 			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
 			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
-			$columnData[$index]['userdata']['title'] = $event->title;
+			if (!isset($buildings[$event->buildingId])) {
+				$building = new Building();
+				$building->buildingId = $event->buildingId;
+				$building->populate();
+				$buildings[$building->buildingId] = $building;
+			}
+			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' -> '.$buildings[$event->buildingId]->displayName;
 			$tmpIndex++;
 		}
         }

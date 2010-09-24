@@ -27,9 +27,6 @@
  */
 class EnumerationsManagerController extends WebVista_Controller_Action {
 
-	protected $_form = null;
-	protected $_enum = null;
-
 	protected function _saveEnumeration($data,$parentId=0) {
 		$enumerationsClosure = new EnumerationsClosure();
 		foreach ($data as $item) {
@@ -80,36 +77,39 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 	 * Render edit page
 	 */
 	public function editAction() {
-		$enumerationId = $this->_getParam("enumerationId",null);
-		$parentId = $this->_getParam("parentId",null);
+		$enumerationId = (int)$this->_getParam('enumerationId');
+		$parentId = (int)$this->_getParam('parentId');
 		$category = $this->_getParam('category',null);
 		$this->view->ormClass = $this->_getParam('ormClass',null);
 		$this->view->enumerationId = $enumerationId;
-		$this->_enum = new Enumeration();
-		if ($enumerationId !== null && is_numeric($enumerationId)) {
-			$this->_enum->enumerationId = (int)$enumerationId;
-			$this->_enum->populate();
+		$enum = new Enumeration();
+		if ($enumerationId > 0) {
+			$enum->enumerationId = $enumerationId;
+			$enum->populate();
 		}
 		if ($category !== null) {
-			$this->_enum->category = $category;
+			$enum->category = $category;
 		}
-		if (!strlen($this->_enum->ormEditMethod) > 0) {
-			$this->_enum->ormEditMethod = 'ormEditMethod';
+		if (!strlen($enum->ormEditMethod) > 0) {
+			$enum->ormEditMethod = 'ormEditMethod';
 		}
-		$this->_form = new WebVista_Form(array("name"=>"edit-enumeration"));
-                $this->_form->setAction(Zend_Registry::get('baseUrl') . "enumerations-manager.raw/process-edit");
-		$this->_form->loadORM($this->_enum,"enumeration");
-		$this->_form->setWindow("windowEditEnumerationId");
-		$this->view->form = $this->_form;
-		$this->view->categoryIterator = Enumeration::getIterByDistinctCategories();
-		if ($parentId !== null && is_numeric($parentId)) {
+		if ($parentId > 0) {
 			$parent = new Enumeration();
 			$parent->enumerationId = (int)$parentId;
 			$parent->populate();
 			$this->view->parent = $parent;
+			if ($parent->name == 'Facilities') {
+				$this->view->ormClass = 'Practice'; // overrides ormClass
+			}
 		}
+		$form = new WebVista_Form(array("name"=>"edit-enumeration"));
+		$form->setAction(Zend_Registry::get('baseUrl') . "enumerations-manager.raw/process-edit");
+		$form->loadORM($enum,"enumeration");
+		$form->setWindow('windowEditORMObjectId');
+		$this->view->form = $form;
+		$this->view->categoryIterator = Enumeration::getIterByDistinctCategories();
 		$this->view->grid = $this->_getParam('grid');
-		$this->render("edit");
+		$this->render('edit');
 	}
 
 	public function processEditAction() {
@@ -117,16 +117,27 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		$params = $this->_getParam('enumeration');
 		$enumClosure = new EnumerationsClosure();
 
-		$enumerationId = $enumClosure->insertEnumeration($params,$parentId);
+		$isSelf = true;
+		$enumerationId = (int)$params['enumerationId'];
+		if (($parentId == 0 && $enumerationId == 0) || ($parentId > 0 && !$enumerationId > 0)) {
+			$enumerationId = $enumClosure->insertEnumeration($params,$parentId);
+			$isSelf = false;
+		}
 
 		$enumeration = new Enumeration();
 		$enumeration->enumerationId = $enumerationId;
 		$enumeration->populate();
-
-		$icon = '';
-		if (strlen($enumeration->ormClass) > 0 && class_exists($enumeration->ormClass)) {
-			$icon = "<a onclick=\"enumEditObject({$enumeration->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
+		if ($isSelf) {
+			$enumeration->populateWithArray($params);
+			$enumeration->persist();
 		}
+
+		$ormClass = 'Enumeration';
+		$icon = "<a onclick=\"enumEditObject({$enumeration->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
+		if (strlen($enumeration->ormClass) > 0 && class_exists($enumeration->ormClass)) {
+			$ormClass = $enumeration->ormClass;
+		}
+
 		$data['parentId'] = $parentId;
 		$data['id'] = $enumeration->enumerationId;
 		$data['data'] = array();
@@ -134,6 +145,7 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		$data['data'][] = $enumeration->category;
 		$data['data'][] = $enumeration->active;
 		$data['data'][] = $icon;
+		$data['userdata']['ormClass'] = $ormClass;
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -195,10 +207,9 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 			if (in_array($enum->enumerationId,$enumerationList)) {
 				continue;
 			}
-			$icon = '';
-			$ormClass = '';
+			$ormClass = 'Enumeration';
+			$icon = "<a onclick=\"enumEditObject({$enum->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
 			if (strlen($enum->ormClass) > 0 && class_exists($enum->ormClass)) {
-				$icon = "<a onclick=\"enumEditObject({$enum->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
 				$ormClass = $enum->ormClass;
 			}
 			$category = '';
@@ -231,10 +242,9 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
 		$enumeration = new Enumeration();
 		$enumeration->enumerationId = $enumerationId;
 		$enumeration->populate();
-		$icon = '';
-		$ormClass = '';
+		$ormClass = 'Enumeration';
+		$icon = "<a onclick=\"enumEditObject({$enumeration->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
 		if (strlen($enumeration->ormClass) > 0 && class_exists($enumeration->ormClass)) {
-			$icon = "<a onclick=\"enumEditObject({$enumeration->enumerationId})\" title=\"Edit Object\"><img src=\"" . Zend_Registry::get('baseUrl') . "img/sm-editproblem.png\" alt=\"Edit Object\" /></a>";
 			$ormClass = $enumeration->ormClass;
 		}
 		$item = $xml->addChild("row");
@@ -301,19 +311,6 @@ class EnumerationsManagerController extends WebVista_Controller_Action {
                 header('Content-Type: application/xml;');
                 $this->view->xmlHeader = '<?xml version="1.0" ?>';
 		$this->render();
-	}
-
-	/**
-	 * Immunization Preferences test data
-	 */
-	public function immunizationPreferencesTestAction() {
-		if (!Enumeration::generateImmunizationPreferencesEnum()) {
-			echo "Immunization Preferences already exists.\n<br />";
-		}
-		else {
-			echo "Done.";
-		}
-		die;
 	}
 
 	public function autoCompleteEnumAction() {

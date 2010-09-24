@@ -30,4 +30,8 @@ class DrugCodeClass extends WebVista_Model_ORM {
 	protected $_table = 'drugCodeClass';
 	protected $_primaryKeys = array('code');
 
+	public function getDrugCodeClassId() {
+		return $this->code;
+	}
+
 }

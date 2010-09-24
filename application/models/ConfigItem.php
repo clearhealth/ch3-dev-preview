@@ -47,4 +47,9 @@ class ConfigItem extends WebVista_Model_ORM {
         $this->postPopulate();
         return $retval;
     }
+
+	public function getConfigItemId() {
+		return $this->configId;
+	}
+
 }

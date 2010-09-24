@@ -103,6 +103,7 @@ class ReportsController extends WebVista_Controller_Action {
 			$filter['defaultValue'] = $reportFilter->defaultValue;
 			$filter['type'] = $reportFilter->type;
 			$filter['options'] = $reportFilter->options;
+			$list = null;
 			if ($reportFilter->type == ReportBase::FILTER_TYPE_ENUM) {
 				$enumerationClosure = new EnumerationClosure();
 				$filter['enums'] = array();
@@ -118,6 +119,44 @@ class ReportsController extends WebVista_Controller_Action {
 				$filter['queries'] = $reportQuery->executeQuery();
 				if ($reportFilter->includeBlank) {
 					array_unshift($filter['queries'],array('id'=>'','name'=>'&amp;nbsp;'));
+				}
+			}
+			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_BUILDING) {
+				$orm = new Building();
+				$list = array(
+					'ormIterator'=>$orm->getIterator(),
+					'id'=>'buildingId',
+					'name'=>'displayName',
+				);
+			}
+			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_PRACTICE) {
+				$orm = new Practice();
+				$list = array(
+					'ormIterator'=>$orm->getIterator(),
+					'id'=>'practiceId',
+					'name'=>'name',
+				);
+			}
+			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_PROVIDER) {
+				$orm = new Provider();
+				$list = array(
+					'ormIterator'=>$orm->getIterator(),
+					'id'=>'personId',
+					'name'=>'displayName',
+				);
+			}
+			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_ROOM) {
+				$orm = new Room();
+				$list = array(
+					'ormIterator'=>$orm->getIterator(),
+					'id'=>'roomId',
+					'name'=>'displayName',
+				);
+			}
+			if ($list !== null) {
+				$filter['lists'] = array();
+				foreach ($list['ormIterator'] as $row) {
+					$filter['lists'][] = array('id'=>$row->{$list['id']},'name'=>htmlspecialchars($row->{$list['name']}));
 				}
 			}
 			$data['filters'][] = $filter;
@@ -157,140 +196,27 @@ class ReportsController extends WebVista_Controller_Action {
 			$filterParams[$index] = $value;
 		}
 
-		$reportView = new ReportView();
-		$reportView->reportViewId = $viewId;
-		$reportView->populate();
-		$reportBase = $reportView->reportBase;
-
-		$filterBase = $reportView->reportBase->unserializedFilters;
-		$filters = array();
-		if ($filterBase !== null) {
-			foreach ($filterBase as $key=>$filter) {
-				$value = $filter->defaultValue;
-				if (isset($filterParams[$key]) && strlen($filterParams[$key]) > 0) {
-					$value = $filterParams[$key];
-				}
-				$filters[$key] = $value;
-			}
-		}
-
-		$data = $reportBase->executeQueries($filters,$reportView);
-		if (strlen($reportView->showResultsIn) <= 0 || $reportView->showResultsIn != 'grid') {
-			$showResultsOptions = $reportView->unserializedShowResultsOptions;
-			switch ($reportView->showResultsIn) {
+		$result = ReportBase::generateResults($viewId,$filterParams);
+		$data = $result['data'];
+		if (isset($result['value'])) {
+			$value = $result['value'];
+			switch ($result['type']) {
 				case 'file':
-					$separator = $showResultsOptions['separator'];
-					$lineEndings = $showResultsOptions['lineEndings'];
-					$resultsSeparator = $showResultsOptions['resultsSeparator'];
-					$includeHeaderRow = (isset($showResultsOptions['includeHeaderRow']) && $showResultsOptions['includeHeaderRow'])?true:false;
-					$queriesData = array();
-					$sep = "";
-					foreach ($data as $queryData) {
-						$contents = array();
-						if ($includeHeaderRow) {
-							foreach ($queryData['rows'] as $row) {
-								$headers = array();
-								foreach ($row as $key=>$value) {
-									$headers[] = $key;
-								}
-								$contents[] = implode($separator,$headers);
-								break;
-							}
-						}
-						foreach ($queryData['rows'] as $row) {
-							$rows = array();
-							foreach ($row as $key=>$value) {
-								$rows[] = $value;
-							}
-							$contents[] = implode($separator,$rows);
-						}
-						switch ($lineEndings) {
-							case 'windows':
-								$sep = "\r\n";
-								break;
-							case 'mac':
-								$sep = "\r";
-								break;
-							case 'linux':
-								$sep = "\n";
-								break;
-							default:
-								$sep = "";
-								break;
-						}
-						$queriesData[] = implode($sep,$contents);
-					}
-					$flatfile = implode($sep.$resultsSeparator.$sep,$queriesData);
-					$this->_forward('flat','files',null,array('data'=>$flatfile));
-					return;
+					return $this->_forward('flat','files',null,array('data'=>$value));
 				case 'xml':
-					$xml = $this->_generateResultsXML($data);
-					$this->_forward('xml','files',null,array('data'=>$xml->asXML()));
-					return;
+					return $this->_forward('xml','files',null,array('data'=>$value));
 				case 'pdf':
-					$xml = $this->_generateResultsXML($data); //PdfController::toXML($data,'Report',null);
-					$xmlData = $xml->asXML();
-					$xmlData = preg_replace('/dataNode=/','xfa:dataNode=',$xmlData);
-					$xmlData = preg_replace('/<\?.*\?>/','',$xmlData);
-
-					$this->_forward('pdf-merge-attachment','pdf',null,array('attachmentReferenceId'=>$reportView->reportViewId,'xmlData'=>$xmlData));
-					return;
+					return $this->_forward('pdf-merge-attachment','pdf',null,array('attachmentReferenceId'=>$value['attachmentReferenceId'],'xmlData'=>$value['xmlData']));
 				case 'graph': // to be implemented
 					break;
-			}
-		}
-		$this->_session->results = $data;
-		foreach ($data as $index=>$queryData) {
-			$maxRows = 5;
-			while (isset($queryData['rows'][$maxRows])) {
-				unset($data[$index]['rows'][$maxRows]);
-				$maxRows++;
+				case 'pdr':
+					return $this->_forward('flat','files',null,array('data'=>$value));
 			}
 		}
 		//trigger_error(print_r($data,true),E_USER_NOTICE);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
-	}
-
-	protected function _generateResultsXML($data) {
-		$xml = new SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><report/>');
-		foreach ($data as $rows) {
-			$systemName = ReportBase::generateSystemName($rows['reportQuery']['displayName']);
-			$xmlQuery = $xml->addChild($systemName);
-			$ctr = 0;
-			foreach ($rows['rows'] as $row) {
-				$xmlRow = $xmlQuery->addChild('row');
-				$xmlRow->addAttribute('sequence',$ctr++);
-				if ($rows['reportQuery']['type'] == ReportQuery::TYPE_NSDR) {
-					$row = array($row['Name']=>$row['Value']);
-				}
-				foreach ($row as $key=>$value) {
-					$xmlRow->addChild(ReportBase::generateSystemName($key),$value);
-				}
-			}
-		}
-		return $xml;
-	}
-
-	public function getNextResultsAction() {
-		$id = (int)$this->_getParam('index');
-		$offset = (int)$this->_getParam('offset');
-		$limit = (int)$this->_getParam('limit');
-
-		$rows = array('rows'=>array());
-		$data = $this->_session->results;
-		if (isset($data[$id]) && isset($data[$id]['rows'][$offset])) {
-			$ctr = $offset;
-			while (isset($data[$id]['rows'][$ctr])) {
-				$rows['rows'][$ctr] = $data[$id]['rows'][$ctr];
-				$ctr++;
-				if (($ctr - $offset) >= $limit) break;
-			}
-		}
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
-		$json->direct($rows);
 	}
 
 }

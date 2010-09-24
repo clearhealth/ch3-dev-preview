@@ -194,26 +194,33 @@ EOL;
 		$signatureIterator->setFilter($clinicalNoteId);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
+		$clinicalNote = new ClinicalNote();
+		$clinicalNote->clinicalNoteId = (int)$clinicalNoteId;
+		if (!$clinicalNote->populate()) {
+			// just remove the revision history
+			$db->delete("genericData", "objectClass = 'ClinicalNote' and revisionId = " . (int)$clinicalNoteId);
+			$json->direct(true);
+			return;
+		}
 		if (!$signatureIterator->valid()) {
 			$db->beginTransaction();
-                	try {
-                        $db->delete("eSignatures", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId); // TODO: objectId refers to genericData.revisionId
-                        $db->delete("clinicalNotes", "clinicalNoteId = " . (int)$clinicalNoteId);
-                        $db->delete("genericData", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId);
-                        $db->commit();
-                	}
-                	catch (Exception $e) {
-                        $db->rollBack();
-			$this->getResponse()->setHttpResponseCode(500);
-                        $json->direct(array('error' => $e->getMessage()));
+			try {
+				$db->delete("eSignatures", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId); // TODO: objectId refers to genericData.revisionId
+				$db->delete("clinicalNotes", "clinicalNoteId = " . (int)$clinicalNoteId);
+				$db->delete("genericData", "objectClass = 'ClinicalNote' and objectId = " . (int)$clinicalNoteId);
+				$db->commit();
+			}
+			catch (Exception $e) {
+				$db->rollBack();
+				$this->getResponse()->setHttpResponseCode(500);
+				$json->direct(array('error' => $e->getMessage()));
+				return;
+			}
+			$json->direct(true);
 			return;
-                	}
-
-                $json->direct(true);
-		return;
 		}
-			$this->getResponse()->setHttpResponseCode(500);
-                        $json->direct(array('error' => "You cannot delete a note which has previously been signed."));
+		$this->getResponse()->setHttpResponseCode(500);
+		$json->direct(array('error' => "You cannot delete a note which has previously been signed."));
 	}
 
 	function processAddNoteAction() {
@@ -347,7 +354,7 @@ EOL;
                         $row = array();
                         $row['id'] = $note['clinicalNoteId'];
                         $row['data'][] = '';
-                        $row['data'][] = $icon.' '.$note['dateTime'];
+                        $row['data'][] = $icon.' '.date('Y-m-d',strtotime($note['dateTime']));
                         $row['data'][] = $note['noteTitle'];
                         $row['data'][] = $note['last_name'].', '.$note['first_name'].' '.substr($note['middle_name'],0,1);
 			$location = '';
@@ -356,6 +363,9 @@ EOL;
 				$location = Room::location($locationId);
 			}
 			$row['data'][] = $location;
+			$cn = new ClinicalNote();
+			$cn->populateWithArray($note);
+			$row['userdata']['docId'] = $cn->documentId;
 
 			$xml = simplexml_load_string($note['template']);
 			$genericData = new GenericData();
@@ -365,7 +375,6 @@ EOL;
 			$genericDataIterator = $genericData->getIteratorByFilters($filters);
 			$firstData = false;
 			$childIcon = '<img src="'.Zend_Registry::get('baseUrl').'img/leaf.gif" alt="-" />';
-
 			foreach ($genericDataIterator as $data) {
 				if (!$firstData) {
 					$firstData = true;

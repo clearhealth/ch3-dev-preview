@@ -36,6 +36,7 @@ class Room extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('id');
 	protected $_cascadePopulate = false; // disable to prevent assigning roomId as buildingId since rooms.id != buildings.id
 	protected $_legacyORMNaming = true;
+	protected $_cascadePersist = false;
 
 	const ENUM_COLORS_NAME = 'Color Preferences';
 
@@ -159,6 +160,11 @@ class Room extends WebVista_Model_ORM {
 			}
 		}
 		return $location;
+	}
+
+	public function getDisplayName() {
+		if (!strlen($this->building->name) > 0) $this->building->populate();
+		return $this->building->displayName.'->'.$this->name;
 	}
 
 }

@@ -52,11 +52,22 @@ class MedicationsController extends WebVista_Controller_Action {
 	}
 
 	public function listMedicationsAction() {
-		$personId = $this->_getParam('personId');
+		$personId = (int)$this->_getParam('personId');
+		$filterActive = $this->_session->filterActive;
+		$filterDiscontinued = $this->_session->filterDiscontinued;
 		$rows = array();
-		$filter = array('patientId'=>$personId);
-		$medicationIterator = new MedicationIterator();
-		$medicationIterator->setFilter($filter);
+		$medicationIterator = array();
+		if ($personId > 0 && ($filterActive || $filterDiscontinued)) {
+			$filter = array('patientId'=>$personId);
+			if ($filterActive && !$filterDiscontinued) {
+				$filter['active'] = 1;
+			}
+			else if ($filterDiscontinued && !$filterActive) {
+				$filter['active'] = 0;
+			}
+			$medicationIterator = new MedicationIterator();
+			$medicationIterator->setFilter($filter);
+		}
 		$unsigned = array();
 		$signed = array();
 		$discontinued = array();
@@ -215,6 +226,39 @@ class MedicationsController extends WebVista_Controller_Action {
 		}
 		$this->view->baseMed24 = $baseMed24;
 
+		$identity = Zend_Auth::getInstance()->getIdentity();
+
+		$user = new User();
+		$user->userId = (int)$identity->userId;
+		$user->populate();
+		$building = null;
+		if (strlen($user->preferences) > 0) {
+			$xmlPreferences = new SimpleXMLElement($user->preferences);
+			$room = new Room();
+			$room->roomId = (int)$xmlPreferences->currentLocation;
+			$room->populate();
+			$building = $room->building;
+		}
+		if ($building === null) {
+			$building = new Building();
+			$building->buildingId = (int)$user->defaultBuildingId;
+			$building->populate();
+		}
+		$defaultBuildingId = 0;
+		$location = '';
+		if ($building->buildingId > 0) {
+			$defaultBuildingId = (int)$building->buildingId;
+			$location = $building->name;
+		}
+		$EPrescriber = new EPrescriber();
+		$EPrescriber->populateWithBuildingProvider($defaultBuildingId,(int)$user->personId);
+		$enabledePrescribe = false;
+		if (strlen($EPrescriber->SSID) > 0) {
+			$enabledePrescribe = true;
+		}
+		$this->view->location = $location;
+		$this->view->enabledePrescribe = $enabledePrescribe;
+
 		$this->_form->loadORM($this->_medication, "Medication");
 		$this->_form->setWindow('windowNewMedication');
 		$this->view->form = $this->_form;
@@ -230,6 +274,9 @@ class MedicationsController extends WebVista_Controller_Action {
 		$discontinue = (int)$this->_getParam('discontinue');
 		$forced = (int)$this->_getParam('forced');
 
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+
 		$patient = new Patient();
 		$patient->personId = $personId;
 		$patient->populate();
@@ -241,19 +288,27 @@ class MedicationsController extends WebVista_Controller_Action {
 			$this->_medication->medicationId = (int)$medicationId;
 			$this->_medication->populate();
 		}
-		if (!strlen($this->_medication->pharmacyId) > 0) {
-			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
-		}
-
-		if (strlen($copy) > 0) {
-			$this->_medication->medicationId = 0;
-		}
 
 		$params = $this->_getParam('medication');
 		$params['daysSupply'] = preg_replace('/,/','',$params['daysSupply']);
 		$params['quantity'] = preg_replace('/,/','',$params['quantity']);
 		$params['refills'] = preg_replace('/,/','',$params['refills']);
 		$this->_medication->populateWithArray($params);
+		$medicationId = (int)$this->_medication->medicationId;
+		if ($medicationId > 0) {
+			$eSignatureId = (int)ESignature::retrieveSignatureId('Medication',$this->_medication->documentId);
+			if ($eSignatureId > 0) {
+				$data = array('error'=>__('Failed to edit, selected medication is already signed.'));
+				$json->direct($data);
+				return;
+			}
+		}
+		if (!strlen($this->_medication->pharmacyId) > 0) {
+			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
+		}
+		if (strlen($copy) > 0) {
+			$this->_medication->medicationId = 0;
+		}
 		$this->_medication->datePrescribed = date('Y-m-d H:i:s');
 		$this->_medication->prescriberPersonId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$this->_medication->provider->populate();
@@ -285,12 +340,16 @@ class MedicationsController extends WebVista_Controller_Action {
 				$data['error'] = $error;
 			}
 		}
+		$pharmacy = new Pharmacy();
+		$pharmacy->pharmacyId = $this->_medication->pharmacyId;
+		$pharmacy->populate();
+		if ($pharmacy->print) {
+			$this->_medication->transmit = 'Print';
+		}
 		if (!isset($data['error']) && !isset($data['confirmation'])) {
 			$this->_medication->persist();
 			$data['medicationId'] = $this->_medication->medicationId;
 		}
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
 		$json->direct($data);
 	}
 
@@ -298,6 +357,10 @@ class MedicationsController extends WebVista_Controller_Action {
 	 * Default action to dispatch
 	 */
 	public function indexAction() {
+		if (!isset($this->_session->filterActive)) $this->_session->filterActive = 1;
+		if (!isset($this->_session->filterDiscontinued)) $this->_session->filterDiscontinued = 1;
+		$this->view->active = $this->_session->filterActive;
+		$this->view->discontinued = $this->_session->filterDiscontinued;
 		$this->render('index');
 	}
 
@@ -528,8 +591,11 @@ EOL;
 		$rows = array();
 
 		$responded = array();
-		$refillRequest = new MedicationRefillRequest();
-		$refillRequestIterator = $refillRequest->getIteratorByPersonId($personId);
+		$refillRequestIterator = array();
+		if ($personId > 0) {
+			$refillRequest = new MedicationRefillRequest();
+			$refillRequestIterator = $refillRequest->getIteratorByPersonId($personId);
+		}
 		foreach ($refillRequestIterator as $refill) {
 			$row = array();
 			$row['id'] = $refill->messageId;
@@ -668,9 +734,14 @@ EOL;
 		$patient[] = implode(', ',$phones);
 		$ret['patient'] = implode('<br />',$patient);
 
-		$medication = Messaging::convertXMLMessage($xml->Body->RefillRequest->MedicationPrescribed,$medication,-1,' &nbsp; ');
+		$medication = array();
+		$medicationDescription = '';
+		if (isset($xml->Body->RefillRequest)) {
+			$medication = Messaging::convertXMLMessage($xml->Body->RefillRequest->MedicationPrescribed,$medication,-1,' &nbsp; ');
+			$medicationDescription = (string)$xml->Body->RefillRequest->MedicationPrescribed->DrugDescription;
+		}
 		$ret['medication'] = implode('<br />',$medication);
-		$ret['medicationDescription'] = (string)$xml->Body->RefillRequest->MedicationPrescribed->DrugDescription;
+		$ret['medicationDescription'] = $medicationDescription;
 
 		$sentTime = strtotime((string)$xml->Header->SentTime);
 		if (!$sentTime > 0) {
@@ -802,7 +873,28 @@ EOL;
 		$medication = new Medication();
 		$medication->medicationId = (int)$medicationId;
 		$medication->setPersistMode(WebVista_Model_ORM::DELETE);
-		$medication->persist();
+		$eSignatureId = (int)ESignature::retrieveSignatureId('Medication',$medication->documentId);
+		$data = true;
+		if ($eSignatureId > 0) {
+			$data = __('Failed to delete, selected medication is already signed.');
+		}
+		else {
+			$medication->persist();
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function filterAction() {
+		$this->view->active = $this->_session->filterActive;
+		$this->view->discontinued = $this->_session->filterDiscontinued;
+		$this->render();
+	}
+
+	public function setSessionFilterAction() {
+		$this->_session->filterActive = (int)$this->_getParam('filterActive');
+		$this->_session->filterDiscontinued = (int)$this->_getParam('filterDiscontinued');
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(true);

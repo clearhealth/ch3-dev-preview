@@ -172,6 +172,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 				$value = $row['value'];
 				$ussValue = $value;
 				$metricValue = '';
+				$convertible = 0;
 				if (strlen($row['units']) > 0) {
 					if (strlen($ussValue) > 0) {
 						$ussValue .= ' '.$row['units'];
@@ -180,6 +181,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 					if ($ret !== false) {
 						$ussValue = $ret['uss'];
 						$metricValue = $ret['metric'];
+						$convertible = 1;
 					}
 				}
 				$tmp = array();
@@ -190,6 +192,7 @@ class VitalSignsController extends WebVista_Controller_Action {
 				$tmp['data'][] = $metricValue;
 				$tmp['data'][] = ''; // to be implemented
 				$tmp['data'][] = $row['last_name'].','.$row['first_name'].' '.$row['middle_name'];
+				$tmp['data'][] = $convertible;
 				$rows[] = $tmp;
 			}
 		}
@@ -315,16 +318,52 @@ class VitalSignsController extends WebVista_Controller_Action {
 	}
 
 	protected function getVitalSignsTemplateKeyValue($vitalSignTemplateId = 1) {
-		$vitalSignTemplate = new VitalSignTemplate();
-		$vitalSignTemplate->vitalSignTemplateId = $vitalSignTemplateId;
-		$vitalSignTemplate->populate();
-		$template = simplexml_load_string($vitalSignTemplate->template);
-		$vitals = array();
-		foreach ($template as $vital) {
-			$title = (string)$vital->attributes()->title;
-			$vitals[$title] = (string)$vital->attributes()->label;
+		return VitalSignTemplate::generateVitalSignsTemplateKeyValue($vitalSignTemplateId);
+	}
+
+	public function processEditVitalSignValueFieldAction() {
+		$vitalSignValueId = (int)$this->_getParam('id');
+		$field = $this->_getParam('field');
+		$value = $this->_getParam('value'); // expected format "[value] [unit]" e.g. "120 LB"
+		$conversion = (int)$this->_getParam('conversion'); // flag to check if value needs conversion?
+		$ret = false;
+		$vitalSignValue = new VitalSignValue();
+		$vitalSignValue->vitalSignValueId = $vitalSignValueId;
+		$validFields = array('date'=>'date','value'=>'value');
+		if (isset($validFields[$field]) && $vitalSignValue->populate()) {
+			if ($field == 'date') {
+				$vitalSignValue->vitalSignGroup->dateTime = date('Y-m-d H:i:s',strtotime($value));
+				$vitalSignValue->vitalSignGroup->persist();
+				$ret = true;
+			}
+			else if ($field == 'value') {
+				// units is part of value and needs to be extracted, if no units is specified it will used the same unit in db
+				$arrValue = explode(' ',$value);
+				if (count($arrValue) > 1) {
+					$units = array_pop($arrValue);
+				}
+				else {
+					$units = $vitalSignValue->units;
+				}
+				$value = implode(' ',$arrValue); // is value contains spaces?
+				// check if value needs conversion
+				if ($conversion) { // needs conversion
+					$convertedValues = VitalSignValue::convertValues($vitalSignValue->vital,$value,$units);
+					if ($convertedValues !== false) {
+						$type = VitalSignValue::unitType($vitalSignValue->vital,$vitalSignValue->units);
+						$x = explode(' ',$convertedValues[$type]);
+						array_pop($x);
+						$value = implode(' ',$x);
+					}
+				}
+				$vitalSignValue->$field  = $value;
+				$vitalSignValue->persist();
+				$ret = true;
+			}
 		}
-		return $vitals;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 }
