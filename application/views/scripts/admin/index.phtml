@@ -11,10 +11,10 @@
                         adminAccordion.addItem("systemObjects","System Objects");
 			sysObjectsTree = adminAccordion.cells('systemObjects').attachTree();
 			sysObjectsTree.setImagePath("<?=$this->baseUrl?>/img/");
-
 			sysObjectsTree.attachEvent('onClick',onSystemObjectsTreeItemSelect);
 			sysObjectsTree.insertNewChild(0,21,"<?=__('Appointment Rules')?>");
-			//sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
+			sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
+			//sysObjectsTree.insertNewChild(0,24,"<?=__('Claim Edits Manager')?>");
 			sysObjectsTree.insertNewChild(0,20,"<?=__('Dashboard Components Manager')?>");
 			//sysObjectsTree.insertNewChild(0,13,'Data Integration Logs');
 			sysObjectsTree.insertNewChild(0,26,"Discount Table Manager");
@@ -31,7 +31,7 @@
 			sysObjectsTree.insertNewChild(0,5,'Permissions Templates');
 			sysObjectsTree.insertNewChild(0,1,'Persons/Users');
 			sysObjectsTree.insertNewChild(0,18,"<?=__('Pharmacy')?>");
-			//sysObjectsTree.insertNewChild(0,2,'Physical Plant');
+			sysObjectsTree.insertNewChild(0,2,'Physical Plant');
 			sysObjectsTree.insertNewChild(0,6,'Prescriptions');
 			sysObjectsTree.insertNewChild(0,22,"<?=__('Reports Manager')?>");
 			sysObjectsTree.insertNewChild(0,11,'Services');
@@ -40,13 +40,13 @@
 			sysObjectsTree.insertNewChild(0,17,"<?=__('Update Manager')?>");
 			sysObjectsTree.closeAllItems();
 
-                        /*adminAccordion.addItem("healthcloud","HealthCloud");
+                        adminAccordion.addItem("healthcloud","HealthCloud");
 			healthCloudTree = adminAccordion.cells('healthcloud').attachTree();
 			healthCloudTree.setImagePath("<?=$this->baseUrl?>/img/");
 			healthCloudTree.insertNewChild(0,1,'CHMED');
 			healthCloudTree.attachEvent('onClick',onHealthCloudTreeItemSelect);
 			healthCloudTree.insertNewChild(0,2,'CHMED Pharmacies');
-			healthCloudTree.closeAllItems();*/
+			healthCloudTree.closeAllItems();
 
 		 adminAccordion.cells("systemObjects").open();
 
@@ -119,6 +119,9 @@ function onSystemObjectsTreeItemSelect(itemId) {
 			break;
 		case 23: // Statistics Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/statistics-manager.raw');
+			break;
+		case 24: // Claim Edits Manager
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/claim-edits-manager.raw');
 			break;
 		case 25: // Fee Schedule Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/fee-schedule-manager.raw');

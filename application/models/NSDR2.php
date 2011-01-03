@@ -248,6 +248,7 @@ class NSDR2 extends NSDR {
 		$nsdrBase = new NSDRBase();
 		$nsdrBase->_nsdrNamespace = $namespace;
 		$nsdrBase->_aliasedNamespace = $request;
+		if (!isset($methods[0])) $methods[] = array('name'=>'populate()','attributes'=>array()); // set default method, this must exist
 		foreach ($methods as $method) {
 			$nsdrBase->_attributes = $method['attributes'];
 			$key = $namespace.'['.$method['name'].']';
@@ -306,7 +307,7 @@ class NSDR2 extends NSDR {
 			$methods[] = array('name'=>$val.'()','attributes'=>$attributes);
 		}
 		if (!isset($methods[0])) {
-			$methods = array('name'=>$defaultMethod.'()','attributes'=>$attributes); // set default method, this must exist
+			$methods[] = array('name'=>$defaultMethod.'()','attributes'=>$attributes); // set default method, this must exist
 		}
 		return $methods;
 	}
@@ -442,6 +443,7 @@ class NSDR2 extends NSDR {
 		$nsdrBase = new NSDRBase();
 		$nsdrBase->_nsdrNamespace = $namespace;
 		$nsdrBase->_aliasedNamespace = $request;
+		if (!isset($methods[0])) $methods[] = array('name'=>'persist()','attributes'=>array()); // set default method, this must exist
 		foreach ($methods as $method) {
 			$nsdrBase->_attributes = $method['attributes'];
 			$key = $namespace.'['.$method['name'].']';

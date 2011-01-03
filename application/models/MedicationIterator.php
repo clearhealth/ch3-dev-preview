@@ -35,6 +35,8 @@ class MedicationIterator extends WebVista_Model_ORMIterator implements Iterator 
 				//->order('eSignatureId ASC')
 				//->order('transmit DESC')
 				->order('datePrescribed ASC');
+		$where = array();
+		$separator = 'OR';
 		foreach ($filters as $filter => $value) {
 			switch($filter) {
 				case 'patientId':
@@ -42,10 +44,23 @@ class MedicationIterator extends WebVista_Model_ORMIterator implements Iterator 
 					break;
 				case 'active':
 					$operator = ((int)$value)?'!=':'=';
-					$dbSelect->where('daysSupply '.$operator.' -1');
+					$where[] = 'daysSupply '.$operator.' -1';
+					if (isset($filters['patientReported']) && !$filters['patientReported']) $separator = 'AND';
+					break;
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					$dbSelect->where("datePrescribed BETWEEN '{$start}' AND '{$end}'");
+					break;
+				case 'patientReported':
+					if (!$value && isset($filters['active']) && !$filters['active']) $separator = 'AND';
+					if (!isset($filters['active']) && isset($filters['flag']) && $value) break;
+					$where[] = 'patientReported = '.(int)$value;
 					break;
 			}
 		}
+		if (isset($where[0])) $dbSelect->where(implode(' '.$separator.' ',$where));
 		$this->_dbSelect = $dbSelect;
 		trigger_error($this->_dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbStmt = $db->query($this->_dbSelect);

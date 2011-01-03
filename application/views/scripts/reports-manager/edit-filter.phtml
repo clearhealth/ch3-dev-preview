@@ -31,6 +31,15 @@
 			<input type="checkbox" name="filter[includeBlank]" id="filter-includeBlank" <?=($this->filterData['includeBlank'])?'checked="checked"':''?> /> <?=__('Include Blank')?>
 		</div>
 	</div>
+	<div id="filterTypeSpecialId" style="display:none;">
+		<br style="clear:left"/>
+		<div class="formRow" style="padding-top:4px;">
+			<dt><label for="filter-special" class="optional"><?=__('Special Options')?></label></dt>
+			<?foreach ($this->reportSpecial as $key=>$value):?>
+			<div style="float:left;margin-right:10px;"><input type="radio" name="filter[special]" id="filter-special" value="<?=$key?>" <?=(isset($this->filterData['special']) && $this->filterData['special'] == $key)?'checked="checked"':''?> /> <?=$value?> </div>
+			<?endforeach;?>
+		</div>
+	</div>
 	<br style="clear:left"/>
 	<div class="formRow" style="padding-top:4px;">
 		<dt><label for="filter-options" class="optional"><?=__('Options')?></label></dt>
@@ -76,8 +85,10 @@ function submitFilter() {
 function filterTypeOnChanged(value) {
 	var filterTypeEnumName = dojo.byId("filterTypeEnumNameId");
 	var filterTypeQuery = dojo.byId("filterTypeQueryId");
+	var filterTypeSpecial = dojo.byId("filterTypeSpecialId");
 	filterTypeEnumName.style.display = "none";
 	filterTypeQuery.style.display = "none";
+	filterTypeSpecial.style.display = "none";
 	switch (value) {
 		case "<?=ReportBase::FILTER_TYPE_DATE?>":
 			break;
@@ -88,6 +99,9 @@ function filterTypeOnChanged(value) {
 			break;
 		case "<?=ReportBase::FILTER_TYPE_QUERY?>":
 			filterTypeQuery.style.display = "";
+			break;
+		case "<?=ReportBase::FILTER_TYPE_SPECIAL?>":
+			filterTypeSpecial.style.display = "";
 			break;
 	}
 }

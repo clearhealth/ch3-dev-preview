@@ -45,4 +45,15 @@ class LabTest extends WebVista_Model_ORM {
 		parent::__construct();
 		$this->labOrder = new LabOrder();
 	}
+
+	public function populateByLabOrderId($labOrderId=null) {
+		$db = Zend_Registry::get('dbAdapter');
+		if ($labOrderId === null) $labOrderId = $this->lab_order_id;
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('lab_order_id = ?',(int)$labOrderId)
+				->limit(1);
+		return parent::populateWithSql($sqlSelect->__toString());
+	}
+
 }

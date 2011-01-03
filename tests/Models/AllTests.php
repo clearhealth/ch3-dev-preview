@@ -47,14 +47,17 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_ClinicalNoteTest');
 		$suite->addTestSuite('Models_ProblemListTest');
 		$suite->addTestSuite('Models_UserKeyTest');
-		//$suite->addTestSuite('Models_HealthStatusAlertTest');
+		$suite->addTestSuite('Models_HealthStatusAlertTest');
 
 		$suite->addTestSuite('Models_AuditTest');
 		$suite->addTestSuite('Models_AddressTest');
+		//$suite->addTestSuite('Models_AdmissionTest');
 		$suite->addTestSuite('Models_AppointmentTest');
 		$suite->addTestSuite('Models_AppointmentTemplateTest');
 		$suite->addTestSuite('Models_AttachmentTest');
 		$suite->addTestSuite('Models_AuditValueTest');
+		$suite->addTestSuite('Models_BarcodeMacroTest');
+		//$suite->addTestSuite('Models_BaseMed24Test');
 		$suite->addTestSuite('Models_BuildingProgramIdentifierTest');
 		$suite->addTestSuite('Models_BuildingTest');
 		$suite->addTestSuite('Models_ClinicalNoteAnnotationTest');
@@ -73,6 +76,7 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_DiagnosisCodesAllergyTest');
 		$suite->addTestSuite('Models_DiagnosisCodesICDTest');
 		$suite->addTestSuite('Models_DiagnosisCodesSNOMEDTest');
+		$suite->addTestSuite('Models_DrugScheduleDaysSupplyTest');
 		$suite->addTestSuite('Models_EnumerationTest');
 		$suite->addTestSuite('Models_EnumerationsClosureTest');
 		$suite->addTestSuite('Models_ESignatureTest');
@@ -94,9 +98,12 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_LabResultTest');
 		$suite->addTestSuite('Models_LabTestTest');
 		$suite->addTestSuite('Models_LegacyAppointmentTest');
+		//$suite->addTestSuite('Models_LegacyEnumTest');
+		//$suite->addTestSuite('Models_LocationTest');
 		$suite->addTestSuite('Models_MedicationTest');
 		$suite->addTestSuite('Models_MenuItemTest');
 		$suite->addTestSuite('Models_NSDRDefinitionMethodTest');
+		$suite->addTestSuite('Models_OrderTest');
 		$suite->addTestSuite('Models_PatientAllergyTest');
 		$suite->addTestSuite('Models_PatientDiagnosisTest');
 		$suite->addTestSuite('Models_PatientEducationTest');
@@ -119,7 +126,6 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_ProviderTest');
 		$suite->addTestSuite('Models_ReportTest');
 		$suite->addTestSuite('Models_ReportQueryTest');
-		$suite->addTestSuite('Models_ReportTemplateTest');
 		$suite->addTestSuite('Models_RoomTest');
 		$suite->addTestSuite('Models_RoutingTest');
 		$suite->addTestSuite('Models_ScheduleEventTest');
@@ -127,6 +133,7 @@ class Models_AllTests {
 		$suite->addTestSuite('Models_TeamMemberTest');
 		$suite->addTestSuite('Models_TemplatedTextTest');
 		$suite->addTestSuite('Models_TemplateXSLTTest');
+		//$suite->addTestSuite('Models_UpdateFileTest');
 		$suite->addTestSuite('Models_UserTest');
 		$suite->addTestSuite('Models_VisitTest');
 		$suite->addTestSuite('Models_VitalSignGroupTest');

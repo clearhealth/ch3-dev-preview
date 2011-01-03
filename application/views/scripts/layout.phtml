@@ -10,6 +10,7 @@ var globalLogoutTimer = null;
 var globalForceLogout = false;
 var globalTimerTimeout = '<?=Zend_Registry::get('sessionTimeout')?>';
 var globalPhotoIsClicked = false;
+var globalAutologout = "<?=(int)Zend_Registry::get('config')->autologout?>";
 
 // used by generic processing like single edit field and deleting
 function globalProcessGeneric(action,content,callback) {

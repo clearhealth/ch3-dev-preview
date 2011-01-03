@@ -80,7 +80,7 @@ class StatisticsManagerController extends WebVista_Controller_Action {
 		$row = array();
 		$row['id'] = $psd->patientStatisticsDefinitionId;
 		$row['data'] = array();
-		$row['data'][] = $psd->name;
+		$row['data'][] = $psd->displayName;
 		$row['data'][] = $psd->type;
 		$row['data'][] = $psd->displayedValue;
 		$row['data'][] = $psd->active;

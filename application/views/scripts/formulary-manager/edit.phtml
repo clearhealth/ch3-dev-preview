@@ -184,7 +184,7 @@ fieldNameLookup[indexSubstitutions] = "substitution";
 
 formularyGrid.getCombo(indexSchedule).put("","");
 <?foreach ($this->scheduleOptions as $key=>$value):?>
-formularyGrid.getCombo(indexSchedule).put("<?=$key?>","<?=$value?>");
+formularyGrid.getCombo(indexSchedule).put("<?=$value?>","<?=$value?>");
 <?endforeach;?>
 
 formularyGrid.getCombo(indexQuantityQualifier).put("","");

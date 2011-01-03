@@ -35,6 +35,7 @@ class ProblemListController extends WebVista_Controller_Action {
 		$this->_status[] = __('Active');
 		$this->_status[] = __('Inactive');
 		$this->_status[] = __('Removed');
+		$this->_status[] = __('Resolved');
 	}
 
 	public function indexAction() {
@@ -58,6 +59,10 @@ class ProblemListController extends WebVista_Controller_Action {
 		$tmp = array();
 		$tmp['id'] = 'both_problems';
 		$tmp['data'][] = __('Both Active & Inactive');
+		$rows[] = $tmp;
+		$tmp = array();
+		$tmp['id'] = 'air_problems';
+		$tmp['data'][] = __('Active, Inactive, & Resolved');
 		$rows[] = $tmp;
 		$tmp = array();
 		$tmp['id'] = 'removed_problems';
@@ -97,6 +102,9 @@ class ProblemListController extends WebVista_Controller_Action {
 				break;
 			case 'both_problems':
 				$filters['status'] = array('Active','Inactive');
+				break;
+			case 'air_problems':
+				$filters['status'] = array('Active','Inactive','Resolved');
 				break;
 			case 'removed_problems':
 				$filters['status'] = 'Removed';

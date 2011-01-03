@@ -91,10 +91,11 @@ class FeeSchedule extends WebVista_Model_ORM {
 		$updates = array();
 		$fields = array();
 		$values = array();
-		$columns = array('name','guid','insuranceProgramIds','dateOfServiceStart','dateOfServiceEnd','procedureCode');
+		$columns = array('name','guid','insuranceProgramIds','dateOfServiceStart','dateOfServiceEnd','procedureCode','fee');
 		foreach ($columns as $col) {
 			$fields[$col] = '`'.$col.'`';
 			$values[$col] = $db->quote($this->$col);
+			if ($col == 'fee') continue;
 			$updates[$col] = $fields[$col].' = '.$values[$col];
 		}
 		$values['procedureCode'] = '`code`';

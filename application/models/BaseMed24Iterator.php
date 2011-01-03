@@ -24,9 +24,13 @@
 
 class BaseMed24Iterator extends WebVista_Model_ORMIterator implements Iterator {
 
-    public function __construct($dbSelect = null) {
-        parent::__construct("BaseMed24",$dbSelect);
-    }
+	public function __construct($dbSelect = null,$autoLoad = true) {
+		$this->_ormClass = 'BaseMed24';
+		// autoLoad gives an option to query the entire rows which takes time if more data in the table
+		if ($autoLoad) {
+			parent::__construct($this->_ormClass,$dbSelect);
+		}
+	}
 
 	public function setFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
@@ -55,13 +59,21 @@ class BaseMed24Iterator extends WebVista_Model_ORMIterator implements Iterator {
 						break;
 					case 'formulary':
                                         	$dbSelect->joinLeft($dbname.'.formulary' . preg_replace('/[^a-zA-Z0-9]+/','',ucfirst($value)) . ' as formulary', 'formulary.fullNDC = basemed24.full_ndc');
+						//if (isset($filters['tradename'])) $dbSelect->orWhere('formulary.keywords LIKE ?',$filters['tradename'].'%');
+						break;
+					case 'pkey':
+						if (!isset($filters['formulary'])) {
+							$dbSelect->joinLeft($dbname.'.formularyDefault AS formulary', 'formulary.fullNDC = basemed24.full_ndc');
+						}
+						$dbSelect->where('basemed24.pkey = ?',(string)$value);
+						$dbSelect->limit(1);
 						break;
 					//default:
 					//	$dbSelect->where("false");
 				}
 			}
 		//echo $dbSelect->__toString();exit;
-		trigger_error($dbSelect->__toString(),E_USER_NOTICE);
+		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}

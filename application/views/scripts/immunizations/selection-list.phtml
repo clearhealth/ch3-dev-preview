@@ -22,8 +22,8 @@ function immunizationsSelectionListSelected() {
 
 var immunizationsSelectionListGrid = new dhtmlXGridObject('immunizationsSelectionListContainer');
 immunizationsSelectionListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-immunizationsSelectionListGrid.setHeader("<?=__('Description')?>,");
-immunizationsSelectionListGrid.setInitWidths("*,0");
+immunizationsSelectionListGrid.setHeader("<?=__('Description')?>,<?=__('Code')?>");
+immunizationsSelectionListGrid.setInitWidths("*,100");
 immunizationsSelectionListGrid.setColAlign("left,right");
 immunizationsSelectionListGrid.setColTypes("ro,ro");
 immunizationsSelectionListGrid.setSkin("xp");

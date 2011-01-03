@@ -53,20 +53,27 @@ class MedicationsController extends WebVista_Controller_Action {
 
 	public function listMedicationsAction() {
 		$personId = (int)$this->_getParam('personId');
-		$filterActive = $this->_session->filterActive;
-		$filterDiscontinued = $this->_session->filterDiscontinued;
+		$filters = $this->_session->filters;
+		$activeOnly = (int)$this->_getParam('activeOnly');
 		$rows = array();
 		$medicationIterator = array();
-		if ($personId > 0 && ($filterActive || $filterDiscontinued)) {
+		if ($personId > 0) {
 			$filter = array('patientId'=>$personId);
-			if ($filterActive && !$filterDiscontinued) {
+			if ($activeOnly || ($filters['active'] && !$filters['discontinued'])) {
 				$filter['active'] = 1;
 			}
-			else if ($filterDiscontinued && !$filterActive) {
+			else if ($filters['discontinued'] && !$filters['active']) {
 				$filter['active'] = 0;
 			}
-			$medicationIterator = new MedicationIterator();
-			$medicationIterator->setFilter($filter);
+			if ($filters['active'] || $filters['discontinued']) $filter['flag'] = true;
+			if (!$filters['active'] && !$filters['discontinued'] && !$filters['patientReported']) {
+				$medicationIterator = array();
+			}
+			else {
+				$filter['patientReported'] = $filters['patientReported'];
+				$medicationIterator = new MedicationIterator();
+				$medicationIterator->setFilter($filter);
+			}
 		}
 		$unsigned = array();
 		$signed = array();
@@ -357,10 +364,7 @@ class MedicationsController extends WebVista_Controller_Action {
 	 * Default action to dispatch
 	 */
 	public function indexAction() {
-		if (!isset($this->_session->filterActive)) $this->_session->filterActive = 1;
-		if (!isset($this->_session->filterDiscontinued)) $this->_session->filterDiscontinued = 1;
-		$this->view->active = $this->_session->filterActive;
-		$this->view->discontinued = $this->_session->filterDiscontinued;
+		if (!isset($this->_session->filters)) $this->_session->filters = array('active'=>1,'discontinued'=>1,'patientReported'=>0);
 		$this->render('index');
 	}
 
@@ -887,14 +891,12 @@ EOL;
 	}
 
 	public function filterAction() {
-		$this->view->active = $this->_session->filterActive;
-		$this->view->discontinued = $this->_session->filterDiscontinued;
+		$this->view->filters = $this->_session->filters;
 		$this->render();
 	}
 
 	public function setSessionFilterAction() {
-		$this->_session->filterActive = (int)$this->_getParam('filterActive');
-		$this->_session->filterDiscontinued = (int)$this->_getParam('filterDiscontinued');
+		$this->_session->filters = $this->_getParam('filters');
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(true);

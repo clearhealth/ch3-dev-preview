@@ -237,4 +237,49 @@ class GenericData extends WebVista_Model_ORM implements NSDRMethods {
 	public function nsdrMostRecent($tthis,$context,$data) {
 	}
 
+	public static function upgradeClinicalNote() {
+		/* NOTE: take output file and
+		# cat upnote.sql | sort -n | uniq > upnote2.sql
+		For it to run quickly all the fields used in the join need to be indexed, otherwise 5 seconds per row give or take */
+		set_time_limit(0);
+		$db = Zend_Registry::get('dbAdapter');
+		$genericData = new self();
+		$sql = "
+		SELECT genericData.name, clinicalNoteDefinitions.clinicalNoteTemplateId
+			FROM `genericData`
+			INNER JOIN clinicalNotes ON clinicalNotes.clinicalNoteId = genericData.objectId
+			INNER JOIN clinicalNoteDefinitions on clinicalNoteDefinitions.clinicalNoteDefinitionId = clinicalNotes.clinicalNoteDefinitionId
+			GROUP BY genericData.name, clinicalNoteDefinitions.clinicalNoteTemplateId";
+
+		$res = $db->query($sql);
+
+		while (($row = $res->fetch()) !==false) {
+			$cn = new ClinicalNoteTemplate();
+			$cn->clinicalNoteTemplateId = (int)$row['clinicalNoteTemplateId'];
+			if (!$cn->populate()) {
+				$error = 'Error populating clinical note '.$cn->clinicalNoteId;
+				trigger_error($error);
+				continue;
+			}
+			try {
+				$xml = new SimpleXMLElement($cn->template);
+				foreach ($xml as $question) {
+					foreach($question as $key => $item) {
+						if ($key != 'dataPoint') continue;
+						$namespace = (string)$item->attributes()->namespace;
+						$html = preg_replace('/[-\.]/','_',$namespace);
+						$output=  'UPDATE '.$genericData->_table.' INNER JOIN clinicalNotes ON clinicalNotes.clinicalNoteId = genericData.objectId INNER JOIN clinicalNoteDefinitions on clinicalNoteDefinitions.clinicalNoteDefinitionId = clinicalNotes.clinicalNoteDefinitionId SET `name`='.$db->quote($namespace).' WHERE `name`='.$db->quote($html).' AND objectClass=\'ClinicalNote\' AND clinicalNoteDefinitions.clinicalNoteTemplateId='.$cn->clinicalNoteTemplateId . ";\n";
+						file_put_contents('/tmp/upnote.sql',$output,FILE_APPEND);
+						echo ".";
+					}
+				}
+			}
+			catch (Exception $e) {
+				$error = 'Error parsing template for clinical note '.$cn->clinicalNoteId.' template '.$templateId;
+				trigger_error($error);
+				continue;
+			}
+		}
+	}
+
 }

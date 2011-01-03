@@ -82,7 +82,7 @@ if ($this->form->dateOfOnset->getValue()) {
 }?>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
-        <?=__($this->form->dateOfOnset->renderLabel())?>
+	<dt><label for="problemList-dateOfOnset"><?=__('Diagnosis Date')?></label></dt>
 	<?if(!$this->form->dateOfOnset->getValue())
 		$this->form->dateOfOnset->setValue(date('Y-m-d'));?>
         <?=$this->form->dateOfOnsetInput()?>

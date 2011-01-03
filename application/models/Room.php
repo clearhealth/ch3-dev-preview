@@ -167,4 +167,14 @@ class Room extends WebVista_Model_ORM {
 		return $this->building->displayName.'->'.$this->name;
 	}
 
+	public function getIteratorByBuildingId($buildingId = null) {
+		$db = Zend_Registry::get('dbAdapter');
+		if ($buildingId === null) $buildingId = $this->building_id;
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('building_id = ?',(int)$buildingId)
+				->order('name');
+		return $this->getIterator($sqlSelect);
+	}
+
 }

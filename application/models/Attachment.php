@@ -32,16 +32,23 @@ class Attachment extends WebVista_Model_ORM {
 
 	protected $_table = "attachments";
 	protected $_primaryKeys = array("attachmentId");
-	
-	public function __construct() {
-		parent::__construct();
-	}
+
 	public function populateWithAttachmentReferenceId() {
                 $db = Zend_Registry::get('dbAdapter');
                 $sql = "SELECT * from " . $this->_table . " WHERE 1 "
                   . " and attachmentReferenceId = " . $db->quote($this->attachmentReferenceId) . " order by dateTime DESC limit 1";
                 $this->populateWithSql($sql);
         }
+
+	public function populateWithMd5sum() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('md5sum = ?',$this->md5sum)
+				->order('dateTime DESC')
+				->limit(1);
+		$this->populateWithSql($sqlSelect->__toString());
+	}
 
 	public function getIteratorByAttachmentReferenceId($attachmentReferenceId = null) {
 		if ($attachmentReferenceId === null) {

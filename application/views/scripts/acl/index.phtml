@@ -16,6 +16,7 @@ aclToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
 aclToolbar.attachEvent("onClick",aclOnToolbarClicked);
 
 var ctr = 1;
+aclToolbar.addButton("newTemplate",ctr++,"<?=__('New Template')?>","newproblem.png","newproblem.png");
 aclToolbar.addButton("refreshResources",ctr++,"<?=__('Refresh Resources')?>","refresh.png","refresh.png");
 aclToolbar.addButton("saveTemplate",ctr++,"<?=__('Save Template')?>","save.png","save.png");
 aclToolbar.addButton("copyTemplate",ctr++,"<?=__('Copy Template')?>","copy.png","copy.png");
@@ -34,8 +35,31 @@ function aclOnToolbarClicked(id) {
 		return;
 	}
 	switch (id) {
-		case "refreshResources":
+		case "newTemplate":
+			aclTemplateId = null;
+			dojo.byId("legendId").innerHTML = "<?=__('Add New Template')?>";
 			aclGridReload();
+			break;
+		case "refreshResources":
+			var aclCheckedInputs = {};
+			var aclForm = dojo.byId("aclFormId");
+			var aclInputs = aclForm.getElementsByTagName("INPUT");
+			for (var i = 0; i < aclInputs.length; i++) {
+				if (aclInputs[i].type != "hidden" || aclInputs[i].name.substr(0,4) != "acl[") continue;
+				aclCheckedInputs[aclInputs[i].id] = aclInputs[i].value;
+			}
+			aclGridReload(aclTemplateId,function(){
+				var chk = null;
+				var input = null;
+				for (var i in aclCheckedInputs) {
+					if (!i) continue;
+					input = dojo.byId(i);
+					chk = dojo.byId("chk_"+i);
+					if (!input || !chk) continue;
+					input.value = aclCheckedInputs[i];
+					chk.checked = (input.value == 1)?true:false;
+				}
+			},true);
 			break;
 		case "saveTemplate":
 			aclSaveTemplate();
@@ -62,7 +86,7 @@ aclGrid.setInitWidths("*,*,*,*,*");
 aclGrid.setColTypes("ro,ro,ro,ro,ro");
 aclGrid.init();
 
-function aclGridReload(templateId) {
+function aclGridReload(templateId,callback,refreshResources) {
 	dojo.byId("<?=$this->chkLabelRead?>Header").checked = false;
 	dojo.byId("<?=$this->chkLabelWrite?>Header").checked = false;
 	dojo.byId("<?=$this->chkLabelDelete?>Header").checked = false;
@@ -72,8 +96,14 @@ function aclGridReload(templateId) {
 		dojo.byId("legendId").innerHTML = "<?=__('Add New Template')?>";
 		templateId = "";
 	}
+	var params = [];
+	params.push("templateId="+templateId);
+	if (templateId != "" && refreshResources) {
+		params.push("refresh=1");
+	}
 	aclGrid.clearAll();
-	aclGrid.load("<?=$this->baseUrl?>/acl.raw/list?templateId="+templateId,aclOnLoaded,"json");
+	if (typeof callback != "function") callback = aclOnLoaded;
+	aclGrid.load("<?=$this->baseUrl?>/acl.raw/list?"+params.join("&"),callback,"json");
 }
 aclGridReload();
 
@@ -251,23 +281,6 @@ function savePermission(name,value,template,access) {
 			access: access,
 		},
 		load: function(data,ioArgs) {
-			return data;
-		},
-		error: function(response, ioArgs) {
-			console.error("HTTP status code: ", ioArgs.xhr.status);
-			return response;
-		}
-	});
-}
-
-function refreshResources() {
-	aclTemplateId = null;
-	dojo.byId("legendId").innerHTML = "<?=__('Add New Template')?>";
-	dojo.xhrGet({
-		url: "<?=$this->baseUrl?>/acl.raw/refresh-resources",
-		handleAs: "json",
-		load: function(data,ioArgs) {
-			alert(data.msg);
 			return data;
 		},
 		error: function(response, ioArgs) {

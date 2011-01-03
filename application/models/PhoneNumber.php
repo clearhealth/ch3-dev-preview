@@ -133,7 +133,7 @@ class PhoneNumber extends WebVista_Model_ORM {
 		return $ret;
 	}
 
-	public function getPhoneNumbers() {
+	public function getPhoneNumbers($autoFix=true) {
 		$phoneNumberIterator = $this->getIteratorByPersonId();
 		$phones = array();
 		foreach ($phoneNumberIterator as $number) {
@@ -166,10 +166,10 @@ class PhoneNumber extends WebVista_Model_ORM {
 					$type = 'TE';
 					break;
 				default:
-					continue;
+					continue 2;
 			}
 			// auto-format phone number
-			$number->number = self::autoFixNumber($number->number);
+			if ($autoFix) $number->number = self::autoFixNumber($number->number);
 			$phones[$type][] = array('number'=>$number->number,'type'=>$type);
 		}
 		$telephoneNumbers = array();

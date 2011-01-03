@@ -106,7 +106,10 @@ class BaseMed24DetailIterator extends WebVista_Model_ORMIterator implements Iter
 			$data['keywords'] = $formulary['keywords'];
 			$data['vaclass'] = $formulary['vaclass'];
 			$data['schedule'] = $formulary['deaSchedule'];
-			$data['print'] = $formulary['print'];
+			$data['print'] = '';
+			if ($formulary['print'] == 1) {
+				$data['print'] = $formulary['print'];
+			}
 			$data['formularyDose'] = $formulary['dose'];
 			$data['formularyRoute'] = $formulary['route'];
 

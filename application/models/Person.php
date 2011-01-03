@@ -87,6 +87,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 
 	function getAge() {
                 if ($this->date_of_birth == '0000-00-00') return '';
+		return self::calculateAge($this->date_of_birth);
 		$now = time();
 		$dob = strtotime($this->date_of_birth);
                 $age = ($dob < 0)? ($now + ($dob * -1)): $now-$dob;
@@ -94,6 +95,12 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		$age = floor($age/$year);
 		return $age;
         }
+
+	public static function calculateAge($dateOfBirth) {
+		list($bYear,$bMonth,$bDay) = explode('-',date('Y-m-d',strtotime($dateOfBirth)));
+		list($cYear,$cMonth,$cDay) = explode('-',date('Y-m-d'));
+		return (($cMonth >= $bMonth && $cDay >= $bDay) || ($cMonth > $bMonth))?($cYear - $bYear):($cYear - $bYear - 1);
+	}
 
 	public function nsdrPersist($tthis,$context,$data) {
 		$ret = false;

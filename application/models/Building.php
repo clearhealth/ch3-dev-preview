@@ -126,12 +126,13 @@ class Building extends WebVista_Model_ORM {
 		return $ret;
 	}
 
-	public static function getBuildingDefaultLocation($personId) { // get default building given user's person id
+	public static function getBuildingDefaultLocation($personId,$defaultLocationId=null) { // get default building given user's person id, if $defaultLocationId is defined then room is returned
 		$user = new User();
 		$user->personId = $personId;
 		$user->populateWithPersonId();
 		$user->populate();
 		$building = null;
+		$room = null;
 		if (strlen($user->preferences) > 0) {
 			$xmlPreferences = new SimpleXMLElement($user->preferences);
 			$room = new Room();
@@ -140,17 +141,37 @@ class Building extends WebVista_Model_ORM {
 				$building = $room->building;
 			}
 		}
-		if ($building === null) {
-			$building = new Building();
-			$building->buildingId = (int)$user->defaultBuildingId;
-			$building->populate();
+		if ($defaultLocationId === null) {
+			if ($building === null) {
+				$building = new Building();
+				$building->buildingId = (int)$user->defaultBuildingId;
+				$building->populate();
+			}
+			return $building;
 		}
-		return $building;
+		else {
+			if ($room === null) {
+				$room = new Room();
+				$room->roomId = (int)$defaultLocationId;
+				$room->populate();
+			}
+			return $room;
+		}
 	}
 
 	public function getDisplayName() {
 		if (!strlen($this->practice->name) > 0) $this->practice->populate();
 		return $this->practice->name.'->'.$this->name;
+	}
+
+	public function getIteratorByPracticeId($practiceId = null) {
+		$db = Zend_Registry::get('dbAdapter');
+		if ($practiceId === null) $practiceId = $this->practice_id;
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('practice_id = ?',(int)$practiceId)
+				->order('name');
+		return $this->getIterator($sqlSelect);
 	}
 
 }

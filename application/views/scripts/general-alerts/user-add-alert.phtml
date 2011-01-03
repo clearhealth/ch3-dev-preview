@@ -48,7 +48,7 @@ function userAddAlertSubmit() {
 			patscb = null;
 		}
 
-		var patsac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/admin-persons.raw/auto-complete",requestMethod:"get"},'personpatSelectAutoComplete');
+		var patsac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/users.raw/auto-complete",requestMethod:"get"},'personpatSelectAutoComplete');
 		patscb = new dijit.form.FilteringSelect({name:"personpatSelectAutoCompleteId",autocomplete:true,store:patsac},"personpatSelectAutoCompleteDiv");
 		patscb.validate = function () {return true;};
 		dojo.connect(patscb,"onChange",'getPatDetails');

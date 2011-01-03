@@ -48,7 +48,7 @@ class MenuManagerController extends WebVista_Controller_Action {
 		if (!strlen($objMenu->type) > 0) {
 			$objMenu->type = 'freeform';
 		}
-		$mainTabs = array();
+		$mainTabs = array('All'=>'All');
 		foreach ($this->getMainTabs() as $tabName=>$url) {
 			$mainTabs[$tabName] = $tabName;
 		}

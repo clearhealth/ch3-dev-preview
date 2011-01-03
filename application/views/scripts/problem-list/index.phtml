@@ -52,55 +52,16 @@ function editProblem(id) {
 	}
 }
 function activateProblem(id) {
-	dojo.xhrPost ({
-		url: '<?=$this->baseUrl?>/problem-list.raw/ajax-change-status',
-		content: {
-			problemListId: id,
-			newStatus: '<?=__('Active')?>',
-		},
-		load: function (data) {
-			filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
-			return;
-		},
-		error: function (er) {
-			alert('err: ' + er)
-		}
-	});
+	problemChangeStatus(id,"newStatus","Active");
 }
 function inActivateProblem(id) {
-	dojo.xhrPost ({
-		url: '<?=$this->baseUrl?>/problem-list.raw/ajax-change-status',
-		content: {
-			problemListId: id,
-			newStatus: '<?=__('Inactive')?>',
-		},
-		load: function (data) {
-			filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
-			return;
-		},
-		error: function (er) {
-			alert('err: ' + er)
-		}
-	});
+	problemChangeStatus(id,"newStatus","Inactive");
 }
 function verifyProblem(id) {
 	alert(id);
 }
 function removeProblem(id) {
-	dojo.xhrPost ({
-		url: '<?=$this->baseUrl?>/problem-list.raw/ajax-change-status',
-		content: {
-			problemListId: id,
-			newStatus: '<?=__('Removed')?>',
-		},
-		load: function (data) {
-			filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
-			return;
-		},
-		error: function (er) {
-			alert('err: ' + er)
-		}
-	});
+	problemChangeStatus(id,"newStatus","Removed");
 }
 function annotateProblem(id) {
 	var comment = null;
@@ -123,21 +84,28 @@ function annotateProblem(id) {
 		}
 	});
 }
-function restoreProblem(id) {
-	dojo.xhrPost ({
+function problemChangeStatus(id,key,value) {
+	var content = {
+		"problemListId": id,
+	};
+	content[key] = value;
+	dojo.xhrPost({
 		url: '<?=$this->baseUrl?>/problem-list.raw/ajax-change-status',
-		content: {
-			problemListId: id,
-			restore: true,
-		},
+		content: content,
 		load: function (data) {
 			filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
 			return;
 		},
 		error: function (er) {
-			alert('err: ' + er)
+			alert("ERROR: " + er.responseText)
 		}
 	});
+}
+function restoreProblem(id) {
+	problemChangeStatus(id,"restore",true);
+}
+function resolveProblem(id) {
+	problemChangeStatus(id,"newStatus","Resolved");
 }
 //function viewProblem(id,showComments) {
 function viewProblem(id) {
@@ -218,6 +186,7 @@ function viewProblem(id) {
 		plMenu.setItemDisabled('annotate');
 		plMenu.setItemDisabled('remove');
 		plMenu.setItemDisabled('restore');
+		plMenu.setItemDisabled("resolve");
 
 		// remove: New Problem, Restore, View Details, Comments
 		switch (plStatus.toLowerCase()) {
@@ -226,6 +195,7 @@ function viewProblem(id) {
 				plMenu.setItemEnabled('inactivate');
 				plMenu.setItemEnabled('annotate');
 				plMenu.setItemEnabled('remove');
+				plMenu.setItemEnabled("resolve");
 				break;
 			case 'inactive':
 				plMenu.setItemEnabled('edit');
@@ -248,8 +218,8 @@ function viewProblem(id) {
 <script>
 	plGrid = new dhtmlXGridObject('problemsListContainer');
 	plGrid.setImagePath("<?=$this->baseUrl?>/img/");
-	plGrid.setHeader('Status,,Flags,Description,Diagnosis Code,Onset Date,Provider,Location,Last Updated');
-	plGrid.setInitWidths("75,25,75,*,100,80,150,100,125");
+	plGrid.setHeader('Status,,Flags,Description,Diagnosis Code,Diagnosis Date,Provider,Location,Last Updated');
+	plGrid.setInitWidths("75,25,75,*,100,100,150,100,125");
 	plGrid.setColTypes("ro,sub_row,ro,ro,ro,ro,ro,ro,ro");
 	plGrid.setSkin("xp");
 	plGrid.enableAlterCss("even","uneven");
@@ -304,6 +274,9 @@ function viewProblem(id) {
 				break;
 			case 'restore':
 				restoreProblem(rowId);
+				break;
+			case 'resolve':
+				resolveProblem(rowId);
 				break;
 			case 'view':
 				//viewProblem(rowId,plMenu.getCheckboxState('show_comments'));

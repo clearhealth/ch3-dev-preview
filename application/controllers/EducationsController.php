@@ -70,11 +70,18 @@ class EducationsController extends WebVista_Controller_Action {
 		$enumerationIterator = $enumerationsClosure->getAllDescendants($sectionId,1);
 		$rows = array();
 		foreach ($enumerationIterator as $enum) {
+			$name = $enum->name;
+			$edu = new EducationResource();
+			$edu->educationResourceId = (int)$enum->enumerationId;
+			if ($edu->populate() && strlen($edu->resource) > 0) {
+				$name = '<a href="'.$edu->resource.'" target="_blank">'.$name.'</a>';
+			}
 			$tmp = array();
-			$tmp['id'] = $enum->enumerationId;
+			$tmp['id'] = $enum->key;
 			$tmp['data'][] = '';
-			$tmp['data'][] = $enum->name;
+			$tmp['data'][] = $name;
 			$tmp['data'][] = $enum->key;
+			$tmp['data'][] = $enum->name;
 			$rows[] = $tmp;
 		}
                 $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -83,8 +90,21 @@ class EducationsController extends WebVista_Controller_Action {
         }
 
 	public function lookupAction() {
+		$sectionId = (int)$this->_getParam('section');
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($sectionId,1);
+		$rows = array();
+		foreach ($enumerationIterator as $enum) {
+			$name = $enum->name;
+			$edu = new EducationResource();
+			$edu->educationResourceId = (int)$enum->enumerationId;
+			if ($edu->populate() && strlen($edu->resource) > 0) {
+				$name = '<a href="'.$edu->resource.'" target="_blank">'.$name.'</a>';
+			}
+			$rows[$enum->key] = array('name'=>$enum->name,'displayName'=>$name);
+		}
 		$this->view->jsCallback = $this->_getParam('callback','');
-		$this->view->listEducationTopics = $this->_getEnumerationByName(PatientEducation::ENUM_TOPIC_PARENT_NAME);
+		$this->view->listEducationTopics = $rows;
 		$this->render('lookup');
 	}
 

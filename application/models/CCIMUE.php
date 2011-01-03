@@ -37,14 +37,6 @@ class CCIMUE extends WebVista_Model_ORM {
 		'Practitioner' => 3
 	);
 
-	public function __isset($key) { // this must be defined for parent::audit($obj)
-		$ret = false;
-		if (method_exists($this,'get'.ucfirst($key)) || isset($this->$key)) {
-			$ret = true;
-		}
-		return $ret;
-	}
-
 	public function getCCIMUEId() {
 		return $this->code;
 	}

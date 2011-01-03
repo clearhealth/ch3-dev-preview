@@ -24,15 +24,30 @@
 
 class PatientProcedureIterator extends WebVista_Model_ORMIterator implements Iterator {
 
-	public function __construct($dbSelect = null) {
-		parent::__construct('PatientProcedure',$dbSelect);
+	public function __construct($dbSelect = null,$autoLoad = true) {
+		$this->_ormClass = 'PatientProcedure';
+		// autoLoad gives an option to query the entire rows which takes time if more data in the table
+		if ($autoLoad) {
+			parent::__construct($this->_ormClass,$dbSelect);
+		}
 	}
 
 	public function setFilters(Array $filter) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
-			       ->from('patientProcedures')
-			       ->where('patientId = ?',$filter['patientId']);
+			       ->from('patientProcedures');
+		foreach ($filter as $field=>$value) {
+			switch ($field) {
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					$dbSelect->where("dateTime BETWEEN '{$start}' AND '{$end}'");
+					break;
+				case 'patientId':
+					$dbSelect->where('patientId = ?',(int)$value);
+			}
+		}
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}

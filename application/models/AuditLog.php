@@ -136,6 +136,7 @@ class AuditLog {
 
 		// generate queries
 		$queries = implode(";\n",self::$_sql);
+		file_put_contents('/tmp/audit',print_r($queries,true));
 
 		/* execute multi query */
 		$ret = $mysqli->multi_query($queries);

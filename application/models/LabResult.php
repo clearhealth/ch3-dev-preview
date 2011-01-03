@@ -36,6 +36,7 @@ class LabResult extends WebVista_Model_ORM implements NSDRMethods {
 	protected $producer_id;
 	protected $description;
 	protected $extra;
+	protected $cliaPerformingOrg;
 	protected $_table = "lab_result";
 	protected $_primaryKeys = array("lab_result_id");
 	protected $_legacyORMNaming = true;

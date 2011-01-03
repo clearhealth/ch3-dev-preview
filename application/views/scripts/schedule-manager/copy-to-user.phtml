@@ -115,7 +115,7 @@ function copyToUserOnSaved() {
 	var userRoom = userRoomId.shift();
 	if (userRoom != undefined) {
 		dojo.byId("scheduleCopyToUserProgressId").innerHTML = "";
-		copyToUserStart(dateStartCopy,dojo.date.add(dateStartCopy,"day",7),userRoom.providerId,userRoom.roomId);
+		copyToUserStartAdd(dateStartCopy,dojo.date.add(dateStartCopy,"day",7),userRoom.providerId,userRoom.roomId);
 	}
 }
 
@@ -211,7 +211,7 @@ function copyToUserAdd(start,end,providerId,roomId) {
 			copyToUserOnCancelled();
 			return;
 		}
-		copyToUserStart(dateStartCopy,dojo.date.add(dateStartCopy,"day",7),userRoom.providerId,userRoom.roomId);
+		copyToUserStartAdd(dateStartCopy,dojo.date.add(dateStartCopy,"day",7),userRoom.providerId,userRoom.roomId);
 		return;
 	}
 	dojo.xhrPost({

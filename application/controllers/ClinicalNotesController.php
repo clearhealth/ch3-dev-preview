@@ -363,9 +363,8 @@ EOL;
 				$location = Room::location($locationId);
 			}
 			$row['data'][] = $location;
-			$cn = new ClinicalNote();
-			$cn->populateWithArray($note);
-			$row['userdata']['docId'] = $cn->documentId;
+			$row['data'][] = $row['id'];
+			$row['data'][] = 0;
 
 			$xml = simplexml_load_string($note['template']);
 			$genericData = new GenericData();
@@ -378,7 +377,8 @@ EOL;
 			foreach ($genericDataIterator as $data) {
 				if (!$firstData) {
 					$firstData = true;
-					$row['id'] .= ':'.$data->revisionId;
+					//$row['id'] .= ':'.$data->revisionId;
+					$row['data'][6] = $data->revisionId;
 					continue;
 				}
 				$tmp = array();
@@ -386,6 +386,10 @@ EOL;
                	        	$tmp['data'][] = $data->objectId; // '';
 				$tmp['data'][] = '&nbsp; &nbsp; &nbsp;'.$childIcon.' '.date('Y-m-d',strtotime($data->dateTime));
 				$tmp['data'][] = $note['noteTitle'];
+				$tmp['data'][] = ''; // Author
+				$tmp['data'][] = ''; // Location
+				$tmp['data'][] = $note['clinicalNoteId'];
+				$tmp['data'][] = $tmp['id'];
 				$row['rows'][] = $tmp;
 			}
 			$notes[] = $row;

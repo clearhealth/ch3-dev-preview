@@ -125,6 +125,7 @@ class UpdateFile extends WebVista_Model_ORM {
 	}
 
 	public function verify($filename) {
+		set_time_limit(0);
 		if (!file_exists($filename)) {
 			throw new Exception('File '.$filename.' does not exists');
 		}

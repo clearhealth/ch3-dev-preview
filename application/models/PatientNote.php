@@ -61,4 +61,16 @@ class PatientNote extends WebVista_Model_ORM {
 		return $iterator;
 	}
 
+	public static function listReasons() {
+		$reasons = array();
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName(self::ENUM_REASON_PARENT_NAME);
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		foreach ($enumerationIterator as $enum) {
+			$reasons[$enum->key] = $enum->name;
+		}
+		return $reasons;
+	}
+
 }

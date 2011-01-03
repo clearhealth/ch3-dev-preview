@@ -16,6 +16,8 @@ div.gridbox_xp table.obj td {
 <div style="margin:10px;padding-top:4px;">
 	<div style="float:left;">
 		<span><?=__('Show Chart')?>: </span><?=$this->formSelect('chartTypeId',null,array('onChange'=>'chartTypeOnChanged(this.value)'),$this->chartList)?>
+		&nbsp; &nbsp; <input type="radio" id="units" name="units" value="metric" style="width:15px;" onClick="growthChartChangeUnits(this.value)" checked="checked" /> Metric
+		&nbsp; <input type="radio" id="units" name="units" value="uss" style="width:15px;" onClick="growthChartChangeUnits(this.value)" /> USS
 	</div>
 	<div style="float:right;">
 		<span><?=__('Age/Gender')?>: </span><?=$this->person->age?> (<?=$this->person->displayGender?>)
@@ -25,12 +27,38 @@ div.gridbox_xp table.obj td {
 <div style="margin:10px;padding-top:4px;">
 	<div id="growthChartId" style="height:400px;width:100%;"></div>
 </div>
-<br style="clear:left;" />
 <div style="margin:10px;font-size:5pt;">
 Published May 30, 2000. SOURCE: Developed by the National Center for Health Statistics in collaboration with the National Center for Chronic Disease Prevention and Health Promotion (2000). http://www.cdc.gov/growthcharts
 </div>
+<br style="clear:left;" />
+<?=$this->formTextarea('vitalSigns',$this->vitalSigns,array('id'=>'vitalSigns','readonly'=>'readonly','style'=>'margin:10px;height:150px;width:770px;'))?>
 
 <script>
+var converted = false;
+function convertToUSS(units,value) {
+	var ret = parseFloat(value);
+	switch (units) {
+		case "cm":
+			ret *= 0.3937008;
+			ret = ret.toFixed(2);
+			break;
+		case "kg":
+			ret *= 2.2;
+			ret = ret.toFixed(2);
+			break;
+		case "kg/m^2":
+			ret *= (2.2 / (39.3700787 * 39.3700787));
+			ret = ret.toFixed(4);
+			break;
+	}
+	return ret;
+}
+
+function growthChartChangeUnits(value) {
+	converted = (value == "uss")?true:false;
+	chartTypeOnChanged();
+}
+
 var listCharts = {
 <?foreach ($this->listGrowthCharts as $key=>$value):?>
 	"<?=$key?>": {
@@ -62,6 +90,7 @@ var listCharts = {
 			},
 		<?endforeach;?>
 		},
+		"vitalSigns": (<r><![CDATA[<?=$value['vitalSigns']?>]]></r>).toString(),
 	},
 <?endforeach;?>
 };
@@ -118,16 +147,42 @@ function growthChartsPlot(chartType) {
 	var series = [];
 	var xLabels = [];
 	//xLabels.push({value:xMin,text:""});
-	xLabels.push({value:xMin,text:"   <b>"+chartData.name+"</b><br />   ("+chartData.unit+")"});
+	if (converted && chartData.unit == "cm") {
+		xLabels.push({value:xMin,text:"   <b>"+chartData.name+"</b><br />   (in)"});
+		for (var i = (xMin+xTickStep); i < xMax; i += xTickStep) {
+			xLabels.push({value:i,text:convertToUSS(chartData.unit,i)});
+		}
+	}
+	else {
+		xLabels.push({value:xMin,text:"   <b>"+chartData.name+"</b><br />   ("+chartData.unit+")"});
+	}
 	//xLabels.push({value:xTickStep,text:"   <b>"+chartData.name+"</b><br />   ("+chartData.unit+")"});
 	xLabels.push({value:xMax,text:xMax});
+	var percentileUnit = chartData.percentileUnit;
 	var yLabels = [];
 	yLabels.push({value:yMin,text:""});
-	yLabels.push({value:yMax,text:"<b>"+chartData.percentileName+"</b><br />("+chartData.percentileUnit+")"});
+	if (converted) {
+		var val = "";
+		for (var i = (yMin+yTickStep); i < yMax; i += yTickStep) {
+			yLabels.push({value:i,text:convertToUSS(percentileUnit,i)});
+		}
+		switch (percentileUnit) {
+			case "cm":
+				percentileUnit = "in";
+				break;
+			case "kg":
+				percentileUnit = "lb";
+				break;
+			case "kg/m^2":
+				percentileUnit = "lb/in^2";
+				break;
+		}
+	}
+	yLabels.push({value:yMax,text:"<b>"+chartData.percentileName+"</b><br />("+percentileUnit+")"});
 
 	growthChart = new dojox.charting.Chart2D("growthChartId");
 	growthChart.addAxis("x",{labels:xLabels,majorTickStep:xTickStep,minorTickStep:xTickStep,microTickStep:1});
-	growthChart.addAxis("y", {vertical:true,labels:yLabels,majorTickStep:yTickStep,minorTickStep:yTickStep,microTickStep:1});
+	growthChart.addAxis("y",{vertical:true,labels:yLabels,majorTickStep:yTickStep,minorTickStep:yTickStep,microTickStep:1});
 	growthChart.addPlot("grid",{type:"Grid",hMajorLines:true,hMinorLines:true,vMajorLines:true,vMinorLines:true});
 
 	series = [];
@@ -153,11 +208,14 @@ function growthChartsPlot(chartType) {
 		series.push({x:column["x"],y:column["y"]});
 	}
 	if (series.length > 0) {
-		growthChart.addPlot("vitals",{type:"Lines",tension:8});
+		var opts = {type:"Lines",tension:8};
+		if (series.length == 1) opts["markers"] = true;
+		growthChart.addPlot("vitals",opts);
 		growthChart.addSeries("Vitals",series,{plot:"vitals",stroke:{color:"#FF0000"}});
 	}
 
 	growthChart.render();
+	dojo.byId("vitalSigns").value = chartData.vitalSigns;
 }
 
 chartTypeOnChanged();

@@ -53,20 +53,6 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 		$this->_form->setWindow('dummyWindowId');
 		$this->_form->setAction(Zend_Registry::get('baseUrl') . "clinical-notes-form.raw/process");
 		$cnXML = simplexml_load_string($cnTemplate->template);
-		$element = $this->_form->createElement('button','print', array('label' => 'Print'));
-                $element->setAttrib('onclick',"
-var printHtml = '<table border=\'0\' cellpadding=\'0\' cellspacing=\'0\' width=\'100%\'>';
-printHtml += '<thead><tr><th><div style=\'margin-bottom:30px;\'>'+dojo.byId('mainToolbar').innerHTML+'</div></th></tr></thead>';
-printHtml += '<tbody><tr><td>'+dojo.byId('cntemplateform').innerHTML+'</td></tr></tbody>';
-printHtml += '</table>';
-dojo.byId('iframeprint').contentWindow.document.body.innerHTML = printHtml;
-dojo.byId('iframeprint').contentWindow.focus();
-dojo.byId('iframeprint').contentWindow.print();
-//dojo.byId('iframeprint').contentWindow.document.body.innerHTML = '';
-printHtml = '';
-");
-                $element->setValue('Print');
-		// pre-register print element to view so that other elements can override particularly the onclick event
 		$this->_buildForm($cnXML);
 		$this->_form->addElement($this->_form->createElement('hidden','clinicalNoteId', array('value' => (int)$cn->clinicalNoteId)));
 

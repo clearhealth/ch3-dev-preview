@@ -74,6 +74,43 @@ class GrowthChartsController extends WebVista_Controller_Action {
 				}
 			}
 			$listGrowthCharts[$key]['data'] = $orm->listVitals($person);
+			// this MUST be called right after $orm->listVitals($person) is called
+			$vitalSigns = array();
+			foreach (GrowthChartBase::$_vitalSigns as $vitalSign) {
+				$dateVitalsTime = strtotime($vitalSign['dateTime']);
+				if (!isset($vitalSigns[$vitalSign['vitalSignGroupId']])) {
+					list($bYear,$bMonth,$bDay) = explode('-',date('Y-m-d',strtotime($person->dateOfBirth)));
+					list($vYear,$vMonth,$vDay) = explode('-',date('Y-m-d',$dateVitalsTime));
+					$age = (($vMonth >= $bMonth && $vDay >= $bDay) || ($vMonth > $bMonth))?($vYear - $bYear):($vYear - $bYear - 1);
+					$vitalSigns[$vitalSign['vitalSignGroupId']]['label'] = date('m/d/Y h:iA',$dateVitalsTime).': Age='.($age*12).' months';
+					$vitalSigns[$vitalSign['vitalSignGroupId']]['data'] = array();
+				}
+				$value = $vitalSign['value'];
+				$ussValue = $value;
+				$metricValue = '';
+				if (strlen($vitalSign['units']) > 0) {
+					if (strlen($ussValue) > 0) {
+						$ussValue .= ' '.$vitalSign['units'];
+					}
+					$ret = VitalSignValue::convertValues($vitalSign['vital'],$value,$vitalSign['units']);
+					if ($ret !== false) {
+						$ussValue = $ret['uss'];
+						$metricValue = $ret['metric'];
+					}
+				}
+				$tmp['data'][] = $ussValue;
+				$tmp['data'][] = $metricValue;
+				$vitalSigns[$vitalSign['vitalSignGroupId']]['data'][] = $vitalSign['vital'].'='.$metricValue.' ('.$ussValue.')';
+			}
+			$vitalTxt = array();
+			foreach ($vitalSigns as $groupId=>$value) {
+				$arr = array();
+				foreach ($value['data'] as $val) {
+					$arr[] = $val;
+				}
+				$vitalTxt[] = $value['label'].' '.implode(' ',$arr);
+			}
+			$listGrowthCharts[$key]['vitalSigns'] = implode("\n",$vitalTxt);
 			$listGrowthCharts[$key]['columns'] = $columns;
 			$listGrowthCharts[$key]['name'] = GrowthChartBase::prettyName($base);
 			$listGrowthCharts[$key]['unit'] = constant("{$ormClass}::BASE_UNIT");

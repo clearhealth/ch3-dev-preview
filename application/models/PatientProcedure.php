@@ -31,11 +31,19 @@ class PatientProcedure extends WebVista_Model_ORM {
 	protected $procedure;
 	protected $modifiers;
 	protected $comments;
+	protected $dateTime;
 
 	protected $_primaryKeys = array('code','patientId');
 	protected $_table = 'patientProcedures';
 
 	const ENUM_PARENT_NAME = 'Procedure Preferences';
+
+	public function persist() {
+		if (!$this->dateTime || $this->dateTime == '0000-00-00 00:00:00') {
+			$this->dateTime = date('Y-m-d H:i:s');
+		}
+		return parent::persist();
+	}
 
 	public function getPatientProcedureId() {
 		return $this->code;

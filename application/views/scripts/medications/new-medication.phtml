@@ -466,7 +466,8 @@ function changeOptionsSelected(optionsId,optionId) {
 function generateDescription() {
 	var description = '';
 	var doses = [];
-	var doseList = currentMedData.dose.split(",");
+	var doseList = [];
+	if (currentMedData.dose) doseList = currentMedData.dose.split(",");
 	for (var i in doseList) {
 		if (doseList[i].length > 0) {
 			doses.push(doseList[i]);
@@ -483,7 +484,16 @@ function selectPharmacyPopup() {
 	var url = "<?=$this->baseUrl?>/medications.raw/select-pharmacy?personId="+mainController.getActivePatient();
 	winSelectPharmacy = globalCreateWindow("windowSelectPharmacy",[],url,"<?=__('Select Pharmacy')?>",810,410);
 }
-
+function setPRLabels() {
+	if  (dojo.byId('medication-patientReported').value == 1 && dojo.byId('prescribeButton').value == 'Prescribe') {
+		dojo.byId('prescribeButton').value = 'Save';
+		dojo.byId('signPrescribeButton').disabled = 'disabled';
+	}
+	else {
+		dojo.byId('prescribeButton').value = 'Prescribe';
+		dojo.byId('signPrescribeButton').disabled = 0;
+	}
+}
 function medicationChangeDirections() {
 	changeOptionsSelected("options-schedule","medication-schedule");
 	medicationSetDirections();
@@ -561,7 +571,7 @@ function medicationDaysSupplyOnChanged(value) {
 <?=__('No default pharmacy set for patient')?>
 <?endif?>
 		</label>
-		<input type="checkbox" id="<?=$this->form->patientReported->getId()?>" name="<?=$this->form->patientReported->getFullyQualifiedName()?>" <?=($this->form->patientReported->getValue())?'checked="checked" ':''?>value="1" style="width:15px;margin-top:10px;" /> <?=__('Patient Reported')?>
+		<input type="checkbox" id="<?=$this->form->patientReported->getId()?>" name="<?=$this->form->patientReported->getFullyQualifiedName()?>" <?=($this->form->patientReported->getValue())?'checked="checked" ':''?>value="1" style="width:15px;margin-top:10px;" onclick="setPRLabels();"/> <?=__('Patient Reported')?>
 	</div>
 	<div style="float:left;">
         	<?=__($this->form->comment->renderLabel())?>
@@ -636,8 +646,8 @@ function advancedOnClicked(obj) {
 </div>
 <br style="clear:left;" />
 <div style="margin-top:10px;">
-	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Prescribe')?>"  onClick="prescribeMedication();" />
-	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Sign & Prescribe')?>" onClick="prescribeSignMedication();" />
+	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Prescribe')?>"  id="prescribeButton" onClick="prescribeMedication();" />
+	<input type="button" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" value="<?=__('Sign & Prescribe')?>" id='signPrescribeButton'' onClick="prescribeSignMedication();" />
 	<input type="button" value="<?=__('Cancel')?>" style="display:block;margin-left:auto;margin-right:auto;width:400px;margin-top:5px;" onClick="winNewMedObjects.close()" />
 </div>
 </fieldset>

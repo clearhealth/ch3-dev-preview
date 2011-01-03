@@ -36,6 +36,8 @@ class Payment extends WebVista_Model_ORM {
 	protected $payer_id;
 	protected $payment_date;
 	protected $title;
+	protected $personId;
+	protected $appointmentId;
 
 	protected $_table = 'payment';
 	protected $_primaryKeys = array('payment_id');
@@ -79,6 +81,18 @@ class Payment extends WebVista_Model_ORM {
 
 	public function setVisitId($id) {
 		$this->encounter_id = $id;
+	}
+
+	public function getIteratorByAppointmentId($appointmentId = null) {
+		if ($appointmentId === null) {
+			$appointmentId = $this->appointmentId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('appointmentId = ?',(int)$appointmentId)
+				->order('timestamp DESC');
+		return $this->getIterator($sqlSelect);
 	}
 
 }

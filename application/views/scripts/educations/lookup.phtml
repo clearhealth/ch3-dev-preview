@@ -9,7 +9,7 @@ function selectedEducationLookup(rowId) {
 	}
 	<?if($this->jsCallback != ''):?>
 	if (window.<?=$this->jsCallback?>) {
-		<?=$this->jsCallback?>(rowId,educationLookupGrid.cells(rowId,0).getValue());
+		<?=$this->jsCallback?>(rowId,educationLookupGrid.cells(rowId,1).getValue());
 	}
 	<?endif;?>
 	dhxWins.window("winLookupEducationId").close();
@@ -26,17 +26,17 @@ function selectedEducationLookup(rowId) {
 <script>
 var educationLookupGrid = new dhtmlXGridObject("educationLookupGridId");
 educationLookupGrid.setImagePath("<?=$this->baseUrl?>/img/");
-educationLookupGrid.setHeader("");
+educationLookupGrid.setHeader(",");
 educationLookupGrid.setNoHeader(true);
-educationLookupGrid.setInitWidths("*");
+educationLookupGrid.setInitWidths("*,0");
 educationLookupGrid.setColAlign("left");
-educationLookupGrid.setColTypes("ro");
+educationLookupGrid.setColTypes("ro,ro");
 function educationLookupGridOnRowDblClicked(rowId,colIndex) {
 	selectedEducationLookup(rowId);
 }
 educationLookupGrid.attachEvent("onRowDblClicked",educationLookupGridOnRowDblClicked);
 educationLookupGrid.init();
 <?foreach ($this->listEducationTopics as $code=>$topic):?>
-educationLookupGrid.addRow("<?=$code?>","<?=$topic?>");
+educationLookupGrid.addRow("<?=$code?>",(<r><![CDATA[<?=$topic['displayName']?>]]></r>).toString()+","+(<r><![CDATA[<?=$topic['name']?>]]></r>).toString());
 <?endforeach;?>
 </script>

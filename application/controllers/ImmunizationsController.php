@@ -88,10 +88,23 @@ class ImmunizationsController extends WebVista_Controller_Action {
 	}
 
 	protected function _generateImmunizationRowData(PatientImmunization $pi) {
+		$config = Zend_Registry::get('config');
+		$useImmunizationInventory = ((string)$config->useImmunizationInventory == 'true')?true:false;
+		if ($useImmunizationInventory) {
+			$lotNumbers = array();
+			$rows = array();
+			$iterator = new ImmunizationInventoryIterator();
+			$iterator->setFilters(array('immunization'=>preg_replace('/&#44;/',',',$pi->immunization),'inStock'=>true,'linked'=>false,'includeRow'=>$pi->lot));
+			foreach ($iterator as $inventory) {
+				$lotNumbers[$inventory->immunizationInventoryId] = $inventory->lotNumber;
+			}
+		}
 		$ret = array();
 		$ret['id'] = $pi->patientImmunizationId;
-		$ret['data'][] = $pi->dateAdministered;
+		$ret['data'][] = date('Y-m-d H:i',strtotime($pi->dateAdministered));
 		$ret['data'][] = $pi->lot;
+		$ret['data'][] = $pi->amount;
+		$ret['data'][] = $pi->units;
 		$ret['data'][] = $pi->route;
 		$ret['data'][] = $pi->site;
 		$ret['data'][] = $pi->series;
@@ -99,6 +112,7 @@ class ImmunizationsController extends WebVista_Controller_Action {
 		$ret['data'][] = $pi->immunization;
 		$ret['data'][] = (int)$pi->patientReported;
 		$ret['data'][] = $pi->comment;
+		if ($useImmunizationInventory) $ret['userdata']['lotNumbers'] = $lotNumbers;
 		return $ret;
 	}
 
@@ -124,15 +138,31 @@ class ImmunizationsController extends WebVista_Controller_Action {
 	public function processEditImmunizationAction() {
 		$params = $this->_getParam('immunizations');
 		$patientImmunization = new PatientImmunization();
+		$config = Zend_Registry::get('config');
+		$useImmunizationInventory = ((string)$config->useImmunizationInventory == 'true')?true:false;
 		if (isset($params['patientImmunizationId'])) {
 			$patientImmunization->patientImmunizationId = (int)$params['patientImmunizationId'];
 			$patientImmunization->populate();
+			if ($useImmunizationInventory && isset($params['lot']) && $params['lot'] != $patientImmunization->lot) {
+				$inventory = new ImmunizationInventory();
+				$inventory->immunizationInventoryId = (int)$patientImmunization->lot;
+				$inventory->populate();
+				$inventory->immunizationId = 0;
+				$inventory->persist();
+			}
 		}
 		else {
 			$patientImmunization->dateAdministered = date('Y-m-d');
 		}
 		$patientImmunization->populateWithArray($params);
 		$patientImmunization->persist();
+		if (isset($inventory) && $inventory->immunizationId === 0) {
+			$inventory2 = new ImmunizationInventory();
+			$inventory2->immunizationInventoryId = (int)$params['lot'];
+			$inventory2->populate();
+			$inventory2->immunizationId = $patientImmunization->patientImmunizationId;
+			$inventory2->persist();
+		}
 		$data = $this->_generateImmunizationRowData($patientImmunization);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

@@ -33,7 +33,7 @@ class ChmedController extends WebVista_Controller_Action {
 		//$tradename = 'lipitor';
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
-		$medIterator = new BaseMed24Iterator();
+		$medIterator = new BaseMed24Iterator(null,false);
 		$formulary = 'default';
 		$config = new ConfigItem();
 		$config->configId = 'defaultFormulary';
@@ -154,6 +154,10 @@ class ChmedController extends WebVista_Controller_Action {
         }
 
 	public function ajaxListInteractionsAction() {
+		$severeNotify = PermissionTemplate::hasPermission('medication-alerts','severe-notification')?true:false;
+		$criticalNotify = PermissionTemplate::hasPermission('medication-alerts','critical-notification')?true:false;
+		$allergyNotify = PermissionTemplate::hasPermission('medication-alerts','allergy-notification')?true:false;
+
 		$personId = (int)$this->_getParam('personId');
 		$md5 = preg_replace('/[^A-Za-z0-9]/','',$this->_getParam('md5'));
 		$vaclass = preg_replace('/[^A-Za-z0-9]/','',$this->_getParam('vaclass'));
@@ -162,6 +166,14 @@ class ChmedController extends WebVista_Controller_Action {
 		$interactionIterator = new BaseMed24InteractionIterator();
 		$interactionIterator->setFilters(array('personId'=>$personId,'md5'=>$md5));
 		$regularAllergies = $interactionIterator->toJsonArray('hipaa_ndc',array('tradename','fda_drugname','notice'));
+		$tmpArray = $regularAllergies;
+		$regularAllergies = array();
+		foreach ($tmpArray as $key=>$value) {
+			// notice: S, C, Y, ^
+			if ((!$severeNotify && $value['data'][2] == 'SIGNIFICANT') ||
+			    (!$criticalNotify && $value['data'][2] == 'CRITICAL')) continue;
+			$regularAllergies[] = $value;
+		}
 
 		$listSymptoms = array();
 		$enumeration = new Enumeration();
@@ -187,6 +199,9 @@ class ChmedController extends WebVista_Controller_Action {
 		$patientAllergyIterator->setFilters(array('patientId'=>$personId,'enteredInError'=>0,'drugAllergy'=>$vaclass,'reactionType'=>'Drug Class Allergy'));
 		$drugClassAllergies = array();
 		foreach($patientAllergyIterator as $allergy)  {
+			if (!$allergyNotify) break;
+			/*if ((!$severeNotify && $allergy->severity == 'SEVERE') ||
+			    (!$criticalNotify && $allergy->severity == 'MOD')) continue;*/
 			$symptoms = explode(',',$allergy->symptoms);
 			$symptom = array();
 			foreach ($symptoms as $sym) {
@@ -204,6 +219,9 @@ class ChmedController extends WebVista_Controller_Action {
 		$patientAllergyIterator->setFilters(array('patientId'=>$personId,'enteredInError'=>0,'drugAllergy'=>$md5,'reactionType'=>'Specific Drug Allergy'));
 		$specificDrugAllergies = array();
 		foreach($patientAllergyIterator as $allergy)  {
+			if (!$allergyNotify) break;
+			/*if ((!$severeNotify && $allergy->severity == 'SEVERE') ||
+			    (!$criticalNotify && $allergy->severity == 'MOD')) continue;*/
 			$symptoms = explode(',',$allergy->symptoms);
 			$symptom = array();
 			foreach ($symptoms as $sym) {

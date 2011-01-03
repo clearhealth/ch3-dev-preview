@@ -1,6 +1,110 @@
+<style>
+ul {
+	display: inline;
+	line-height: normal;
+	font-size: 100%;
+}
+</style>
+
+<div style="width:100%;">
+	<div style="float:left;">
+		<fieldset><legend><?=__('Appointment Information')?></legend>
+		<?=$this->form->renderOpen()?>
+		<div style="margin-left:10px;width:350px;">
+			<div class="formRow">
+				<?=$this->form->reason->renderLabel()?>
+				<?$appointmentReasons = array(); foreach($this->appointmentReasons as $enumerationId=>$reason) $appointmentReasons[$enumerationId] = $reason['name'];?>
+				<?=$this->form->reasonInput('FormSelect',array('onChange'=>'appointmentReasonOnChanged()','style'=>'width:325px;','options'=>$appointmentReasons))?>
+			</div>
+			<br />
+			<div class="formRow" id="providersContainerId"></div>
+			<br />
+			<div class="formRow" style="padding-top:4px;">
+				<?=$this->form->roomId->renderLabel()?>
+				<?$rooms = array('0'=>__('No Room'));
+				foreach (Room::getArray() as $key=>$value) $rooms[$key] = $value;
+				$options = array('style'=>'width:325px;','options'=>$rooms);
+				if (isset($this->columnId)) $options['disabled'] = '';
+				?>
+				<?=$this->form->roomIdInput('FormSelect',$options)?>
+			</div>
+			<div class="formRow" style="padding-top:4px;">
+        			<?=__($this->form->title->renderLabel())?>
+			        <?=$this->form->titleInput()?>
+			</div>
+			<div class="formRow" style="padding-top:4px;">
+				<?=$this->form->patientId->renderLabel()?>
+				<div id="patientSelectAutoCompleteDiv"></div>
+			</div>
+			<div class="formRow" style="padding-top:4px;">
+			        <dt><label for="appointment-time"><?=__('Time')?></label></dt>
+				<?=$this->form->startInput('FormText',array('style'=>'width:150px;','value'=>$this->start))?>
+				<?=$this->form->endInput('FormText',array('style'=>'width:150px;','value'=>$this->end))?>
+			</div>
+			<div class="formRow" style="padding-top:4px;">
+			        <dt><label for="appointment-walkin">&nbsp;</label></dt>
+				<input type="checkbox" id="<?=$this->form->walkin->getId()?>" name="<?=$this->form->walkin->getFullyQualifiedName()?>" <?=($this->form->walkin->getValue())?'checked="checked"':''?> /> Walk in?
+			</div>
+			<br style="clear:left"/>
+			<div style="text-align:right;margin-top:10px;">
+				<input type="hidden" name="columnId" value="<?=(isset($this->columnId))?$this->columnId:''?>" />
+				<?=$this->form->patientIdInput('FormHidden')?>
+				<input type="hidden" name="rowId" value="<?=(isset($this->rowId))?$this->rowId:''?>" />
+				<?=$this->form->appointmentIdInput('FormHidden')?>
+				<?=$this->formButton('cancel',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
+				<?=$this->formButton('appointmentButtonId',($this->form->appointmentId->getValue())?__('Update Appointment'):__('Make Appointment'),array('id'=>'appointmentButtonId','onClick'=>'calendarMakeAppointment(false,function(){if (window.appAccordion) window.appAccordion.callEvent("onActive",["appointmentInfo"]);});'))?>
+			</div>
+			<div style="margin-top:20px;">
+				<?=__('Appointment Created')?>: <?=$this->form->createdDate->getValue()?> <?=__('by')?> <?=$this->form->formCreator->username->getValue()?>
+				<br />
+				<?=__('Appointment Updated')?>: <?=$this->form->lastChangeDate->getValue()?> <?=__('by')?> <?=$this->form->formLastChange->username->getValue()?>
+			</div>
+		</div>
+		<?=$this->form->renderClose()?>
+		</fieldset>
+	</div>
+	<div style="text-align:left;float:left;">
+		<fieldset><legend><?=__('Patient Details')?></legend>
+			<div class="formRow" style="margin-left:5px;">
+				<?if($this->appointment->patientId > 0):?>
+				<ul>
+					<li><?=__('Phones')?>: <?=implode(',',$this->phones)?></li>
+					<li><?=__('Name')?>: <?=$this->appointment->patient->displayName?></li>
+					<li><?=__('MRN')?>: <?=$this->appointment->patient->recordNumber?></li>
+					<li><?=__('Age/Sex')?>: <?=$this->appointment->patient->age?> (<?=$this->appointment->patient->displayGender?>)</li>
+					<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
+				</ul>
+				<?endif;?>
+			</div>
+		</fieldset>
+		<fieldset><legend><?=__('Patient Notes')?><?if($this->form->patientId->getValue() > 0):?> (<a href="javascript:appointmentNotesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)<?endif;?></legend>
+			<div class="formRow" style="overflow:auto;">
+				<div id="pNotesGridId" style="width:370px;height:150px;"></div>
+			</div>
+		</fieldset>
+	</div>
+</div>
+
 <script>
 
-function calendarMakeAppointment(forced) {
+function appointmentNotesAdd() {
+	pNotesProcessEdit(0,pNotesColFields[4],"blank","note",pNotesGridReload);
+}
+
+function appointmentHasChanges() {
+	var reasonSelect = dojo.byId("<?=$this->form->reason->getId()?>");
+	if ("<?=$this->form->reason->getValue()?>" != reasonSelect.options[reasonSelect.selectedIndex].value) return true;
+	var roomSelect = dojo.byId("<?=$this->form->roomId->getId()?>");
+	if ("<?=$this->form->roomId->getValue()?>" != roomSelect.options[roomSelect.selectedIndex].value) return true;
+	if ("<?=$this->form->title->getValue()?>" != dojo.byId("<?=$this->form->title->getId()?>").value) return true;
+	if ("<?=$this->form->patientId->getValue()?>" != dojo.byId("<?=$this->form->patientId->getId()?>").value) return true;
+	if ("<?=$this->form->start->getValue()?>" != dojo.byId("<?=$this->form->start->getId()?>").value) return true;
+	if ("<?=$this->form->end->getValue()?>" != dojo.byId("<?=$this->form->end->getId()?>").value) return true;
+	if (<?=($this->form->walkin->getValue())?'true':'false'?> != dojo.byId("<?=$this->form->walkin->getId()?>").checked) return true;
+	return false;
+}
+
+function calendarMakeAppointment(forced,callback) {
 	enableButtons(true);
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/calendar.raw/process-add-appointment",
@@ -12,14 +116,20 @@ function calendarMakeAppointment(forced) {
 		load: function (data) {
 			if (data.error) {
 				if (confirm(data.error + "\n\n<?=__('Continue?')?>")) {
-					calendarMakeAppointment(true);
+					calendarMakeAppointment(true,callback);
 				}
 				else {
 					enableButtons(false);
 				}
 				return;
 			}
-			window.applyNewAppointment(data.columnId);
+			if ((data.columnId != undefined || data.columnId != "") && window.calendarLoadEvents) {
+				window.calendarLoadEvents([data.columnId]);
+			}
+			if (callback && typeof callback == "function") {
+				callback(data);
+			}
+
 		},
 		error: function (er) {
 			alert("err: " + er);
@@ -27,15 +137,15 @@ function calendarMakeAppointment(forced) {
 	});
 }
 
-var listProviders = new Array();
+var listProviders = [];
 listProviders.push({value:"0",text:"<?=__('No Provider')?>"});
 <?foreach(Provider::getArray() as $personId => $name):?>
 listProviders.push({value:"<?=$personId?>",text:"<?=$name?>"});
 <?endforeach;?>
 
-var appointmentReasons = new Array();
+var appointmentReasons = [];
 <?foreach($this->appointmentReasons as $enumerationId=>$data):?>
-var template<?=$data['ormId']?>Slots = new Array();
+var template<?=$data['ormId']?>Slots = [];
 	<?foreach($data['breakdown'] as $slot):?>
 template<?=$data['ormId']?>Slots.push({n:"<?=$slot['n']?>",l:<?=(int)$slot['l']?>,t:"<?=$slot['t']?>"});
 	<?endforeach;?>
@@ -46,7 +156,7 @@ function adjustAppointmentTime(minutes) {
 	if (!minutes || parseInt(minutes) == 0) {
 		return;
 	}
-	var appointmentStart = dojo.byId("appointment-start").value;
+	var appointmentStart = dojo.byId("<?=$this->form->start->getId()?>").value;
 	if (appointmentStart == "") {
 		return;
 	}
@@ -72,7 +182,7 @@ function adjustAppointmentTime(minutes) {
 		minute = "0"+minute;
 	}
 
-	var appointmentEnd = dojo.byId("appointment-end");
+	var appointmentEnd = dojo.byId("<?=$this->form->end->getId()?>");
 	appointmentEnd.value = hour+":"+minute;
 }
 
@@ -80,7 +190,7 @@ var providerSelectIds;
 function appointmentProvidersChanged(reason) {
 	var providersContainer = dojo.byId("providersContainerId");
 	providersContainer.innerHTML = "";
-	providerSelectIds = new Array();
+	providerSelectIds = [];
 	if (!reason) {
 		appendProviderSlot("default","<?=__('Provider')?>");
 	}
@@ -153,7 +263,7 @@ function appendProviderSlot(id,labelText,isSelDisabled,defOptVal) {
 }
 
 function appointmentReasonOnChanged() {
-	var reasonSelect = dojo.byId("appointment-reason");
+	var reasonSelect = dojo.byId("<?=$this->form->reason->getId()?>");
 	if (reasonSelect.selectedIndex < 0) {
 		appointmentProvidersChanged(reason);
 		return;
@@ -173,163 +283,110 @@ function enableButtons(enabled) {
 	for (var i in providerSelectIds) {
 		dojo.byId(providerSelectIds[i]).disabled = !enabled;
 	}
-	dojo.byId('appointment-room-id').disabled = !enabled;
+	dojo.byId("<?=$this->form->roomId->getId()?>").disabled = !enabled;
 }
 
-</script>
 
-<div style="width:100%;">
 
-<div style="float:left;">
-<fieldset><legend><?=__("Appointment Information")?></legend>
-<?=$this->form->renderOpen()?>
-<div style="float:left;">
-	<div style="margin-left:10px;width:350px;">
-
-	<div class="formRow">
-	<dt><label for="appointment-reason"><?=__('Reason')?></label></dt>
-	<!--<select id="appointment-reason" name="appointment[reason]" style="width:325px;" <?=(isset($this->columnId))?'disabled':''?>>-->
-	<select id="appointment-reason" name="appointment[reason]" style="width:325px;" onchange="appointmentReasonOnChanged()">
-	<?foreach($this->appointmentReasons as $enumerationId=>$reason):?>
-		<option value="<?=$enumerationId?>" <?if ($enumerationId == $this->form->reason->getValue()): ?>selected="selected"<?endif;?>><?=$reason['name']?></option>
-	<?endforeach;?>
-	</select>
-	</div>
-	<br />
-	<div class="formRow" id="providersContainerId"></div>
-	<br />
-	<div class="formRow" style="padding-top:4px;">
-        <dt><label for="appointment-room-id"><?=__("Room")?></label></dt>
-	<select id="appointment-room-id"  name="appointment[roomId]" style="width:325px;" <?=(isset($this->columnId))?'disabled':''?>>
-	<option value="0" selected="selected"><?=__('No Room')?></option>
-	<?foreach(Room::getArray() as $roomId => $name):?>
-		<option value="<?=$roomId?>" <?if ($roomId == $this->form->roomId->getValue()):?>selected="selected"<?endif;?>><?=$name?></option>
-	<?endforeach;?>
-	</select>
-	</div>
-
-	<div class="formRow" style="padding-top:4px;">
-        	<?=__($this->form->title->renderLabel())?>
-	        <?=$this->form->titleInput()?>
-	</div>
-
-	<div class="formRow" style="padding-top:4px;">
-        <dt><label for="appointment-patient"><?=__("Patient")?></label></dt>
-	<div id="patientSelectAutoCompleteDiv"></div>
-<script>
-	var pscb = dijit.byId('patientSelectAutoCompleteDiv');
-	if (pscb != undefined) {
-		pscb.destroyRecursive();
-		pscb = null;
+var pscb = dijit.byId('patientSelectAutoCompleteDiv');
+if (pscb != undefined) {
+	pscb.destroyRecursive();
+	pscb = null;
+}
+var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
+pscb = new custom.SelectComboBox({name:"appointment[patient]",value:'<?=$this->patient?>',autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
+pscb._onKeyPress = function(evt) {
+	this.inherited("_onKeyPress",arguments);
+	if (evt.keyCode == dojo.keys.ENTER) {
+		pscbCheckStore();
 	}
-	var psac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
-	pscb = new custom.SelectComboBox({name:"appointment[patient]",value:'<?=$this->patient?>',autocomplete:false,store:psac,hasDownArrow:false},"patientSelectAutoCompleteDiv");
-	pscb._onKeyPress = function(evt) {
-		this.inherited("_onKeyPress",arguments);
-		if (evt.keyCode == dojo.keys.ENTER) {
-			pscbCheckStore();
-		}
-	};
-	dojo.connect(pscb,"onBlur","pscbCheckStore");
-	function pscbCheckStore() {
-		var patientId = dojo.byId("appointment-patientId").value;
-		var value = pscb.getDisplayedValue();
-		if (pscb.store && pscb.store._items.length > 0) {
-			for (var i = 0; i < pscb.store._items.length; i++) {
-				var item = pscb.store._items[i].i;
-				if (item.name != value) continue;
-				if (item.label != patientId) {
-					pscb.selectedKey = item.label;
-					getDetails(item.label);
-				}
-				break;
+};
+dojo.connect(pscb,"onBlur","pscbCheckStore");
+function pscbCheckStore() {
+	var patientId = dojo.byId("<?=$this->form->patientId->getId()?>").value;
+	var value = pscb.getDisplayedValue();
+	if (pscb.store && pscb.store._items.length > 0) {
+		for (var i = 0; i < pscb.store._items.length; i++) {
+			var item = pscb.store._items[i].i;
+			if (item.name != value) continue;
+			if (item.label != patientId) {
+				pscb.selectedKey = item.label;
+				getDetails(item.label);
 			}
+			break;
 		}
 	}
-	dojo.connect(pscb,"onChange",'getDetails');
-	function getDetails(args) {
-		// don't need args coz it holds the selected value
-		dojo.byId('appointment-patientId').value = pscb.selectedKey;
-	}
-</script>
-	</div>
-
-	<div class="formRow" style="padding-top:4px;">
-        <dt><label for="appointment-time"><?=__("Time")?></label></dt>
-	<input type="text" id="appointment-start" name="appointment[start]" value="<?=(isset($this->start))?$this->start:''?>" style="width:150px;" /> to 
-	<input type="text" id="appointment-end" name="appointment[end]" value="<?=(isset($this->end))?$this->end:''?>" style="width:150px;" />
-	</div>
-
-	<div class="formRow" style="padding-top:4px;">
-        <dt><label for="appointment-walkin"></label></dt>
-	<input type="checkbox" id="appointment-walkin" name="appointment[walkin]" <?=($this->form->walkin->getValue())?'checked="checked"':''?> /> Walk in?
-	</div>
-
-<br style="clear:left"/>
-<div style="text-align:right;margin-top:10px;">
-	<input type="hidden" name="columnId" value="<?=(isset($this->columnId))?$this->columnId:''?>" />
-	<input type="hidden" name="appointment[patientId]" id="appointment-patientId" value="<?=$this->form->patientId->getValue()?>" />
-	<input type="hidden" name="rowId" value="<?=(isset($this->rowId))?$this->rowId:''?>" />
-	<input type="hidden" name="appointment[appointmentId]" value="<?=($this->form->appointmentId->getValue())?$this->form->appointmentId->getValue():''?>" />
-	<input type="button" value="<?=__("Cancel")?>" onClick="closeAddAppointmentWindow()" />
-	<input type="button" value="<?=($this->form->appointmentId->getValue())?__('Update Appointment'):__("Make Appointment")?>" onClick="calendarMakeAppointment(false);" />
-</div>
-
-<div style="margin-top:10px;">
-<?=__('Appointment Created')?>: <?=$this->form->createdDate->getValue()?> <?=__('by')?> <?=$this->form->formCreator->username->getValue()?>
-<br />
-<?=__('Appointment Updated')?>: <?=$this->form->lastChangeDate->getValue()?> <?=__('by')?> <?=$this->form->formLastChange->username->getValue()?>
-</div>
-
-</form>
-</div>
-
-</fieldset>
-</div>
-
-
-<style>
-ul {
-display: inline;
-line-height: normal;
-font-size: 100%;
 }
-</style>
+dojo.connect(pscb,"onChange",'getDetails');
+function getDetails(args) {
+	// don't need args coz it holds the selected value
+	dojo.byId("<?=$this->form->patientId->getId()?>").value = pscb.selectedKey;
+}
 
-<div style="text-align:left;float:left;">
-	<fieldset><legend><?=__('Patient Details')?></legend>
-		<div class="formRow" style="margin-left:5px;">
-<?if($this->appointment->patientId > 0):?>
-		<ul>
-			<li><?=__('Phones')?>: <?=implode(',',$this->phones)?></li>
-			<li><?=__('Name')?>: <?=$this->appointment->patient->displayName?></li>
-			<li><?=__('MRN')?>: <?=$this->appointment->patient->recordNumber?></li>
-			<li><?=__('Age/Sex')?>: <?=$this->appointment->patient->age?> (<?=$this->appointment->patient->displayGender?>)</li>
-			<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
-		</ul>
-<?endif;?>
-		</div>
-	</fieldset>
 
-	<fieldset><legend><?=__('Patient Notes')?></legend>
-		<div class="formRow" style="overflow:auto;">
-			<div id="pNotesGridId" style="width:370px;height:150px;"></div>
-		</div>
-	</fieldset>
-</div>
-
-<script>
+function pNotesProcessEdit(id,field,value,type,callback) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/patient.raw/process-edit-by-field",
+		handleAs: "json",
+		content: {
+			personId: "<?=$this->form->patientId->getValue()?>",
+			type: type,
+			id: id,
+			field: field,
+			value: value,
+		},
+		load: function (data) {
+			if (typeof callback == "function") {
+				callback(data);
+			}
+		},
+		error: function (error) {
+			alert(error);
+			console.error("Error: ", error);
+		}
+	});
+}
 var pNotesGrid = new dhtmlXGridObject("pNotesGridId");
 pNotesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 pNotesGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>");
-pNotesGrid.setInitWidths("*,*,*,*,*,0");
-pNotesGrid.setColTypes("ro,ro,ro,ro,ro,ro");
+pNotesGrid.setInitWidths("*,120,*,*,*,50");
+pNotesGrid.setColTypes("coro,ed,ro,coro,txt,coro");
+//pNotesGrid._dtmask = "%Y-%m-%d"; // hacks for calendar date format
 pNotesGrid.setSkin("xp");
 pNotesGrid.init();
-pNotesGrid.load("<?=$this->baseUrl?>/patient.raw/list-notes?patientId=<?=$this->form->formPatient->personId->getValue()?>","json");
+var indexPNPriority = 0;
+var indexPNNoteDate = 1;
+var indexPNUserId = 2;
+var indexPNReason = 3;
+var indexPNNote = 4;
+var indexPNActive = 5;
+var pNotesColFields = [];
+// Note field names, in order based on pNotesGrid.setHeader
+pNotesColFields.push("priority");
+pNotesColFields.push("note_date");
+pNotesColFields.push("user_id");
+pNotesColFields.push("reason");
+pNotesColFields.push("note");
+pNotesColFields.push("active");
+pNotesGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
+	if (stage == 2 && newValue != oldValue) {
+		pNotesProcessEdit(rowId,pNotesColFields[cellIndex],newValue,"note",pNotesGridReload);
+	}
+	return true;
+});
+for (var i = 1; i <= 5; i++) {
+	pNotesGrid.getCombo(indexPNPriority).put(i,i);
+}
+pNotesGrid.getCombo(indexPNActive).put("1","<?=__('No')?>");
+pNotesGrid.getCombo(indexPNActive).put("0","<?=__('Yes')?>");
+<?foreach ($this->reasons as $id=>$reason):?>
+pNotesGrid.getCombo(indexPNReason).put("<?=$id?>","<?=$reason?>");
+<?endforeach;?>
+function pNotesGridReload() {
+	pNotesGrid.clearAll();
+	pNotesGrid.load("<?=$this->baseUrl?>/patient.raw/list-notes?patientId=<?=$this->form->patientId->getValue()?>","json");
+}
+pNotesGridReload();
 
 appointmentReasonOnChanged();
 </script>
-
-
-</div>

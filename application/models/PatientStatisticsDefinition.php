@@ -147,4 +147,22 @@ class PatientStatisticsDefinition extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function getDisplayName() {
+		$name = trim($this->name);
+		return ucwords(str_replace('_',' ',$name));
+	}
+
+	public static function listRaceCodes() {
+		$race = array(
+			'1002-5'=>'American Indian or Alaska Native',
+			'2028-9'=>'Asian',
+			'2076-8'=>'Native Hawaiian or Other Pacific Islander',
+			'2054-5'=>'Black or African American',
+			'2106-3'=>'White',
+			'2131-1'=>'Other',
+			''=>'Unknown/undetermined',
+		);
+		return $race;
+	}
+
 }

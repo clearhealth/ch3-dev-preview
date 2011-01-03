@@ -32,6 +32,7 @@
 			vtModifiersListGrid.clearAll();
 			if (vtSectionNameListGrid.getRowsNum() > 0) {
 				var modifiers = vtSectionNameListGrid.getUserData(vtSectionNameListGrid.getRowId(0),"modifiers");
+				if (typeof modifiers != "object") return;
 				for (var i in modifiers) {
 					vtModifiersListGrid.addRow(i,"");
 					vtModifiersListGrid.cells(i,0).setValue(modifiers[i]);

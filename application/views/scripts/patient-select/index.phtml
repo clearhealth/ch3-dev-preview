@@ -32,13 +32,13 @@
 		<div>
 		<strong><?=__("Quick List Options")?></strong>
 		<div style="padding-left:10px;padding-bottom:10px;">
-		<input type="radio" name="quicklist" value="default" checked="checked" onclick="changeQuickList(this)"><?=__('Default').': <label id="defaultQLId">'.$this->defaultQuickList['text'].'</label>'?><br />
+		<input type="radio" style="width:30px;" name="quicklist" value="default" checked="checked" onclick="changeQuickList(this)"><?=__('Default').': <label id="defaultQLId">'.$this->defaultQuickList['text'].'</label>'?><br />
 		<?$i = 0;
 		foreach($this->quickList as $key=>$val):
 			if ($i != 0 && $i % 3 == 0):?>
 				<br />
 			<?endif; $i++;?>
-			<input type="radio" name="quicklist" value="<?=$key?>" onclick="changeQuickList(this)"><?=$val?>
+			<input type="radio" style="width:30px;" name="quicklist" value="<?=$key?>" onclick="changeQuickList(this)"><?=$val?>
 		<?endforeach;?>
 		</div>
 		<span id="psItemList" style="font-weight:bold;color:grey;"><label id="psSelectLabelId"><?=__("Select an Item")?></label><br />

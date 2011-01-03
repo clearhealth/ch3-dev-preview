@@ -232,12 +232,12 @@ class MessagingController extends WebVista_Controller_Action {
 	}
 
 	public function processCheckInboundAction() {
-		/*$inbound = new eFaxInbound();
+		$inbound = new eFaxInbound();
 		$inbounds = array();
 		$ret = 0;//$inbound->checkInbounds();
 		if ($ret > 0) {
 			$inbounds[] = 'eFax: '.$ret;
-		}*/
+		}
 		$ret = ePrescribe::pull();
 		if ($ret > 0) {
 			$inbounds[] = 'ePrescribe: '.$ret;

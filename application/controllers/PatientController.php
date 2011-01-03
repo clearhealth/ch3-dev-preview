@@ -26,7 +26,6 @@ class PatientController extends WebVista_Controller_Action {
 
 	protected $_form = null;
 	protected $_patient = null;
-	protected $_insurer = null;
 
 	public function indexAction() {
 		$facilityIterator = new FacilityIterator();
@@ -77,26 +76,12 @@ class PatientController extends WebVista_Controller_Action {
 		$this->_form->setWindow('windowPatientDetailsId');
 		$this->view->form = $this->_form;
 		$this->view->facilityIterator = $facilityIterator;
-		$this->view->reasons = $this->_getReasons();
+		$this->view->reasons = PatientNote::listReasons();
 
 		$this->view->statesList = Address::getStatesList();
 		$this->view->phoneTypes = PhoneNumber::getListPhoneTypes();
 		$this->view->addressTypes = Address::getListAddressTypes();
 		$this->render();
-	}
-
-	protected function _getReasons() {
-		$reasons = array();
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName(PatientNote::ENUM_REASON_PARENT_NAME);
-		$enumerationsClosure = new EnumerationsClosure();
-		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$ctr = 0;
-		foreach ($enumerationIterator as $enum) {
-			// since data type of patient_note.reason is tinyint we simply use the counter as id
-			$reasons[$ctr++] = $enum->name;
-		}
-		return $reasons;
 	}
 
 	public function processDetailsAction() {
@@ -297,16 +282,15 @@ class PatientController extends WebVista_Controller_Action {
 		$filters['active'] = 1;
 		$filters['posting'] = 0;
 		$patientNoteIterator->setFilters($filters);
-		$reasons = $this->_getReasons();
 		foreach ($patientNoteIterator as $note) {
 			$tmp = array();
 			$tmp['id'] = $note->patient_note_id;
 			$tmp['data'][] = $note->priority;
 			$tmp['data'][] = $note->note_date;
 			$tmp['data'][] = $note->user->username;
-			$tmp['data'][] = isset($reasons[$note->reason])?$reasons[$note->reason]:'';
+			$tmp['data'][] = $note->reason;
 			$tmp['data'][] = $note->note;
-			$tmp['data'][] = ($note->active)?__('No'):__('Yes');
+			$tmp['data'][] = $note->active;
 			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -321,7 +305,7 @@ class PatientController extends WebVista_Controller_Action {
 
 		$insuredRelationship = new InsuredRelationship();
 		$insuredRelationshipIterator = $insuredRelationship->getIteratorByPersonId($patientId);
-		$subscribers = array(); // TODO: get the actual subscribers;
+		$subscribers = array();
 		foreach ($insuredRelationshipIterator as $item) {
 			$company = '';
 			$program = '';
@@ -330,9 +314,11 @@ class PatientController extends WebVista_Controller_Action {
 				$company = $exp[0];
 				$program = $exp[1];
 			}
-			$subscriber = '';
-			if (isset($subscribers[$item->subscriberId])) {
-				$subscriber = $subscribers[$item->subscriberId];
+			if (!isset($subscribers[$item->subscriberId])) {
+				$person = new Person();
+				$person->personId = $item->subscriberId;
+				$person->populate();
+				$subscribers[$item->subscriberId] = $person->displayName;
 			}
 			$effectiveEnd = date('m/d/Y',strtotime($item->effectiveEnd));
 			$effective = 'Until';
@@ -348,7 +334,7 @@ class PatientController extends WebVista_Controller_Action {
 			$tmp['data'][] = $item->groupName;
 			$tmp['data'][] = $item->groupNumber;
 			$tmp['data'][] = $item->copay;
-			$tmp['data'][] = $subscriber;
+			$tmp['data'][] = $subscribers[$item->subscriberId];
 			$tmp['data'][] = $effective;
 			$tmp['data'][] = ($item->active)?__('Yes'):__('No');
 			$rows[] = $tmp;
@@ -361,16 +347,24 @@ class PatientController extends WebVista_Controller_Action {
 	public function editInsurerAction() {
 		$patientId = (int)$this->_getParam('patientId');
 		$id = (int)$this->_getParam('id');
-		$this->_insurer = new InsuredRelationship();
-		$this->_insurer->personId = $patientId;
+		$insurer = new InsuredRelationship();
+		$insurer->personId = $patientId;
 		if ($id > 0) {
-			$this->_insurer->insuredRelationshipId = $id;
-			$this->_insurer->populate();
+			$insurer->insuredRelationshipId = $id;
+			$insurer->populate();
 		}
-
-		$this->_form = new WebVista_Form(array('name' => 'edit-insurer'));
-		$this->_form->setAction(Zend_Registry::get('baseUrl') . "patient.raw/process-edit-insurer");
-		$this->_form->loadORM($this->_insurer,"Insurer");
+		$subscriber = new Person();
+		$q = '';
+		if ($insurer->subscriberId > 0) {
+			$subscriber->personId = (int)$insurer->subscriberId;
+			$subscriber->populate();
+			$q = $subscriber->lastName.', '.$subscriber->firstName.' '.substr($subscriber->middleName,0,1);
+		}
+		$this->view->q = $q;
+		$insurer->subscriber = new Person(); // temporarily set to empty
+		$this->_form = new WebVista_Form(array('name'=>'edit-insurer'));
+		$this->_form->setAction(Zend_Registry::get('baseUrl').'patient.raw/process-edit-insurer');
+		$this->_form->loadORM($insurer,'Insurer');
 		$this->_form->setWindow('winEditInsurerId');
 		$this->view->form = $this->_form;
 
@@ -381,24 +375,94 @@ class PatientController extends WebVista_Controller_Action {
 		}
 		$this->view->insurancePrograms = $insurancePrograms;
 
-		$assignings = array(''=>'');
+		$assignings = array();
+		$subscribers = array();
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName(InsuranceProgram::INSURANCE_ENUM_NAME);
+		$enumerationClosure = new EnumerationClosure();
+		foreach ($enumerationClosure->getAllDescendants($enumeration->enumerationId,1,true) as $enum) {
+			$rowset = $enumerationClosure->getAllDescendants($enum->enumerationId,1,true);
+			if ($enum->key == InsuranceProgram::INSURANCE_ASSIGNING_ENUM_KEY) {
+				foreach ($rowset as $row) {
+					$assignings[$row->key] = $row->name;
+				}
+			}
+			else if ($enum->key == InsuranceProgram::INSURANCE_SUBSCRIBER_ENUM_KEY) {
+				foreach ($rowset as $row) {
+					$subscribers[$row->key] = $row->name;
+				}
+			}
+		}
 		$this->view->assignings = $assignings;
-
-		$subscribers = array(''=>'');
 		$this->view->subscribers = $subscribers;
-
 		$this->view->listVerified = InsuredRelationship::getVerifiedOptions();
-
 		$this->render('edit-insurer');
 	}
 
 	public function processEditInsurerAction() {
-		$this->editInsurerAction();
 		$params = $this->_getParam('insurer');
-		$this->_insurer->populateWithArray($params);
-		$this->_insurer->persist();
-		$this->view->message = __('Record saved successfully');
-		$this->render('edit-insurer');
+		$subscriber = $this->_getParam('subscriber');
+		$insurer = new InsuredRelationship();
+		if (isset($params['insuredRelationshipId']) && $params['insuredRelationshipId'] > 0) {
+			$insurer->insuredRelationshipId = $params['insuredRelationshipId'];
+			$insurer->populate();
+		}
+		$insurer->populateWithArray($params);
+		if (isset($params['subscriber']) && is_array($subscriber)) {
+			$insurer->subscriber = new Person(); // temporarily set to empty
+			$insurer->subscriber->populateWithArray($params['subscriber']);
+			$insurer->subscriber->persist();
+			$subscriberId = (int)$insurer->subscriber->personId;
+			$phone = new PhoneNumber();
+			$phone->personId = $subscriberId;
+			$phone->number = $subscriber['phone'];
+			$phone->type = PhoneNumber::TYPE_HOME;
+			$phone->active = 1;
+			$phone->persist();
+			$address = new Address();
+			$address->personId = $subscriberId;
+			$address->populateWithArray($subscriber['address']);
+			$address->personId = $subscriberId;
+			$address->type = Address::TYPE_MAIN;
+			$address->active = 1;
+			$address->persist();
+			$insurer->subscriberId = $subscriberId;
+		}
+		$insurer->persist();
+		$ret = __('Record saved successfully');
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function subscriberAutoCompleteAction() {
+		$match = $this->_getParam('name');
+		$match = preg_replace('/[^a-zA-Z-0-9-\.\/\ ]/','',$match);
+		$matches = array();
+		if (!strlen($match) > 0) $this->_helper->autoCompleteDojo($matches);
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('person')
+				->orWhere('identifier = ?',$match)
+				->order('last_name ASC')
+				->order('first_name ASC');
+		if (preg_match('/([a-zA-Z]*)\ ([a-zA-Z].*)/',$match,$nameParts)) { 
+			$sqlSelect->orWhere('first_name LIKE ?',$nameParts[2].'%');
+			$sqlSelect->where('last_name LIKE ?',$nameParts[1].'%');
+		}
+		elseif(preg_match('/[0-9-\/\.]+[\.\\-]+[0-9]+/',$match)) {
+			$sqlSelect->orWhere('date_of_birth = ?',$match);
+		}
+		else {
+			$sqlSelect->orWhere('first_name LIKE ?',$match.'%');
+			$sqlSelect->orWhere('last_name LIKE ?',$match.'%');
+		}
+		$sqlSelect->where('person.inactive = 0');
+		$person = new Person();
+		foreach ($person->getIterator($sqlSelect) as $row) {
+			$matches[$row->personId] = $row->lastName.', '.$row->firstName.' '.substr($row->middleName,0,1);
+		}
+		$this->_helper->autoCompleteDojo($matches);
 	}
 
 	public function processEditStatsAction() {

@@ -36,8 +36,37 @@ class PatientDiagnosis extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('code','patientId');
 	protected $_table = 'patientDiagnosis';
 
+	public function persist() {
+		if (!$this->dateTime || $this->dateTime == '0000-00-00 00:00:00') {
+			$this->dateTime = date('Y-m-d H:i:s');
+		}
+		return parent::persist();
+	}
+
 	public function getPatientDiagnosisId() {
-		return $this->code;
+		return $this->code.';'.$this->patientId;
+	}
+
+	public function populate() {
+		if ($this->code != $this->patientId) return parent::populate();
+		$x = explode(';',$this->code);
+		$this->code = $x[0];
+		if (isset($x[1])) {
+			$this->patientId = (int)$x[1];
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('code = ?',(string)$this->code)
+				->where('patientId = ?',(string)$this->patientId)
+				->limit(1);
+		$ret = $this->populateWithSql($sqlSelect->__toString());
+		$this->postPopulate();
+		return $ret;
+	}
+
+	public function getPersonId() {
+		return $this->patientId;
 	}
 
 }

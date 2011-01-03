@@ -47,6 +47,11 @@ class EnumGenerator {
 		self::generateFacilityCodesEnum($force);
 		self::generateIdentifierTypesEnum($force);
 		self::generateDiscountTypesEnum($force);
+		self::generateImagingPreferencesEnum($force);
+		self::generateLabTestPreferencesEnum($force);
+		self::generateInsurancePreferencesEnum($force);
+		self::generateGenericNoteTemplateEnum($force);
+		self::generateTextOnlyTypesEnum($force);
 	}
 
 	public static function generateDemographicsPreferencesEnum($force = false) {
@@ -971,65 +976,138 @@ class EnumGenerator {
 					array('key' => 'series6', 'name' => 'Series 6', 'active' => 1, 'guid' => '79804260-160c-42b3-b87c-f58e33a368d3'),
 					array('key' => 'series7', 'name' => 'Series 7', 'active' => 1, 'guid' => '63ccf298-e609-48d9-afda-3853e315e867'),
 					array('key' => 'series8', 'name' => 'Series 8', 'active' => 1, 'guid' => '86e2e28d-0ec4-4d8c-ba75-16a39236915f'),
+					array('key' => 'PR', 'name' => 'Patient Refused', 'active' => 1, 'guid' => 'ee56e4df-8849-4943-b403-dd4c942cf358'),
+					array('key' => 'MU', 'name' => 'Medically Unnecessary', 'active' => 1, 'guid' => '428ed526-7c1e-4aeb-ad46-3657429aa1fd'),
+					array('key' => 'NA', 'name' => 'Not Applicable', 'active' => 1, 'guid' => '0c3b8250-6713-46b6-beee-dceabf944064'),
 				)),
 				'section' => array('key' => 'section', 'name' => PatientImmunization::ENUM_SECTION_NAME, 'active' => 1, 'guid' => '17d2351c-ef39-4f8a-9b8a-896b116a5c14', 'data' => array(
 					'other' => array('key' => 'other', 'name' => PatientImmunization::ENUM_SECTION_OTHER_NAME, 'active' => 1, 'guid' => '0a212a50-d9f8-412a-8109-3bc981461f3e', 'data' => array(
-						array('key' => 'BCG', 'name' => 'BCG', 'active' => 1, 'guid' => '64d6049a-b82d-448e-9cba-a29c5fa2dc5c'),
-						array('key' => 'DT', 'name' => 'DT (pediatric)', 'active' => 1, 'guid' => '1f572d3d-9835-43c2-8116-9721af6c7058'),
-						array('key' => 'DTAP', 'name' => 'DTaP', 'active' => 1, 'guid' => '7d906e0c-ce02-4753-8e99-d0e5d87591f7'),
-						array('key' => 'DTAPHEP', 'name' => 'DTaP-Hep B-IPV', 'active' => 1, 'guid' => '74b271bf-1209-4e4c-889e-722eb4e7ce68'),
-						array('key' => 'DTAPHIB', 'name' => 'DTaP-Hib', 'active' => 1, 'guid' => 'ab9f7e5e-2edd-4669-becb-e0144f17608c'),
-						array('key' => 'DTAPHIBIPV', 'name' => 'DTaP-Hib-IPV', 'active' => 1, 'guid' => 'd62e7b40-55f2-48b6-9506-56f8d047c6af'),
-						array('key' => 'DTP', 'name' => 'DTP', 'active' => 1, 'guid' => '6a2c27ae-413f-4733-ba7e-876c9e2bdd9b'),
-						array('key' => 'DTPHIB', 'name' => 'DTP-Hib', 'active' => 1, 'guid' => '9b8d12c5-4b22-4f00-9400-fb090b4375d9'),
-						array('key' => 'DTPHIBHEPB', 'name' => 'DTP-Hib-Hep B', 'active' => 1, 'guid' => '6206e1c9-a37e-4035-8fbc-ba12a9792676'),
-						array('key' => 'HEPAHEPB', 'name' => 'Hep A-Hep B', 'active' => 1, 'guid' => 'a6a164d0-942c-470f-ba47-df32428e08e3'),
-						array('key' => 'HEPAADULT', 'name' => 'Hep A, adult', 'active' => 1, 'guid' => 'eb544526-1df8-4205-b9b7-f5f97da7175c'),
-						array('key' => 'HEPANOS', 'name' => 'Hep A, NOS', 'active' => 1, 'guid' => '3f9a47f2-977f-45bd-aca9-ccce0ba8b655'),
-						array('key' => 'HEPAPEDNOS', 'name' => 'Hep A, pediatric, NOS', 'active' => 1, 'guid' => 'fe089882-de7f-49ab-b3c9-4179b6e63787', 'data' => array(
-							array('key' => 'HEPA2DOSE', 'name' => 'Hep A, ped/adol, 2 dose', 'active' => 1, 'guid' => '8b6a843c-9963-4f98-a784-320ef03dd588'),
-							array('key' => 'HEPA3DOSE', 'name' => 'Hep A, ped/adol, 3 dose', 'active' => 1, 'guid' => '46f7460a-b267-42f1-942f-ee558ad679d9'),
+						array('key' => '82', 'name' => 'adenovirus, NOS', 'active' => 1, 'guid' => 'a69ef8f1-aca5-45fd-bdfa-6f917184d969', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '54', 'name' => 'adenovirus, type 4', 'active' => 1, 'guid' => '4ee8cc1b-046d-42c8-9206-27df873c5357', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '55', 'name' => 'adenovirus, type 7', 'active' => 1, 'guid' => '9f7edaf1-bdd8-4fa1-ab93-2d420e7e167e', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '24', 'name' => 'anthrax', 'active' => 1, 'guid' => '7db0557c-21ee-4536-b24f-726cf42fac09', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '19', 'name' => 'BCG', 'active' => 1, 'guid' => '64d6049a-b82d-448e-9cba-a29c5fa2dc5c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '27', 'name' => 'botulinum antitoxin', 'active' => 1, 'guid' => '1d5a3305-e6a5-4810-bfda-71bef4050a0a', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '26', 'name' => 'cholera', 'active' => 1, 'guid' => '0e871576-4778-4f42-afa3-52547830ec0f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '29', 'name' => 'CMVIG', 'active' => 1, 'guid' => '6e9d2abf-4566-48e1-84cd-71764874664b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '56', 'name' => 'dengue fever', 'active' => 1, 'guid' => 'adb6bd7c-e5a6-460f-ba51-de0d279779f2', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '12', 'name' => 'diphtheria antitoxin', 'active' => 1, 'guid' => '00437eae-0de6-4c4a-ae6d-339cb4f88d4f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '28', 'name' => 'DT (pediatric)', 'active' => 1, 'guid' => '1f572d3d-9835-43c2-8116-9721af6c7058', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '20', 'name' => 'DTaP', 'active' => 1, 'guid' => '7d906e0c-ce02-4753-8e99-d0e5d87591f7', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '106', 'name' => 'DTaP, 5 pertussis antigens', 'active' => 1, 'guid' => 'ef7f1a13-0448-4233-a47a-fb087897c63e', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '107', 'name' => 'DTaP, NOS', 'active' => 1, 'guid' => 'b4a91a21-70c6-4dcc-bd63-3a49a5d9554c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '110', 'name' => 'DTaP-Hep B-IPV', 'active' => 1, 'guid' => '74b271bf-1209-4e4c-889e-722eb4e7ce68', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '50', 'name' => 'DTaP-Hib', 'active' => 1, 'guid' => 'ab9f7e5e-2edd-4669-becb-e0144f17608c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '120', 'name' => 'DTaP-Hib-IPV', 'active' => 1, 'guid' => 'd62e7b40-55f2-48b6-9506-56f8d047c6af', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '01', 'name' => 'DTP', 'active' => 1, 'guid' => '6a2c27ae-413f-4733-ba7e-876c9e2bdd9b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '22', 'name' => 'DTP-Hib', 'active' => 1, 'guid' => '9b8d12c5-4b22-4f00-9400-fb090b4375d9', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '102', 'name' => 'DTP-Hib-Hep B', 'active' => 1, 'guid' => '6206e1c9-a37e-4035-8fbc-ba12a9792676', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '57', 'name' => 'hantavirus', 'active' => 1, 'guid' => '1f5a64e3-91b7-4ae5-92d3-8eb4d0563336', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '30', 'name' => 'HBIG', 'active' => 1, 'guid' => '3faf8ea4-bd68-4db1-94c0-8744ec5b7ff1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '52', 'name' => 'Hep A, adult', 'active' => 1, 'guid' => 'eb544526-1df8-4205-b9b7-f5f97da7175c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '85', 'name' => 'Hep A, NOS', 'active' => 1, 'guid' => '3f9a47f2-977f-45bd-aca9-ccce0ba8b655', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '31', 'name' => 'Hep A, pediatric, NOS', 'active' => 1, 'guid' => 'fe089882-de7f-49ab-b3c9-4179b6e63787', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod', 'data' => array(
+							array('key' => '83', 'name' => 'Hep A, ped/adol, 2 dose', 'active' => 1, 'guid' => '8b6a843c-9963-4f98-a784-320ef03dd588', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+							array('key' => '84', 'name' => 'Hep A, ped/adol, 3 dose', 'active' => 1, 'guid' => '46f7460a-b267-42f1-942f-ee558ad679d9', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
 						)),
-						array('key' => 'HEPBADOPED', 'name' => 'Hep B, adolescent or pediatric', 'active' => 1, 'guid' => '27167a48-2d54-4ce5-8484-8254070c56f8'),
-						array('key' => 'HEPBADOHRI', 'name' => 'Hep B, adolescent/high risk infant', 'active' => 1, 'guid' => 'f48874f6-9dc0-487f-8175-eb29ce505df7'),
-						array('key' => 'HEPBADULT4', 'name' => 'Hep B, adult4', 'active' => 1, 'guid' => '64dd4c21-7622-4b75-a75e-8a79fb7549f8'),
-						array('key' => 'HEPBDIAL', 'name' => 'Hep B, dialysis', 'active' => 1, 'guid' => 'ca7bd4ab-bb7d-426d-9401-5cdeec8d3c1b'),
-						array('key' => 'HIBPRPOMP', 'name' => 'Hib (PRP-OMP)', 'active' => 1, 'guid' => '76bf65ac-1b54-43ec-a673-a90417b7be94'),
-						array('key' => 'HIBHEPB', 'name' => 'Hib-Hep B', 'active' => 1, 'guid' => '26737169-185c-4028-af0c-bbd53d832330'),
-						array('key' => 'HIBNOS', 'name' => 'Hib, NOS', 'active' => 1, 'guid' => '58b34ec3-1da1-4948-bc93-b0ffa63eac27'),
-						array('key' => 'IG', 'name' => 'IG', 'active' => 1, 'guid' => '62cd7074-f8b6-4152-9442-7a50ae2d2aeb'),
-						array('key' => 'ILI', 'name' => 'influenza, live, intranasal', 'active' => 1, 'guid' => '5d8b26d3-6cb6-4db6-a37c-c2e0932d7211'),
-						array('key' => 'INFLUNOS', 'name' => 'influenza, NOS', 'active' => 1, 'guid' => '510ea00b-6424-417b-8512-9d5de35f897b'),
-						array('key' => 'INFLUSPLIT', 'name' => 'influenza, split (incl. purified surface antigen)', 'active' => 1, 'guid' => '57739f4d-dbd0-40b2-aa29-c990b657e8fa'),
-						array('key' => 'IPV', 'name' => 'IPV', 'active' => 1, 'guid' => '7de7bf5d-473c-4fe4-8cea-c17bd476583d'),
-						array('key' => 'JAPENCEPHA', 'name' => 'Japanese encephalitis', 'active' => 1, 'guid' => '93f36dab-0df5-460b-b3b6-15c9da2c2c0c'),
-						array('key' => 'MR', 'name' => 'M/R', 'active' => 1, 'guid' => '6849bf56-a264-468a-bbb3-3573507959c3'),
-						array('key' => 'MEASLES', 'name' => 'measles', 'active' => 1, 'guid' => 'cf20d29c-16b3-4c48-a487-74158f420c1d'),
-						array('key' => 'MENINGO', 'name' => 'meningococcal', 'active' => 1, 'guid' => '30c594a4-3b54-452f-b98e-1a671e8e1616'),
-						array('key' => 'MENINGOACY', 'name' => 'meningococcal A,C,Y,W-135 diphtheria conjugate', 'active' => 1, 'guid' => 'e0f6799f-72b9-4e61-a9cc-3ed29ea103e6'),
-						array('key' => 'MMR', 'name' => 'MMR', 'active' => 1, 'guid' => 'abba6d7e-013f-4dcd-8e6b-91d7f69de552'),
-						array('key' => 'MMRV', 'name' => 'MMRV', 'active' => 1, 'guid' => '6138ba95-3d34-42a5-8c0c-8ed75d07a82e'),
-						array('key' => 'MUMPS', 'name' => 'mumps', 'active' => 1, 'guid' => '89814b26-e018-4ab0-8554-23706af10b52'),
-						array('key' => 'OPV', 'name' => 'OPV', 'active' => 1, 'guid' => '633439bd-72ad-4fdc-b691-74e86df1d604'),
-						array('key' => 'PNEUMOCOCC', 'name' => 'pneumococcal', 'active' => 1, 'guid' => 'f8de5282-486e-416f-b800-416d2ad89f43'),
-						array('key' => 'PNEUMOCONJ', 'name' => 'pneumococcal conjugate', 'active' => 1, 'guid' => '33af758a-25a7-4fd5-8486-a739fa99b4df'),
-						array('key' => 'PNEUMONOS', 'name' => 'pneumococcal, NOS', 'active' => 1, 'guid' => 'd20c4699-8d8f-49f6-878a-94843367db3c'),
-						array('key' => 'POLIONOS', 'name' => 'polio, NOS', 'active' => 1, 'guid' => '7da1050b-13da-4c53-800b-3d6e6e2f45af'),
-						array('key' => 'RABIESNOS', 'name' => 'rabies, NOS', 'active' => 1, 'guid' => '8c5bf681-736f-4da4-ae45-258f28321e6f'),
-						array('key' => 'RIG', 'name' => 'RIG', 'active' => 1, 'guid' => 'c2842699-7783-4faa-a646-632378741176'),
-						array('key' => 'ROTAMONO', 'name' => 'rotavirus, monovalent', 'active' => 1, 'guid' => '0314a884-7aae-4b1a-8833-adfb530816d6'),
-						array('key' => 'ROTANOS', 'name' => 'rotavirus, NOS', 'active' => 1, 'guid' => 'cacba082-7ee6-46df-8fe1-46628f1a4a91'),
-						array('key' => 'ROTAPENT', 'name' => 'rotavirus, pentavalent', 'active' => 1, 'guid' => 'fedcd09b-42a7-4644-aeab-c7f2caa83212'),
-						array('key' => 'ROTATETRA', 'name' => 'rotavirus, tetravalent', 'active' => 1, 'guid' => '2180a272-3d29-4e1f-b375-d7f8ea583cfe'),
-						array('key' => 'RUBELLA', 'name' => 'rubella', 'active' => 1, 'guid' => '6e2bacfd-9f04-40ee-9741-21a2f0cd81b1'),
-						array('key' => 'RUBELLAMUM', 'name' => 'rubella/mumps', 'active' => 1, 'guid' => '7a15629b-8025-49fc-b7c2-f67e096348c2'),
-						array('key' => 'TD', 'name' => 'Td (adult)', 'active' => 1, 'guid' => '45de53ee-ee5f-420e-bffa-800b5605fb9d'),
-						array('key' => 'TDAP', 'name' => 'Tdap', 'active' => 1, 'guid' => 'dc7d7b23-036d-4603-a632-69b1b20504eb'),
-						array('key' => 'TYPHOIDORA', 'name' => 'typhoid, oral', 'active' => 1, 'guid' => '2eeffb22-901a-41c7-8eeb-b124bf6189a5'),
-						array('key' => 'TYPHOIDVCP', 'name' => 'typhoid, ViCPs', 'active' => 1, 'guid' => '9f618282-2ed0-4d1d-ab8e-b628c39b3cb7'),
-						array('key' => 'VARICELLA', 'name' => 'varicella', 'active' => 1, 'guid' => '3fa4dc62-5cbe-41d4-9182-e0aa88363803'),
-						array('key' => 'YELLOWFEV', 'name' => 'yellow fever', 'active' => 1, 'guid' => '7b06a6a2-806a-456d-8775-7af6fc8c04c4'),
-						array('key' => 'ZOSTER', 'name' => 'zoster', 'active' => 1, 'guid' => 'b417b6c6-95df-4a6d-8848-9af7015f226c'),
+						array('key' => '104', 'name' => 'Hep A-Hep B', 'active' => 1, 'guid' => 'a6a164d0-942c-470f-ba47-df32428e08e3', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '08', 'name' => 'Hep B, adolescent or pediatric', 'active' => 1, 'guid' => '27167a48-2d54-4ce5-8484-8254070c56f8', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '42', 'name' => 'Hep B, adolescent/high risk infant', 'active' => 1, 'guid' => 'f48874f6-9dc0-487f-8175-eb29ce505df7', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '43', 'name' => 'Hep B, adult4', 'active' => 1, 'guid' => '64dd4c21-7622-4b75-a75e-8a79fb7549f8', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '44', 'name' => 'Hep B, dialysis', 'active' => 1, 'guid' => 'ca7bd4ab-bb7d-426d-9401-5cdeec8d3c1b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '45', 'name' => 'Hep B, NOS', 'active' => 1, 'guid' => 'b12ff4e7-9f34-4397-bb27-d9bfd538bb27', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '58', 'name' => 'Hep C', 'active' => 1, 'guid' => '7fcb2309-4bc1-4c3b-8291-5ff3ef56c160', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '59', 'name' => 'Hep E', 'active' => 1, 'guid' => '88d1395d-2afa-4f3c-a74f-39f3880afaf6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '60', 'name' => 'herpes simplex 2', 'active' => 1, 'guid' => '47571542-e0c0-4ec8-bd7f-dae5f52d58c9', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '47', 'name' => 'Hib (HbOC)', 'active' => 1, 'guid' => '97d16761-6fb7-43c6-92d3-8bc9625dc68f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '46', 'name' => 'Hib (PRP-D)', 'active' => 1, 'guid' => '4bb1aafe-65db-4a2f-95a6-1905ef5b9623', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '49', 'name' => 'Hib (PRP-OMP)', 'active' => 1, 'guid' => '76bf65ac-1b54-43ec-a673-a90417b7be94', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '48', 'name' => 'Hib (PRP-T)', 'active' => 1, 'guid' => '6bff8d8a-d3cc-4395-93f1-734ae6a0ee3f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '17', 'name' => 'Hib, NOS', 'active' => 1, 'guid' => '58b34ec3-1da1-4948-bc93-b0ffa63eac27', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '51', 'name' => 'Hib-Hep B', 'active' => 1, 'guid' => '26737169-185c-4028-af0c-bbd53d832330', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '61', 'name' => 'HIV', 'active' => 1, 'guid' => '78f73c2f-6e1d-4d22-aee6-eb10a8b7c22c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '118', 'name' => 'HPV, bivalent', 'active' => 1, 'guid' => '5b6e1655-52a2-4a09-a0d3-23bfa7f42f12', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '62', 'name' => 'HPV, quadrivalent', 'active' => 1, 'guid' => '2b7ce721-ba80-4915-a889-8cc99d54975e', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '86', 'name' => 'IG', 'active' => 1, 'guid' => '62cd7074-f8b6-4152-9442-7a50ae2d2aeb', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '14', 'name' => 'IG, NOS', 'active' => 1, 'guid' => '39e268f9-b778-462f-a7cd-7dbe69dc920a', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '87', 'name' => 'IGIV', 'active' => 1, 'guid' => 'c5890edf-5cb7-479e-8d55-93675f10ac3b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '123', 'name' => 'influenza, 1203 ', 'active' => 1, 'guid' => '7ff66f08-e816-43f7-86b9-009c48310bdb', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '111', 'name' => 'influenza, live, intranasal', 'active' => 1, 'guid' => '5d8b26d3-6cb6-4db6-a37c-c2e0932d7211', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '88', 'name' => 'influenza, NOS', 'active' => 1, 'guid' => '510ea00b-6424-417b-8512-9d5de35f897b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '15', 'name' => 'influenza, split (incl. purified surface antigen)', 'active' => 1, 'guid' => '57739f4d-dbd0-40b2-aa29-c990b657e8fa', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '16', 'name' => 'influenza, whole', 'active' => 1, 'guid' => '9b544233-b047-4a73-8651-f7d233a2a6b6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '10', 'name' => 'IPV', 'active' => 1, 'guid' => '7de7bf5d-473c-4fe4-8cea-c17bd476583d', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '39', 'name' => 'Japanese encephalitis', 'active' => 1, 'guid' => '93f36dab-0df5-460b-b3b6-15c9da2c2c0c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '63', 'name' => 'Junin virus', 'active' => 1, 'guid' => '70615fbb-40fd-4fb4-a7ae-b35af449ab95', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '64', 'name' => 'leishmaniasis', 'active' => 1, 'guid' => 'b12f741e-c320-450c-b947-2a132ae4c51f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '65', 'name' => 'leprosy', 'active' => 1, 'guid' => 'ffc018a5-a7be-4e3d-9b2a-f8f2df637606', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '66', 'name' => 'Lyme disease', 'active' => 1, 'guid' => '1b15c74d-5272-41f2-a592-d157e6f46d8f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '04', 'name' => 'M/R', 'active' => 1, 'guid' => '6849bf56-a264-468a-bbb3-3573507959c3', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '67', 'name' => 'malaria', 'active' => 1, 'guid' => '49eccab2-dba3-4b94-9e4e-cc9ea5057fb1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '05', 'name' => 'measles', 'active' => 1, 'guid' => 'cf20d29c-16b3-4c48-a487-74158f420c1d', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '68', 'name' => 'melanoma ', 'active' => 1, 'guid' => '6140c19a-b3ef-4555-a5a5-363ad613ad87', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '32', 'name' => 'meningococcal', 'active' => 1, 'guid' => '30c594a4-3b54-452f-b98e-1a671e8e1616', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '114', 'name' => 'meningococcal A,C,Y,W-135 diphtheria conjugate', 'active' => 1, 'guid' => 'e0f6799f-72b9-4e61-a9cc-3ed29ea103e6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '103', 'name' => 'meningococcal C conjugate', 'active' => 1, 'guid' => '10f0df45-53bd-46f9-a50a-fe9a759df2a2', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '108', 'name' => 'meningococcal, NOS', 'active' => 1, 'guid' => 'c2e97a28-8e92-40d0-9dab-58a5aa6c0ed4', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '03', 'name' => 'MMR', 'active' => 1, 'guid' => 'abba6d7e-013f-4dcd-8e6b-91d7f69de552', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '94', 'name' => 'MMRV', 'active' => 1, 'guid' => '6138ba95-3d34-42a5-8c0c-8ed75d07a82e', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '07', 'name' => 'mumps', 'active' => 1, 'guid' => '89814b26-e018-4ab0-8554-23706af10b52', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '998', 'name' => 'no vaccine administered', 'active' => 1, 'guid' => '592ed340-cfdf-4dc5-b0a5-a57d9dc6dbd1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '02', 'name' => 'OPV', 'active' => 1, 'guid' => '633439bd-72ad-4fdc-b691-74e86df1d604', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '69', 'name' => 'parainfluenza-3', 'active' => 1, 'guid' => '943d6eec-850a-4d8f-aad8-c5f8fdb607d4', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '11', 'name' => 'pertussis', 'active' => 1, 'guid' => 'a9bc6fc3-cc01-489e-b4d0-cc28b6bf39c7', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '23', 'name' => 'plague ', 'active' => 1, 'guid' => 'e58f78c2-c3a8-4726-8e6e-f3b37215e796', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '33', 'name' => 'pneumococcal', 'active' => 1, 'guid' => 'f8de5282-486e-416f-b800-416d2ad89f43', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '100', 'name' => 'pneumococcal conjugate', 'active' => 1, 'guid' => '33af758a-25a7-4fd5-8486-a739fa99b4df', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '109', 'name' => 'pneumococcal, NOS', 'active' => 1, 'guid' => 'd20c4699-8d8f-49f6-878a-94843367db3c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '89', 'name' => 'polio, NOS', 'active' => 1, 'guid' => '7da1050b-13da-4c53-800b-3d6e6e2f45af', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '70', 'name' => 'Q fever', 'active' => 1, 'guid' => '6f6d6761-8dcb-4288-a98c-0e724545b4a0', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '40', 'name' => 'rabies, intradermal injection', 'active' => 1, 'guid' => 'b1d93958-f86c-43fa-81e9-460180d582d8', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '18', 'name' => 'rabies, intramuscular injection', 'active' => 1, 'guid' => 'ed621bd0-cea3-4dee-a852-1e9cafe9db1a', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '90', 'name' => 'rabies, NOS', 'active' => 1, 'guid' => '8c5bf681-736f-4da4-ae45-258f28321e6f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '99', 'name' => 'RESERVED - do not use3', 'active' => 1, 'guid' => 'ba77ec34-c36e-41c5-ae08-508562fedb77', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '72', 'name' => 'rheumatic fever', 'active' => 1, 'guid' => '7331fa44-9e06-42d9-9f3c-aeeb9261abea', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '73', 'name' => 'Rift Valley fever', 'active' => 1, 'guid' => 'ed1d5035-5a2e-4fb4-abd8-7144c3c947cf', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '34', 'name' => 'RIG', 'active' => 1, 'guid' => 'c2842699-7783-4faa-a646-632378741176', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '119', 'name' => 'rotavirus, monovalent', 'active' => 1, 'guid' => '0314a884-7aae-4b1a-8833-adfb530816d6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '122', 'name' => 'rotavirus, NOS', 'active' => 1, 'guid' => 'cacba082-7ee6-46df-8fe1-46628f1a4a91', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '116', 'name' => 'rotavirus, pentavalent', 'active' => 1, 'guid' => 'fedcd09b-42a7-4644-aeab-c7f2caa83212', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '74', 'name' => 'rotavirus, tetravalent', 'active' => 1, 'guid' => '2180a272-3d29-4e1f-b375-d7f8ea583cfe', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '71', 'name' => 'RSV-IGIV', 'active' => 1, 'guid' => 'a4f4865c-c9a7-4b30-9575-d5b6f4960dfb', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '93', 'name' => 'RSV-MAb', 'active' => 1, 'guid' => '23daf135-4a2f-4ee4-838d-6dc873bfcfd3', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '06', 'name' => 'rubella', 'active' => 1, 'guid' => '6e2bacfd-9f04-40ee-9741-21a2f0cd81b1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '38', 'name' => 'rubella/mumps', 'active' => 1, 'guid' => '7a15629b-8025-49fc-b7c2-f67e096348c2', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '76', 'name' => 'Staphylococcus bacterio lysate', 'active' => 1, 'guid' => '040bd669-082b-4c03-99f1-5f6cf7bcc06f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '113', 'name' => 'Td (adult)', 'active' => 1, 'guid' => '45de53ee-ee5f-420e-bffa-800b5605fb9d', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '09', 'name' => 'Td (adult)', 'active' => 1, 'guid' => '45de53ee-ee5f-420e-bffa-800b5605fb9d', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '115', 'name' => 'Tdap', 'active' => 1, 'guid' => 'dc7d7b23-036d-4603-a632-69b1b20504eb', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '35', 'name' => 'tetanus toxoid', 'active' => 1, 'guid' => '8bbfa037-067c-499c-9cfd-505903cf8608', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '112', 'name' => 'tetanus toxoid, NOS', 'active' => 1, 'guid' => 'ae07524c-b0a5-47b7-ac8a-fb38033441bf', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '77', 'name' => 'tick-borne encephalitis', 'active' => 1, 'guid' => 'cbb22013-9876-48c6-a718-d48565f36b81', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '13', 'name' => 'TIG', 'active' => 1, 'guid' => '18bf1781-b57c-4349-964b-ed96e19bcf9c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '98', 'name' => 'TST, NOS', 'active' => 1, 'guid' => '6897649f-824b-445b-8af4-aeffa38a2136', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '95', 'name' => 'TST-OT tine test', 'active' => 1, 'guid' => '99116ca7-bd3e-4388-81b3-5e0b7c461b1f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '96', 'name' => 'TST-PPD intradermal', 'active' => 1, 'guid' => 'e0b21b2e-e0ea-4272-87cc-c7d3d1931de6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '97', 'name' => 'TST-PPD tine test', 'active' => 1, 'guid' => '36cd498f-b1ad-4428-88e6-aa17182fc3e8', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '78', 'name' => 'tularemia vaccine', 'active' => 1, 'guid' => '30346940-6708-4af8-a8e8-85155fe3747b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '91', 'name' => 'typhoid, NOS', 'active' => 1, 'guid' => '33c3497f-ec78-4188-bf4d-eee1802d7af1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '25', 'name' => 'typhoid, oral', 'active' => 1, 'guid' => '2eeffb22-901a-41c7-8eeb-b124bf6189a5', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '41', 'name' => 'typhoid, parenteral', 'active' => 1, 'guid' => '7fbff2cd-240f-49f2-afc4-e984127a86b6', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '53', 'name' => 'typhoid, parenteral, AKD (U.S. military)', 'active' => 1, 'guid' => '6b0fb3e2-a115-4ac7-bb9c-b85a22c147a3', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '101', 'name' => 'typhoid, ViCPs', 'active' => 1, 'guid' => '9f618282-2ed0-4d1d-ab8e-b628c39b3cb7', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '999', 'name' => 'unknown', 'active' => 1, 'guid' => 'a7121a45-ae3b-47de-b27a-3c9cdd4b06f1', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '75', 'name' => 'vaccinia (smallpox)', 'active' => 1, 'guid' => '0dab0f86-4a34-4856-8c48-145e355e500b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '105', 'name' => 'vaccinia (smallpox) diluted', 'active' => 1, 'guid' => 'b12b6322-11de-4300-941c-85ac095fd3d0', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '79', 'name' => 'vaccinia immune globulin', 'active' => 1, 'guid' => '44df0fb5-a1e4-4f63-a3cd-3211b7671a4f', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '21', 'name' => 'varicella ', 'active' => 1, 'guid' => '7becbb7d-902b-4c97-921d-a04003933be3', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '81', 'name' => 'VEE, inactivated', 'active' => 1, 'guid' => '4c013954-ca0d-4c1b-872f-d64dc1782c6b', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '80', 'name' => 'VEE, live', 'active' => 1, 'guid' => '59b329d7-e476-4299-9daa-dcaf73f8bcff', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '92', 'name' => 'VEE, NOS', 'active' => 1, 'guid' => '55c1d663-f706-4926-93dc-81447a000a39', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '36', 'name' => 'VZIG', 'active' => 1, 'guid' => '5a8067ce-c8cf-49a1-885f-3b659595aa51', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '117', 'name' => 'VZIG (IND)', 'active' => 1, 'guid' => '477a5f70-95a9-4c7d-8049-03bd984e1276', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '37', 'name' => 'yellow fever', 'active' => 1, 'guid' => '7b06a6a2-806a-456d-8775-7af6fc8c04c4', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
+						array('key' => '121', 'name' => 'zoster', 'active' => 1, 'guid' => 'b417b6c6-95df-4a6d-8848-9af7015f226c', 'ormClass' => 'ImmunizationInventory', 'ormEditMethod' => 'ormEditMethod'),
 					)),
 					'common' => array('key' => 'common', 'name' => PatientImmunization::ENUM_SECTION_COMMON_NAME, 'active' => 1, 'guid' => 'd5e910d0-8ebe-4f14-aa95-e8be0d1689aa'),
 				)),
@@ -1350,6 +1428,10 @@ class EnumGenerator {
 					)),
 					'common' => array('key' => 'COMMON', 'name' => PatientEducation::ENUM_EDUC_SECTION_COMMON_NAME, 'active' => 1, 'guid' => 'c58d0def-0dfc-4e64-9765-aa3962c2f7f8', 'data' => array(
 						array('key' => 'HYPER', 'name' => 'Hypertension', 'active' => 1, 'guid' => '24c2c962-86e5-462d-ae4d-7d78d6d2ca64'),
+						array('key' => 'AN', 'name' => 'Adolescent Nutrition', 'active' => 1, 'guid' => '94c62e5e-2351-4562-acb9-5fea1ef9ccf8'),
+						array('key' => 'PN', 'name' => 'Pediatric Nutrition', 'active' => 1, 'guid' => 'f815f930-922c-4526-8c5f-a79d787e7726'),
+						array('key' => 'APA', 'name' => 'Adolescent Physical Activity', 'active' => 1, 'guid' => 'f0de10b7-0a30-47dc-ae55-9b2a0980baa6'),
+						array('key' => 'PPA', 'name' => 'Pediatric Physical Activity', 'active' => 1, 'guid' => '596c776c-08ae-4a27-96a4-46b96e5bbbba'),
 					)),
 				)),
 				'level' => array('key' => 'LEVEL', 'name' => PatientEducation::ENUM_EDUC_LEVEL_NAME, 'active' => 1, 'guid' => 'e23beb46-4534-4a1d-88d7-175c3c55171e', 'data' => array(
@@ -1396,6 +1478,9 @@ class EnumGenerator {
 			$enums = array(
 				array('key' => 'ABNORMAL', 'name' => 'Abnormal', 'active' => 1, 'guid' => '9bf75109-4660-4b5f-8209-e3227bce347f'),
 				array('key' => 'NORMAL', 'name' => 'Normal', 'active' => 1, 'guid' => '3960a4b6-1b2f-4284-bf86-9d24aa6c67d1'),
+				array('key' => 'REFUSED', 'name' => 'Refused', 'active' => 1, 'guid' => 'e46d5e04-1ccd-4c2d-a9f6-c73c99c9b784'),
+				array('key' => 'MU', 'name' => 'Medically Unnecessary', 'active' => 1, 'guid' => '7d164c60-e590-41c2-be09-a54876a0ed63'),
+				array('key' => 'NA', 'name' => 'Not Applicable', 'active' => 1, 'guid' => '9700af77-8d0e-4843-bdbd-3a5be73f8b10'),
 			);
 
 			$level = array();
@@ -1436,6 +1521,7 @@ class EnumGenerator {
 				array('key' => 'EXAMAMT', 'name' => 'AUDIOMETRIC THRESHOLD', 'active' => 1, 'guid' => 'df9c19a4-dafe-49fb-8170-60fe404958cb'),
 				array('key' => 'EXAMBREAST', 'name' => 'BREAST EXAM', 'active' => 1, 'guid' => '10996c24-5a76-4573-9450-7ea6a277901c'),
 				array('key' => 'EXAMCHEST', 'name' => 'CHEST EXAM', 'active' => 1, 'guid' => '1b096999-31c0-40b6-a5ce-b7985df4ec30'),
+				array('key' => 'EXAMPHYS', 'name' => 'Physical Exam', 'active' => 1, 'guid' => '07987ba7-fe86-4302-9e6d-1b2aa6bae59c'),
 			);
 
 			$level = array();
@@ -1854,6 +1940,1004 @@ class EnumGenerator {
 
 			$level = array();
 			$level['guid'] = '31c0815d-0e7f-4f0a-9100-c910505259a6';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateImagingPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = OrderImaging::IMAGING_ENUM_NAME;
+			$key = OrderImaging::IMAGING_ENUM_KEY;
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$types = array(
+				/*array('key'=>'','name'=>'','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'','data'=>array(
+						array('key'=>'','name'=>'','active'=>1,'guid'=>'','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Comments','active'=>1,'guid'=>'','data'=>array(
+							))
+						)),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'','data'=>array(
+						array('key'=>'','name'=>'','active'=>1,'guid'=>''),
+					)),
+				)),*/
+				array('key'=>'ANI','name'=>'ANGIO/NEURO/INTERVENTIONAL','active'=>1,'guid'=>'6978545c-9e72-44c3-bc30-dce298fd2684','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'0c523ca1-5ff7-447b-9748-2abf998dbf2f','data'=>array(
+						array('key'=>'1','name'=>'ANGIO ADRENAL BILAT SELECT S&I','active'=>1,'guid'=>'a374577b-6376-422e-8a31-2c418b31b4ff'),
+						array('key'=>'2','name'=>'ANGIO ADRENAL UNILAT SELECT S&I','active'=>1,'guid'=>'5215712d-80ae-4628-a55d-0e34487bc567'),
+						array('key'=>'3','name'=>'ANGIO BRACHIAL RETROGRADE S&I','active'=>1,'guid'=>'7c19f49d-43f0-448c-88bf-e1eea7c2df2c'),
+						array('key'=>'4','name'=>'ANGIO CAROTID CEREBRAL BILAT S&I','active'=>1,'guid'=>'7ae00c3c-2ec5-410b-b147-fc235b6b3d5c'),
+						array('key'=>'5','name'=>'ANGIO CAROTID CEREBRAL SELECT EXT UNILAT S&I','active'=>1,'guid'=>'22f7b746-b64a-40ff-bd07-1537b270266d'),
+						array('key'=>'6','name'=>'ANGIO CAROTID CEREBRAL UNILAT S&I','active'=>1,'guid'=>'3c2007f4-a945-4122-98d5-ae07ebaf51d4'),
+						array('key'=>'7','name'=>'ANGIO CAROTID CERVICAL BILAT S&I','active'=>1,'guid'=>'ff8351a3-e3e8-446a-883c-b4e2fe8db7f4'),
+						array('key'=>'8','name'=>'ANGIO CAROTID CERVICAL UNILAT S&I','active'=>1,'guid'=>'99e184ea-7cf5-4e64-85c4-09fc7ff064e8'),
+						array('key'=>'9','name'=>'ANGIO CAROTID EXT BILAT SELECT S&I','active'=>1,'guid'=>'b239a765-822e-442b-b590-a8b9f9b2376b'),
+						array('key'=>'10','name'=>'ANGIO CERVICOCEREBRAL CATH S&I','active'=>1,'guid'=>'2b13952c-2549-4f17-8c18-6d9ce01e3291'),
+						array('key'=>'11','name'=>'ANGIO CORPORA CAVERNOSOGRAM S&I','active'=>1,'guid'=>'cc941df8-128e-4bb7-8775-d64ad054c6eb'),
+						array('key'=>'12','name'=>'ANGIO EXTREMITY BILAT S&I','active'=>1,'guid'=>'b4cecf2b-b3b9-4f5e-a283-6de971c9188b'),
+						array('key'=>'13','name'=>'ANGIO EXTREMITY UNILAT S&I','active'=>1,'guid'=>'3eeedf26-05db-4555-9f97-1d498b1be7ac'),
+						array('key'=>'14','name'=>'ANGIO MAMMARY INTERNAL S&I','active'=>1,'guid'=>'a210c192-25a4-4f72-8c13-f28fa9e3a9b5'),
+						array('key'=>'15','name'=>'ANGIO PELVIC SELECT OR SUPRASELECT S&I','active'=>1,'guid'=>'66e115a1-2d6e-451b-a340-ae2557e6efba'),
+						array('key'=>'16','name'=>'ANGIO PULMONARY BILAT SELECT S&I','active'=>1,'guid'=>'ac1f35e4-0e1b-4407-bdd3-86e4eec5f1bf'),
+						array('key'=>'17','name'=>'ANGIO PULMONARY NONSELECT CATH S&I','active'=>1,'guid'=>'6b7395c9-5cdb-4561-aae7-06bb48f5d7f4'),
+						array('key'=>'18','name'=>'ANGIO PULMONARY UNILAT SELECT S&I','active'=>1,'guid'=>'21681122-0996-44b2-8076-775a4912def4'),
+						array('key'=>'19','name'=>'ANGIO RENAL BILAT SELECT S&I','active'=>1,'guid'=>'4a502e94-17cf-439f-af68-701df599d893'),
+						array('key'=>'20','name'=>'ANGIO RENAL UNILAT SELECT S&I','active'=>1,'guid'=>'97d558d5-65e5-49b2-9c6b-0dff941ac791'),
+						array('key'=>'21','name'=>'ANGIO SPINAL SELECT S&I','active'=>1,'guid'=>'da6facb1-9363-4ee7-b859-fb42b4fc1dab'),
+						array('key'=>'22','name'=>'ANGIO THRU EXISTING CATH FOR FOLLOWUP','active'=>1,'guid'=>'e718d4c5-370a-42cb-a0bf-e6ddbafa54f4'),
+						array('key'=>'23','name'=>'ANGIO VERTEBRAL S&I','active'=>1,'guid'=>'fdb59632-d590-4863-a4e6-d80efb299792'),
+						array('key'=>'24','name'=>'ANGIO VISCERAL SELECT OR SUPRASELECT S&I','active'=>1,'guid'=>'b68992ff-a048-4853-a6bd-3c60c14106bf'),
+						array('key'=>'25','name'=>'AORTO ABD TRANS L W/SERIAL FILMS S&I','active'=>1,'guid'=>'c6f4183b-a4f1-4e4b-abbb-8320285312a3'),
+						array('key'=>'26','name'=>'AORTOGRAM THORACIC W/O SERIAL FILMS S&I','active'=>1,'guid'=>'707e17e2-5ec6-490e-a1b9-0e265d7f39e7'),
+						array('key'=>'27','name'=>'AORTOGRAM THORACIC W/SERIAL FILMS S&I','active'=>1,'guid'=>'f5a2f6fb-c300-41e2-b04d-877de57bb096'),
+						array('key'=>'28','name'=>'CHANGE OF PERC DRAIN CATH S&I','active'=>1,'guid'=>'7a2d41f7-f920-4333-ba66-7c8ae4829af4'),
+						array('key'=>'29','name'=>'PERCUT CATH RENAL PELVIS FOR DRAIN S&I','active'=>1,'guid'=>'3eb6721d-b6fd-4d94-9451-48e4ac7bfd11'),
+						array('key'=>'30','name'=>'PERCUT CATH URETER FOR DRAIN S&I','active'=>1,'guid'=>'10e80280-802b-489d-aa06-575243aca5c7'),
+						array('key'=>'31','name'=>'PERCUT INT & EXT CATH DRAIN OR STENT S&I','active'=>1,'guid'=>'0af31a51-8edc-4744-a2d9-5e71bb174d1a'),
+						array('key'=>'32','name'=>'PERCUT REMOVAL OF GALL STONE CP','active'=>1,'guid'=>'5a4c850d-c63e-499e-8c15-80d89f66376d'),
+						array('key'=>'33','name'=>'PERCUT TRANSHEP BIL DRAIN S&I','active'=>1,'guid'=>'f0237367-91f8-494c-bc99-4bc16eb98e40'),
+						array('key'=>'34','name'=>'PERCUT TRANSHEP PORTOGRAM W HEMODYNAM S&I','active'=>1,'guid'=>'7f48ce4d-c213-4682-bf98-faa4ad224935'),
+						array('key'=>'35','name'=>'PERCUT TRANSHEP PORTOGRAM W/O HEMODYNAM S&I','active'=>1,'guid'=>'97b3910f-88dd-4ee0-bcb0-c955c6081bce'),
+						array('key'=>'36','name'=>'PLACEMENT OF LONG GI TUBE','active'=>1,'guid'=>'fd59f457-0fd1-44ed-b1eb-d80fa5c3710f'),
+						array('key'=>'37','name'=>'VENOUS SAMPLE BY CATH W/O ANGIO CP','active'=>1,'guid'=>'804d8299-703b-4693-841d-7d304f31e2ba'),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'bbe3caa2-6a03-4ef7-a9bc-43103e6550cf','data'=>array(
+					)),
+				)),
+				array('key'=>'CTSCAN','name'=>'CT SCAN','active'=>1,'guid'=>'ff176d11-9867-4ad5-bb73-6bba3d82ffb6','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'108af5f4-9910-4911-aaae-a28121ca0d13','data'=>array(
+						array('key'=>'1','name'=>'BIOPSY OF LIVER, NEEDLE PERCUTANEOUS','active'=>1,'guid'=>'552809a3-3b14-4445-a534-95900cf89da1'),
+						array('key'=>'2','name'=>'BIOPSY, LUNG OR MEDIASTINUM PERCUTANEOUS NEEDLE','active'=>1,'guid'=>'0b50cf3f-8783-46a4-9117-a719c05aab29'),
+						array('key'=>'3','name'=>'CT ABDOMEN W&W/O CONT','active'=>1,'guid'=>'97d01d9e-600e-4152-8833-dd5d169875e7','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'c0df394f-5cc4-48ac-ad05-e056a1abe22e'),
+						)),
+						array('key'=>'4','name'=>'CT ABDOMEN W/CONT','active'=>1,'guid'=>'0eafa118-30ad-470c-9872-22969f8400e4','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'f3e63bb1-739a-4e51-ba38-1491ff3cb563'),
+						)),
+						array('key'=>'5','name'=>'CT ABDOMEN W/O CONT','active'=>1,'guid'=>'1c5b6bf6-343a-4b3d-8c62-dc8ae88725b9'),
+						array('key'=>'6','name'=>'CT CERVICAL SPINE W/CONT','active'=>1,'guid'=>'95e81da0-c9c1-4569-89c5-bb2cb7ccb1c5','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'e8f27821-4779-4a17-86dd-ffb1dffee746'),
+						)),
+						array('key'=>'7','name'=>'CT CERVICAL SPINE W/O CONT','active'=>1,'guid'=>'9aa1b1dd-959e-41e2-bb54-2bff4e2b6d8e'),
+						array('key'=>'8','name'=>'CT FOR PLACEMENT OF RX FIELDS','active'=>1,'guid'=>'39b48741-b195-46ac-8d6e-e0a75132e3b4'),
+						array('key'=>'9','name'=>'CT GUIDANCE FOR NEEDLE BIOPSY S&I','active'=>1,'guid'=>'a4f8ede2-86d9-4b4e-aebc-fcfc67541bfa'),
+						array('key'=>'10','name'=>'CT GUIDED-NEEDLE PLACEMENT','active'=>1,'guid'=>'44372a70-27fd-4637-8263-1fd75daf95b8','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient over 60 years old must have a Creatinine, PTT/PT/INR & CBC with differential within 30 days prior to exam.  Requires a prep, please refer to the appropriate exam prep information sheet.','active'=>1,'guid'=>'d9cbcf54-bd98-415a-9d7d-b3c080d57cc5'),
+						)),
+						array('key'=>'11','name'=>'CT HEAD W&WO CONT','active'=>1,'guid'=>'f0ab4646-d3be-45c1-91d1-f01c90ae4990','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'26469703-2d30-4a5f-86b2-0dbf8f477cb5'),
+						)),
+						array('key'=>'12','name'=>'CT HEAD W/IV CONT','active'=>1,'guid'=>'f4c2965d-4d27-4a3e-a64a-d6b3014ae253','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'ab6c9aa8-8f3b-49af-84cc-3a5cd100df1f'),
+						)),
+						array('key'=>'13','name'=>'CT HEAD W/O CONT','active'=>1,'guid'=>'aae5fbd5-3a6e-44b2-b19d-f6623981c73c'),
+						array('key'=>'14','name'=>'CT LOWER EXTREMITY W&W/O CONT','active'=>1,'guid'=>'da433349-75ca-4d6b-8afc-52767da11c4d','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'087808fa-18da-499a-917a-9a963b947e86'),
+						)),
+						array('key'=>'15','name'=>'CT LOWER EXTREMITY W/CONT','active'=>1,'guid'=>'9a8e32d2-16a8-4c29-9d53-c304e825642a'),
+						array('key'=>'16','name'=>'CT LOWER EXTREMITY W/O CONT','active'=>1,'guid'=>'1bfd1d00-5cde-4773-ac88-7821d0cbddf9'),
+						array('key'=>'17','name'=>'CT LUMBAR SPINE W/CONT','active'=>1,'guid'=>'2285d52a-0d53-43a0-b48c-248d5da8beb4','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'a62e55e5-4dd3-46f1-9000-236936fb6bfc'),
+						)),
+						array('key'=>'18','name'=>'CT LUMBAR SPINE W/O CONT','active'=>1,'guid'=>'c24e2863-27df-498d-a114-1ef4f6bf7558'),
+						array('key'=>'19','name'=>'CT MAXILLOFACIAL W&W/O CONT','active'=>1,'guid'=>'d06ae2fb-4bb4-4093-b899-95b7ee8fa4ad','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'157fa862-b8e3-42a5-8ae8-4d8a62ad69d7'),
+						)),
+						array('key'=>'20','name'=>'CT MAXILLOFACIAL W/CONT','active'=>1,'guid'=>'7b3ddafb-aad1-4108-be2e-3d45ae7e4164'),
+						array('key'=>'21','name'=>'CT MAXILLOFACIAL W/O CONT','active'=>1,'guid'=>'8d6c0a9a-1f9b-429a-b034-9fb84c85d575'),
+						array('key'=>'22','name'=>'CT NECK SOFT TISSUE W&W/O CONT','active'=>1,'guid'=>'c6d055b0-f07a-4d1f-ae59-776c86e50891','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'11c24dd3-13ec-4cf3-94b2-71ee57839f5b'),
+						)),
+						array('key'=>'23','name'=>'CT NECK SOFT TISSUE W/CONT','active'=>1,'guid'=>'ee2ff01a-da7c-4b1b-9a0a-bfa8447f6869','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'ee2fdf85-8b3b-4e33-9b7f-5f622c3268da'),
+						)),
+						array('key'=>'24','name'=>'CT NECK SOFT TISSUE W/O CONT','active'=>1,'guid'=>'54c13cb1-2597-4cad-832e-84999f0bef85'),
+						array('key'=>'25','name'=>'CT ORBIT P FOS OR TEMP BONE W/&W/O CONT','active'=>1,'guid'=>'d4a36151-1ba1-4d12-8fbc-6fa5efcafa36','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'b57cf661-0f73-4bc5-bc3f-8be62e9330e8'),
+						)),
+						array('key'=>'26','name'=>'CT ORBIT SELLA P FOS OR TEMP BONE W/CONT','active'=>1,'guid'=>'b63bb10b-bce8-4d27-a412-5586375c0e3a','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'3b76edbe-5b8c-42b8-8c18-52074c9808e1'),
+						)),
+						array('key'=>'27','name'=>'CT ORBIT SELLA P FOS OR TEMP BONE W/O CONT','active'=>1,'guid'=>'765f4e92-466e-4423-9f54-dc6a5efdfcca'),
+						array('key'=>'28','name'=>'CT PELVIS W&W/O CONT','active'=>1,'guid'=>'6a5a6d86-55d1-4a53-88ed-c25cefc6c8d3','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'0cffc723-be2d-4ba6-86ae-47ba1c5c846b'),
+						)),
+						array('key'=>'29','name'=>'CT PELVIS W/CONT','active'=>1,'guid'=>'68b26565-11a9-4424-859c-cf68b4b2e990','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'bf7ac94c-2882-48a1-9846-1a3462277428'),
+						)),
+						array('key'=>'30','name'=>'CT PELVIS W/O CONT','active'=>1,'guid'=>'b93ddac1-beae-4712-a933-e3972b2f0da6','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'000afa31-cecb-420a-abb7-43cb8ef06977'),
+						)),
+						array('key'=>'31','name'=>'CT SINUS W/O CONT','active'=>1,'guid'=>'0f438d1b-3fdf-41d4-82ef-d97f1580f27e'),
+						array('key'=>'32','name'=>'CT THORACIC SPINE W/CONT','active'=>1,'guid'=>'2dcdbbea-2863-4100-b93f-23dc5573a138','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'821d34bb-fb14-4159-8b16-50757bfa2478'),
+						)),
+						array('key'=>'33','name'=>'CT THORACIC SPINE W/O CONT','active'=>1,'guid'=>'81fd2229-9bbc-49f2-a1c7-45efb8c7e667','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'3cc031ef-8dd4-4168-b16a-f67ac3eeef7e'),
+						)),
+						array('key'=>'34','name'=>'CT THORAX W&W/O CONT','active'=>1,'guid'=>'94a07979-d599-4552-b219-0498d7f2492e','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'013029a0-edfe-4383-b8fd-7d499d6e9e3c'),
+						)),
+						array('key'=>'35','name'=>'CT THORAX W/CONT','active'=>1,'guid'=>'b9a74c69-2efe-4cb6-aedf-1982ebadda92','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'e50a243c-5848-4d96-8c03-5e68c870b57b'),
+						)),
+						array('key'=>'36','name'=>'CT THORAX W/O CONT','active'=>1,'guid'=>'323e2802-a22a-47ae-9293-34294f7c9681'),
+						array('key'=>'37','name'=>'CT UPPER EXTREMITY W&W/O CONT','active'=>1,'guid'=>'11a69692-7463-43cd-914f-46a3efdc12de','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient must have Creatinine w/i 30 days prior to CT Scan.  Diabetic patients taking metformin (Glucophage) must not take morning dose on day of exam and stay off Glucophage 48 hrs after exam.  Patient should have light breakfast (cereal, coffee) day of exam.','active'=>1,'guid'=>'bb1353de-eb2b-4822-964e-10fef152e595'),
+						)),
+						array('key'=>'38','name'=>'CT UPPER EXTREMITY W/CONT','active'=>1,'guid'=>'191c1ffe-734e-458d-bd05-452171315198'),
+						array('key'=>'39','name'=>'CT UPPER EXTREMITY W/O CONT','active'=>1,'guid'=>'1cfe62bc-503a-4851-a306-77b0b07f9e0f'),
+						array('key'=>'40','name'=>'FINE NEEDLE ASPIRATION W/IMAGING GUIDANCE','active'=>1,'guid'=>'b022a13d-d433-4cfb-88cb-a4e8419a3000'),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'5caaa5ce-2938-44b2-a1a4-f6e91d091e56','data'=>array(
+						array('key'=>'RIGHT','name'=>'RIGHT','active'=>1,'guid'=>'3a43bd01-4fa5-4872-a4ef-d52b66b5fc72'),
+					)),
+				)),
+				array('key'=>'MAMMOGRAPH','name'=>'MAMMOGRAPHY','active'=>1,'guid'=>'eb01e704-fecc-4cb7-872a-55e76c4b279d','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'ec8bfbda-474b-4fe4-83a1-e690fa1d9b9b','data'=>array(
+						array('key'=>'1','name'=>'MAMMARY NODULE OR CALCIFICATION LOCALIZATION','active'=>1,'guid'=>'579e1984-9c72-4416-aece-6deb77c85b49'),
+						array('key'=>'2','name'=>'MAMMO GUIDED-NEEDLE PLACEMENT, BREAST','active'=>1,'guid'=>'540d5616-a526-4c67-859f-abc4a574bf01'),
+						array('key'=>'3','name'=>'MAMMOGRAM BILAT','active'=>1,'guid'=>'d7a89439-48f6-49a8-aea2-4df3d0ed6417'),
+						array('key'=>'4','name'=>'MAMMOGRAM SCREENING BILAT','active'=>1,'guid'=>'297cda20-28fd-4708-a88d-0a94c1bf6f0b','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Patient is required to request prior mammogram films from outside facility to be sent to Medsphere Hospital.  Patient should not wear any powders, lotions or deodorants.','active'=>1,'guid'=>'0ef0741a-5a35-4be5-a3d1-b50f69f71afb'),
+						)),
+						array('key'=>'5','name'=>'MAMMOGRAM UNILAT','active'=>1,'guid'=>'4a1038a9-ba04-4304-b6ce-001216ebc25c'),
+						array('key'=>'6','name'=>'PREOP PLACEMENT NEEDLE LOC WIRE, BREAST','active'=>1,'guid'=>'d0e71ed6-d1d0-4c17-b98a-470365f1cc43'),
+						array('key'=>'7','name'=>'PREOP PLACEMENT NEEDLE WIRE, BREAST EACH ADDL LESION','active'=>1,'guid'=>'d6b2307e-64a3-4dc6-b8dd-3f9edb4689b2'),
+						array('key'=>'8','name'=>'RADIOLOGICAL EXAM, SURGICAL SPECIMEN','active'=>1,'guid'=>'e45dda5f-9e0a-4ee7-aa36-86a07c13c70b'),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'5a327162-2e35-4e8e-8d79-27395b50bc7f','data'=>array(
+						array('key'=>'LEFT','name'=>'LEFT','active'=>1,'guid'=>'d63b976a-45a6-4434-b298-586646863ee5'),
+					)),
+				)),
+				array('key'=>'MRI','name'=>'MAGNETIC RESONANCE IMAGING','active'=>1,'guid'=>'eadccdc4-c3a5-4bf2-9bfd-7c437da3595e','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'f4447ebc-1baf-4f9a-8284-66d99f1302cf','data'=>array(
+						array('key'=>'1','name'=>'MRA ABDOMEN W OR W/O CONTRAST','active'=>1,'guid'=>'e0684898-ad54-4255-9c85-cda000b25323','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'f59a1fbc-9185-4bef-be1b-a94201292abc'),
+						)),
+						array('key'=>'2','name'=>'MRA ARM, UPPER EXT W OR W/O CO','active'=>1,'guid'=>'fc3f4550-277f-4d85-8095-d0e2bd3d5274'),
+						array('key'=>'3','name'=>'MRA CHEST W OR W/O CONTRAST','active'=>1,'guid'=>'41d99d84-9fe9-4dfc-8399-4ec9250919a6'),
+						array('key'=>'4','name'=>'MRA HEAD W/O & W/CONTRAST','active'=>1,'guid'=>'65663734-d429-48c4-a2bb-07d4d8fee9eb'),
+						array('key'=>'5','name'=>'MRA HEAD WITH CONTRAST','active'=>1,'guid'=>'48ca089a-edfc-4432-aeb7-ebfad111f27c'),
+						array('key'=>'6','name'=>'MRA HEAD WITHOUT CONTRAST','active'=>1,'guid'=>'e0d5ad7c-9591-415b-ba2b-62bdb8afd7bd'),
+						array('key'=>'7','name'=>'MRA LEG, LOWER EXT W OR W/O CO','active'=>1,'guid'=>'d07de242-c44d-43b3-9c9b-3061b6755343'),
+						array('key'=>'8','name'=>'MRA NECK W/O & W/CONTRAST','active'=>1,'guid'=>'7a79272b-cf7f-4e28-9d1e-216a794a7f28'),
+						array('key'=>'9','name'=>'MRA NECK WITH CONTRAST','active'=>1,'guid'=>'c9b239c4-af40-476f-bfd0-a0a2b8d9f38e'),
+						array('key'=>'10','name'=>'MRA NECK WITHOUT CONTRAST','active'=>1,'guid'=>'7806309a-0deb-4936-a483-126d3430690f'),
+						array('key'=>'11','name'=>'MRA PELVIS W OR W/O CONTRAST','active'=>1,'guid'=>'6726b38c-2258-4f42-84c8-3a8a4936650c'),
+						array('key'=>'12','name'=>'MRA SPINE W OR W/O CONTRAST','active'=>1,'guid'=>'f920d7a5-ca9f-4d54-b839-74cbfe3ad02d'),
+						array('key'=>'13','name'=>'MRI ABDOMEN W/CONTRAST','active'=>1,'guid'=>'4b1e6855-d971-482e-9712-d81c2f43bc62','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'56be0cea-8b81-4e22-b0b8-10d962a38af3'),
+						)),
+						array('key'=>'14','name'=>'MRI ABDOMEN W/O & W/CONTRAST','active'=>1,'guid'=>'ce170f47-43d5-4609-ac25-c3d21197477e','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'55fa1146-de94-4ae6-aa7a-d0c5983365dc'),
+						)),
+						array('key'=>'15','name'=>'MRI ABDOMEN W/O CONTRAST','active'=>1,'guid'=>'0ed5b24a-2138-4cb3-9816-cfe09a2d1404','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'949dd9e9-d5b0-42c7-8b3c-82ba17e249f4'),
+						)),
+						array('key'=>'16','name'=>'MRI BRAIN (W BRAIN STEM) W/CONT','active'=>1,'guid'=>'edfd5a78-09bc-4498-9220-040bf965e904','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'1ef81ce2-32e5-4cec-b202-378e32edaeff'),
+						)),
+						array('key'=>'17','name'=>'MRI BRAIN W/O & W/CONTRAST','active'=>1,'guid'=>'41cf4268-5a9a-448e-8aa4-b52c64bc5496','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'3323fc3a-04ae-4261-9ab8-0592fbf6e217'),
+						)),
+						array('key'=>'18','name'=>'MRI BRAIN W/O CONTRAST','active'=>1,'guid'=>'b3c12614-e159-4295-8652-57c7d8a70cdd','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'50fbf4a8-97f1-4dec-8432-4bf07b85da5d'),
+						)),
+						array('key'=>'19','name'=>'MRI BRAIN W/O DYE','active'=>1,'guid'=>'7518eadf-056e-4280-b72d-2827db5f7193'),
+						array('key'=>'20','name'=>'MRI CERVICAL SPINE W/CONTRAST','active'=>1,'guid'=>'438c0288-2501-428d-a6ac-08e393e715e9','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'341ef53e-0d41-4778-b0cc-4caa0f7c8092'),
+						)),
+						array('key'=>'21','name'=>'MRI CERVICAL SPINE W/O & W/CONT','active'=>1,'guid'=>'083de439-2c20-4fa7-912e-70b3056a1b2b','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'4aee01c2-be8b-4593-998e-ad4e4373dfca'),
+						)),
+						array('key'=>'22','name'=>'MRI CERVICAL SPINE W/O CONTRAST','active'=>1,'guid'=>'defe3d42-2efd-42d4-b28b-e657fa1e8e27','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'3cdb185d-8421-4fed-b8d0-5f41cd64cfdc'),
+						)),
+						array('key'=>'23','name'=>'MRI CHEST W/CONTRAST','active'=>1,'guid'=>'29cba965-5018-4649-9eeb-86884c250493','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'85df2598-4f6e-4b5b-8cf1-eb7d029dcfc6'),
+						)),
+						array('key'=>'24','name'=>'MRI CHEST W/O & W/CONTRAST','active'=>1,'guid'=>'2dc2b938-c968-4af9-acae-00dc21b4bb74','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'38fd8e11-f4ca-449b-80d6-9d395b460c84'),
+						)),
+						array('key'=>'25','name'=>'MRI CHEST W/O CONTRAST','active'=>1,'guid'=>'781f39d4-e6da-4742-bf40-714faa93d7ce','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'1563eb01-a87e-40ed-8bf7-cb38aaea7946'),
+						)),
+						array('key'=>'26','name'=>'MRI FACE W/O CONTRAST','active'=>1,'guid'=>'5fee68ef-3e09-4ae3-a37e-36ee975ba1ee','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'43495c73-2804-4502-bfcb-d4fe0ddda217'),
+						)),
+						array('key'=>'27','name'=>'MRI LOWER EXT, ANY JOINT W/O CONTRAST','active'=>1,'guid'=>'99fe669c-b0bb-4dfe-b0a4-57e687d2feff','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'b39115c5-9bcc-4119-9055-ff5468b5a245'),
+						)),
+						array('key'=>'28','name'=>'MRI LOWER EXT, NOT JOINT W/O & W CONTRAST','active'=>1,'guid'=>'fddff970-e77c-4172-b571-9ef00d74ae7e','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'309f602e-31c9-4d43-b1ce-b1e578adfcea'),
+						)),
+						array('key'=>'29','name'=>'MRI LUMBAR SPINE W/CONTRAST','active'=>1,'guid'=>'9e70c854-e1d1-4c50-9760-f084cd2eaf0d','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'579782eb-4a27-4496-835f-11dfe934b033'),
+						)),
+						array('key'=>'30','name'=>'MRI LUMBAR SPINE W/O & W/CONTRAST','active'=>1,'guid'=>'5a12c88c-cd04-4aab-ac75-ace626d91c2b','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'b354a0c2-f28f-43ac-85f7-f6d98b01d3da'),
+						)),
+						array('key'=>'31','name'=>'MRI LUMBAR SPINE W/O CONTRAST','active'=>1,'guid'=>'01346055-2a82-4caa-8711-10e7802c63da','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'58e62493-a37c-44e3-9c67-9199d0b7415e'),
+						)),
+						array('key'=>'32','name'=>'MRI ORBIT, FACE & NECK W/CONTRAST','active'=>1,'guid'=>'39451e82-f646-4efb-939e-2488b9fe87dd','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'1d5ba873-345c-464a-8c1a-2a038ae1eabc'),
+						)),
+						array('key'=>'33','name'=>'MRI ORBIT, FACE & NECK W/O & W/CONTRAST','active'=>1,'guid'=>'b4aea69f-b2af-49cf-8876-5695e236aa64','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'1d90509e-9865-46e5-aa2c-08d287493eb1'),
+						)),
+						array('key'=>'34','name'=>'MRI PELVIS W/CONTRAST','active'=>1,'guid'=>'f83d35af-bf4c-4156-ad76-0f87d0933725','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'e7a6665c-c717-42cd-821a-6069c2ae7596'),
+						)),
+						array('key'=>'35','name'=>'MRI PELVIS W/O & W/CONTRAST','active'=>1,'guid'=>'6f99f9a1-bea0-426f-aba6-7c6bb7a4324f','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'13089a45-8d12-470c-9728-8c77b453aee3'),
+						)),
+						array('key'=>'36','name'=>'MRI PELVIS W/O CONTRAST','active'=>1,'guid'=>'95a73fd3-c316-443f-a865-bce465d3f05f','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'2df66bef-9aff-41f1-9806-a2920f421af6'),
+						)),
+						array('key'=>'37','name'=>'MRI TEMPOROMANDIBULAR JNT','active'=>1,'guid'=>'e3e1cb5e-3406-45b8-9857-258d9f2a996c','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'aa5a1f9b-4acd-4365-ae40-79c13a3cf04c'),
+						)),
+						array('key'=>'38','name'=>'MRI THORACIC SPINE W/CONTRAST','active'=>1,'guid'=>'efe15ba8-8ce8-4518-a9d3-626771706cac','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'ae43d42f-de74-49d1-931d-c557422b0d39'),
+						)),
+						array('key'=>'39','name'=>'MRI THORACIC SPINE W/O & W/CONTRAST','active'=>1,'guid'=>'fb21fb0a-810e-46da-94f4-7e29d3b7dc36','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'69bfb60d-5471-44ef-bc57-12aaf6553200'),
+						)),
+						array('key'=>'40','name'=>'MRI THORACIC SPINE W/O CONTRAST','active'=>1,'guid'=>'c1bcf828-60b7-4e0c-a6a2-3d2eaec72d92','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'58605b4c-cd0b-40c9-a84b-1362700c7de3'),
+						)),
+						array('key'=>'41','name'=>'MRI UPPER EXT, ANY JOINT W/O CONTRAST','active'=>1,'guid'=>'38cd7d8b-2b06-4f10-926d-45e66aa3c293','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'b9b96474-122d-47ce-af80-bb3e7aa78239'),
+						)),
+						array('key'=>'42','name'=>'MRI UPPER EXT, NOT JOINT W/O & W/CONTRAST','active'=>1,'guid'=>'8ad0218a-7176-4d45-b163-03797f0f7465','data'=>array(
+							array('key'=>'COMMENTS','name'=>'MRI SCREENING CHECKLIST MUST BE COMPLETED BY ORDERING PHYSICIAN PRIOR TO SCHEDULING MRI','active'=>1,'guid'=>'d36b8074-7dcc-446a-b0a4-1259f3f083e7'),
+						)),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'5684b760-f57f-40e9-a0f8-5461dc2b8356','data'=>array(
+					)),
+				)),
+				array('key'=>'NUCLEARMED','name'=>'NUCLEAR MEDICINE','active'=>1,'guid'=>'a1cf26d5-6515-43e6-81ab-2d1febbd37e8','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'9457cfcb-1524-49d6-aaad-167fb12e5c69','data'=>array(
+						array('key'=>'1','name'=>'NM STRESS THALLIUM HEART STUDY','active'=>1,'guid'=>'1fef5102-d089-459c-a61c-7f6525d4debb','data'=>array(
+							array('key'=>'COMMENTS','name'=>'Dietary & Medication restrictions.  Please refer to the appropriate exam prep information.  Patient needs to obtain cardiolite Prep sheet 24 hours prior to exam date.','active'=>1,'guid'=>'e0382e27-fcce-4754-8224-b1af33430e06'),
+						)),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'f8ee5625-fea8-462f-81ee-3fbd4e70a4f6','data'=>array(
+					)),
+				)),
+				array('key'=>'RADIOLOGY','name'=>'GENERAL RADIOLOGY','active'=>1,'guid'=>'6f0b5781-0bf9-4fb6-abcc-17573a43fc01','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'9b25207e-bd14-45f7-b87e-028b92da3a82','data'=>array(
+						array('key'=>'1','name'=>'ABDOMEN 1 VIEW','active'=>1,'guid'=>'5dab1eea-27cd-466a-b224-7b488344cca2'),
+						array('key'=>'2','name'=>'ABDOMEN 2 VIEWS','active'=>1,'guid'=>'36d4961a-53da-4ced-97d1-d246d0d8a67b'),
+						array('key'=>'3','name'=>'ABDOMEN 3 OR MORE VIEWS','active'=>1,'guid'=>'302ea2e9-1a7e-4bab-8416-c9b78ae31a53'),
+						array('key'=>'4','name'=>'ABDOMEN MIN 3 VIEWS+CHEST','active'=>1,'guid'=>'c5aceee1-7975-40a6-81e3-7af6e33ebc6d'),
+						array('key'=>'5','name'=>'ACROMIOCLAVICULAR J BILAT','active'=>1,'guid'=>'1b8fee21-cef3-42f7-b686-f1a728d9ac41'),
+						array('key'=>'6','name'=>'ANKLE 2 VIEWS','active'=>1,'guid'=>'71b61bd4-557f-4657-9abc-43832a752d4c'),
+						array('key'=>'7','name'=>'ANKLE 3 OR MORE VIEWS','active'=>1,'guid'=>'ed7f62e5-26f4-4b24-9621-849e41799dba'),
+						array('key'=>'8','name'=>'ARTHROGRAM ANKLE S&I','active'=>1,'guid'=>'6a81697c-0fee-4c2b-90b3-9fd3d7a2873e'),
+						array('key'=>'9','name'=>'ARTHROGRAM ELBOW S&I','active'=>1,'guid'=>'31b269ab-8589-4d23-96e5-6bba59f472ac'),
+						array('key'=>'10','name'=>'ARTHROGRAM HIP S&I','active'=>1,'guid'=>'9dbb98ed-ea82-442f-b21c-320e8b74d377'),
+						array('key'=>'11','name'=>'ARTHROGRAM KNEE S&I','active'=>1,'guid'=>'9687d0fc-fe5f-44f7-826c-0b954a2549e6'),
+						array('key'=>'12','name'=>'ARTHROGRAM SHOULDER S&I','active'=>1,'guid'=>'d788b0f1-38c5-4186-b507-7f094bce0a28'),
+						array('key'=>'13','name'=>'ARTHROGRAM TM JOINT CONT S&I','active'=>1,'guid'=>'09d514f5-23cf-48d7-93aa-696f82f26a21'),
+						array('key'=>'14','name'=>'ARTHROGRAM WRIST S&I','active'=>1,'guid'=>'f971ca12-bfec-4753-91c8-2a792911e7bc'),
+						array('key'=>'15','name'=>'BONE AGE','active'=>1,'guid'=>'94e6fb5c-c3f5-4e8e-ae2d-50f1d4479e90'),
+						array('key'=>'16','name'=>'BONE DENSITY STUDY','active'=>1,'guid'=>'bc688a47-6989-4983-bee3-5eec0155d121'),
+						array('key'=>'17','name'=>'BONE LENGTH EXAM','active'=>1,'guid'=>'670c328f-36cf-428e-9cd8-e2a68a0f0572'),
+						array('key'=>'18','name'=>'BONE SURV COMP (INCL APPENDIC SKEL)','active'=>1,'guid'=>'b8c1a945-7141-43d0-8bae-ac00b902b6a0'),
+						array('key'=>'19','name'=>'BONE SURV LMTD (E.G. METASTATIC)','active'=>1,'guid'=>'2190f703-3b92-46cf-b214-6f79b68264c8'),
+						array('key'=>'20','name'=>'BONE SURVEY INFANT','active'=>1,'guid'=>'780174eb-bf1d-4849-903e-91562b5f3304'),
+						array('key'=>'21','name'=>'BRONCHOGRAM BILAT S&I','active'=>1,'guid'=>'51467143-e1c3-4e9f-9941-7b317f5e38e1'),
+						array('key'=>'22','name'=>'BRONCHOGRAM UNILAT S&I','active'=>1,'guid'=>'87840ad0-b857-4ff7-85ef-e634b646ca79'),
+						array('key'=>'23','name'=>'CALCANEOUS 2 VIEWS','active'=>1,'guid'=>'5155cb60-3b7e-4016-be7b-0a1edf36f3ca'),
+						array('key'=>'24','name'=>'CEPHALOGRAM ORTHODONTIC','active'=>1,'guid'=>'a356c69e-db53-4908-a6ad-ce1a43493336'),
+						array('key'=>'25','name'=>'CHEST 2 VIEWS PA&LAT','active'=>1,'guid'=>'8e907353-81da-4124-b431-2d463217319e'),
+						array('key'=>'26','name'=>'CHEST 4 VIEWS','active'=>1,'guid'=>'aab6a15c-1309-414f-8b8d-6de4d3f57aa1'),
+						array('key'=>'27','name'=>'CHEST APICAL LORDOTIC','active'=>1,'guid'=>'d3c05201-7a0d-433e-b78a-c620b839f5c5'),
+						array('key'=>'28','name'=>'CHEST INCLUDE FLUORO','active'=>1,'guid'=>'702284d5-0d4f-45b2-9cf3-48454ac1c6ea'),
+						array('key'=>'29','name'=>'CHEST OBLIQUE PROJECTIONS','active'=>1,'guid'=>'484f5b50-ddae-4f2c-b333-1a223881e44f'),
+						array('key'=>'30','name'=>'CHEST SINGLE VIEW','active'=>1,'guid'=>'8dd806f2-cf0d-4a4a-83f4-7fa5d3a72fb9'),
+						array('key'=>'31','name'=>'CHEST SPECIAL (LDECUB ETC)','active'=>1,'guid'=>'9c093fc8-a51e-4358-a2c9-a3f14875d518'),
+						array('key'=>'32','name'=>'CHEST STEREO PA','active'=>1,'guid'=>'5ca5b93b-d5f0-4482-8959-33f0ea3d83a0'),
+						array('key'=>'33','name'=>'CHOLANGIOGRAM OPERATIVE','active'=>1,'guid'=>'274e7026-77e2-4b95-b504-5d5b3942e584'),
+						array('key'=>'34','name'=>'CHOLANGIOGRAM PERC S&I','active'=>1,'guid'=>'f74f3e55-7722-4898-a55b-dc940f129803'),
+						array('key'=>'35','name'=>'CHOLANGIOGRAM T-TUBE','active'=>1,'guid'=>'73c5e314-c432-4ccb-bd7b-311fa473b075'),
+						array('key'=>'36','name'=>'CHOLANGIOGRAPHY ADDTL SET IN SURGERY','active'=>1,'guid'=>'c33bb4c0-c1d2-434a-8a31-396870e89c7c'),
+						array('key'=>'37','name'=>'CHOLECYSTOGRAM ORAL CONT','active'=>1,'guid'=>'7406a36d-72b1-417a-b911-f9a5ee96b51f'),
+						array('key'=>'38','name'=>'CISTERNOGRAM POS CONT S&I','active'=>1,'guid'=>'5fa1d5e7-9b00-465c-ba18-75bca9bf0e20'),
+						array('key'=>'39','name'=>'CLAVICLE','active'=>1,'guid'=>'8d7bfd78-38e7-42c3-8197-1de6e2f6611a'),
+						array('key'=>'40','name'=>'COLON AIR CONTRAST','active'=>1,'guid'=>'b8d97e5e-dcf0-45eb-9990-f423d2198194'),
+						array('key'=>'41','name'=>'COLON BARIUM ENEMA','active'=>1,'guid'=>'84c7163a-79d7-4fcd-a7a7-dfccdf518d11'),
+						array('key'=>'42','name'=>'CONSULTATION OF OUTSIDE FILMS W/REPORT','active'=>1,'guid'=>'d5515bea-1311-4d00-a3f6-ec4ad0c42713'),
+						array('key'=>'43','name'=>'CYSTOGRAM MIN 3 VIEWS S&I','active'=>1,'guid'=>'6b5dde19-024d-4c64-8479-5df15c64291d'),
+						array('key'=>'44','name'=>'DACROCYSTOGRAM S&I','active'=>1,'guid'=>'b93af712-7d55-414c-a05c-8ac07c9012d6'),
+						array('key'=>'45','name'=>'DISCOGRAM CERVICAL S&I','active'=>1,'guid'=>'88d56faa-46d5-43c9-8ef8-342da013cf96'),
+						array('key'=>'46','name'=>'DISCOGRAM LUMBAR S&I','active'=>1,'guid'=>'de149693-60f7-4f5d-b6f5-db109e884dee'),
+						array('key'=>'47','name'=>'DUODENOGRAPHY HYPOTONIC','active'=>1,'guid'=>'7e5463c7-a205-4a65-bfcf-31bf7cdc15ec'),
+						array('key'=>'48','name'=>'ELBOW 2 VIEWS','active'=>1,'guid'=>'284c1e84-a82b-4dd6-86c6-874bd8011ac2'),
+						array('key'=>'49','name'=>'ELBOW 3 OR MORE VIEWS','active'=>1,'guid'=>'3b45d97d-fc15-4352-87b7-b7adad5ab37a'),
+						array('key'=>'50','name'=>'ENDOSCOPIC CATH BIL & PANC DUCTS S&I','active'=>1,'guid'=>'14a5eced-3eb5-4853-a3c6-12039695862f'),
+						array('key'=>'51','name'=>'ENDOSCOPIC CATH BIL DUCTS S&I','active'=>1,'guid'=>'3adc1fd1-a5b8-4dd5-9aae-93d5657a757c'),
+						array('key'=>'52','name'=>'ENDOSCOPIC CATH PANC DUCTS S&I','active'=>1,'guid'=>'0fcde572-aeea-4d17-bcd4-63598b4b4052'),
+						array('key'=>'53','name'=>'EPIDIDYMOGRAM OR VASICULOGRAM S&I','active'=>1,'guid'=>'a486b3ea-2636-468d-bd6c-87bbd66926bc'),
+						array('key'=>'54','name'=>'ESOPHAGUS','active'=>1,'guid'=>'e5527a52-ac3a-4a2c-97bf-3d9750dfa5a1'),
+						array('key'=>'55','name'=>'ESOPHAGUS PHARYNX/CERVICAL','active'=>1,'guid'=>'2e4f2015-5618-47e8-bdd4-319b4b08fcf8'),
+						array('key'=>'56','name'=>'ESOPHAGUS RAPID SEQUENCE FILMS','active'=>1,'guid'=>'83eb2b1b-2897-48fe-aa95-5965fad3750e'),
+						array('key'=>'57','name'=>'EYE DETECTION FOREIGN BODY','active'=>1,'guid'=>'0a0446a3-3776-4d00-a913-3f7d8af42ccd'),
+						array('key'=>'58','name'=>'FACIAL BONES LESS THAN 3 VIEWS','active'=>1,'guid'=>'a75f3421-6fe7-4b95-95d2-78dd31b134a0'),
+						array('key'=>'59','name'=>'FEMUR 2 VIEWS','active'=>1,'guid'=>'60a2b063-49de-44bb-b553-35b7d1b8f1f3'),
+						array('key'=>'60','name'=>'FINGER(S) 2 OR MORE VIEWS','active'=>1,'guid'=>'84647108-cdef-4038-8595-04cfbefa8329'),
+						array('key'=>'61','name'=>'FISTULOGRAM OR SINOGRAM S&I','active'=>1,'guid'=>'05069aeb-0880-4b0a-ae18-cc93528bde10'),
+						array('key'=>'62','name'=>'FLURO ABDOM(SEPARATE PROCEDURE)','active'=>1,'guid'=>'1a0c27fe-4d9b-424c-b256-65b6a9ee1015'),
+						array('key'=>'63','name'=>'FLURO CHEST(SEPARATE PROCEDURE)','active'=>1,'guid'=>'adc685f3-aa6f-4a93-bd9f-31061b3097c6'),
+						array('key'=>'64','name'=>'FOOT 2 VIEWS','active'=>1,'guid'=>'957f7cb6-da9e-4c20-b811-88625bd65c5f'),
+						array('key'=>'65','name'=>'FOOT 3 OR MORE VIEWS','active'=>1,'guid'=>'e73bc218-035a-4da1-901e-ffb0bdac82c9'),
+						array('key'=>'66','name'=>'FOREARM 2 VIEWS','active'=>1,'guid'=>'cc89f171-b9b3-4cfc-80bc-783af33d87cc'),
+						array('key'=>'67','name'=>'HAND 1 OR 2 VIEWS','active'=>1,'guid'=>'48156047-0cc3-4519-8363-44258022a702'),
+						array('key'=>'68','name'=>'HAND 3 OR MORE VIEWS','active'=>1,'guid'=>'c20d34e8-2ea4-42f0-9abf-8d0e026dfd12'),
+						array('key'=>'69','name'=>'HIP 1 VIEW','active'=>1,'guid'=>'0421a03e-3f1f-4fe8-b99c-833089e48d3e'),
+						array('key'=>'70','name'=>'HIP 2 OR MORE VIEWS','active'=>1,'guid'=>'6f8a7b89-3304-4628-b04f-0ce01430f24f'),
+						array('key'=>'71','name'=>'HIP OPERATIVE 4 OR LESS STUDIES','active'=>1,'guid'=>'31a21f74-522b-4f52-af6b-e409f0413edb'),
+						array('key'=>'72','name'=>'HIPS BILATERAL 4 OR MORE VIEWS','active'=>1,'guid'=>'69a017a1-ec04-4bea-8ea5-bcd1feed398c'),
+						array('key'=>'73','name'=>'HUMERUS 2 OR MORE VIEWS','active'=>1,'guid'=>'c89db262-46d9-44c0-9057-21910099edf0'),
+						array('key'=>'74','name'=>'HYSTEROSALPINGOGRAM S&I','active'=>1,'guid'=>'a7e88fbb-076f-47f7-88c5-eabdb1a03042'),
+						array('key'=>'75','name'=>'INJECTION PROC FOR MYELOGRAPHY AND CT, SPINAL','active'=>1,'guid'=>'24f6e2dd-1e32-4308-a5c6-96886f1ab6d6'),
+						array('key'=>'76','name'=>'JOINT SURV SING VIEW 1 OR MORE JOINTS','active'=>1,'guid'=>'96b67f8d-9eca-4d19-9062-7103c746d44c'),
+						array('key'=>'77','name'=>'KNEE 2 VIEWS','active'=>1,'guid'=>'10184f4d-0733-4145-9c57-bc3ca3586ea1'),
+						array('key'=>'78','name'=>'KNEE 3 VIEWS','active'=>1,'guid'=>'ac22b108-b62d-42bc-aa64-48ef08849805'),
+						array('key'=>'79','name'=>'KNEE 4 OR MORE VIEWS','active'=>1,'guid'=>'0aa8445e-26a4-4584-bfce-2e20bb362330'),
+						array('key'=>'80','name'=>'KNEES, BOTH, STANDING','active'=>1,'guid'=>'e73d65ae-bf91-41b9-866f-9c5db4e0419b'),
+						array('key'=>'81','name'=>'KUB <ABDOMEN 1 VIEW>','active'=>1,'guid'=>'9b4a7f04-d309-46e7-89a5-8a1937b7cb8f'),
+						array('key'=>'82','name'=>'LARYNGOGRAM CONT S&I','active'=>1,'guid'=>'5a0fe3b9-4aa9-48db-b25e-1b91d262e9bd'),
+						array('key'=>'83','name'=>'LARYNX OR PHARNYX INCLUDING FLUORO','active'=>1,'guid'=>'3f728b1c-4101-4b50-82b0-30e56d58cb37'),
+						array('key'=>'84','name'=>'LOWER EXTREMITY INFANT','active'=>1,'guid'=>'033d69cd-e616-4f00-9cf3-a22edabb5b16'),
+						array('key'=>'85','name'=>'LYMPHANGIOGRAM EXTREMITY BILAT S&I','active'=>1,'guid'=>'49ce7a9c-4916-4601-8410-6fb0f292381e'),
+						array('key'=>'86','name'=>'LYMPHANGIOGRAM EXTREMITY UNILAT S&I','active'=>1,'guid'=>'218f373a-48e2-4288-bcab-fb36b4e05234'),
+						array('key'=>'87','name'=>'LYMPHANGIOGRAM PELVIC/ABD BILAT S&I','active'=>1,'guid'=>'0b4cda01-5bb4-4152-a0c0-fd18b01bbec4'),
+						array('key'=>'88','name'=>'LYMPHANGIOGRAM PELVIC/ABD UNILAT S&I','active'=>1,'guid'=>'93fb17d9-7712-4d43-becb-6168d120e429'),
+						array('key'=>'89','name'=>'MAMMARY DUCTOGRAM BILAT S&I','active'=>1,'guid'=>'7dde99f1-ce49-430b-8e2f-9ffee34e7bd6'),
+						array('key'=>'90','name'=>'MAMMARY DUCTOGRAM UNILAT S&I','active'=>1,'guid'=>'84f9d2aa-5438-484e-aca2-8f334a96be0e'),
+						array('key'=>'91','name'=>'MANDIBLE 4 OR MORE VIEWS','active'=>1,'guid'=>'082c2d2d-2aca-428c-abc9-3fe81f35486e'),
+						array('key'=>'92','name'=>'MANDIBLE LESS THAN 4 VIEWS','active'=>1,'guid'=>'7c4a2e7d-aebf-446c-abc9-49b83d226f51'),
+						array('key'=>'93','name'=>'MASTOIDS 3 OR MORE VIEWS/SIDE','active'=>1,'guid'=>'804e5e29-199c-42e0-aefa-3052826f4be7'),
+						array('key'=>'94','name'=>'MASTOIDS LESS THAN 3 VIEWS/SIDE','active'=>1,'guid'=>'bec6d4d6-3b81-4828-825a-411658512813'),
+						array('key'=>'95','name'=>'MYELOGRAM CERVICAL S&I','active'=>1,'guid'=>'ab181647-158f-403c-8915-bbb00ea81815'),
+						array('key'=>'96','name'=>'MYELOGRAM ENTIRE SPINE S&I','active'=>1,'guid'=>'f695fcb9-8569-476b-ac58-9b4d93c8b259'),
+						array('key'=>'97','name'=>'MYELOGRAM LUMBAR S&I','active'=>1,'guid'=>'80797e7e-4233-4c8f-b8d6-7e1a01c5e45b'),
+						array('key'=>'98','name'=>'MYELOGRAM POST FOSSA S&I','active'=>1,'guid'=>'4c3f38a5-16e5-46c4-a72b-9ddfc03af2ea'),
+						array('key'=>'99','name'=>'MYELOGRAM THORACIC S&I','active'=>1,'guid'=>'0da797f4-ac1b-4086-b713-19171ade460a'),
+						array('key'=>'100','name'=>'MYELOGRAM-CERVICAL','active'=>1,'guid'=>'a220fbc6-a48c-4cb2-ad35-2b91dc016652'),
+						array('key'=>'101','name'=>'MYELOGRAM-LUMBAR','active'=>1,'guid'=>'4302fb27-af5c-41cd-9304-cd325375eaa9'),
+						array('key'=>'102','name'=>'MYELOGRAM-THORACIC','active'=>1,'guid'=>'0db0ca3f-4423-485f-9f57-806c70d66c0f'),
+						array('key'=>'103','name'=>'NASAL BONES MIN 3 VIEWS','active'=>1,'guid'=>'d383ca67-a705-4fbc-87aa-ad3bddd4f7c0'),
+						array('key'=>'104','name'=>'NECK SOFT TISSUE','active'=>1,'guid'=>'1c2eb7b8-0f94-4b4c-a0d0-d61adb07a03d'),
+						array('key'=>'105','name'=>'NON-INVAS.,UPPER EXT. ART.','active'=>1,'guid'=>'01aca8ac-1b42-467b-b34f-6883bede5875'),
+						array('key'=>'106','name'=>'OPTIC FORAMINA','active'=>1,'guid'=>'7699bbf5-24c5-48b4-b8a0-e7322e5376db'),
+						array('key'=>'107','name'=>'ORBIT MIN 4 VIEWS','active'=>1,'guid'=>'d9e30428-36e7-464d-8093-7ed9dbcf724d'),
+						array('key'=>'108','name'=>'PACEMAKER FLUORO & FILMS S&I','active'=>1,'guid'=>'40dd5adf-6cb3-4eeb-9d70-7be8ee75dc38'),
+						array('key'=>'109','name'=>'PANOREX','active'=>1,'guid'=>'b52732fc-617a-4c35-b317-f3f8846089ba'),
+						array('key'=>'110','name'=>'PELVIMETRY','active'=>1,'guid'=>'843db8c8-80d2-4df6-ae3c-f189caa7a808'),
+						array('key'=>'111','name'=>'PELVIS & HIPS CHILD 2 OR MORE VIEWS','active'=>1,'guid'=>'ef07c462-471f-4ebf-8858-76e50263d7cf'),
+						array('key'=>'112','name'=>'PELVIS 1 VIEW','active'=>1,'guid'=>'a1eb8739-9465-4d6a-8d88-134b5e2d733d'),
+						array('key'=>'113','name'=>'PELVIS 3 OR MORE VIEWS','active'=>1,'guid'=>'21ec241f-cdcb-452f-81be-21834037dfc6'),
+						array('key'=>'114','name'=>'RENAL CYST STUDY PERC S&I','active'=>1,'guid'=>'a3290fac-06ae-4775-8af8-0eed5e18bff7'),
+						array('key'=>'115','name'=>'RIBS BILAT 3 OR MORE VIEWS','active'=>1,'guid'=>'e349357f-b3db-4844-b76e-bd5ca8025c73'),
+						array('key'=>'116','name'=>'RIBS BILAT+CHEST 4 OR MORE VIEWS','active'=>1,'guid'=>'ae03ce03-7fa6-42f2-8e6e-4675ed856314'),
+						array('key'=>'117','name'=>'RIBS UNILAT 2 VIEWS','active'=>1,'guid'=>'d0266300-e902-496b-8492-098c3210c6f9'),
+						array('key'=>'118','name'=>'RIBS UNILAT+CHEST 3 OR MORE VIEWS','active'=>1,'guid'=>'49bc5780-fb0f-453c-8ead-2246161ab278'),
+						array('key'=>'119','name'=>'SALIVARY GLAND FOR STONE','active'=>1,'guid'=>'3225a71e-edb7-4be1-8dde-faed24f8154a'),
+						array('key'=>'120','name'=>'SCAPULA','active'=>1,'guid'=>'500efc6c-50a8-4709-809d-93d09c218b7b'),
+						array('key'=>'121','name'=>'SELLA TURCICA','active'=>1,'guid'=>'71fec17c-b44a-498f-b118-1de8db070b7e'),
+						array('key'=>'122','name'=>'SHOULDER 1 VIEW','active'=>1,'guid'=>'69f77848-1670-4eb3-97f4-544a38c79a99'),
+						array('key'=>'123','name'=>'SHOULDER 2 OR MORE VIEWS','active'=>1,'guid'=>'ffb30762-9629-47b6-9804-8f592b9ab1d7'),
+						array('key'=>'124','name'=>'SIALOGRAM S&I','active'=>1,'guid'=>'c97e61ed-385c-47a7-8279-b035b385d342'),
+						array('key'=>'125','name'=>'SINUSES 3 OR MORE VIEWS','active'=>1,'guid'=>'c31d21a4-55c7-4103-804f-3dd5d5411476'),
+						array('key'=>'126','name'=>'SINUSES MIN 2 VIEWS','active'=>1,'guid'=>'734068bb-c039-4433-b072-5743ca438685'),
+						array('key'=>'127','name'=>'SKULL 4 OR MORE VIEWS','active'=>1,'guid'=>'56d172ab-3ef8-4bd0-8361-267c47f080b7'),
+						array('key'=>'128','name'=>'SKULL LESS THAN 4 VIEWS','active'=>1,'guid'=>'b2c60408-b3bb-478d-9d13-5b00b33a0772'),
+						array('key'=>'129','name'=>'SMALL BOWEL MULT FILMS','active'=>1,'guid'=>'9367ecb3-d0a5-4365-9906-04f01f79b4b6'),
+						array('key'=>'130','name'=>'SPINE CERVICAL MIN 2 VIEWS','active'=>1,'guid'=>'09ecdb00-8042-4868-9436-0e24039ef964'),
+						array('key'=>'131','name'=>'SPINE CERVICAL MIN 4 VIEWS','active'=>1,'guid'=>'cf50455b-6553-4cd9-bea3-b61697ae642f'),
+						array('key'=>'132','name'=>'SPINE CERVICAL MIN 6 VIEWS','active'=>1,'guid'=>'7fd58436-f57a-401e-be5d-3578b8b72b28'),
+						array('key'=>'133','name'=>'SPINE ENTIRE AP&LAT','active'=>1,'guid'=>'1622f7df-b92a-4167-b24f-fd9e2dacdfbf'),
+						array('key'=>'134','name'=>'SPINE LS BENDING MIN 4 VIEWS','active'=>1,'guid'=>'1b263491-ff33-48a7-a19b-de7a279a51a0'),
+						array('key'=>'135','name'=>'SPINE LUMBOSACRAL MIN 2 VIEWS','active'=>1,'guid'=>'4f84e2a7-1949-4550-a0ad-d9137b2bda04'),
+						array('key'=>'136','name'=>'SPINE LUMBOSACRAL MIN 4 VIEWS','active'=>1,'guid'=>'7246772f-394a-47c0-ad8a-70f9743556cf'),
+						array('key'=>'137','name'=>'SPINE LUMBOSACRAL MIN 6 VIEWS','active'=>1,'guid'=>'f6e16257-c04f-447f-96a7-d8891aac1c5a'),
+						array('key'=>'138','name'=>'SPINE SACRUM & COCCYX MIN 2 VIEWS','active'=>1,'guid'=>'d9302a52-3610-4bd6-a58e-aab99229d68e'),
+						array('key'=>'139','name'=>'SPINE SCOLIOSIS EXAM MIN 2 VIEWS','active'=>1,'guid'=>'6694e101-2fff-4a82-afde-039f1c925dce'),
+						array('key'=>'140','name'=>'SPINE SI JOINTS 1 OR 2 VIEWS','active'=>1,'guid'=>'5fd5e373-24d0-4d49-838a-ea12cab1688f'),
+						array('key'=>'141','name'=>'SPINE SI JOINTS 3 OR MORE VIEWS','active'=>1,'guid'=>'2befadf3-8256-495a-9bfe-94536f6d4a4a'),
+						array('key'=>'142','name'=>'SPINE SINGLE VIEW','active'=>1,'guid'=>'bbb0096d-fde3-4e2e-ac5f-afabd7185a82'),
+						array('key'=>'143','name'=>'SPINE THORACIC 2 VIEWS','active'=>1,'guid'=>'094e11e8-f4de-4c1c-8f50-f388a546d721'),
+						array('key'=>'144','name'=>'SPINE THORACIC 4 OR MORE VIEWS','active'=>1,'guid'=>'32260261-da0d-44bc-b44d-7dcbfc76ee66'),
+						array('key'=>'145','name'=>'SPINE THORACIC AP&LAT&SWIM VIEWS','active'=>1,'guid'=>'b35ffc9f-4982-41fa-8948-6ae416108423'),
+						array('key'=>'146','name'=>'SPINE THORACOLUMBAR 2 VIEWS','active'=>1,'guid'=>'5e81823e-81fd-4762-951f-1c16f39691ad'),
+						array('key'=>'147','name'=>'STERNOCLAV JOINT MIN 3 VIEWS','active'=>1,'guid'=>'014051cb-2d0c-40ac-be20-e43724cfa2f8'),
+						array('key'=>'148','name'=>'STERNUM 2 OR MORE VIEWS','active'=>1,'guid'=>'fc8c476e-7005-4298-b9b7-0920b62d20c6'),
+						array('key'=>'149','name'=>'SUBTRACTION IN CONJUNCTION W CONT STUDIES','active'=>1,'guid'=>'1b64010f-9189-43e1-931d-4f41e414073f'),
+						array('key'=>'150','name'=>'TEETH FULL MOUTH','active'=>1,'guid'=>'15430d0b-2d0b-4086-87e5-8f2b8f9cffd2'),
+						array('key'=>'151','name'=>'TEETH PARTIAL EXAM','active'=>1,'guid'=>'6dbab94d-f989-434b-a944-d0cc62f702dc'),
+						array('key'=>'152','name'=>'TEETH SINGLE VIEW','active'=>1,'guid'=>'e25d1964-c157-40ed-abf0-03ceca27db3e'),
+						array('key'=>'153','name'=>'TIBIA & FIBULA 2 VIEWS','active'=>1,'guid'=>'d7f1d3b9-c74e-4e3b-ba0d-3c514240d373'),
+						array('key'=>'154','name'=>'TM JOINT UNILAT O&C MOUTH','active'=>1,'guid'=>'7e22064f-36a5-40ff-ba9f-084f47f39eed'),
+						array('key'=>'155','name'=>'TM JOINTS BILAT O&C MOUTH','active'=>1,'guid'=>'0651d403-8af4-4449-bf1b-f8881c03299f'),
+						array('key'=>'156','name'=>'TOE(S) 2 OR MORE VIEWS','active'=>1,'guid'=>'69d21d75-1684-43e6-8cec-5bce665b527c'),
+						array('key'=>'157','name'=>'TOMOGRAM COMPLEX MOTION BILAT','active'=>1,'guid'=>'fa0c48ca-ac50-4d22-9276-c18985009d75'),
+						array('key'=>'158','name'=>'TOMOGRAM COMPLEX MOTION UNILAT','active'=>1,'guid'=>'d161e13e-cd30-4b91-8f28-122de66468f9'),
+						array('key'=>'159','name'=>'TOMOGRAM OTHER THAN KIDNEY','active'=>1,'guid'=>'8427a9b3-f7ce-4b34-a538-679c58aa696a'),
+						array('key'=>'160','name'=>'TRANSCATH BIOPSY S&I','active'=>1,'guid'=>'b54b4956-576f-4414-bb65-3ee485f5234c'),
+						array('key'=>'161','name'=>'TRANSCATH EMBOLIZATION W/ANGIO S&I','active'=>1,'guid'=>'1f422c04-5a8b-4f2e-abb5-888630984d6c'),
+						array('key'=>'162','name'=>'TRANSCATH INFUSION W/ANGIO S&I','active'=>1,'guid'=>'0199b93c-ae1a-4c52-a3b3-61e36c63e247'),
+						array('key'=>'163','name'=>'TRANSCATH RETRIEV FRACTURED INTRAVASC CATH','active'=>1,'guid'=>'69001e8a-88d4-4aa6-a878-cb9ceb3d2090'),
+						array('key'=>'164','name'=>'TRANSCATH VASC OCCL PERM W/ANGIO CP','active'=>1,'guid'=>'c1ecc1c2-388d-46dc-933d-fc505ecb4b5a'),
+						array('key'=>'165','name'=>'ugi <UPPER GI + SMALL BOWEL>','active'=>1,'guid'=>'426b4174-41f4-4fac-b2f6-2456f82e0f33'),
+						array('key'=>'166','name'=>'UNLISTED RADIOLOGIC PROCEDURE','active'=>1,'guid'=>'41f13097-64e2-4a6a-8210-d9f09f52ad8f'),
+						array('key'=>'167','name'=>'UPPER EXTREMITY INFANT','active'=>1,'guid'=>'2fc77621-ddee-490b-a477-425d953c79ff'),
+						array('key'=>'168','name'=>'UPPER GI + SMALL BOWEL','active'=>1,'guid'=>'c024a5e8-4ac3-4360-9855-f27353da4eb5'),
+						array('key'=>'169','name'=>'UPPER GI AIR CONT W/O KUB','active'=>1,'guid'=>'0f035cb6-0bd1-4cb3-a47c-f0482c2f4cad'),
+						array('key'=>'170','name'=>'UPPER GI AIR CONT W/SMALL BOWEL','active'=>1,'guid'=>'196f5197-25b1-4e56-ab26-a0ef4ab94c61'),
+						array('key'=>'171','name'=>'UPPER GI AIR CONT WITH KUB','active'=>1,'guid'=>'dfc83633-5be0-4149-ae30-5e0b0e83f58d'),
+						array('key'=>'172','name'=>'UPPER GI W/O KUB','active'=>1,'guid'=>'5cd6e2d7-1e6c-4c26-a8d9-c520aae200e7'),
+						array('key'=>'173','name'=>'UPPER GI WITH KUB','active'=>1,'guid'=>'a8c2e474-aeb5-43dd-926a-0dc6d629b301'),
+						array('key'=>'174','name'=>'URETHROCYSTOGRAM RETROGRADE S&I','active'=>1,'guid'=>'aacd4267-a075-44d2-b4d1-de62ac61d61e'),
+						array('key'=>'175','name'=>'URETHROCYSTOGRAM VOIDING S&I','active'=>1,'guid'=>'d8dcc9aa-7fb2-4aa6-9421-175b04a5b7fb'),
+						array('key'=>'176','name'=>'UROGRAM ANTEGRADE (INCLUDE LOOPOGRAM) S&I','active'=>1,'guid'=>'5494e0c3-16ea-447c-bb32-d0d377daff64'),
+						array('key'=>'177','name'=>'UROGRAM INTRAVENOUS','active'=>1,'guid'=>'98f39b45-8149-4b5c-8ba8-d64c348ce2de'),
+						array('key'=>'178','name'=>'UROGRAM IV DRIP INFUSION','active'=>1,'guid'=>'3ef5873a-7229-4290-8eb8-a478910635fd'),
+						array('key'=>'179','name'=>'UROGRAM IV W NEPHROTOMOGRAMS','active'=>1,'guid'=>'47c1dc83-357f-496c-b6ff-4395d0f30ce1'),
+						array('key'=>'180','name'=>'UROGRAM RETROGRADE','active'=>1,'guid'=>'3d478746-e2c2-4b2b-8c67-f90e867dfbe1'),
+						array('key'=>'181','name'=>'VENOGRAM ADRENAL BILAT SELECT S&I','active'=>1,'guid'=>'c8b88644-bb43-4774-8b80-7c0de2942bb7'),
+						array('key'=>'182','name'=>'VENOGRAM ADRENAL UNILAT SELECT S&I','active'=>1,'guid'=>'7774a354-f27c-4af7-a881-99ae55bee1d6'),
+						array('key'=>'183','name'=>'VENOGRAM CAVA INF W/SERIAL FILMS S&I','active'=>1,'guid'=>'ab51be4b-a998-42c6-9d54-f73a835bab6b'),
+						array('key'=>'184','name'=>'VENOGRAM CAVA SUP W/SERIAL FILMS S&I','active'=>1,'guid'=>'83546457-4514-4888-820b-37b345710507'),
+						array('key'=>'185','name'=>'VENOGRAM EPIDURAL S&I','active'=>1,'guid'=>'83e5e7b8-c088-48e4-bf38-b880c1dd8646'),
+						array('key'=>'186','name'=>'VENOGRAM EXTREMITY BILAT S&I','active'=>1,'guid'=>'4430a93a-18aa-4e41-a0b0-572845218542'),
+						array('key'=>'187','name'=>'VENOGRAM EXTREMITY UNILAT S&I','active'=>1,'guid'=>'80eb005c-77fe-4d80-adf9-6d98afe23908'),
+						array('key'=>'188','name'=>'VENOGRAM HEPAT WEDGE OR FREE W/HEMODYNAM S&I','active'=>1,'guid'=>'99025695-6d78-467a-9fad-a781dc52b286'),
+						array('key'=>'189','name'=>'VENOGRAM HEPAT WEDGE OR FREE W/O HEMODYNAM S&I','active'=>1,'guid'=>'6c0e8b8c-432a-49e0-8ee4-7d703f91e460'),
+						array('key'=>'190','name'=>'VENOGRAM ORBITAL S&I','active'=>1,'guid'=>'e00fb2a0-1f63-4e3e-a831-8bd27519882f'),
+						array('key'=>'191','name'=>'VENOGRAM RENAL BILAT SELECT S&I','active'=>1,'guid'=>'fe2179df-105b-4a34-b833-91aff623cb3f'),
+						array('key'=>'192','name'=>'VENOGRAM RENAL UNILAT SELECT S&I','active'=>1,'guid'=>'483fde35-70f0-4b83-9243-52d846a82dc7'),
+						array('key'=>'193','name'=>'VENOGRAM SAGITTAL SINUS S&I','active'=>1,'guid'=>'80c8c9b5-bd37-439e-9686-42e2c2f8d5d1'),
+						array('key'=>'194','name'=>'VENOGRAM SINUS OR JUGULAR CATH S&I','active'=>1,'guid'=>'e42cbb9c-67ae-4dc8-9afb-15ad7715e49b'),
+						array('key'=>'195','name'=>'VENOGRAM SPLENOPORTOGRAM S&I','active'=>1,'guid'=>'44eea726-49b2-4c51-9726-9e44b72e9d58'),
+						array('key'=>'196','name'=>'WRIST 2 VIEWS','active'=>1,'guid'=>'18b3d9fd-df0c-4872-9f19-ef417fa49af0'),
+						array('key'=>'197','name'=>'WRIST 3 OR MORE VIEWS','active'=>1,'guid'=>'1c271c4e-c61c-4ba2-9ad5-96721ec1033b'),
+						array('key'=>'198','name'=>'XEROGRAPHY','active'=>1,'guid'=>'e346ae7e-fc9b-43b7-822d-d468654b25b2'),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'1337a2da-cef0-4230-acfc-c60493ed69d6','data'=>array(
+						array('key'=>'BILATEXAM','name'=>'BILATERAL EXAM','active'=>1,'guid'=>'ad616ffc-66d7-47e1-97df-0f738d4a018a'),
+						array('key'=>'PORTABLE','name'=>'PORTABLE EXAM','active'=>1,'guid'=>'fb65661b-72fb-44bd-b0c9-ce837d78da48'),
+						array('key'=>'OREXAM','name'=>'OPERATING ROOM EXAM','active'=>1,'guid'=>'13d448c2-c527-4b9d-a430-1d8adc10e177'),
+						array('key'=>'LEFT','name'=>'LEFT','active'=>1,'guid'=>'a447b228-6eb0-4074-98a0-7f25f00421ab'),
+						array('key'=>'RIGHT','name'=>'RIGHT','active'=>1,'guid'=>'724d7e90-ac10-458a-b8a2-22b0dbe6b3ca'),
+						array('key'=>'OBLIQUE','name'=>'OBLIQUE','active'=>1,'guid'=>'a75e6409-52a5-453b-8781-6afacf3c584d'),
+						array('key'=>'SUNRISE','name'=>'SUNRISE','active'=>1,'guid'=>'1132449f-d413-4249-9e06-0f369e002308'),
+						array('key'=>'SWIMMERS','name'=>'SWIMMERS','active'=>1,'guid'=>'3989ca09-8440-45ff-bf3c-c1e8061ed038'),
+						array('key'=>'WATERS','name'=>'WATERS','active'=>1,'guid'=>'c0f9240c-8bd2-48db-896b-672b45d3244d'),
+						array('key'=>'PA','name'=>'PA','active'=>1,'guid'=>'e370339f-65c4-46b4-a1cf-1648457757b1'),
+						array('key'=>'LAT','name'=>'LAT','active'=>1,'guid'=>'f6cffee9-c5d0-4896-abdb-582cf422a0ce'),
+						array('key'=>'AP','name'=>'AP','active'=>1,'guid'=>'c56ce322-e38d-4474-ba22-ad71f8550490'),
+					)),
+				)),
+				array('key'=>'ULTRASOUND','name'=>'ULTRASOUND','active'=>1,'guid'=>'db7ab5af-564a-42ad-a815-e95b3ae87155','data'=>array(
+					array('key'=>'PROCEDURES','name'=>'Procedures','active'=>1,'guid'=>'00c97387-ed16-4ad3-ad4f-fa0b06312ba9','data'=>array(
+						array('key'=>'1','name'=>'AMNIO <ULTRASOUND-GUIDED AMNIOCENTESIS>','active'=>1,'guid'=>'e3cb0a3f-6074-471a-bba9-8da36b00f95c'),
+						array('key'=>'2','name'=>'AMNIOCENTESIS, DIAGNOSTIC','active'=>1,'guid'=>'b38fbc3d-7a6c-4a00-bf00-491242515442'),
+						array('key'=>'3','name'=>'BIOPSY OF LIVER, NEEDLE, PERCUTANEOUS','active'=>1,'guid'=>'e0a1dd5f-388d-4a6f-bf26-473a2eb6cd9a'),
+						array('key'=>'4','name'=>'BIOPSY OF LUNG OR MEDIASTINUM, PERCUTANEOUS NEEDLE','active'=>1,'guid'=>'57ab7361-a8fc-4c37-984b-d32c053413da'),
+						array('key'=>'5','name'=>'DUPLEX CAROTID BILATERAL','active'=>1,'guid'=>'ddfd5886-569a-4d21-b518-b09bc30a6750'),
+						array('key'=>'6','name'=>'DUPLEX CAROTID UNILATERAL OR LTD','active'=>1,'guid'=>'b126bb23-bb6b-4793-8be2-8cdb769acb7c'),
+						array('key'=>'7','name'=>'DUPLEX SCAN LOWER EXT ARTERY BILAT','active'=>1,'guid'=>'169414bc-f12b-4961-a70e-158776e29c24'),
+						array('key'=>'8','name'=>'DUPLEX SCAN LOWER EXT ARTERY UNILAT','active'=>1,'guid'=>'9eb1b393-2c06-4ce7-9dc6-ce3d3d1c29e1'),
+						array('key'=>'9','name'=>'DUPLEX SCAN UPPER EXT ARTERY COMPLET BILAT','active'=>1,'guid'=>'c25815e2-0ab3-41af-ac47-47c96cc1289c'),
+						array('key'=>'10','name'=>'DUPLEX SCAN UPPER EXT ARTERY UNILAT','active'=>1,'guid'=>'70c49190-069c-4543-944c-48ad3b756085'),
+						array('key'=>'11','name'=>'ECHOENCEPHALOGRAM B-SCAN &/OR REALTIME','active'=>1,'guid'=>'c05ecaa8-0c7f-4c43-9c77-ee6e70f6aeb4'),
+						array('key'=>'12','name'=>'ECHOENCEPHALOGRAM COMPLETE','active'=>1,'guid'=>'48500161-3343-46c3-ac54-1cb263a945a5'),
+						array('key'=>'13','name'=>'ECHOGRAM ABDOMEN COMPLETE','active'=>1,'guid'=>'816baaf9-0052-4eb1-941e-d930fd87fc33'),
+						array('key'=>'14','name'=>'ECHOGRAM ABDOMEN LTD','active'=>1,'guid'=>'b297d600-a6a8-4767-b377-358ceca0633e'),
+						array('key'=>'15','name'=>'ECHOGRAM AMNIOCENTESIS S&I','active'=>1,'guid'=>'784c02c7-5fa8-493a-b636-893e33da9eab'),
+						array('key'=>'16','name'=>'ECHOGRAM BREAST A-MODE','active'=>1,'guid'=>'0db2d97f-3d8b-4ac7-8386-401dc3e74beb'),
+						array('key'=>'17','name'=>'ECHOGRAM BREAST B-SCAN &/OR REAL TIME','active'=>1,'guid'=>'f453a006-5d6c-4a21-9ba3-f37f58fe4ecd'),
+						array('key'=>'18','name'=>'ECHOGRAM CHEST B-SCAN','active'=>1,'guid'=>'bf23be59-abc3-440e-abc3-4c26feaa2197'),
+						array('key'=>'19','name'=>'ECHOGRAM CONTACT B-SCAN','active'=>1,'guid'=>'664d48a2-761e-462d-a939-e6ba303fe72a'),
+						array('key'=>'20','name'=>'ECHOGRAM EXTREMITY B-SCAN &/OR REAL TIME W/IMAG','active'=>1,'guid'=>'451fc10d-140b-46e8-b09c-caf641d66a9f'),
+						array('key'=>'21','name'=>'ECHOGRAM EYE BIOMETRY A-MODE','active'=>1,'guid'=>'5d4473b5-d54b-4b7e-8c6e-92dbec379b6a'),
+						array('key'=>'22','name'=>'ECHOGRAM EYE FB LOCALIZATION','active'=>1,'guid'=>'ae1bb2ac-8415-4b68-b065-d50d3f8165a1'),
+						array('key'=>'23','name'=>'ECHOGRAM FOLLOWUP (SPECIFY)','active'=>1,'guid'=>'58026598-fd75-4da7-8c8d-9cab27ed43c1'),
+						array('key'=>'24','name'=>'ECHOGRAM NEEDLE BIOPSY S&I','active'=>1,'guid'=>'cec71db6-c7ec-4dda-8c0a-9152b6c1f0e3'),
+						array('key'=>'25','name'=>'ECHOGRAM OPHTHALMIC SPECTRAL ANALYSIS A-MODE','active'=>1,'guid'=>'c9712bc9-97bc-44ed-adf3-9698a9c10e1d'),
+						array('key'=>'26','name'=>'ECHOGRAM OTHER UNLISTED','active'=>1,'guid'=>'a3bf8f37-c820-4262-847d-038f27384eba'),
+						array('key'=>'27','name'=>'ECHOGRAM PELVIC B-SCAN &/OR REAL TIME W/IMAGING','active'=>1,'guid'=>'6e6712d2-4aec-45dc-8ef3-a9e7eadf7748'),
+						array('key'=>'28','name'=>'ECHOGRAM PELVIC COMPLETE','active'=>1,'guid'=>'e0fa4948-06ff-46a3-8c7e-e237a91a5d25'),
+						array('key'=>'29','name'=>'ECHOGRAM PELVIC LIMITED','active'=>1,'guid'=>'d40b35bd-c71a-4a1b-8cb0-499003f06aca'),
+						array('key'=>'30','name'=>'ECHOGRAM PERICARDIOCENTESIS S&I','active'=>1,'guid'=>'51cb2293-934d-4560-b55a-5ddbfa44f3f8'),
+						array('key'=>'31','name'=>'ECHOGRAM RETROPERITONEAL COMPLETE','active'=>1,'guid'=>'a63d8339-6d31-430d-ac89-6daa5788502a'),
+						array('key'=>'32','name'=>'ECHOGRAM RETROPERITONEAL LIMITED','active'=>1,'guid'=>'b579d06c-838b-41ed-95c2-6f477d169793'),
+						array('key'=>'33','name'=>'ECHOGRAM RX FIELDS B-SCAN','active'=>1,'guid'=>'67bfc51b-1e2b-4c3c-a80a-a4f859e17cbc'),
+						array('key'=>'34','name'=>'ECHOGRAM SCROTUM','active'=>1,'guid'=>'5e34ec84-8056-4212-a462-2a7e0144f084'),
+						array('key'=>'35','name'=>'ECHOGRAM SOFT TISSUE OF NECK','active'=>1,'guid'=>'36beda79-feb0-41fd-ac34-b9ad839776c6'),
+						array('key'=>'36','name'=>'FINE NEEDLE ASPIRATION WITH IMAGING GUIDANCE','active'=>1,'guid'=>'078c65ad-9199-49b7-88fa-866c2a13b2c8'),
+						array('key'=>'37','name'=>'ULTRASOUND ABDOMEN, COMPLETE','active'=>1,'guid'=>'dd908577-d663-4f4b-8000-e2e8e26fa826'),
+						array('key'=>'38','name'=>'ULTRASOUND ABDOMEN, LIMITED (SINGLE ORGAN, QUADRANT, F/U)','active'=>1,'guid'=>'451bb327-1714-4390-9412-632377815b34'),
+						array('key'=>'39','name'=>'ULTRASOUND BIOPHYSICAL PROFILE W/O NON-STRESS TESTING','active'=>1,'guid'=>'c670e04d-bfcd-4499-bb53-4b888af2c6c5'),
+						array('key'=>'40','name'=>'ULTRASOUND ENDOVAGINAL (NON-OB)','active'=>1,'guid'=>'50a27f9a-c23f-4d1d-895b-e4e8abd3b033'),
+						array('key'=>'41','name'=>'ULTRASOUND PELVIS, NON-OB','active'=>1,'guid'=>'ed51b0ae-fa8b-4773-b4b6-0e061b1e7e6a'),
+						array('key'=>'42','name'=>'ULTRASOUND SCROTUM AND CONTENTS (PROSTATE)','active'=>1,'guid'=>'8b29e194-fa98-4247-93fc-5c5cffb7a938'),
+						array('key'=>'43','name'=>'ULTRASOUND SOFT TISSUE NECK, THYROID, PARATHYROID, PAROTID)','active'=>1,'guid'=>'250d6fd0-71d7-43c1-9f51-0d37b62a6ea5'),
+						array('key'=>'44','name'=>'ULTRASOUND, BREAST(S)','active'=>1,'guid'=>'ae8267fc-e0de-47aa-9729-5084354d109b'),
+						array('key'=>'45','name'=>'ULTRASOUND, EXTREMITY, NON-VASCULAR','active'=>1,'guid'=>'515a94b2-8e39-49fe-aea7-b2e0dafe881d'),
+						array('key'=>'46','name'=>'ULTRASOUND, PREGNANT UTERUS <14 WKS, SINGLE FETUS','active'=>1,'guid'=>'1ac1e51d-b966-45a8-9136-c22f41515691'),
+						array('key'=>'47','name'=>'ULTRASOUND, PREGNANT UTERUS >/=14 WKS, SINGLE FETUS','active'=>1,'guid'=>'9f320b17-1038-4cb6-9944-b9287409288c'),
+						array('key'=>'48','name'=>'ULTRASOUND, PREGNANT UTERUS LIMITED,FETUS(S)','active'=>1,'guid'=>'54532e4d-831d-444e-aba5-3a329165e6c5'),
+						array('key'=>'49','name'=>'ULTRASOUND, PREGNANT UTERUS, TRANSVAGINAL','active'=>1,'guid'=>'ddd42d15-5669-4b68-9352-e0693d804648'),
+						array('key'=>'50','name'=>'ULTRASOUND, RETROPERITONEAL (EG, RENAL,AORTA,NODES)','active'=>1,'guid'=>'ae87b333-3270-4cc6-8b05-6b41fb62bd05'),
+						array('key'=>'51','name'=>'ULTRASOUND-GUIDED AMNIOCENTESIS','active'=>1,'guid'=>'f8980f1c-1071-4fa2-b132-056896d49b4f'),
+						array('key'=>'52','name'=>'ULTRASOUND-GUIDED NEEDLE PLACEMENT','active'=>1,'guid'=>'36445943-fa19-4112-bcb5-0c74050b473f'),
+						array('key'=>'53','name'=>'VENOUS DOPPLER, BILATERAL','active'=>1,'guid'=>'4179bf4a-8f75-4263-a8f0-3fd9106fb3d6'),
+						array('key'=>'54','name'=>'VENOUS DOPPLER, UNILATERAL','active'=>1,'guid'=>'b41ba0c6-2f16-4662-aee8-0d2338182661'),
+					)),
+					array('key'=>'MODIFIERS','name'=>'Modifiers','active'=>1,'guid'=>'6c353f6e-2f23-4083-b8e8-08d66545fa23','data'=>array(
+						array('key'=>'LEFT','name'=>'LEFT','active'=>1,'guid'=>'7d364cb9-65d9-49f8-85e3-5bbc41642865'),
+					)),
+				)),
+			);
+
+			$categories = array(
+				array('key'=>'ONSITE','name'=>'ONSITE','active'=>1,'guid'=>'c0fbb671-7c8d-4275-bb3c-d02d7b169012'),
+				array('key'=>'OUTPATIENT','name'=>'OUTPATIENT','active'=>1,'guid'=>'a0ea036f-8d54-4f38-b02d-748d74cbdb3e'),
+				array('key'=>'EMPLOYEE','name'=>'EMPLOYEE','active'=>1,'guid'=>'1782845d-07a2-4b2a-ada2-d3ebd5941d1c'),
+				array('key'=>'CONTRACT','name'=>'CONTRACT','active'=>1,'guid'=>'96cc589a-51c1-4a62-bb52-117087dcd363'),
+				array('key'=>'SHARING','name'=>'SHARING','active'=>1,'guid'=>'aa1ae4e6-f56a-4f04-857b-682fc42b82f7'),
+				array('key'=>'RESEARCH','name'=>'RESEARCH','active'=>1,'guid'=>'5b3a43c8-9aa4-4a1f-b13f-4fbed977fc75'),
+			);
+
+			$urgencies = array(
+				array('key'=>'ASAP','name'=>'ASAP','active'=>1,'guid'=>'fe986120-94fd-4447-a076-74395fb281d5'),
+				array('key'=>'ROUTINE','name'=>'ROUTINE','active'=>1,'guid'=>'12344fa8-e200-43e2-a222-213e27279bfb'),
+				array('key'=>'STAT','name'=>'STAT','active'=>1,'guid'=>'3d2f7f51-ad1f-43cc-b6e1-4e14c4ad0713'),
+			);
+
+			$transports = array(
+				array('key'=>'AMBULATORY','name'=>'AMBULATORY','active'=>1,'guid'=>'975918bb-da4a-4a6c-a388-6ac3df17bf7b'),
+				array('key'=>'PORTABLE','name'=>'PORTABLE','active'=>1,'guid'=>'7f1fe2e9-f363-4529-884d-da1ea9bd3824'),
+				array('key'=>'STRETCHER','name'=>'STRETCHER','active'=>1,'guid'=>'d93002b6-5717-4961-add3-3abdd794e8fe'),
+				array('key'=>'WHEELCHAIR','name'=>'WHEELCHAIR','active'=>1,'guid'=>'8fe55247-5173-4da7-9b21-97c0f238daac'),
+			);
+
+			$pregnants = array(
+				array('key'=>'YES','name'=>'Yes','active'=>1,'guid'=>'c1aeeaaf-5635-4631-a31e-4924f128a8db'),
+				array('key'=>'NO','name'=>'No','active'=>1,'guid'=>'a8612443-d95e-4008-b7e3-50b6bd04ad22'),
+				array('key'=>'UNKNOWN','name'=>'Unknown','active'=>1,'guid'=>'f4e93486-2210-4129-89bd-e8b4d9f9f4f3'),
+			);
+
+			$enums = array(
+				array('key'=>OrderImaging::IMAGING_TYPES_ENUM_KEY,'name'=>OrderImaging::IMAGING_TYPES_ENUM_NAME,'active'=>1,'guid'=>'5572d265-c69b-4bba-9a15-b7bc45ae0ded','data'=>$types),
+				array('key'=>OrderImaging::IMAGING_CATEGORIES_ENUM_KEY,'name'=>OrderImaging::IMAGING_CATEGORIES_ENUM_NAME,'active'=>1,'guid'=>'96fdbd0e-4eff-44de-a026-3fdda6580986','data'=>$categories),
+				array('key'=>OrderImaging::IMAGING_URGENCIES_ENUM_KEY,'name'=>OrderImaging::IMAGING_URGENCIES_ENUM_NAME,'active'=>1,'guid'=>'88379ad5-af9c-44ce-a4b0-2182a3c288e0','data'=>$urgencies),
+				array('key'=>OrderImaging::IMAGING_TRANSPORTS_ENUM_KEY,'name'=>OrderImaging::IMAGING_TRANSPORTS_ENUM_NAME,'active'=>1,'guid'=>'72da39bb-08f0-4ccd-bf2b-4185083f9077','data'=>$transports),
+				array('key'=>OrderImaging::IMAGING_PREGNANTS_ENUM_KEY,'name'=>OrderImaging::IMAGING_PREGNANTS_ENUM_NAME,'active'=>1,'guid'=>'72da39bb-08f0-4ccd-bf2b-4185083f9077','data'=>$pregnants),
+			);
+
+			$level = array();
+			$level['guid'] = 'e52c099c-0ceb-453f-899b-8549832928d5';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateLabTestPreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = OrderLabTest::LAB_ENUM_NAME;
+			$key = OrderLabTest::LAB_ENUM_KEY;
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$types = array(
+				//array('key'=>'','name'=>'','active'=>1,'guid'=>''),
+				array('key'=>'1','name'=>'1,25-DIHYDROXYVIT D3','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'APPEARANCE
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'2','name'=>'1/2HR LTT','active'=>1,'guid'=>''),
+				array('key'=>'3','name'=>'11-DEOXYCORTISOL','active'=>1,'guid'=>''),
+				array('key'=>'4','name'=>'17-HYDROXYCORTICOSTEROIDS','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'SALMONELLA H ANTIGEN
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'5','name'=>'17-HYDROXYPROGESTERONE','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'SALMONELLA AGGLUTINATION
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'6','name'=>'17-KETOGENIC STEROIDS','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'TRICHINELLA AGGLUTINATION
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'7','name'=>'17-KETOSTEROIDS,TOTAL','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'TRYPSIN
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'8','name'=>'1HR LTT','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'RESP SYNCTIAL VIRUS TITER
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'9','name'=>'25 OH VITAMIN D','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'ALCOHOL PROFILE
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'10','name'=>'2HR LTT','active'=>1,'guid'=>''),
+				array('key'=>'11','name'=>'3HR LTT','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'ROCKY MTN SPOTTED FV. TITER
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'12','name'=>'5\' NUCLEOTIDASE','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'BLOOD GASES
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+				array('key'=>'13','name'=>'5HIAA	<URINE 5HIAA>','active'=>1,'guid'=>''),
+				array('key'=>'14','name'=>'6Hr.GTT','active'=>1,'guid'=>''),
+				array('key'=>'15','name'=>'6Hr.GTT (URINE)','active'=>1,'guid'=>''),
+				array('key'=>'16','name'=>'A&N	<AMITRIPTYLINE & NORTRIPTYLINE>','active'=>1,'guid'=>'','data'=>array(
+					array('key'=>'INFO','name'=>'AMOEBIC IHA ANTIBODY
+Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
+				)),
+
+				array('key'=>'17','name'=>'HCT','active'=>1,'guid'=>''),
+				array('key'=>'18','name'=>'HEMOGLOBIN A1C','active'=>1,'guid'=>''),
+				array('key'=>'19','name'=>'RETICULOCYTE','active'=>1,'guid'=>''),
+				array('key'=>'20','name'=>'IRON STUDIES PROFILE','active'=>1,'guid'=>''),
+				array('key'=>'21','name'=>'ACETAMINOPHEN','active'=>1,'guid'=>''),
+				array('key'=>'22','name'=>'CARBAMAZEPINE','active'=>1,'guid'=>''),
+				array('key'=>'23','name'=>'DIGOXIN','active'=>1,'guid'=>''),
+				array('key'=>'24','name'=>'DILANTIN','active'=>1,'guid'=>''),
+				array('key'=>'25','name'=>'LITHIUM','active'=>1,'guid'=>''),
+				array('key'=>'26','name'=>'PHENOBARBITAL','active'=>1,'guid'=>''),
+				array('key'=>'27','name'=>'QUINIDINE','active'=>1,'guid'=>''),
+				array('key'=>'28','name'=>'THEOPHYLLINE','active'=>1,'guid'=>''),
+				array('key'=>'29','name'=>'ZZVALPROIC ACID','active'=>1,'guid'=>''),
+				array('key'=>'30','name'=>'CORTISOL','active'=>1,'guid'=>''),
+				array('key'=>'31','name'=>'CHEM 7','active'=>1,'guid'=>''),
+				array('key'=>'32','name'=>'CHEM 11','active'=>1,'guid'=>''),
+				array('key'=>'33','name'=>'COMP. METABOLIC PROFILE','active'=>1,'guid'=>''),
+				array('key'=>'34','name'=>'CARDIAC PROFILE','active'=>1,'guid'=>''),
+				array('key'=>'35','name'=>'ZZHEPATIC FUNCTION PANEL','active'=>1,'guid'=>''),
+				array('key'=>'36','name'=>'ALBUMIN','active'=>1,'guid'=>''),
+				array('key'=>'37','name'=>'AMMONIA','active'=>1,'guid'=>''),
+				array('key'=>'38','name'=>'LIPASE','active'=>1,'guid'=>''),
+				array('key'=>'39','name'=>'MAGNESIUM','active'=>1,'guid'=>''),
+				array('key'=>'40','name'=>'PO4','active'=>1,'guid'=>''),
+				array('key'=>'41','name'=>'POTASSIUM','active'=>1,'guid'=>''),
+				array('key'=>'42','name'=>'AMYLASE','active'=>1,'guid'=>''),
+				array('key'=>'43','name'=>'HEPATITIS B CORE IGM AB','active'=>1,'guid'=>''),
+				array('key'=>'44','name'=>'HEPATITIS B SURFACE ANTIGEN','active'=>1,'guid'=>''),
+				array('key'=>'45','name'=>'HEPATITIS B SURFACE ANTIBODY','active'=>1,'guid'=>''),
+				array('key'=>'46','name'=>'HEPATITIS C AB','active'=>1,'guid'=>''),
+				array('key'=>'47','name'=>'RPR','active'=>1,'guid'=>''),
+				array('key'=>'48','name'=>'ANA','active'=>1,'guid'=>''),
+				array('key'=>'49','name'=>'ANTI MITOCHONDRIAL','active'=>1,'guid'=>''),
+				array('key'=>'50','name'=>'COMPLEMENT C3','active'=>1,'guid'=>''),
+				array('key'=>'51','name'=>'COMPLEMENT C4','active'=>1,'guid'=>''),
+				array('key'=>'52','name'=>'RHEUMATOID FACTOR','active'=>1,'guid'=>''),
+				array('key'=>'53','name'=>'ESR','active'=>1,'guid'=>''),
+				array('key'=>'54','name'=>'CULTURE & SUSCEPTIBILITY','active'=>1,'guid'=>''),
+			);
+
+			$collectionSamples = array(
+				array('key'=>'1','name'=>'ABSCESS','active'=>1,'guid'=>''),
+				array('key'=>'2','name'=>'AMNIOCENTESIS','active'=>1,'guid'=>''),
+				array('key'=>'3','name'=>'ANAEROBIC','active'=>1,'guid'=>''),
+				array('key'=>'4','name'=>'ARTERIAL','active'=>1,'guid'=>''),
+				array('key'=>'5','name'=>'ARTERIAL BLOOD','active'=>1,'guid'=>''),
+				array('key'=>'6','name'=>'ASPIRATE','active'=>1,'guid'=>''),
+				array('key'=>'7','name'=>'BACTEC BOTTLE','active'=>1,'guid'=>''),
+				array('key'=>'8','name'=>'BIOPSY','active'=>1,'guid'=>''),
+				array('key'=>'9','name'=>'BLOOD (GENERAL)','active'=>1,'guid'=>''),
+				array('key'=>'10','name'=>'BLOOD (BLUE)','active'=>1,'guid'=>''),
+				array('key'=>'11','name'=>'BLOOD (SPC BLUE2ML)','active'=>1,'guid'=>''),
+				array('key'=>'12','name'=>'BLOOD (LAVENDER)','active'=>1,'guid'=>''),
+				array('key'=>'13','name'=>'BLOOD (BLACK TOP)','active'=>1,'guid'=>''),
+				array('key'=>'14','name'=>'BLOOD (MARBLED TOP)','active'=>1,'guid'=>''),
+				array('key'=>'15','name'=>'BLOOD (GRAY)','active'=>1,'guid'=>''),
+				array('key'=>'16','name'=>'BLOOD (LAVENDER)','active'=>1,'guid'=>''),
+				array('key'=>'17','name'=>'BLOOD-GEN (GENERAL)','active'=>1,'guid'=>''),
+				array('key'=>'18','name'=>'BLOOD-GRAY (GRAY)','active'=>1,'guid'=>''),
+				array('key'=>'19','name'=>'BLUE-PL (BLUE)','active'=>1,'guid'=>''),
+				array('key'=>'20','name'=>'BLUEX2PL (BLUE)','active'=>1,'guid'=>''),
+				array('key'=>'21','name'=>'BONE','active'=>1,'guid'=>''),
+				array('key'=>'22','name'=>'BONE MARROW','active'=>1,'guid'=>''),
+				array('key'=>'23','name'=>'BOTH URINE & BLOOD','active'=>1,'guid'=>''),
+				array('key'=>'24','name'=>'BRUSH','active'=>1,'guid'=>''),
+				array('key'=>'25','name'=>'CELLOPHANE TAPE','active'=>1,'guid'=>''),
+				array('key'=>'26','name'=>'CHANCRE','active'=>1,'guid'=>''),
+				array('key'=>'27','name'=>'CSF','active'=>1,'guid'=>''),
+				array('key'=>'28','name'=>'DECUBITUS','active'=>1,'guid'=>''),
+				array('key'=>'29','name'=>'DIALYSATE','active'=>1,'guid'=>''),
+				array('key'=>'30','name'=>'EXUDATE','active'=>1,'guid'=>''),
+				array('key'=>'31','name'=>'FLUID','active'=>1,'guid'=>''),
+				array('key'=>'32','name'=>'FLUID-PLE','active'=>1,'guid'=>''),
+				array('key'=>'33','name'=>'FLUID-SYN','active'=>1,'guid'=>''),
+				array('key'=>'34','name'=>'GENPROBE SWAB','active'=>1,'guid'=>''),
+				array('key'=>'35','name'=>'GRAY-WB (GRAY)','active'=>1,'guid'=>''),
+				array('key'=>'36','name'=>'GRAYX4PL (GRAY)','active'=>1,'guid'=>''),
+				array('key'=>'37','name'=>'GREEN-PL (GREEN)','active'=>1,'guid'=>''),
+				array('key'=>'38','name'=>'GREEN-WB (GREEN)','active'=>1,'guid'=>''),
+				array('key'=>'39','name'=>'HAIR','active'=>1,'guid'=>''),
+				array('key'=>'40','name'=>'KILLIT AMPULE','active'=>1,'guid'=>''),
+				array('key'=>'41','name'=>'NAIL','active'=>1,'guid'=>''),
+				array('key'=>'42','name'=>'NASOPHARYNGEAL','active'=>1,'guid'=>''),
+				array('key'=>'43','name'=>'PERICARDIAL','active'=>1,'guid'=>''),
+				array('key'=>'44','name'=>'PERITONEAL','active'=>1,'guid'=>''),
+				array('key'=>'45','name'=>'PLACENTA','active'=>1,'guid'=>''),
+				array('key'=>'46','name'=>'PLASMA (GREEN)','active'=>1,'guid'=>''),
+				array('key'=>'47','name'=>'PLEURAL','active'=>1,'guid'=>''),
+				array('key'=>'48','name'=>'PURP/TIG (PURP/TIG)','active'=>1,'guid'=>''),
+				array('key'=>'49','name'=>'PURPLE-PL (PURPLE)','active'=>1,'guid'=>''),
+				array('key'=>'50','name'=>'PURPLE-WB (PURPLE)','active'=>1,'guid'=>''),
+				array('key'=>'51','name'=>'ROYAL-PL (ROYAL)','active'=>1,'guid'=>''),
+				array('key'=>'52','name'=>'ROYAL-WB (ROYAL)','active'=>1,'guid'=>''),
+				array('key'=>'53','name'=>'SECRETIONS','active'=>1,'guid'=>''),
+				array('key'=>'54','name'=>'SEE-REF','active'=>1,'guid'=>''),
+				array('key'=>'55','name'=>'SEMINAL FLUID','active'=>1,'guid'=>''),
+				array('key'=>'56','name'=>'SER/CSF','active'=>1,'guid'=>''),
+				array('key'=>'57','name'=>'SERUM (RED TOP)','active'=>1,'guid'=>''),
+				array('key'=>'58','name'=>'SKIN','active'=>1,'guid'=>''),
+				array('key'=>'59','name'=>'SKINTEST','active'=>1,'guid'=>''),
+				array('key'=>'60','name'=>'SPORE STRIP','active'=>1,'guid'=>''),
+				array('key'=>'61','name'=>'SPUTUM','active'=>1,'guid'=>''),
+				array('key'=>'62','name'=>'STONE(CALCULUS)','active'=>1,'guid'=>''),
+				array('key'=>'63','name'=>'STOOL','active'=>1,'guid'=>''),
+				array('key'=>'64','name'=>'SUTURE','active'=>1,'guid'=>''),
+				array('key'=>'65','name'=>'SWAB','active'=>1,'guid'=>''),
+				array('key'=>'66','name'=>'SWAB-MINI','active'=>1,'guid'=>''),
+				array('key'=>'67','name'=>'SYNOVIAL','active'=>1,'guid'=>''),
+				array('key'=>'68','name'=>'THROAT SWAB (CULTURETTE)','active'=>1,'guid'=>''),
+				array('key'=>'69','name'=>'TIGER (MARBLED TOP)','active'=>1,'guid'=>''),
+				array('key'=>'70','name'=>'TISSUE','active'=>1,'guid'=>''),
+				array('key'=>'71','name'=>'UNKNOWN','active'=>1,'guid'=>''),
+				array('key'=>'72','name'=>'UR-24HR','active'=>1,'guid'=>''),
+				array('key'=>'73','name'=>'URINE','active'=>1,'guid'=>''),
+				array('key'=>'74','name'=>'URINE CATH','active'=>1,'guid'=>''),
+				array('key'=>'75','name'=>'URINE MID-STREAM','active'=>1,'guid'=>''),
+				array('key'=>'76','name'=>'UR-RANDOM','active'=>1,'guid'=>''),
+				array('key'=>'77','name'=>'VAGINAL','active'=>1,'guid'=>''),
+				array('key'=>'78','name'=>'VALVE','active'=>1,'guid'=>''),
+				array('key'=>'79','name'=>'WATER','active'=>1,'guid'=>''),
+				array('key'=>'80','name'=>'WOUND','active'=>1,'guid'=>''),
+				array('key'=>'81','name'=>'YELLOW (ACD)','active'=>1,'guid'=>''),
+			);
+
+			$specimens = array(
+				array('key'=>'BLOOD','name'=>'BLOOD','active'=>1,'guid'=>''),
+				array('key'=>'BRONCHIAL ','name'=>'BRONCHIAL WASHING CYTOLOGIC MATERIAL','active'=>1,'guid'=>''),
+				array('key'=>'LEFTLUNG','name'=>'LEFT UPPER LOBE OF LUNG','active'=>1,'guid'=>''),
+				array('key'=>'PLASMA','name'=>'PLASMA','active'=>1,'guid'=>''),
+				array('key'=>'SERUM','name'=>'SERUM','active'=>1,'guid'=>''),
+				array('key'=>'SPUTUM','name'=>'SPUTUM','active'=>1,'guid'=>''),
+				array('key'=>'PHARYNX','name'=>'PHARYNX','active'=>1,'guid'=>''),
+				array('key'=>'URINE','name'=>'URINE','active'=>1,'guid'=>''),
+				array('key'=>'OTHER','name'=>'Other','active'=>1,'guid'=>''),
+			);
+
+			$urgencies = array(
+				array('key'=>'ASAP','name'=>'ASAP','active'=>1,'guid'=>''),
+				array('key'=>'PRE-OP','name'=>'PRE-OP','active'=>1,'guid'=>''),
+				array('key'=>'ROUTINE','name'=>'ROUTINE','active'=>1,'guid'=>''),
+				array('key'=>'STAT','name'=>'STAT','active'=>1,'guid'=>''),
+			);
+
+			$collectionTypes = array(
+				array('key'=>'LC','name'=>'Lab Collect','active'=>1,'guid'=>''),
+				array('key'=>'WC','name'=>'Ward Collect','active'=>1,'guid'=>''),
+				array('key'=>'SPL','name'=>'Send Patient to Lab','active'=>1,'guid'=>''),
+				array('key'=>'IC','name'=>'Immediate Collect','active'=>1,'guid'=>''),
+			);
+
+			$schedules = array(
+				array('key'=>'ONCE','name'=>'ONCE','active'=>1,'guid'=>''),
+				array('key'=>'Q12','name'=>'Q12 HR','active'=>1,'guid'=>''),
+				array('key'=>'Q2','name'=>'Q2 HR','active'=>1,'guid'=>''),
+				array('key'=>'Q2D','name'=>'Q2D','active'=>1,'guid'=>''),
+				array('key'=>'Q2W','name'=>'Q2W','active'=>1,'guid'=>''),
+				array('key'=>'Q4','name'=>'Q4 HR','active'=>1,'guid'=>''),
+				array('key'=>'Q6','name'=>'Q6 HR','active'=>1,'guid'=>''),
+				array('key'=>'QAM','name'=>'QAM','active'=>1,'guid'=>''),
+				array('key'=>'QM','name'=>'QM','active'=>1,'guid'=>''),
+				array('key'=>'QW','name'=>'QW','active'=>1,'guid'=>''),
+			);
+
+			$enums = array(
+				array('key'=>OrderLabTest::LAB_TYPES_ENUM_KEY,'name'=>OrderLabTest::LAB_TYPES_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$types),
+				array('key'=>OrderLabTest::LAB_COLLECTION_SAMPLES_ENUM_KEY,'name'=>OrderLabTest::LAB_COLLECTION_SAMPLES_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$collectionSamples),
+				array('key'=>OrderLabTest::LAB_SPECIMENS_ENUM_KEY,'name'=>OrderLabTest::LAB_SPECIMENS_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$specimens),
+				array('key'=>OrderLabTest::LAB_URGENCIES_ENUM_KEY,'name'=>OrderLabTest::LAB_URGENCIES_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$urgencies),
+				array('key'=>OrderLabTest::LAB_COLLECTION_TYPES_ENUM_KEY,'name'=>OrderLabTest::LAB_COLLECTION_TYPES_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$collectionTypes),
+				array('key'=>OrderLabTest::LAB_SCHEDULES_ENUM_KEY,'name'=>OrderLabTest::LAB_SCHEDULES_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$schedules),
+			);
+
+
+			$level = array();
+			$level['guid'] = '45db7e28-e5fe-4fac-b73f-d4da99b619f7';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateInsurancePreferencesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = InsuranceProgram::INSURANCE_ENUM_NAME;
+			$key = InsuranceProgram::INSURANCE_ENUM_KEY;
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$assignings = array(
+				array('key'=>'1','name'=>'A - Assigned','active'=>1,'guid'=>'0bb5b24d-34b9-467c-b37f-d8a3233b4266'),
+				array('key'=>'2','name'=>'B - Assigned Lab Services Only','active'=>1,'guid'=>'7643b4a8-6f1d-41e5-a4e3-a24025e1763f'),
+				array('key'=>'3','name'=>'C - Not Assigned','active'=>1,'guid'=>'7918f432-5282-4354-990a-17da4ca6a4a1'),
+				array('key'=>'4','name'=>'P - Assignment Refused','active'=>1,'guid'=>'14d15452-7654-42b2-8bd4-e2559ca5a242'),
+			);
+
+			$subscribers = array(
+				array('key'=>'1','name'=>'self','active'=>1,'guid'=>'39455c4c-4c62-4b95-b197-cf4fcec51301'),
+				array('key'=>'2','name'=>'parent','active'=>1,'guid'=>'3b900003-79d8-4178-8dbf-0285f734033d'),
+				array('key'=>'3','name'=>'relative','active'=>1,'guid'=>'8fd29e89-a42d-4d0b-87f7-5a5f2231bb65'),
+				array('key'=>'4','name'=>'other','active'=>1,'guid'=>'d67d6373-ec97-4a52-bf3d-4b3bcbe3503b'),
+			);
+
+			$enums = array(
+				array('key'=>InsuranceProgram::INSURANCE_ASSIGNING_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_ASSIGNING_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$assignings),
+				array('key'=>InsuranceProgram::INSURANCE_SUBSCRIBER_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_SUBSCRIBER_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$subscribers),
+			);
+
+			$level = array();
+			$level['guid'] = '5d7c5ecc-9e64-4e9d-8c60-a55269b7bcf0';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateGenericNoteTemplateEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Generic Note Template';
+			$key = 'GENOTEMPLT';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$level = array();
+			$level['guid'] = '7bd7c051-3552-43ba-bd1d-f6c24c5f598c';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateTextOnlyTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = Order::TEXT_ONLY_TYPE_ENUM_NAME;
+			$key = Order::TEXT_ONLY_TYPE_ENUM_KEY;
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key'=>'MISC','name'=>'Miscellaneous','active'=>1,'guid'=>'8ca20f67-7f0a-4786-9a63-6bc20451c775'),
+				array('key'=>'DIETARY','name'=>'Dietary Consult','active'=>1,'guid'=>'871065e6-13ac-4cfd-b13b-a4549281dbc8'),
+			);
+
+			$level = array();
+			$level['guid'] = 'd0ba0f8d-3697-4fcb-a551-289ce0638022';
 			$level['key'] = $key;
 			$level['name'] = $name;
 			$level['category'] = 'System';

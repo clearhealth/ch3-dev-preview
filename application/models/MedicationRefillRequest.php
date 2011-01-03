@@ -84,7 +84,7 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 				->from(array('r'=>$this->_table))
 				->joinLeft(array('m'=>'medications'),'m.medicationId = r.medicationId')
 				->joinLeft(array('msg'=>'messaging'),'msg.messagingId = r.messageId',array('personId','rawMessage'))
-				->where('m.personId = ?',(int)$personId)
+				->where('msg.personId = ?',(int)$personId)
 				->order('r.dateTime DESC')
 				->group('r.messageId');
 		//trigger_error($sqlSelect->__toString());

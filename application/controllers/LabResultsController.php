@@ -62,8 +62,8 @@ class LabResultsController extends WebVista_Controller_Action {
 			}
 			else {
 				$filters['patientId'] = (int)$this->_getParam('patientId');
-				$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
-				$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
+				$filters['dateBegin'] = date('Y-m-d 00:00:00',strtotime($this->_getParam('dateBegin')));
+				$filters['dateEnd'] = date('Y-m-d 23:59:59',strtotime($this->_getParam('dateEnd')));
 				$filters['limit'] = (int)$this->_getParam('limit');
 			}
 			$rows = $this->_getLabResults($filters);
@@ -77,7 +77,7 @@ class LabResultsController extends WebVista_Controller_Action {
 		$labs = array();
 		$showCalcLabs = (boolean)$this->_getParam('showCalcLabs',false);
 		$calcLabsArray = array();
-		if (true) {
+		if (false) {
 			$calcLabs = new CalcLabs();
 			$calcLabsArray = $calcLabs->getAllCalcLabsArray($filters['patientId']);
 		}
@@ -93,6 +93,7 @@ class LabResultsController extends WebVista_Controller_Action {
 			$tmpArr[] = $lab->referenceRange;
 			$tmpArr[] = $lab->abnormalFlag;
 			$tmpArr[] = $lab->resultStatus;
+			$tmpArr[] = $lab->labTest->clia_disclosure;
 			$tmpValue = $lab->value;
 			if (!is_numeric($tmpValue)) {
 				if (strtolower($lab->abnormalFlag) != '' || strtolower($lab->abnormalFlag) != 'n') { // normal
@@ -131,8 +132,8 @@ class LabResultsController extends WebVista_Controller_Action {
 	public function selectLabTestsAction() {
 		$filters = array();
 		$filters['patientId'] = (int)$this->_getParam('personId');
-		$filters['dateBegin'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateBegin')));
-		$filters['dateEnd'] = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
+		$filters['dateBegin'] = date('Y-m-d 00:00:00',strtotime($this->_getParam('dateBegin')));
+		$filters['dateEnd'] = date('Y-m-d 23:59:59',strtotime($this->_getParam('dateEnd')));
 		$results = $this->_getLabResults($filters);
 		$rows = array();
 		foreach ($results as $row) {

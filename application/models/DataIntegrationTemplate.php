@@ -33,6 +33,7 @@ class DataIntegrationTemplate extends DataIntegration {
 	protected $_primaryKeys = array('dataIntegrationTemplateId');
 
 	public function persist() {
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
 		$db = Zend_Registry::get('dbAdapter');
 		$dataIntegrationTemplateId = (int)$this->dataIntegrationTemplateId;
 		$data = $this->toArray();
@@ -44,7 +45,7 @@ class DataIntegrationTemplate extends DataIntegration {
 			$data['dataIntegrationTemplateId'] = $this->dataIntegrationTemplateId;
 			$ret = $db->insert($this->_table,$data);
 		}
-		return $ret;
+		return $this;
 	}
 
 	public function getCustomIterator($dbSelect = null) {

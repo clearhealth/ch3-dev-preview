@@ -55,11 +55,161 @@
 			case "All_fee_schedules":
 				globalCreateWindow("windowFeeSchedulesId",[],"/index.php/main/FeeSchedule/List","<?=__('Fee Schedules')?>",800,600);
 				break;
+			case "All_general_encryption":
+				globalCreateWindow("windowGeneralEncyptionId",[],"<?=$this->baseUrl?>/general-encryptions.raw","<?=__('General Encyptions')?>",500,350);
+				break;
+			case "All_audit_log_viewer":	
+				globalCreateWindow("windowAuditLogViewerId",[],"<?=$this->baseUrl?>/audit-log-viewer.raw","<?=__('Audit Log Viewer')?>",800,600);
+				break;
+			case "All_view_hl__ccd_astm_ccr":
+				CCDHL7View();
+				break;
+			case "All_all_xml":
+			case "All_visit_xml":
+			case "All_all_view":
+			case "All_visit_view":
+			case "All_all_print":
+			case "All_visit_print":
+				windowCCDXML(itemId);
+				break;
+			case "All_patient_lists":
+				globalCreateWindow("windowPatientListsId",[],"<?=$this->baseUrl?>/patient-list.raw","<?=__('Patient Lists')?>",900,650);
+				break;
+			case "All_patient_reminders":
+				globalCreateWindow("windowPatientRemindersId",[],"<?=$this->baseUrl?>/patient-reminders.raw","<?=__('Patient Reminders')?>",900,650);
+				break;
+			case "All_emergency_access":
+				enableEmergencyAccess();
+				//globalCreateWindow("windowEmergencyAccessId",[],"<?=$this->baseUrl?>/emergency-access.raw","<?=__('Emergency Access')?>",300,200);
+				break;
+			case "All_hl__immunizations":
+			case "All_hl__labtest_results":
+				windowExport(itemId);
+				break;
+			case "All_import_lab_hl_":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				globalCreateWindow("windowImportLabHL7",["personId="+patientId],"<?=$this->baseUrl?>/imports.raw/hl7-lab","<?=__('Import Lab HL7')?>",300,200);
+				break;
+			case "All_public_health":
+				globalCreateWindow("windowPatientListsId",[],"<?=$this->baseUrl?>/patient-list.raw","<?=__('Public Health Export')?>",900,650);
+				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
                                 break;
                 }
         };
+
+function windowExport(itemId) {
+	var patientId = parseInt(mainController.getActivePatient());
+	if (patientId == 0) {
+		alert("No patient selected.");
+		return;
+	}
+	switch (itemId) {
+		case "All_hl__immunizations":
+			window.open("<?=$this->baseUrl?>/exports.raw/hl7-immunizations?personId="+patientId,"Export HL7 Immunizations");
+			break;
+		case "All_hl__labtest_results":
+			window.open("<?=$this->baseUrl?>/exports.raw/hl7-labtest-results?personId="+patientId,"Export HL7 LabTest Results");
+			break;
+	}
+}
+
+function enableEmergencyAccess(enable) {
+	var content = {};
+	if (enable) {
+		content = { "enable":1 };
+	}
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/emergency-access.raw",
+		handleAs: "json",
+		content: content,
+		load: function (data) {
+			if (data.error) {
+				alert(data.error);
+			}
+			else if ((data+"").indexOf("Access denied.") !== -1) { // access denied
+				alert("Access denied.");
+			}
+			else if (enable) {
+				if (data) alert("Emergency Access successfully enabled.");
+				else alert("Failed to enable Emegency Access.");
+			}
+			else if (data && confirm("Are you sure you want to declare an Emergency and open access to patient data for preapproved users? This activity is logged and proper procedures must be followed.")) {
+				enableEmergencyAccess(true);
+			}
+		},
+		error: function (er) {
+			alert("err: " + er.responseText);
+		}
+	});
+}
+
+function CCDHL7View() {
+	globalCreateWindow("windowCCDHL7ViewId",[],"<?=$this->baseUrl?>/ccd.raw/hl7-view","<?=__('HL7 CCD/ASTM CCR View')?>",800,600);
+}
+
+function windowCCDXML(itemId) {
+	var patientId = parseInt(mainController.getActivePatient());
+	if (patientId == 0) {
+		alert("No patient selected.");
+		return;
+	}
+	var visitId = parseInt(mainController.getActiveVisit());
+	if (itemId.substr(0,10) == "All_visit_" && visitId == 0) {
+		alert("No visit selected.");
+		return;
+	}
+	switch (itemId) {
+		case "All_all_xml":
+			CCDXML(patientId);
+			break;
+		case "All_visit_xml":
+			CCDXML(patientId,visitId);
+			break;
+		case "All_all_view":
+			CCDView(patientId);
+			break;
+		case "All_visit_view":
+			CCDView(patientId,visitId);
+			break;
+		case "All_all_print":
+			CCDPrint(patientId);
+			break;
+		case "All_visit_print":
+			CCDPrint(patientId,visitId);
+			break;
+	}
+}
+
+function CCDXML(personId,visitId) {
+	var params = ["personId="+personId];
+	if (visitId) {
+		params.push("visitId="+visitId);
+	}
+	window.open("<?=$this->baseUrl?>/ccd.raw/xml?"+params.join("&"),"ccdXML");
+}
+
+function CCDView(personId,visitId) {
+	var params = ["personId="+personId];
+	if (visitId) {
+		params.push("visitId="+visitId);
+	}
+	//window.open("<?=$this->baseUrl?>/ccd.raw/view?"+params.join("&"),"ccdView");
+	globalCreateWindow("windowCCDViewId",params,"<?=$this->baseUrl?>/ccd.raw/view","<?=__('CCD View')?>",800,600);
+}
+
+function CCDPrint(personId,visitId) {
+	var params = ["personId="+personId];
+	if (visitId) {
+		params.push("visitId="+visitId);
+	}
+	window.open("<?=$this->baseUrl?>/ccd.raw/print?"+params.join("&"),"ccdPrint");
+}
 
 function windowAddVitals(jsCallback) {
 	var patientId = mainController.getActivePatient();
@@ -311,7 +461,13 @@ function setActiveTab(activeTab) {
 	mainController.attachPageActivityListener();
 }
 
+var globalNoteIsEdited = false;
 function mainTabbarClick(id) {
+	// Leaving Notes tab
+	if (mainTabbar.getActiveTab() == "tab_Notes" && globalNoteIsEdited && !confirm("Are you sure you want to leave the Notes tab, unsaved changes will be lost?")) {
+		return;
+	}
+	globalNoteIsEdited = false;
 	//contents of certain stabs when moving between iframe and ajax will stick and show, this hides that content
 	if(mainTabbar._getTabById(mainTabbar.getActiveTab()) != undefined) {
                 oldTab = mainTabbar._getTabById(mainTabbar.getActiveTab());
@@ -380,7 +536,7 @@ function windowGrowthCharts(patientId) {
 		return;
 	}
 	var params = ["personId="+patientId];
-	var winGrowthCharts = globalCreateWindow("winGrowthChartsId",params,"<?=$this->baseUrl?>/growth-charts.raw","<?=__('Growth Charts')?>",800,600);
+	var winGrowthCharts = globalCreateWindow("winGrowthChartsId",params,"<?=$this->baseUrl?>/growth-charts.raw","<?=__('Growth Charts')?>",800,700);
 }
 
 function windowForwardForSigning(ormClass,ormId) {

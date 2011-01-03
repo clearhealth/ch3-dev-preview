@@ -74,7 +74,20 @@ class AppointmentController extends WebVista_Controller_Action {
 
 			$visit->appointmentId = $appointment->appointmentId;
 			$visit->persist();
-			$ret = $visit->visitId;
+			$visitId = (int)$visit->visitId;
+			$payment = new Payment();
+			foreach ($payment->getIteratorByAppointmentId($appointmentId) as $row) {
+				$row->visitId = $visitId;
+				$row->persist();
+			}
+
+			$miscCharge = new MiscCharge();
+			foreach ($miscCharge->getIteratorByAppointmentId($appointmentId) as $row) {
+				$row->visitId = $visitId;
+				$row->persist();
+			}
+
+			$ret = $visitId;
 		}
 		return $ret;
 	}
@@ -83,8 +96,13 @@ class AppointmentController extends WebVista_Controller_Action {
 		$columnId = -1;
 		$appointmentId = (int)$this->_getParam('appointmentId');
 		$visitId = (int)$this->_getParam('visitId');
+		$appointment = new Appointment();
+		$appointment->appointmentId = $appointmentId;
+		$appointment->populate();
 		$payment = new Payment();
 		$payment->visitId = $visitId;
+		$payment->personId = (int)$appointment->patientId;
+		$payment->appointmentId = $appointmentId;
 		if (!$visitId > 0) {
 			$payment->visitId = $this->_createVisit($appointmentId);
 			$columnId = (int)$this->_getParam('columnId');

@@ -309,4 +309,22 @@ class Provider extends WebVista_Model_ORM {
 		return $this->person_id;
 	}
 
+	public function getIteratorByPracticeId($practiceId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->joinInner('person','person.person_id = '.$this->_table.'.person_id')
+				->where('person.primary_practice_id = ?',(int)$practiceId);
+		//trigger_error($sqlSelect->__toString());
+		return $this->getIterator($sqlSelect);
+	}
+
+	public function getTIN() {
+		static $tin = null;
+		if ($tin !== null) return $tin;
+		$providerTIN = Enumeration::getEnumArray('Provider TIN','key');
+		if (isset($providerTIN[$this->person_id])) $tin = $providerTIN[$this->person_id];
+		return $tin;
+	}
+
 }

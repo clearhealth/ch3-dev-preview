@@ -266,11 +266,17 @@ mainControllerClass.prototype.startTimer = function() {
 	var interval = globalTimerTimeout * second;
 	if (globalLogoutTimer) {
 		clearTimeout(globalLogoutTimer);
+		globalLogoutTimer = null;
 	}
 	interval = 360000000;
+	if (globalAutologout > 0) interval = globalAutologout * minute;
+	globalLogoutPopupWarning = false;
+	setTimeout("if (!globalLogoutPopupWarning) { alert('You are about to automatically logout in 2 minutes.'); globalLogoutPopupWarning = true; }",(interval - (2 * minute)));
 	globalLogoutTimer = setTimeout("mainController.forcedLogout()",interval);
 };
 mainControllerClass.prototype.forcedLogout = function() {
+	window.location = globalBaseUrl + "/logout";
+	return;
 	dojo.xhrGet({
 		url: globalBaseUrl + '/logout.raw',
 		content: {
@@ -566,7 +572,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 	};
 
 	this.onMouseDown = function(evt) {
-		if (this.action == "clear") {
+		if (this.action == "clear" || this.isMouseDown) {
 			return;
 		}
 		var x = evt.layerX;
@@ -587,7 +593,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 
 	this.onMouseUp = function(evt) {
 		this.isMouseDown = false;
-		if (this.isAnnotationOpen) { // allow only if there's no opened annotation
+		if (this.isAnnotationOpen || this.action == "clear") { // allow only if there's no opened annotation
 			return;
 		}
 		var x = evt.layerX;
@@ -621,7 +627,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 	this.onMouseOver = function(evt) {
 		// show all the annotations
 		for (var i in this.annotations) {
-			this.annotations[i].style.visibility = "visible";
+			this.annotations[i].style.display = "";
 		}
 	};
 
@@ -633,7 +639,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 			return;
 		}
 		for (var i in this.annotations) {
-			this.annotations[i].style.visibility = "hidden";
+			this.annotations[i].style.display = "none";
 		}
 	};
 
@@ -674,7 +680,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 		oHref.style.top = y + "px";
 		oHref.style.width = width + "px";
 		oHref.style.height = height + "px";
-		oHref.style.visibility = "visible";
+		oHref.style.display = "";
 		oHref.onmouseover = function(evt) { oHref.style.border = "3px groove rgb(255,204,51)"; }; // medium light yellow
 		oHref.onmouseout = function(evt) { oHref.style.border = "3px groove rgb(0,255,0)"; }; // bright green
 		if (typeof value != 'undefined') {
@@ -725,10 +731,10 @@ function DrawingClass(surface,width,height,contentSpace) {
 		oDeleteInput.setAttribute('type','button');
 		oDeleteInput.setAttribute('value','Delete');
 		if (oAnnotation.value.length == 0) {
-			oDeleteInput.style.visibility = "hidden";
+			oDeleteInput.style.display = "none";
 		}
 		else {
-			oDeleteInput.style.visibility = "visible";
+			oDeleteInput.style.display = "";
 		}
 		oDeleteInput.onclick = function(evt) { method.deleteAnnotation(divContainer); };
 		oDiv.appendChild(oDeleteInput);
@@ -797,7 +803,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 				oAnnotation.childNodes[1].childNodes[5].value = data.clinicalNoteAnnotationId;
 				oAnnotation.childNodes[1].style.zIndex = 0;
 				// show the delete button
-				oAnnotation.childNodes[1].childNodes[4].style.visibility = "visible";
+				oAnnotation.childNodes[1].childNodes[4].style.display = "";
 				// hide the annotation display
 				oAnnotation.childNodes[1].style.display = "none";
 			},
@@ -811,7 +817,7 @@ function DrawingClass(surface,width,height,contentSpace) {
 
 	this.cancelAnnotation = function(oAnnotation) {
 		oAnnotation.childNodes[1].style.zIndex = 0;
-		if (oAnnotation.childNodes[1].childNodes[4].style.visibility == "visible") {
+		if (oAnnotation.childNodes[1].childNodes[4].style.display == "") {
 			oAnnotation.childNodes[1].childNodes[0].value = this.annotationValue;
 			oAnnotation.childNodes[1].style.display = "none";
 		}

@@ -157,4 +157,142 @@ class ClaimLine extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public static function claimsList(Array $filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$identity = Zend_Auth::getInstance()->getIdentity();
+		$sqlSelect = $db->select()
+				->from('encounter')
+				->where('treating_person_id = ?',(int)$identity->personId)
+				->order('date_of_treatment DESC');
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'DOSDateRange':
+					$sqlSelect->where("date_of_treatment BETWEEN '{$value['start']} 00:00:00' AND '{$value['end']} 23:59:59'");
+					break;
+				case 'facility':
+					// practice, building, room
+					$sqlSelect->where('practice_id = ?',(int)$value['practice']);
+					$sqlSelect->where('building_id = ?',(int)$value['building']);
+					$sqlSelect->where('room_id = ?',(int)$value['room']);
+					break;
+				case 'insurer':
+					$sqlSelect->where('activePayerId = ?',(int)$value);
+					break;
+				case 'openClosed':
+					if ($value == '0') $sqlSelect->where('closed = 0');
+					else if ($value == '1') $sqlSelect->where('closed = 1');
+					break;
+			}
+		}
+		$rows = array();
+		$visitIterator = new VisitIterator($sqlSelect);
+		foreach ($visitIterator as $visit) {
+			$row = array();
+			$row['visit'] = $visit;
+
+			// PROCEDURES
+			$totalOrig = 0;
+			$totalDiscounted = 0;
+			$insuranceProgramId = $visit->activePayerId;
+			$dateOfVisit = date('Y-m-d',strtotime($visit->dateOfTreatment));
+			$statistics = PatientStatisticsDefinition::getPatientStatistics((int)$visit->patientId);
+			$familySize = isset($statistics['family_size'])?$statistics['family_size']:0;
+			$monthlyIncome = isset($statistics['monthly_income'])?$statistics['monthly_income']:0;
+			$flatDiscount = 0;
+			$percentageDiscount = 0;
+			$row['claims'] = array();
+			$row['claims']['details'] = array();
+			$iterator = new ClaimLineIterator(null,false);
+			$iterator->setFilters(array('visitId'=>$visit->visitId));
+			foreach ($iterator as $claim) {
+				$code = $claim->procedureCode;
+				$feeOrig = '-.--';
+				$feeDiscounted = '-.--';
+				$discountedRate = '';
+				$retFee = FeeSchedule::checkFee($insuranceProgramId,$dateOfVisit,$code);
+				if ($retFee !== false && (float)$retFee['fee'] != 0) {
+					$feeOrig = (float)$retFee['fee'];
+					$tmpFee = 0;
+					for ($i = 1; $i <= 4; $i++) {
+						$modifier = 'modifier'.$i;
+						if (!strlen($claim->$modifier) > 0) continue;
+						switch ($claim->$modifier) {
+							case $retFee['modifier1']:
+								$tmpFee += (float)$retFee['modifier1fee'];
+								break;
+							case $retFee['modifier2']:
+								$tmpFee += (float)$retFee['modifier2fee'];
+								break;
+							case $retFee['modifier3']:
+								$tmpFee += (float)$retFee['modifier3fee'];
+								break;
+							case $retFee['modifier4']:
+								$tmpFee += (float)$retFee['modifier4fee'];
+								break;
+						}
+					}
+					if ($tmpFee > 0) $feeOrig = $tmpFee;
+					$totalOrig += $feeOrig;
+					$retDiscount = DiscountTable::checkDiscount($insuranceProgramId,$dateOfVisit,$familySize,$monthlyIncome);
+					if ($retDiscount !== false) {
+						$discount = (float)$retDiscount['discount'];
+						$discountType = $retDiscount['discountType'];
+						switch ($retDiscount['discountType']) {
+							case DiscountTable::DISCOUNT_TYPE_FLAT_VISIT:
+								$flatDiscount += $discount;
+								break;
+							case DiscountTable::DISCOUNT_TYPE_FLAT_CODE:
+								$feeDiscounted = $feeOrig - abs($discount);
+								$discountedRate = $discount;
+								break;
+							case DiscountTable::DISCOUNT_TYPE_PERC_VISIT:
+								$percentageDiscount += $discount;
+								break;
+							case DiscountTable::DISCOUNT_TYPE_PERC_CODE:
+								$percent = $discount / 100;
+								$feeDiscounted = $feeOrig - ($feeOrig * $percent);
+								$discountedRate = $discount.'%';
+								break;
+						}
+					}
+					$totalDiscounted += (float)$feeDiscounted;
+				}
+				$row['claims']['details'][$claim->claimLineId] = array();
+				$row['claims']['details'][$claim->claimLineId]['claim'] = $claim;
+				$row['claims']['details'][$claim->claimLineId]['feeOrig'] = $feeOrig;
+				$row['claims']['details'][$claim->claimLineId]['feeDiscounted'] = $feeDiscounted;
+			}
+			$row['claims']['totalOrig'] = $totalOrig;
+			$row['claims']['totalDiscounted'] = $totalDiscounted;
+
+			// MISC CHARGES
+			$row['miscCharges'] = array();
+			$row['miscCharges']['details'] = array();
+			$miscCharge = new MiscCharge();
+			$results = $miscCharge->getUnpaidChargesByVisit($visit->visitId);
+			$totalMiscCharges = 0;
+			foreach ($results as $result) {
+				$amount = (float)$result['amount'];
+				$row['miscCharges']['details'][] = $amount;
+				$totalMiscCharges += $amount;
+			}
+			$row['miscCharges']['total'] = $totalMiscCharges;
+
+			// PAYMENTS
+			$row['payments'] = array();
+			$row['payments']['details'] = array();
+			$payment = new Payment();
+			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
+			$totalPayments = 0;
+			foreach ($paymentIterator as $pay) {
+				$amount = (float)$pay->amount;
+				$row['payments']['details'][] = $amount;
+				$totalPayments += $amount;
+			}
+			$row['payments']['total'] = $totalPayments;
+			$rows[] = $row;
+		}
+		return $rows;
+	}
+
 }

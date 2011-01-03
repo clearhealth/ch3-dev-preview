@@ -76,10 +76,13 @@ function populateDetails(data,medPopulate) {
 	checkSchedule(data.schedule);
 
 	// first item in the dose contains quantity
+	if (data.dose == undefined) data.dose = "";
 	var origDose = data.dose;
 	var dose = data.dose.split(" ");
 	var medQty = dose[0];
-	data.dose = dose[1];
+	if (dose.length == 2) {
+		data.dose = dose[1];
+	}
 	var optionsDose = data.dose.split(',');
 	var doseOption = optionsDose[0];
 	optionsDose[0] = data.strength + data.unit + ' ' + optionsDose[0];

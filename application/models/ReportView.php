@@ -47,6 +47,7 @@ class ReportView extends WebVista_Model_ORM {
 	}
 
 	public function persist() {
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
 		$db = Zend_Registry::get('dbAdapter');
 		$reportViewId = (int)$this->reportViewId;
 		$data = $this->toArray();
@@ -60,7 +61,7 @@ class ReportView extends WebVista_Model_ORM {
 			$data['viewOrder'] = $this->_getNextViewOrder();
 			$ret = $db->insert($this->_table,$data);
 		}
-		return $ret;
+		return $this;
 	}
 
 	protected function _getNextViewOrder() {
@@ -251,6 +252,7 @@ class ReportView extends WebVista_Model_ORM {
 		$results['xml'] = 'XML export';
 		$results['pdf'] = 'PDF';
 		$results['graph'] = 'Graph';
+		//$results['pqri'] = 'PQRI';
 		return $results;
 	}
 

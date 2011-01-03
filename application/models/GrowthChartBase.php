@@ -52,6 +52,8 @@ class GrowthChartBase extends WebVista_Model_ORM {
 		)
 	);
 
+	public static $_vitalSigns = array(); // holds ORM vital sign values
+
 	public function getIteratorByGender($gender=null) {
 		if ($gender === null) {
 			$gender = $this->gender;
@@ -136,7 +138,9 @@ class GrowthChartBase extends WebVista_Model_ORM {
 		$data = array();
 		$dates = array();
 		$results = VitalSignGroup::getVitalsByFilters($filters);
+		self::$_vitalSigns = array();
 		foreach ($results as $result) {
+			self::$_vitalSigns[] = $result;
 			// get the age the date taken
 			if (!isset($dates[$result['vitalSignGroupId']])) {
 				$v = $result['vitalSignGroupId'];

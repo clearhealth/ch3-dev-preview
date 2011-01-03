@@ -24,7 +24,7 @@
 	<div class="formRow" style="padding-top:4px;">
         <dt><label for="calendar-date-filter"><?=__("Date")?></label></dt>
 	<?if(!isset($this->data['dateFilter'])):
-		$dateFilterValue = date('Y-m-d',strtotime('-1 day'));
+		$dateFilterValue = date('Y-m-d',strtotime('today'));
 	else:
 		$dateFilterValue = date('Y-m-d',strtotime($this->data['dateFilter']));
 	endif;?>

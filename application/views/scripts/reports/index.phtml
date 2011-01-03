@@ -61,6 +61,11 @@ function reportsSearchResults(viewId) {
 	if (viewId == null) {
 		viewId = reportsViewsGrid.getSelectedRowId();
 	}
+	reportsResultsToolbar.forEachItem(function(itemId){
+		var value = reportsResultsToolbar.getValue(itemId);
+		if (value == null || itemId.substr(0,7) != "filter_") return;
+		filterValues[itemId] = value;
+	});
 	var buildResultsIn = reportsViewsGrid.cells(viewId,indexRVShowResultsIn).getValue();
 	if (buildResultsIn == "grid") {
 		return reportsGetResultsGrid(viewId);
@@ -79,11 +84,6 @@ function reportsSearchResults(viewId) {
 }
 
 function reportsGetResultsGrid(viewId) {
-	reportsResultsToolbar.forEachItem(function(itemId){
-		var value = reportsResultsToolbar.getValue(itemId);
-		if (value == null || itemId.substr(0,7) != "filter_") return;
-		filterValues[itemId] = value;
-	});
 	globVars.executed = true;
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/reports.raw/get-results?viewId="+viewId,
@@ -113,7 +113,7 @@ function reportsViewsRun(rowId) {
 			reportsResultsContainer.innerHTML = "<?=__('This view generates a flatfile for download, click the download button to being downloading the results file')?>";
 			break;
 		case "xml":
-			reportsResultsContainer.innerHTML = "<?=__('This view generates a XML for download, click the download button to being downloading the results file')?>";
+			reportsResultsContainer.innerHTML = "<?=__('This view generates an XML for download, click the download button to being downloading the results file')?>";
 			break;
 		case "pdf":
 			reportsResultsContainer.innerHTML = "This view generates a PDF for download, click the download button to being downloading the results file";
@@ -122,6 +122,9 @@ function reportsViewsRun(rowId) {
 			reportsResultsContainer.innerHTML = "This view generates a Graph. Not yet implemented";
 			reportsResultsToolbar.hideItem("downloadQueries");
 			reportsResultsToolbar.hideItem("executeQueries");
+			break;
+		case "pqri":
+			reportsResultsContainer.innerHTML = "<?=__('This view generates a PQRI 2009 Registry XML for download, click the download button to being downloading the results file')?>";
 			break;
 		default:
 			reportsResultsToolbar.showItem("executeQueries");
@@ -266,6 +269,9 @@ function reportsGetResults(baseId) {
 					case "<?=ReportBase::FILTER_TYPE_LIST_PRACTICE?>":
 					case "<?=ReportBase::FILTER_TYPE_LIST_PROVIDER?>":
 					case "<?=ReportBase::FILTER_TYPE_LIST_ROOM?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_BUILDING_PREF?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_ROOM_PREF?>":
+					case "<?=ReportBase::FILTER_TYPE_LIST_PROVIDER_PREF?>":
 						var opts = [];
 						for (var j in filter.lists) {
 							var list = filter.lists[j];

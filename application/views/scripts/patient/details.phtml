@@ -116,8 +116,10 @@ function pdRemove(id,type,callback) {
 			</div>
 			<br class="formRowDivider" />
 			<div class="formRow">
-				<div style="float:left;"><dt><label for="<?=$this->form->formPerson->active->getId()?>" class="optional">&nbsp;</label></dt>
-					<?=__('Active')?> <input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> /></div>
+				<div style="float:left;">
+					<dt><label for="<?=$this->form->formPerson->active->getId()?>" class="optional">&nbsp;</label></dt>
+					<?=__('Active')?> <input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> style="width:30px;" />
+				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->confidentiality->renderLabel()?>
 					<?=$this->form->confidentialityInput('FormSelect',array('options'=>Enumeration::getEnumArray('Confidentiality','enumerationId'),'style'=>'width:120px;'))?>
@@ -481,7 +483,7 @@ function pdRemove(id,type,callback) {
 		var pdNotesGrid = new dhtmlXGridObject("pdNotesGridId");
 		pdNotesGrid.setImagePath("<?=$this->baseUrl?>/img/");
 		pdNotesGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>");
-		pdNotesGrid.setInitWidths("60,120,120,120,*,50");
+		pdNotesGrid.setInitWidths("45,120,80,80,*,35");
 		pdNotesGrid.setColTypes("coro,ed,ro,coro,txt,coro");
 		pdNotesGrid.setSkin("xp");
 		pdNotesGrid.attachEvent("onEditCell",pdNotesGridOnCellEdited);
@@ -495,13 +497,11 @@ function pdRemove(id,type,callback) {
 		for (var i = 1; i <= 5; i++) {
 			pdNotesGrid.getCombo(0).put(i,i);
 		}
-		pdNotesGrid.getCombo(5).put("<?=__('No')?>","<?=__('No')?>");
-		pdNotesGrid.getCombo(5).put("<?=__('Yes')?>","<?=__('Yes')?>");
+		pdNotesGrid.getCombo(5).put("1","<?=__('No')?>");
+		pdNotesGrid.getCombo(5).put("0","<?=__('Yes')?>");
 
-		var pdReasons = new Array();
 		<?foreach ($this->reasons as $id=>$reason):?>
-		pdReasons[pdReasons.length] = {id:"<?=$id?>",data:"<?=$reason?>"};
-		pdNotesGrid.getCombo(3).put("<?=$reason?>","<?=$reason?>");
+		pdNotesGrid.getCombo(3).put("<?=$id?>","<?=$reason?>");
 		<?endforeach;?>
 		function pdNotesGridReload() {
 			pdNotesGrid.clearAll();
@@ -558,25 +558,6 @@ function pdRemove(id,type,callback) {
 
 		function pdNotesGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 			if (stage == 2 && newValue != oldValue) {
-				switch (cellIndex) {
-					case 3: // reason
-						for (var i in pdReasons) {
-							var reason = pdReasons[i];
-							if (reason.data == newValue) {
-								newValue = reason.id;
-								break;
-							}
-						}
-						break;
-					case 5: // active
-						if (newValue == "<?=__('Yes')?>") {
-							newValue = 0;
-						}
-						else {
-							newValue = 1;
-						}
-						break;
-				}
 				pdSingleUpdate(rowId,pdNotesColFields[cellIndex],newValue,"note",pdNotesGridReload);
 			}
 			return true;
@@ -622,7 +603,7 @@ function pdRemove(id,type,callback) {
 		var params = new Array();
 		params.push("id="+id);
 		params.push("patientId=<?=$this->form->personId->getValue()?>");
-		globalCreateWindow("winEditInsurerId",params,"<?=$this->baseUrl?>/patient.raw/edit-insurer",winLabel+" <?=__('Insurer')?>",350,400);
+		globalCreateWindow("winEditInsurerId",params,"<?=$this->baseUrl?>/patient.raw/edit-insurer",winLabel+" <?=__('Insurer')?>",500,600);
 	}
 
 	function pdInsurersMenuOnClicked(menuItemId,type) {

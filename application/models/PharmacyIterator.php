@@ -27,19 +27,16 @@ class PharmacyIterator extends WebVista_Model_ORMIterator implements Iterator {
     public function __construct($dbSelect = null) {
 	$db = Zend_Registry::get('dbAdapter');
         $dbSelect = $db->select()
-		->from(array('zipcodeGeo1' => 'zipcodeGeo'),null)
-		->join(array('zipcodeGeo2' => 'zipcodeGeo'),null,null)
-		->join('pharmacies',
-			'pharmacies.Zip = zipcodeGeo2.zip',
-			array('pharmacies.pharmacyId',
+		->from('pharmacies', array('pharmacies.pharmacyId',
 				'pharmacies.StoreName',
-				'pharmacies.AddressLine1', 
+				'pharmacies.AddressLine1',
 				'pharmacies.City',
-				'pharmacies.ServiceLevel')
-		)
+				'pharmacies.ServiceLevel'))
+		->join(array('zipcodeGeo2' => 'zipcodeGeo'),"SUBSTRING(pharmacies.Zip,1,5) = zipcodeGeo2.zip",null)
 		->joinLeft('patient','patient.defaultPharmacyId = pharmacies.pharmacyId')
 		->where('pharmacies.ActiveStartTime <= NOW()')
 		->where('DATE_ADD(pharmacies.ActiveEndTime, INTERVAL 30 DAY) >= NOW()')
+		->order('pharmacies.StoreName')
 		->group('pharmacies.pharmacyId');
         parent::__construct("Pharmacy",$dbSelect);
     }
@@ -50,14 +47,15 @@ class PharmacyIterator extends WebVista_Model_ORMIterator implements Iterator {
 					$this->_dbSelect->where('pharmacies.preferred = 1');
 					break;
 				case 'distance':
+					$this->_dbSelect->join(array('zipcodeGeo1' => 'zipcodeGeo'),null);
 					$this->_dbSelect->where('ROUND( SQRT( POW( ( 69.1 * ( zipcodeGeo1.geo_lat - zipcodeGeo2.geo_lat ) ) , 2 ) + POW( ( 53 * ( zipcodeGeo1.geo_lon - zipcodeGeo2.geo_lon ) ) , 2 ) ) , 1 ) <=' . (int)$value); 
 					break;
 				case 'zip':
-					$this->_dbSelect->where("zipcodeGeo1.zip = '" . (int)$value . "'");
+					$this->_dbSelect->where("zipcodeGeo1.zip = '" . substr((int)$value,0,5) . "'");
 					break;
 				break;
 			}
 		}
-		//echo $this->_dbSelect->__toString();exit;
+		//trigger_error($this->_dbSelect->__toString(),E_USER_NOTICE);
 	}
 }

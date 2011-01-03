@@ -26,61 +26,37 @@ class VisitSelectController extends WebVista_Controller_Action {
 
 	public function indexAction()  {
 		$personId = (int)$this->_getParam('personId');
-		$this->view->personId = $personId;
 		$visitId = (int)$this->_getParam('visitId');
-		$this->view->visitId = $visitId;
 
 		$identity = Zend_Auth::getInstance()->getIdentity();
-		$currentUserPersonId = (int)$identity->personId;
-
-		$userId = $identity->userId;
-		$user = new User();
-		$user->userId = $userId;
-		$user->populate();
-		$defaultLocationId = 0;
-		if (strlen($user->preferences) > 0) {
-			$xmlPreferences = new SimpleXMLElement($user->preferences);
-			$defaultLocationId = (int)$xmlPreferences->currentLocation;
-		}
-		if (!$defaultLocationId > 0) {
-			$defaultLocationId = (int)$identity->default_location_id;
-		}
-		$defaultPracticeId = 0;
-		$defaultBuildingId = (int)$user->defaultBuildingId;
-		if ($defaultLocationId > 0) {
-			$room = new Room();
-			$room->roomId = $defaultLocationId;
-			$room->populate();
-			$defaultBuildingId = $room->building->buildingId;
-			$defaultPracticeId = $room->building->practice->practiceId;
-		}
-		$this->view->defaultPracticeId = $defaultPracticeId;
-		$this->view->defaultBuildingId = $defaultBuildingId;
-		$this->view->currentUserPersonId = $currentUserPersonId;
-		$this->view->defaultLocationId = $defaultLocationId;
-		$this->view->defaultDateOfTreatment = date('Y-m-d');
-
-		$facilityIterator = new FacilityIterator();
-		$providerIterator = new ProviderIterator();
-		$this->view->facilityIterator = $facilityIterator;
-		$this->view->providerIterator = $providerIterator;
-
-		$this->view->visitDetails = $this->_getVisitDetails();
+		$this->view->providerId = (int)$identity->personId;
+		$this->view->personId = $personId;
 
 		$insuredRelationship = new InsuredRelationship();
 		$insuredRelationship->personId = $personId;
-		$this->view->insurancePrograms = $insuredRelationship->getProgramList();
+		$insurancePrograms = array('0'=>'');
+		foreach ($insuredRelationship->getProgramList() as $key=>$value) {
+			$insurancePrograms[$key] = $value;
+		}
+		$this->view->insurancePrograms = $insurancePrograms;
 
-		$this->view->currentActivePayer = $insuredRelationship->getDefaultActivePayer();
-
-		$visit = null;
-		if ($visitId > 0) {
-			$visit = new Visit();
-			$visit->visitId = $visitId;
-			$visit->populate();
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		if (!$visit->populate()) {
+			$visit->visitId = 0;
+			$visit->dateOfTreatment = date('Y-m-d');
 		}
 		$this->view->visit = $visit;
 
+		$this->view->room = Building::getBuildingDefaultLocation($this->view->providerId,(int)$identity->default_location_id);
+
+		$facilityIterator = new FacilityIterator();
+		$this->view->facilityIterator = $facilityIterator;
+		$facilityIterator->setFilter(array('Practice'));
+		$this->view->practices = $facilityIterator->toArray('practiceId','name');
+
+		$providerIterator = new ProviderIterator();
+		$this->view->providers = $providerIterator->toArray('personId','displayName');
 		$this->render();
 	}
 
@@ -227,7 +203,8 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$this->view->sections = $sections;
 		$this->view->reactions = $reactions;
 		$this->view->routes = $routes;
-
+		$config = Zend_Registry::get('config');
+		$this->view->useImmunizationInventory = ((string)$config->useImmunizationInventory == 'true')?true:false;
 		$this->render();
 	}
 
@@ -285,7 +262,25 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
-	function listVisitsAction() {
+	protected function _generateVisitRowData(Visit $visit) {
+		$row = array();
+		$row['id'] = $visit->visitId;
+		$row['data'][] = date('Y-m-d',strtotime($visit->dateOfTreatment));
+		$row['data'][] = $visit->locationName;
+		$row['data'][] = $visit->providerDisplayName;
+		$row['data'][] = $visit->insuranceProgram;
+		// hidden columns
+		$row['data'][] = (int)$visit->practiceId;
+		$row['data'][] = (int)$visit->buildingId;
+		$row['data'][] = (int)$visit->roomId;
+		$row['data'][] = (int)$visit->treatingPersonId;
+		$row['data'][] = (int)$visit->activePayerId;
+		$row['data'][] = (int)$visit->closed;
+		$row['data'][] = (int)$visit->void;
+		return $row;
+	}
+
+	public function listVisitsAction() {
 		$personId = (int)$this->_getParam('personId');
 		if (!$personId > 0) $this->_helper->autoCompleteDojo(array());
 		$visitIterator = new VisitIterator();
@@ -294,24 +289,14 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$json->suppressExit = true;
 		$rows = array();
 		foreach ($visitIterator as $visit) {
-			$row = array();
-			$row['id'] = $visit->visitId;
-			$row['data'][] = $visit->dateOfTreatment;
-			$row['data'][] = $visit->locationName;
-			$row['data'][] = $visit->providerDisplayName;
-			$row['data'][] = $visit->insuranceProgram;
-			$row['userdata']['locationId'] = $visit->practiceId.':'.$visit->buildingId.':'.$visit->roomId;
-			$row['userdata']['providerId'] = $visit->treatingPersonId;
-			$row['userdata']['activePayerId'] = $visit->activePayerId;
-			$rows[] = $row;
+			$rows[] = $this->_generateVisitRowData($visit);
 		}
 		$json->direct(array('rows' => $rows),true);
         }
 
-	function processAddVisitAction() {
+	public function processSaveVisitAction() {
 		$visitParams = $this->_getParam('visit');
-		$visitParams['created_by_user_id'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
-		$visitParams['date_of_treatment'] = date('Y-m-d');
+		$visitParams['createdByUserId'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$visitParams['timestamp'] = date('Y-m-d h:i:s');
 		$visit = new Visit();
 		$visitId = (int)$visitParams['visitId'];
@@ -321,75 +306,47 @@ class VisitSelectController extends WebVista_Controller_Action {
 		}
 		$visit->populateWithArray($visitParams);
 		$visit->persist();
-		$msg = __("Visit added successfully.");
-		$data = array();
-		$data['msg'] = $msg;
-		$data['visitId'] = $visit->encounter_id;
+		$data = $this->_generateVisitRowData($visit);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
 	}
 
-	protected function _getVisitDetails() {
-		$ret = array();
-		$ret[] = array('id'=>'visit_type','text'=>__('Visit Type'));
-		$ret[] = array('id'=>'diagnosis','text'=>__('Diagnosis'));
-		$ret[] = array('id'=>'procedures','text'=>__('Procedures'));
-		$ret[] = array('id'=>'vitals','text'=>__('Vitals'));
-		$ret[] = array('id'=>'immunizations','text'=>__('Immunizations'));
-		$ret[] = array('id'=>'skin_tests','text'=>__('Skin Tests'));
-		$ret[] = array('id'=>'patient_education','text'=>__('Patient Education'));
-		$ret[] = array('id'=>'health_factors','text'=>__('Health Factors'));
-		$ret[] = array('id'=>'exams','text'=>__('Exams'));
-		return $ret;
-	}
-
-	public function processCloseAction() {
-		$visitId = (int)$this->_getParam('visitId');
-		$data = false;
-		if ($visitId > 0) {
-			$visit = new Visit();
-			$visit->visitId = $visitId;
-			$visit->populate();
-			$visit->closed = 1;
+	protected function _processSetVisit($closed=null,$void=null) {
+		$visitParams = $this->_getParam('visit');
+		$visitParams['lastChangeUserId'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		//$visitParams['timestamp'] = date('Y-m-d h:i:s');
+		if ($closed !== null) {
+			$visitParams['closed'] = (int)$closed;
+		}
+		$visit = new Visit();
+		$visit->visitId = (int)$visitParams['visitId'];
+		$data = 'Visit ID '.$visit->visitId.' is invalid';
+		if ($visit->populate()) {
+			if ($void !== null) {
+				$visit->void = (int)$void;
+			}
+			else {
+				$visit->populateWithArray($visitParams);
+			}
 			$visit->persist();
-			$data = true;
+			$data = $this->_generateVisitRowData($visit);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
 	}
 
-	public function processVoidAction() {
-		$visitId = (int)$this->_getParam('visitId');
-		$data = false;
-		if ($visitId > 0) {
-			$visit = new Visit();
-			$visit->visitId = $visitId;
-			$visit->populate();
-			$visit->void = 1;
-			$visit->persist();
-			$data = true;
-		}
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
-		$json->direct($data);
+	public function processSaveAndCloseVisitAction() {
+		$this->_processSetVisit(1);
 	}
 
-	public function processReopenAction() {
-		$visitId = (int)$this->_getParam('visitId');
-		$data = false;
-		if ($visitId > 0) {
-			$visit = new Visit();
-			$visit->visitId = $visitId;
-			$visit->populate();
-			$visit->closed = 0;
-			$visit->persist();
-			$data = true;
-		}
-		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
-		$json->suppressExit = true;
-		$json->direct($data);
+	public function processSaveAndReopenVisitAction() {
+		$this->_processSetVisit(0);
+	}
+
+	public function processVoidVisitAction() {
+		$this->_processSetVisit(null,1);
 	}
 
 	public function visitDetailsAction() {

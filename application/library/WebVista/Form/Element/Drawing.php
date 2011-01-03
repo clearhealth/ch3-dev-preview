@@ -32,13 +32,6 @@ class Zend_Form_Element_Drawing extends Zend_Form_Element_Xhtml {
 
 	var $helper = null;
 
-	public function init() {
-		parent::init();
-
-		// override the print onclick attribute
-		$this->getView()->elementPrint->setAttrib('onclick','printImageDrawing()');
-	}
-
 	public function render(Zend_View_Interface $view = null) {
 		// overtake $view arguments
 		$currentView = $this->getView();
@@ -59,20 +52,27 @@ class Zend_Form_Element_Drawing extends Zend_Form_Element_Xhtml {
 		foreach ($annotationIterator as $annotation) {
 			$setDefaultAnnotations .= PHP_EOL . "annotations.push({x:{$annotation->xAxis},y:{$annotation->yAxis},value:(<r><![CDATA[{$annotation->annotation}]]></r>).toString(),valueId:{$annotation->clinicalNoteAnnotationId}});";
 		}
-		$setDefaultAnnotations .= PHP_EOL . "imageDrawing.setDefaultAnnotations(annotations);";
-
-		$attachmentReferenceId = preg_replace('[^a-zA-Z0-9-]','//',$this->getAttrib('src'));
+		$setDefaultAnnotations .= PHP_EOL . "{$name}ImageDrawing.setDefaultAnnotations(annotations);";
 
 		$attachment = new Attachment();
-		$attachment->attachmentReferenceId = $attachmentReferenceId;
-		$attachment->populateWithAttachmentReferenceId();
+		$md5sum = preg_replace('[^a-zA-Z0-9-]','//',$this->getAttrib('md5'));
+		if (strlen($md5sum) > 0) {
+			$attachment->md5sum = $md5sum;
+			$attachment->populateWithMd5sum();
+		}
+		else {
+			$attachmentReferenceId = preg_replace('[^a-zA-Z0-9-]','//',$this->getAttrib('src'));
+
+			$attachment->attachmentReferenceId = $attachmentReferenceId;
+			$attachment->populateWithAttachmentReferenceId();
+		}
 		$imageUrl = "{$currentView->baseUrl}/attachments.raw/view-attachment?attachmentId={$attachment->attachmentId}";
 
 		$setDefaultLines = "var lines = [];";
 		if ($value) {
 			$setDefaultLines .= PHP_EOL . "lines = dojo.fromJson('{$value}');";
 		}
-		$setDefaultLines .= PHP_EOL . "imageDrawing.setDefaultLines(lines);";
+		$setDefaultLines .= PHP_EOL . "{$name}ImageDrawing.setDefaultLines(lines);";
 
 		/* NOTE: 
 		 * <div id="{$name}ContentSpace" style="position:relative;z-index:9999;"></div>
@@ -84,9 +84,10 @@ class Zend_Form_Element_Drawing extends Zend_Form_Element_Xhtml {
 		$docType = $currentView->doctype();
 		$str =  <<<EOL
 
-<input type="button" value="Draw" onClick="imageDrawing.setAction('draw')" />
-<input type="button" value="Annotate" onClick="imageDrawing.setAction('annotate')" />
-<input type="button" value="Clear" onClick="imageDrawing.setAction('clear')" />
+<input type="hidden" id="{$name}PrintOnClick" value="{$name}PrintImageDrawing();" />
+<input type="button" value="Draw" onClick="{$name}ImageDrawing.setAction('draw')" />
+<input type="button" value="Annotate" onClick="{$name}ImageDrawing.setAction('annotate')" />
+<input type="button" value="Clear" onClick="{$name}ImageDrawing.setAction('clear')" />
 <div id="{$name}ContentSpace" style="position:relative;z-index:9999;"></div>
 <div id="{$name}Surface" style="position:relative;width:100%;height:100%;border: 1px solid #000;"></div>
 
@@ -96,24 +97,24 @@ class Zend_Form_Element_Drawing extends Zend_Form_Element_Xhtml {
 
 var surfaceHeight = 1000;
 var surfaceWidth = 1650;
-var imageDrawing = new DrawingClass("{$name}Surface",surfaceWidth,surfaceHeight,"{$name}ContentSpace");
+var {$name}ImageDrawing = new DrawingClass("{$name}Surface",surfaceWidth,surfaceHeight,"{$name}ContentSpace");
 {$setDefaultLines}
 {$setDefaultAnnotations}
-imageDrawing.loadImage('{$imageUrl}');
-imageDrawing.setEditURL('{$currentView->baseUrl}/clinical-notes.raw/process-edit-annotation');
-imageDrawing.setDeleteURL('{$currentView->baseUrl}/clinical-notes.raw/process-delete-annotation');
-imageDrawing.setClinicalNoteId('{$clinicalNoteId}');
+{$name}ImageDrawing.loadImage('{$imageUrl}');
+{$name}ImageDrawing.setEditURL('{$currentView->baseUrl}/clinical-notes.raw/process-edit-annotation');
+{$name}ImageDrawing.setDeleteURL('{$currentView->baseUrl}/clinical-notes.raw/process-delete-annotation');
+{$name}ImageDrawing.setClinicalNoteId('{$clinicalNoteId}');
 
-function transcriptionNotesFormSubmit() {
+globalNoteTemplateCallbacks.push(function(){
 	var obj = dojo.byId("{$id}");
 	if (obj) {
-		var lines = imageDrawing.getLines();
+		var lines = {$name}ImageDrawing.getLines();
 		obj.value = lines ;
 	}
 	return true;
-}
+});
 
-function printImageDrawing() {
+function {$name}PrintImageDrawing() {
 	var printHtml = (<r><![CDATA[
 <?xml version="1.0" encoding="UTF-8" ?>
 {$docType}
@@ -127,10 +128,10 @@ function printImageDrawing() {
 	printHtml += dojo.byId('mainToolbar').innerHTML;
 
 	// transform annotation boxes to printer friendly
-	imageDrawing.printerFriendlyAnnotations();
+	{$name}ImageDrawing.printerFriendlyAnnotations();
 	printHtml += dojo.byId('cntemplateform').innerHTML;
 	// revert printer friendly annotation boxes after iframe assignment
-	imageDrawing.revertPrinterFriendlyAnnotations();
+	{$name}ImageDrawing.revertPrinterFriendlyAnnotations();
 
 	printHtml += "</body></html>";
 
@@ -157,7 +158,7 @@ function printImageDrawing() {
 	doc.close();
 
 	// revert printer friendly annotation boxes after iframe assignment
-	//imageDrawing.revertPrinterFriendlyAnnotations();
+	//{$name}ImageDrawing.revertPrinterFriendlyAnnotations();
 
 	dojo.byId('iframeprint').contentWindow.focus();
 	dojo.byId('iframeprint').contentWindow.print();

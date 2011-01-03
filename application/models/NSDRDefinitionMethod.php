@@ -46,6 +46,28 @@ class NSDRDefinitionMethod extends WebVista_Model_ORM {
 		return $this->populateBy('uuid',$this->uuid);
 	}
 
+	public function persist() {
+		$db = Zend_Registry::get('dbAdapter');
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
+		$data = $this->toArray();
+		if (!strlen($data['uuid']) > 0) {
+			$this->uuid = NSDR::create_guid();
+			$data['uuid'] = $this->uuid;
+			$db->insert($this->_table,$data);
+		}
+		else {
+			$db->update($this->_table,$data,'uuid = '.$db->quote($data['uuid']));
+		}
+		if ($this->shouldAudit()) {
+			$audit = array();
+			$audit['objectClass'] = get_class($this);
+			$audit['objectId'] = $data['uuid'];
+			$audit['auditValues'] = $data;
+			Audit::persistManualAuditArray($audit);
+		}
+		return $this;
+	}
+
 	public function populateByNamespace($namespace) {
 		return $this->populateBy('namespace',$namespace);
 	}

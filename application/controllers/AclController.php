@@ -63,8 +63,9 @@ class AclController extends WebVista_Controller_Action {
 
 	public function listAction() {
 		$templateId = (int)$this->_getParam('templateId');
+		$refresh = (int)$this->_getParam('refresh');
 		$rows = array();
-		if ($templateId > 0) {
+		if ($templateId > 0 && !$refresh > 0) {
 			$permissionTemplate = new PermissionTemplate();
 			$permissionTemplate->permissionTemplateId = $templateId;
 			if ($templateId > 0 && $permissionTemplate->populate()) {
@@ -125,13 +126,6 @@ class AclController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
-	}
-
-	public function toolbarXmlAction() {
-		$this->view->xmlHeader = '<?xml version=\'1.0\' encoding=\'iso-8859-1\'?>' . "\n";
-		$contentType = (stristr($_SERVER["HTTP_ACCEPT"],"application/xhtml+xml")) ? "application/xhtml+xml" : "text/xml";
-		header("Content-type: ". $contentType);
-		$this->render();
 	}
 
 	public function reloadPermissionsAction() {
@@ -195,8 +189,9 @@ class AclController extends WebVista_Controller_Action {
 			if ($value['value'] > 0) {
 				$checked = 'checked="checked"';
 			}
-			$ret[] = '<input type="hidden" name="acl['.$resourceName.'_'.$value['name'].'_'.$name.']" id="'.$resourceName.'_'.$value['name'].'_'.$name.'" value="'.$value['value'].'" />
-				<input type="checkbox" name="'.$name.'" value="'.$resourceName.'_'.$value['name'].'_'.$name.'" onClick="toggleItem(this)" '.$checked.' /> '.$value['prettyName'];
+			$id = $resourceName.'_'.$value['name'].'_'.$name;
+			$ret[] = '<input type="hidden" name="acl['.$id.']" id="'.$id.'" value="'.$value['value'].'" />
+				<input type="checkbox" id="chk_'.$id.'" name="'.$name.'" value="'.$id.'" onClick="toggleItem(this)" '.$checked.' /> '.$value['prettyName'];
 		}
 		return $ret;
 	}

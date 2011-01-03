@@ -32,6 +32,7 @@ class AttachmentsController extends WebVista_Controller_Action {
 	public function addAttachmentsAction() {
 		$attachmentReferenceId = preg_replace('[^a-zA-Z0-9-]','//',$this->_getParam('attachmentReferenceId'));
 		$this->view->attachmentReferenceId = $attachmentReferenceId;
+		$this->view->callback = $this->_getParam('callback','');
 		$this->render();
 	}
 

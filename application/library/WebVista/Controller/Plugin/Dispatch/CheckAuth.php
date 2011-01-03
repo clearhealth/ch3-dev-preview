@@ -50,6 +50,14 @@ class WebVista_Controller_Plugin_Dispatch_CheckAuth extends Zend_Controller_Plug
 		}
 		if ($auth->hasIdentity()) {
 			$permissionTemplateId = $auth->getIdentity()->permissionTemplateId;
+			if (	file_exists('/tmp/emergency') 
+				&& $controllerName != 'admin-persons' 
+				&& PermissionTemplate::hasAccess($permissionTemplateId,'emergency-access','allow-emergency-access')
+			) {
+					if (!($controllerName == "emergency-access" && $actionName == 'index')) {
+						return true;
+					}
+			}
 			if ($permissionTemplateId != 'superadmin' && !PermissionTemplate::hasAccess($permissionTemplateId,$controllerName,$actionName)) {
 				$error = 'Access denied. '.$controllerName.'/'.$actionName.'. ';
 				$error .= 'Please <a href="'.$request->getBaseUrl().'/logout" title="Login">Login</a>.';

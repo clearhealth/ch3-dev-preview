@@ -32,6 +32,7 @@ class ClinicalNoteTemplate extends WebVista_Model_ORM {
 	protected $_cascadePersist = false;
 
 	public function persist() {
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
 		$db = Zend_Registry::get('dbAdapter');
 		$clinicalNoteTemplateId = (int)$this->clinicalNoteTemplateId;
 		$data = $this->toArray();
@@ -43,7 +44,7 @@ class ClinicalNoteTemplate extends WebVista_Model_ORM {
 			$data['clinicalNoteTemplateId'] = $this->clinicalNoteTemplateId;
 			$ret = $db->insert($this->_table,$data);
 		}
-		return $ret;
+		return $this;
 	}
 
 }

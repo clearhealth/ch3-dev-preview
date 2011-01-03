@@ -42,17 +42,7 @@ class AllergiesController extends WebVista_Controller_Action {
 
 	public function patientAction() {
 		$personId = (int)$this->_getParam('personId');
-		$reasons = array();
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName(PatientNote::ENUM_REASON_PARENT_NAME);
-		$enumerationsClosure = new EnumerationsClosure();
-		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$ctr = 0;
-		foreach ($enumerationIterator as $enum) {
-			// since data type of patient_note.reason is tinyint we simply use the counter as id
-			$reasons[$ctr++] = $enum->name;
-		}
-		$this->view->reasons = $reasons;
+		$this->view->reasons = PatientNote::listReasons();
 		if (!isset($this->_session->active)) {
 			$this->_session->active = 1;
 		}
@@ -121,26 +111,29 @@ class AllergiesController extends WebVista_Controller_Action {
 			$active = 2; // invalid so no items will be retrieved
 		}
 		$patientAllergy = new PatientAllergy();
-		$patientAllergyIterator = $patientAllergy->getIteratorByPatient($personId,0,null,$active);
-		$rows = array();
-		foreach ($patientAllergyIterator as $allergy) {
-			if ($allergy->noKnownAllergies) {
-				continue;
+		$patientAllergy->patientId = $personId;
+		$rows = array(array('id'=>'ctrRowId','data'=>array('','','','',''),'userdata'=>array('noOfAllergies'=>PatientAllergy::countAllergiesByPatientId($personId)))); // added extra row, this will hide
+		if ($patientAllergy->populateByNoKnowAllergies()) {
+			$rows[] = array('id'=>$patientAllergy->patientAllergyId,'data'=>array(__('No Known Allergies')));
+		}
+		else {
+			$patientAllergyIterator = $patientAllergy->getIteratorByPatient($personId,0,null,$active);
+			foreach ($patientAllergyIterator as $allergy) {
+				$severity = isset($listSeverities[$allergy->severity])?$listSeverities[$allergy->severity]:'';
+				$exp = explode(',',$allergy->symptoms);
+				$symptoms = array();
+				foreach ($exp as $symp) {
+					$symptoms[] = isset($listSymptoms[$symp])?$listSymptoms[$symp]:'';
+				}
+				$tmp = array();
+				$tmp['id'] = $allergy->patientAllergyId;
+				$tmp['data'][] = $allergy->causativeAgent;
+				$tmp['data'][] = $severity;
+				$tmp['data'][] = implode(', ',$symptoms);
+				$tmp['data'][] = $allergy->comments;
+				$tmp['userdata']['active'] = (int)$allergy->active;
+				$rows[] = $tmp;
 			}
-			$severity = isset($listSeverities[$allergy->severity])?$listSeverities[$allergy->severity]:'';
-			$exp = explode(',',$allergy->symptoms);
-			$symptoms = array();
-			foreach ($exp as $symp) {
-				$symptoms[] = isset($listSymptoms[$symp])?$listSymptoms[$symp]:'';
-			}
-			$tmp = array();
-			$tmp['id'] = $allergy->patientAllergyId;
-			$tmp['data'][] = $allergy->causativeAgent;
-			$tmp['data'][] = $severity;
-			$tmp['data'][] = implode(', ',$symptoms);
-			$tmp['data'][] = $allergy->comments;
-			$tmp['userdata']['active'] = (int)$allergy->active;
-			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -287,6 +280,17 @@ class AllergiesController extends WebVista_Controller_Action {
 		$params = $this->_getParam('allergy');
 		$params['symptoms'] = implode(',',$params['symptoms']);
 		$params['dateTimeCreated'] = date('Y-m-d H:i:s');
+
+		if (!isset($params['patientAllergyId']) || !(int)$params['patientAllergyId'] > 0) {
+			$patientAllergy = new PatientAllergy();
+			$patientAllergy->patientId = (int)$params['patientId'];
+			if ($patientAllergy->populateByNoKnowAllergies()) {
+				$this->_patientAllergy = $patientAllergy;
+				$this->_patientAllergy->noKnownAllergies = 0;
+				if (isset($params['patientAllergyId'])) unset($params['patientAllergyId']);
+			}
+		}
+
 		$this->_patientAllergy->populateWithArray($params);
 		if (!$this->_patientAllergy->patientAllergyId > 0) $this->_patientAllergy->active = 1; // temporarily set to active for new allergy
 		$this->_patientAllergy->persist();

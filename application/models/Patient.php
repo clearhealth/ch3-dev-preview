@@ -42,6 +42,7 @@ class Patient extends WebVista_Model_ORM {
         protected $_primaryKeys = array('person_id');
         protected $_table = "patient";
         protected $_legacyORMNaming = true;
+	protected $_cascadePersist = false;
 
 	function __construct() {
 		parent::__construct();
@@ -57,6 +58,7 @@ class Patient extends WebVista_Model_ORM {
 		$this->homeAddress->type = 'HOME';
 		$this->billingAddress->type = 'BILL';
 		parent::persist();
+		$this->person->persist();
 	}
 
 	public function setPerson_id($key) {
@@ -128,9 +130,12 @@ class Patient extends WebVista_Model_ORM {
                 $addressIterator->setFilters(array('personId' => $this->personId,'class'=>'person'));
                 foreach($addressIterator as $address) {
 			switch ($address->type) {
-				case 2:
+				case Address::TYPE_HOME:
 					$this->homeAddress = $address;
-				break;
+					break;
+				case Address::TYPE_BILLING:
+					$this->billingAddress = $address;
+					break;
 			}
                 }
 	}
@@ -257,6 +262,265 @@ class Patient extends WebVista_Model_ORM {
 
 	public function getPatientId() {
 		return $this->person_id;
+	}
+
+	protected static function generateRowData($patientId) {
+		$patient = new Patient();
+		$patient->personId = (int)$patientId;
+		$patient->populate();
+		$person = $patient->person;
+		$row = array();
+		$row['MRN'] = $patient->recordNumber;
+		$row['lastName'] = $person->lastName;
+		$row['firstName'] = $person->firstName;
+		$row['middleName'] = $person->middleName;
+		return $row;
+	}
+
+	public static function listProblems(Array $filters) {
+		if (!$filters) return array();
+		// code => Text
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('problemLists',array('codeTextShort AS problem','*'))
+				->group('personId');
+		foreach ($filters as $key=>$value) {
+			$sqlSelect->orWhere('code = ?',(string)$key);
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['personId'];
+			$rows[$personId] = self::generateRowData($personId);
+			if (!isset($rows[$personId]['problems'])) $rows[$personId]['problems'] = array();
+			$rows[$personId]['problems'][] = $row['problem'];
+			if (!isset($rows[$personId]['problemList'])) $rows[$personId]['problemList'] = array();
+			$rows[$personId]['problemList'][] = $row;
+		}
+		return $rows;
+	}
+
+	public static function listMedications(Array $filters) {
+		if (!$filters) return array();
+		// pkey => Text
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('medications',array('personId','description AS medication'))
+				->group('personId');
+		foreach ($filters as $key=>$value) {
+			$sqlSelect->where('pkey = ?',(string)$key);
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['personId'];
+			$rows[$personId] = self::generateRowData($personId);
+			if (!isset($rows[$personId]['medications'])) $rows[$personId]['medications'] = array();
+			$rows[$personId]['medications'][] = $row['medication'];
+		}
+		return $rows;
+	}
+
+	public static function listDemographics(Array $filters) {
+		if (!$filters) return array();
+		// key => array('[key]-enabled','name','type','operator','operand1','operand2')
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('patient','person_id AS patientPersonId')
+				->join('person','person.person_id = patient.person_id',array('gender','marital_status',"(DATE_FORMAT(NOW(),'%Y') - DATE_FORMAT(person.date_of_birth,'%Y') - (DATE_FORMAT(NOW(),'00-%m-%d') < DATE_FORMAT(person.date_of_birth,'00-%m-%d'))) AS age"))
+				->joinLeft('patientStatistics','person.person_id = patientStatistics.personId')
+				->group('patient.person_id');
+		$keys = array();
+		foreach ($filters as $key=>$value) {
+			if ($key == 'reminders') {
+				$config = Zend_Registry::get('config');
+				$sqlSelect->joinLeft('address','address.person_id = patient.person_id','address_id AS addressId');
+				$sqlSelect->joinLeft('number','number.person_id = patient.person_id','number_id AS numberId');
+				if (strtolower($config->patient->detailsView2x) == 'true') {
+					$sqlSelect->joinLeft('person_address','person_address.address_id=address.address_id',null);
+					$sqlSelect->joinLeft('person_number','person_number.number_id=number.number_id',null);
+				}
+				$sqlSelect->where("(address.type = 'REMINDERS' OR number.type = 'REMINDERS')");
+				continue;
+			}
+			if (!$value['enabled']) continue;
+			$keys[] = $key;
+			$operand1 = isset($value['operand1'])?$value['operand1']:'';
+			$operator = isset($value['operator'])?$value['operator']:'';
+			switch ($operator) {
+				case '>':
+				case '>=':
+				case '<':
+				case '<=':
+					$where = $value['operator'].' '.$db->quote($operand1);
+					break;
+				case 'between':
+					$operand2 = isset($value['operand2'])?$value['operand2']:'';
+					$where = 'BETWEEN '.$db->quote($operand1).' AND '.$db->quote($operand2);
+					break;
+				case '=':
+				default;
+					$where = '= '.$db->quote($operand1);
+					break;
+			}
+			switch ($key) {
+				case 'gender':
+				case 'marital_status':
+					$sqlSelect->where('person.'.$key.' '.$where);
+					break;
+				case 'age':
+					$sqlSelect->having("age {$where}");
+					break;
+				default: // patient statistics
+					$sqlSelect->where('patientStatistics.'.$key.' '.$where);
+					break;
+			}
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['patientPersonId'];
+			$tmp = self::generateRowData($personId);
+			if (isset($filters['reminders'])) {
+				$addressId = isset($row['addressId'])?(int)$row['addressId']:0;
+				$numberId = isset($row['numberId'])?(int)$row['numberId']:0;
+				if (!$addressId > 0 && !$numberId > 0) continue;
+				$tmp['addressId'] = $addressId;
+				$tmp['numberId'] = $numberId;
+			}
+			$rows[$personId] = $tmp;
+			if (!isset($rows[$personId]['demographics'])) $rows[$personId]['demographics'] = array();
+			foreach ($keys as $key) {
+				if (!isset($row[$key])) continue;
+				$rows[$personId]['demographics'][] = GrowthChartBase::prettyName($key).': '.$row[$key];
+			}
+		}
+		return $rows;
+	}
+
+	public static function listLabTestResults(Array $filters) {
+		if (!$filters) return array();
+		// LOINC_NUM => array('labTest','operator','operand1','operand2','unit','OR')
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('lab_result',"CONCAT(description,': ',value,' ',units) AS result")
+				->join('lab_test','lab_test.lab_test_id=lab_result.lab_test_id',null)
+				->join('lab_order','lab_order.lab_order_id=lab_test.lab_order_id','lab_order.patient_id AS personId')
+				->join('orderLabTests','orderLabTests.orderId = lab_order.lab_order_id',null)
+				->group('lab_order.patient_id');
+		foreach ($filters as $key=>$value) {
+			$where = array('orderLabTests.labTest = '.$db->quote($key));
+			$operand1 = isset($value['operand1'])?$value['operand1']:'';
+			$operator = isset($value['operator'])?$value['operator']:'';
+			$tmp = '(CAST(lab_result.value AS SIGNED) ';
+			switch ($operator) {
+				case '>':
+				case '>=':
+				case '<':
+				case '<=':
+					$tmp .= $value['operator'].' '.$db->quote($operand1);
+					break;
+				case 'between':
+					$operand2 = isset($value['operand2'])?$value['operand2']:'';
+					$tmp .= 'BETWEEN '.$db->quote($operand1).' AND '.$db->quote($operand2);
+					break;
+				case '=':
+				default;
+					$tmp .= '= '.$db->quote($operand1);
+					break;
+			}
+			$tmp .= ')';
+			$where[] = $tmp;
+			if (isset($value['unit']) && strlen($value['unit']) > 0) $where[] = 'lab_result.units = '.$db->quote($value['unit']);
+			if (isset($value['OR']) && $value['OR']) {
+				$sqlSelect->orWhere(implode(' AND ',$where));
+			}
+			else {
+				$sqlSelect->where(implode(' AND ',$where));
+			}
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['personId'];
+			$rows[$personId] = self::generateRowData($personId);
+			if (!isset($rows[$personId]['labTestResults'])) $rows[$personId]['labTestResults'] = array();
+			$rows[$personId]['labTestResults'][] = $row['result'];
+		}
+		return $rows;
+	}
+
+	public static function listAllergies(Array $filters) {
+		if (!$filters) return array();
+		// key = value
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('patientAllergies',array('patientId AS personId','causativeAgent AS allergy'))
+				->group('patientId');
+		foreach ($filters as $key=>$value) {
+			$sqlSelect->where('causativeAgent = ?',(string)$value);
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['personId'];
+			$rows[$personId] = self::generateRowData($personId);
+			if (!isset($rows[$personId]['allergies'])) $rows[$personId]['allergies'] = array();
+			$rows[$personId]['allergies'][] = $row['allergy'];
+		}
+		return $rows;
+	}
+
+	public static function listHSA(Array $filters) {
+		if (!$filters) return array();
+		// LOINC_NUM => array('hsa','operator','operand1','operand2','OR')
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('healthStatusAlerts',array('personId','message AS alert'))
+				->group('personId');
+		foreach ($filters as $key=>$value) {
+			$hsa = (string)$value['hsa'];
+			$sqlSelect->where('message LIKE ?','%'.$hsa.'%');
+			$operand1 = isset($value['operand1'])?date('Y-m-d',strtotime($value['operand1'])):'';
+			$operator = isset($value['operator'])?$value['operator']:'';
+			switch ($operator) {
+				case '>':
+				case '>=':
+				case '<':
+				case '<=':
+					$where = $value['operator'].' '.$db->quote($operand1);
+					break;
+				case 'between':
+					$operand2 = isset($value['operand2'])?date('Y-m-d',strtotime($value['operand2'])):'';
+					$where = 'BETWEEN '.$db->quote($operand1).' AND '.$db->quote($operand2);
+					break;
+				case '=':
+				default;
+					$where = '= '.$db->quote($operand1);
+					break;
+			}
+			if (isset($value['OR']) && $value['OR']) {
+				$sqlSelect->orWhere('dateDue '.$where);
+			}
+			else {
+				$sqlSelect->where('dateDue '.$where);
+			}
+		}
+		//trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$dbStmt = $db->query($sqlSelect);
+		while ($row = $dbStmt->fetch()) {
+			$personId = (int)$row['personId'];
+			$rows[$personId] = self::generateRowData($personId);
+			if (!isset($rows[$personId]['hsa'])) $rows[$personId]['hsa'] = array();
+			$rows[$personId]['hsa'][] = $row['alert'];
+		}
+		return $rows;
 	}
 
 }

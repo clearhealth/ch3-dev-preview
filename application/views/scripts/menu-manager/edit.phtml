@@ -21,7 +21,7 @@ function updateMenuType(val) {
 
 function submitmenuitemForm() {
 	dojo.xhrPost ({
-		url: getBaseUrl() + "/menu-manager.raw/edit-process",
+		url: "<?=$this->baseUrl?>/menu-manager.raw/edit-process",
 		form: 'menuitem',
 		content: {
 		},

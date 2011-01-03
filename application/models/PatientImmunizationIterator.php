@@ -28,11 +28,27 @@ class PatientImmunizationIterator extends WebVista_Model_ORMIterator implements 
 		parent::__construct("PatientImmunization",$dbSelect);
 	}
 
+	public function setFilters(Array $filters) {
+		return $this->setFilter($filters);
+	}
+
 	public function setFilter(Array $filter) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
-			       ->from('patientImmunizations')
-			       ->where('patientId = ?',(int)$filter['patientId']);
+			       ->from('patientImmunizations');
+		foreach ($filter as $key=>$value) {
+			switch ($key) {
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					$dbSelect->where("dateAdministered BETWEEN '{$start}' AND '{$end}'");
+					break;
+				case 'patientId':
+					$dbSelect->where('patientId = ?',(int)$value);
+					break;
+			}
+		}
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);

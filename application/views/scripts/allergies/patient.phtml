@@ -133,7 +133,9 @@ allergiesGrid.setColTypes("ro,ro,ro");
 allergiesGrid.setSkin("xp");
 
 function allergiesGridOnDoubleClicked(rowId,colIndex) {
-	var allergyName = allergiesGrid.cells(rowId,0).getValue();
+	if (allergiesGrid.cells(rowId,0).getValue() == "<?=__('No Known Allergies')?>") {
+		return;
+	}
 	var params = [];
 	params.push("id="+rowId);
 	globalCreateWindow("winAddAllergyId",params,"<?=$this->baseUrl?>/allergies.raw/edit","<?=__('Edit Allergy or Adverse Reaction')?>",400,550);
@@ -157,6 +159,9 @@ allergiesMenu.attachEvent("onContextMenu",function(id){
 	allergiesMenu.showItem("showing_active");
 	allergiesMenu.showItem("showing_inactive");
 	if (rowId != null) {
+		if (allergiesGrid.cells(rowId,0).getValue() == "<?=__('No Known Allergies')?>") {
+			return;
+		}
 		allergiesMenu.showItem("enteredInError");
 		if (allergiesGrid.getUserData(rowId,"active") == "1") {
 			allergiesMenu.showItem("markInactive");
@@ -165,8 +170,7 @@ allergiesMenu.attachEvent("onContextMenu",function(id){
 			allergiesMenu.showItem("markActive");
 		}
 	}
-	var gridRowsize = allergiesGrid.getRowsNum();
- 	if (gridRowsize == 0) {
+	if (parseInt(allergiesGrid.getUserData("ctrRowId","noOfAllergies")) == 0) {
 		allergiesMenu.showItem("nka");
 	}
 });
@@ -184,6 +188,7 @@ dhtmlxEvent(allergiesGrid.entBox,"contextmenu",function(e){
 });
 
 function allergiesGridOnLoaded() {
+	allergiesGrid.setRowHidden("ctrRowId",true);
 }
 
 function allergiesGridReload() {
@@ -223,23 +228,12 @@ postingsColFields.push("active");
 var postingsGrid = new dhtmlXGridObject("postingsGridId");
 postingsGrid.setImagePath("<?=$this->baseUrl?>/img/");
 postingsGrid.setHeader("<?=__('Priority')?>,<?=__('Date')?>,<?=__('User')?>,<?=__('Reason')?>,<?=__('Note')?>,<?=__('Done')?>,");
-postingsGrid.setInitWidths("60,150,150,150,300,50,0");
-postingsGrid.setColTypes("coro,ed,ro,coro,txt,ro,ro");
+postingsGrid.setInitWidths("60,120,120,120,*,50,0");
+postingsGrid.setColTypes("coro,ed,ro,coro,txt,coro,ro");
 postingsGrid.setSkin("xp");
 
 function postingsGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 	if (stage == 2 && newValue != oldValue) {
-		switch (cellIndex) {
-			case 3: // reason
-				for (var i in postingsReasons) {
-					var reason = postingsReasons[i];
-					if (reason.data == newValue) {
-						newValue = reason.id;
-						break;
-					}
-				}
-				break;
-		}
 		postingsEdit(rowId,postingsColFields[cellIndex],newValue);
 	}
 	return true;
@@ -261,13 +255,11 @@ function postingsGridReload(showAll) {
 for (var i = 1; i <= 5; i++) {
 	postingsGrid.getCombo(0).put(i,i);
 }
-//postingsGrid.getCombo(5).put("<?=__('No')?>","<?=__('No')?>");
-//postingsGrid.getCombo(5).put("<?=__('Yes')?>","<?=__('Yes')?>");
+postingsGrid.getCombo(5).put("1","<?=__('No')?>");
+postingsGrid.getCombo(5).put("0","<?=__('Yes')?>");
 
-var postingsReasons = new Array();
 <?foreach ($this->reasons as $id=>$reason):?>
-postingsReasons.push({id:"<?=$id?>",data:"<?=$reason?>"});
-postingsGrid.getCombo(3).put("<?=$reason?>","<?=$reason?>");
+postingsGrid.getCombo(3).put("<?=$id?>","<?=$reason?>");
 <?endforeach;?>
 
 function postingsProcessDone(data) {

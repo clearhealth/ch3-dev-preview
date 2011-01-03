@@ -139,4 +139,11 @@ class FilesController extends WebVista_Controller_Action {
 		$this->render();
 	}
 
+	public function zipAction() {
+		$this->view->data = $this->_getParam('data','');
+		header('Content-Disposition: attachment; filename="file.zip"');
+		header('Content-type: application/zip');
+		$this->render('index');
+	}
+
 }

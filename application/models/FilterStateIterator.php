@@ -37,11 +37,21 @@ class FilterStateIterator extends WebVista_Model_ORMIterator implements Iterator
 
 	public function setFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
-		$dbSelect = $db->select()->from('filterStates');
-		$dbSelect->where("tabName = ?", $filters['tabName']);
-		$dbSelect->order("dateFilter ASC");
-		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
-		$this->_dbSelect = $dbSelect;
+		$sqlSelect = $db->select()
+				->from('filterStates')
+				->order('dateFilter ASC');
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'tabName':
+					$sqlSelect->where('tabName = ?',$value);
+					break;
+				case 'userId':
+					$sqlSelect->where('userId = ?',(int)$value);
+					break;
+			}
+		}
+		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		$this->_dbSelect = $sqlSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}
 

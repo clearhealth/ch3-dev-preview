@@ -209,16 +209,19 @@ class WebVista_Model_ORM implements ORM,Iterator {
 			//trigger_error("objIdKey not found: $objectIdKey for " . get_class($obj),E_USER_NOTICE);
 			return false;
 		}
+		$audit->auditId = $this->nextSequenceId('auditSequences');
 		$audit->objectId = $obj->$objectIdKey;
 		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$audit->type = $obj->_persistMode;
 		$audit->dateTime = date('Y-m-d H:i:s');
-		$audit->persist();
 		if ($obj instanceof ORM) {
 			foreach ($obj->ORMFields() as $field) {
 				$auditValue = new AuditValue();
 				$auditValue->auditId = $audit->auditId;
 				$auditValue->key = $field;
+				if ($field == "person_id"  || $field == "personId" || $field == "patientId" || $field == "patient_id") {
+					$audit->patientId = (string)$obj->$field;
+				}
 				if (is_object($obj->$field)) {
 					$auditValue->value = get_class($obj->$field);
 				}
@@ -228,6 +231,7 @@ class WebVista_Model_ORM implements ORM,Iterator {
 				$auditValue->persist();
 			}
 		}
+		$audit->persist();
 	}
 
 	public static function nextSequenceId($seqTable = "") {

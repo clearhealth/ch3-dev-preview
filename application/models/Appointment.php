@@ -152,6 +152,7 @@ class Appointment extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from($this->_table)
+				->where('appointmentId != ?',(int)$this->appointmentId)
 				->where('providerId = ?',$this->providerId)
 				->where('`start` >= ?',date('Y-m-d H:i:s',strtotime($this->start)))
 				->where('`end` <= ?',date('Y-m-d H:i:s',strtotime($this->end)))

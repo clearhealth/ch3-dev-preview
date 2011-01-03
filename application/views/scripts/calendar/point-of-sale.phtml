@@ -1,19 +1,3 @@
-<!--<dl class="formRow"  style="margin-right:15px;">
-	<dd><b>Primary Co-pay (Aetna)</b></dd>
-	<dt style="text-align:center;">25.00</dt>
-</dl>
-<dl class="formRow" style="margin-right:15px;">
-	<dd><b><?=__('Balance Forward')?></b></dd>
-	<dt style="text-align:center;">77.34</dt>
-</dl>
-<dl class="formRow" style="margin-right:15px;">
-	<dd><b><?=__('Record Payment')?></b></dd>
-	<dt style="text-align:center;">
-		<a href="">Credit Card</a><br />
-		<a href="">Check/Cash</a>
-	</dt>
-</dl>
-<br style="clear:left;" />-->
 <h3><?=__('Payments')?></h3>
 <div id="payGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
 <h3><?=__('Charges')?></h3>
@@ -22,22 +6,67 @@
 <div id="eligibilityGridContainer" width="95%" height="100px" style="width:95%;height:75px;" ></div>
 
 <script>
+function appProcessEdit(content,action,cellIndex,grid) {
+	// common parameters
+	content["app[personId]"] = "<?=$this->appointment->patientId?>";
+	content["app[appointmentId]"] = "<?=$this->appointment->appointmentId?>";
+	content["app[visitId]"] = "<?=$this->visitId?>";
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/calendar.raw/process-"+action,
+		handleAs: "json",
+		content: content,
+		load: function (data) {
+			if (data.id) {
+				if (content["app[id]"] == "0") {
+					grid.setRowId(grid.getRowIndex("trailingId"),data.id);
+					grid.addRow("trailingId","");
+				}
+				grid.cells(data.id,cellIndex).setValue(data.data[cellIndex]);
+			}
+			else {
+				alert(data);
+			}
+		},
+		error: function (error) {
+			alert(error.responseText);
+			console.error("Error: ", error);
+		}
+	});
+}
+
 /* PAYMENTS */
 payGrid = new dhtmlXGridObject("payGridContainer");
 payGrid.setImagePath("<?=$this->baseUrl?>/img/");
 payGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+var payColumnNames = ["paymentDate","paymentType","amount","title"];
 payGrid.setInitWidths("75,100,100,*");
-payGrid.setColTypes("ro,ro,ro,ro");
+payGrid.setColTypes("dhxCalendar,coro,ed,ed");
+payGrid._dtmask = "%Y-%m-%d";
 payGrid.setColAlign("left");
 payGrid.setSkin("xp");
 payGrid.init(); 
-<?foreach ($this->listPayments as $id=>$data):?>
-payGrid.addRow("<?=$id?>","");
-	<?foreach ($data as $index=>$item):?>
-		payGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
-	<?endforeach;?>
-<?endforeach;?>
-
+function payGridReload() {
+	payGrid.clearAll(); 
+	payGrid.load("<?=$this->baseUrl?>/calendar.raw/list-payments?appointmentId=<?=$this->appointment->appointmentId?>",function(){
+		payGrid.addRow("trailingId","");
+	},"json"); 
+}
+payGridReload();
+payGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
+	if (stage == 2 && newValue != oldValue) {
+		var action = "edit";
+		if (rowId == "trailingId") {
+			action = "add";
+			rowId = "0";
+		}
+		var content = {
+			"app[id]": rowId,
+		};
+		content["app["+payColumnNames[cellIndex]+"]"] = newValue;
+		appProcessEdit(content,action+"-payment",cellIndex,payGrid);
+	}
+	return true;
+});
 dhtmlxEvent(payGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
 	return false;
@@ -48,23 +77,44 @@ dhtmlxEvent(payGrid.entBox,"contextmenu",function(e){
 chargeGrid = new dhtmlXGridObject("chargeGridContainer");
 chargeGrid.setImagePath("<?=$this->baseUrl?>/img/");
 chargeGrid.setHeader("<?=__('Date')?>,<?=__('Type')?>,<?=__('Amount')?>,<?=__('Note')?>");
+var chargeColumnNames = ["chargeDate","chargeType","amount","note"];
 chargeGrid.setInitWidths("75,100,100,*");
-chargeGrid.setColTypes("ro,ro,ro,ro");
+chargeGrid.setColTypes("dhxCalendar,coro,ed,ed");
+chargeGrid._dtmask = "%Y-%m-%d";
 chargeGrid.setColAlign("left");
 chargeGrid.setSkin("xp");
 chargeGrid.init(); 
-<?foreach ($this->listCharges as $id=>$data):?>
-chargeGrid.addRow("<?=$id?>","");
-	<?foreach ($data as $index=>$item):?>
-		chargeGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
-	<?endforeach;?>
-<?endforeach;?>
-
+function chargeGridReload() {
+	chargeGrid.clearAll(); 
+	chargeGrid.load("<?=$this->baseUrl?>/calendar.raw/list-charges?appointmentId=<?=$this->appointment->appointmentId?>",function(){
+		chargeGrid.addRow("trailingId","");
+	},"json"); 
+}
+chargeGridReload();
+chargeGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
+	if (stage == 2 && newValue != oldValue) {
+		var action = "edit";
+		if (rowId == "trailingId") {
+			action = "add";
+			rowId = "0";
+		}
+		var content = {
+			"app[id]": rowId,
+		};
+		content["app["+chargeColumnNames[cellIndex]+"]"] = newValue;
+		appProcessEdit(content,action+"-charge",cellIndex,chargeGrid);
+	}
+	return true;
+});
 dhtmlxEvent(chargeGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
 	return false;
 });
 
+<?foreach (Enumeration::getEnumArray('Payment Types','key') as $key=>$value):?>
+payGrid.getCombo(1).put("<?=$key?>","<?=$value?>");
+chargeGrid.getCombo(1).put("<?=$key?>","<?=$value?>");
+<?endforeach;?>
 
 /* ELIGIBILITY */
 var indexPOSDate = 0;
@@ -75,25 +125,23 @@ var indexPOSDesc = 4;
 
 eligGrid = new dhtmlXGridObject("eligibilityGridContainer");
 eligGrid.setImagePath("<?=$this->baseUrl?>/img/");
-eligGrid.setHeader("<?=__('Date')?>,<?=__('Program')?>,<?=__('Expires')?>,<?=__('Verified')?>,<?=__('Desc')?>");
-eligGrid.setInitWidths("75,125,75,85,*");
-eligGrid.setColTypes("ed,ro,ed,ro,txt");
-eligGrid.setColAlign("center,left,center,center,left");
+eligGrid.setHeader("<?=__('Date')?>,<?=__('Program')?>,<?=__('Expires')?>,<?=__('Verified')?>,<?=__('Desc')?>,Color");
+eligGrid.setInitWidths("75,125,75,85,*,0");
+eligGrid.setColTypes("ed,ro,ed,ro,txt,ro");
+//eligGrid.setColTypes("dhxCalendar,ro,dhxCalendar,ro,txt,ro");
+//eligGrid._dtmask = "%Y-%m-%d";
+eligGrid.setColAlign("center,left,center,center,left,left");
 eligGrid.setSkin("xp");
 eligGrid.init(); 
-<?foreach ($this->listEligibility as $id=>$data):?>
-eligGrid.addRow("<?=$id?>","");
-	<?foreach ($data as $index=>$item):?>
-		<?if($index == 2): // Expires column
-		$x = explode(':',$item);
-		$item = $x[0];
-		$color = $x[1];
-		?>
-		eligGrid.setCellTextStyle("<?=$id?>","<?=$index?>","vertical-align:top;background-color:<?=$color?>");
-		<?endif?>
-		eligGrid.cells("<?=$id?>","<?=$index?>").setValue("<?=addslashes($item)?>");
-	<?endforeach;?>
-<?endforeach;?>
+function eligGridReload() {
+	eligGrid.clearAll(); 
+	eligGrid.load("<?=$this->baseUrl?>/calendar.raw/list-eligibility?appointmentId=<?=$this->appointment->appointmentId?>",function(){
+		eligGrid.forEachRow(function(rowId){
+			this.setCellTextStyle(rowId,2,"vertical-align:top;background-color:"+this.cells(rowId,5).getValue());
+		});
+	},"json"); 
+}
+eligGridReload();
 
 function eligGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 	if (stage == 2 && newValue != oldValue) {
@@ -202,14 +250,9 @@ function eligCheck(id) {
 }
 
 function eligGridFillRow(rowId,data) {
-	for (var i in data) {
-		if (i == indexPOSExpires) {
-			var x = data[i].split(":");
-			data[i] = x[0];
-			var color = x[1];
-			eligGrid.setCellTextStyle(rowId,i,"vertical-align:top;background-color:"+color);
-		}
-		eligGrid.cells(rowId,i).setValue(data[i]);
+	for (var i in data.data) {
+		eligGrid.cells(rowId,i).setValue(data.data[i]);
 	}
+	eligGrid.setCellTextStyle(rowId,2,"vertical-align:top;background-color:"+eligGrid.cells(rowId,5).getValue());
 }
 </script>

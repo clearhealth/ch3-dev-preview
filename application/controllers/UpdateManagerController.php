@@ -297,10 +297,11 @@ EOL;
 		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
 		$ret = curl_exec($ch);
 		$curlErrno = curl_errno($ch);
-		curl_close($ch);
 		if ($curlErrno) {
+			trigger_error(curl_error($ch));
 			$ret = false;
 		}
+		curl_close($ch);
 		return $ret;
 	}
 

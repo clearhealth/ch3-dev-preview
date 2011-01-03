@@ -32,6 +32,7 @@ class PatientNoteIterator extends WebVista_Model_ORMIterator implements Iterator
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from('patient_note')
+			       ->where('patient_id > 0')
 			       ->order('deprecated DESC')
 			       ->order('note_date DESC');
 		// $filter assumes that all values are filtered

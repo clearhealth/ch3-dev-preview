@@ -1,8 +1,9 @@
 <div id="ppLayoutId" style="height:100%;"></div>
 <div id="ppLeftPaneId" style="width:100%;height:100%;">
-	<object width="530" height="530">
-		<param name="movie" value="<?=$this->baseUrl?>/img/ch-vid-upload.swf">
-		<embed src="<?=$this->baseUrl?>/img/ch-vid-upload.swf" width="530" height="530"></embed>
+	<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="550" height="400" id="ch-vid-upload" align=
+		<param name="allowScriptAccess" value="sameDomain" />
+		<param name="allowFullScreen" value="false" />
+		<param name="movie" value="<?=$this->baseUrl?>/img/patientPicture.swf?attachmentReferenceId=<?=$this->personId?>" /><param name="quality" value="high" /><param name="bgcolor" value="#ffffff" />
 	</object>
 </div>
 <div id="ppBottomRightId" style="width:100%;height:100%;">

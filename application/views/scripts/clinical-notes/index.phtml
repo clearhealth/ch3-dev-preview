@@ -121,6 +121,14 @@ cnAttachmentsGrid.setHeader('Type,Filename,Date/Time');
 cnAttachmentsGrid.setInitWidths("75,400,*");
 cnAttachmentsGrid.setSkin("xp");
 cnAttachmentsGrid.init();
+function cnAttachmentsGridReload(clinicalNoteId) {
+	if (!clinicalNoteId) {
+		var rowId = cnGrid.getSelectedRowId();
+		clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
+	}
+	cnAttachmentsGrid.clearAll();
+	cnAttachmentsGrid.load("<?=$this->baseUrl?>/attachments.raw/list-attachments?attachmentReferenceId="+clinicalNoteId,null,"json");
+}
 cnAttachmentLayout.cells("a").hideHeader();
 cnAttachmentLayout.cells("b").hideHeader();
 cnAttachmentLayout.cells("b").collapse();
@@ -135,25 +143,17 @@ cncxMenu.setOpenMode("web");
 cncxMenu.loadXML('<?=$this->baseUrl?>/clinical-notes.raw/clinical-notes-grid-context-menu');
 cncxMenu.attachEvent('onClick',contextMenuClickHandler);
 function contextMenuClickHandler(id) {
+	var rowId = cnGrid.getSelectedRowId();
+	if (!rowId) {
+		alert("<?=__('No selected note.')?>");
+		return;
+	}
 	switch (id) {
 		case "route_checkIn":
-			var rowId = cnGrid.getSelectedRowId();
-			var clinicalNoteId = 0;
-			if (rowId != null) {
-				if (cnGrid.getLevel(rowId) != 0) {
-					rowId = cnGrid.getParentId(rowId);
-				}
-				clinicalNoteId = cnGrid.getUserData(rowId,"docId");
-			}
-			windowReviewSignDocuments(clinicalNoteId);
+			windowReviewSignDocuments(cnGrid.cells(rowId,indexCNNoteId).getValue());
 			break;
 		case "forwardForSigning":
-			var rowId = cnGrid.getSelectedRowId();
-			var clinicalNoteId = 0;
-			if (rowId != null) {
-				clinicalNoteId = rowId;
-			}
-			windowForwardForSigning("ClinicalNote",clinicalNoteId);
+			windowForwardForSigning("ClinicalNote",cnGrid.cells(rowId,indexCNNoteId).getValue());
 			break;
 	}
 }
@@ -164,10 +164,12 @@ leftLayout.cells("a").attachObject(dojo.byId('upperLeftContainer'));
 //cnGrid = leftLayout.cells("a").attachGrid();
 cnGrid = new dhtmlXGridObject('clinicalNotesContainer');
 cnGrid.setImagePath("<?=$this->baseUrl?>/img/");
-cnGrid.setHeader(',Date,Title,Author,Location');
-cnGrid.setInitWidths("20,120,120,150,*");
+var indexCNNoteId = 5;
+var indexCNRevisionId = 6;
+cnGrid.setHeader(",Date,Title,Author,Location,NoteId,RevisionId");
+cnGrid.setInitWidths("20,120,120,150,*,0,0");
 //alGrid.setColAlign("left");
-cnGrid.setColTypes("tree,ro,ro,ro,ro");
+cnGrid.setColTypes("tree,ro,ro,ro,ro,ro,ro");
 cnGrid.setSkin("xp");
 cnGrid.attachEvent("onBeforeContextMenu",function(zoneId){
 	var clinicalNoteId = zoneId;
@@ -178,7 +180,15 @@ cnGrid.attachEvent("onBeforeContextMenu",function(zoneId){
 	}
 	return true;
 });
+var globalPreviousRowId = null;
 function cnGridOnRowSelected(rowId,cellIndex) {
+	if (rowId == globalPreviousRowId) return; // same previous rowId
+	// Leaving open and usaved Notes
+	if (globalNoteIsEdited && !confirm("Are you sure you want to leave the Notes, unsaved changes will be lost?")) {
+		cnGrid.selectRow(cnGrid.getRowIndex(globalPreviousRowId));
+		return false;
+	}
+	globalPreviousRowId = rowId;
 	cnvClearRightPane();
 	loadTemplatePane(rowId);
 }
@@ -236,23 +246,18 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 	}
 	
 	function editNote() {
-		if (!cnGrid.getSelectedRowId() > 0) {
+		var rowId = cnGrid.getSelectedRowId();
+		if (!rowId) {
 			alert("Please select a note to edit.");
 			return false;
 		}
 		if (confirm("Re-opening note will require it to be re-signed and will display its status as **Edited**, continue?")) {
-			clinicalNoteId = cnGrid.getSelectedRowId();
-			var revisionId = 0;
-			if (cnGrid.getLevel(clinicalNoteId) != 0) {
-				revisionId = clinicalNoteId;
-				clinicalNoteId = cnGrid.getParentId(clinicalNoteId);
-			}
 			dojo.xhrPost({
 				url: "<?=$this->baseUrl?>/clinical-notes.raw/process-edit-note",
 				handleAs: "json",
 				content: {
-					"clinicalNoteId": clinicalNoteId,
-					"revisionId": revisionId,
+					"clinicalNoteId": cnGrid.cells(rowId,indexCNNoteId).getValue(),
+					"revisionId": cnGrid.cells(rowId,indexCNRevisionId).getValue(),
 				},
 				load: function (data) {
 					if (data === true) {
@@ -270,13 +275,14 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 	}
 
 	function deleteNote() {
-                if (!cnGrid.getSelectedRowId() > 0) {
+                var rowId = cnGrid.getSelectedRowId();
+                if (!rowId) {
                         alert("Please select a note to delete.");
                         return false;
                 }
 		//if (confirm("Are you sure you want to delete the note '" + cnGrid.cellById(cnGrid.getSelectedRowId(),1).cell.innerHTML +  "' ?")) {
-		if (confirm("Are you sure you want to delete the note ?")) {
-                        clinicalNoteId = cnGrid.getSelectedRowId();
+		if (confirm("Are you sure you want to delete selected note: "+cnGrid.cells(rowId,2).getValue()+"?")) {
+			var clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
                         dojo.xhrGet (
                         {url: '<?=$this->baseUrl?>/clinical-notes.raw/delete-note?clinicalNoteId=' + clinicalNoteId,handleAs: 'json', load: function (data) { refreshCurrentTab();}, error: function (error) {errObj = dojo.fromJson(error.responseText); alert(errObj.error);}});
 
@@ -284,28 +290,28 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
         }
 
 	function windowAddAttachments() {
-		clinicalNoteId = cnGrid.getSelectedRowId();
-		if (!clinicalNoteId > 0) {
+		var rowId = cnGrid.getSelectedRowId();
+		if (!rowId) {
 			alert('A clinical note must be selected before adding an attachment.');
 			return false;
 		}
-		var url = "<?=$this->baseUrl?>/attachments.raw/add-attachments?attachmentReferenceId=" + clinicalNoteId;
-		winAA = globalCreateWindow("windowAddAttachmentId",[],url,"<?=__('Add Attachments')?>",400,175);
+		var clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
+		var url = "<?=$this->baseUrl?>/attachments.raw/add-attachments";
+		var params = ["attachmentReferenceId=" + clinicalNoteId,"callback=reloadAttachmentGrid"];
+		winAA = globalCreateWindow("windowAddAttachmentId",params,url,"<?=__('Add Attachments')?>",400,175);
         }
-	function loadTemplatePane(clinicalNoteId) {
+
+	function reloadAttachmentGrid(data) {
+		cnAttachmentsGridReload();
+	}
+
+	function loadTemplatePane(rowId) {
 		var params = [];
-		var level = cnGrid.getLevel(clinicalNoteId);
-		if (level != 0) {
-			params.push("revisionId="+clinicalNoteId);
-			params.push("clinicalNoteId="+cnGrid.cells(clinicalNoteId,0).getValue());
-		}
-		else {
-			var x = clinicalNoteId.split(":");
-			clinicalNoteId = x[0];
-			params.push("clinicalNoteId="+clinicalNoteId);
-			if (x[1]) {
-				params.push("revisionId="+x[1]);
-			}
+		var clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
+		params.push("clinicalNoteId="+clinicalNoteId);
+		var revisionId = cnGrid.cells(rowId,indexCNRevisionId).getValue();
+		if (revisionId > 0) {
+			params.push("revisionId="+revisionId);
 		}
 		dojo.xhrGet({
 			url: "<?=$this->baseUrl?>/clinical-notes-form.raw/template?"+params.join("&"),
@@ -317,10 +323,12 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 				cnvToolbar.hideItem("save");
 				cnvToolbar.setItemText("noteSigningInfo","");
 				var clinicalNoteSignature = dojo.byId("clinicalNoteSignatureId");
+				globalNoteIsEdited = false;
 				if (clinicalNoteSignature) {
 					cnvToolbar.setItemText("noteSigningInfo",clinicalNoteSignature.value);
 				}
 				else {
+					globalNoteIsEdited = true;
 					cnvToolbar.showItem("save");
 				}
 				var dataChanged = dojo.byId("dataChangedId");
@@ -332,8 +340,7 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 				alert("ERROR: " + er.responseText);
 			}
 		});
-		cnAttachmentsGrid.clearAll();
-		cnAttachmentsGrid.load('<?=$this->baseUrl?>/attachments.raw/list-attachments?attachmentReferenceId=' + clinicalNoteId,null,"json");
+		cnAttachmentsGridReload(clinicalNoteId);
 	}
 	function addedNewNote(clinicalNoteId) {
 		if (!mainController.getActivePatient() > 0) {
@@ -396,7 +403,10 @@ dhtmlxEvent(cnGrid.entBox,"contextmenu",function(e){
 		}
 		var selRowId = cnGrid.getSelectedRowId();
 		cnGrid.clearAll();
-		cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,function () { cnGrid.selectRow(cnGrid.getRowIndex(selRowId),true); },"json");
+		cnGrid.load('<?=$this->baseUrl?>/clinical-notes.raw/list-notes?personId=' + mainController.getActivePatient() + filter,function (){
+			//cnGrid.selectRow(cnGrid.getRowIndex(selRowId),true);
+			cnGrid.selectRow(cnGrid.getRowIndex(selRowId));
+		},"json");
 	}
 	function openNotesByAuthorWindow() {
 		winNBA = globalCreateWindow("windowNotesByAuthor",[],"<?=$this->baseUrl?>/clinical-notes.raw/notes-by-author","<?=__('List Signed Notes By Author')?>",400,150);
@@ -423,6 +433,11 @@ function cnvToolbarOnClicked(id) {
 			submitcntemplateformForm();
 			break;
 		case "print":
+			var printScript = dojo.byId("printOnClick");
+			if (printScript) {
+				eval(printScript.value);
+				break;
+			}
 			var printHtml = dojo.byId("mainToolbar").innerHTML; 
 			printHtml +=  dojo.byId("cntemplateform").innerHTML;
 			dojo.byId("iframeprint").contentWindow.document.body.innerHTML = printHtml;

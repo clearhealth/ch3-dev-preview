@@ -407,6 +407,170 @@ class DataIntegration extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public static function handlereFaxSourceData(Audit $audit) {
+		$data = array();
+		if ($audit->objectClass != 'ESignature') {
+			return $data;
+		}
+		$eSignature = new ESignature();
+		$eSignature->eSignatureId = $audit->objectId;
+		$eSignature->populate();
+		if ($eSignature->objectClass != 'Medication') {
+			return $data;
+		}
+
+		$data['_audit'] = $audit;
+		$medication = new Medication();
+		$medication->medicationId = $eSignature->objectId;
+		$medication->populate();
+
+		$data['transmissionId'] = (int)$medication->medicationId;
+		$data['recipients'] = array();
+		$patient = new Patient();
+		$patient->personId = $medication->personId;
+		$patient->populate();
+		$pharmacyId = $patient->defaultPharmacyId;
+
+		$provider = new Provider();
+		$provider->personId = $medication->prescriberPersonId;
+		$provider->populate();
+
+		// recipients MUST be a pharmacy?
+		$pharmacy = new Pharmacy();
+		$pharmacy->pharmacyId = $pharmacyId;
+		$pharmacy->populate();
+		//$data['recipients'][] = array('fax'=>$pharmacy->Fax,'name'=>$pharmacy->StoreName,'company'=>$pharmacy->StoreName);
+		// temporarily comment out the above recipient and use the hardcoded recipient
+		$data['recipients'][] = array('fax'=>'6022976632','name'=>'Jay Walker','company'=>'ClearHealth Inc.');
+
+		$prescription = new Prescription();
+		$prescription->prescriberName = $provider->firstName.' '.$provider->lastName.' '.$provider->title;
+		$prescription->prescriberStateLicenseNumber = $provider->stateLicenseNumber;
+		$prescription->prescriberDeaNumber = $provider->deaNumber;
+
+		// Practice Info
+		$primaryPracticeId = $provider->primaryPracticeId;
+		$practice = new Practice();
+		$practice->id = $primaryPracticeId;
+		$practice->populate();
+		$address = $practice->primaryAddress;
+		$prescription->practiceName = $practice->name;
+		$prescription->practiceAddress = $address->line1.' '.$address->line2;
+		$prescription->practiceCity = $address->city;
+		$prescription->practiceState = $address->state;
+		$prescription->practicePostalCode = $address->postalCode;
+
+		$attachment = new Attachment();
+		$attachment->attachmentReferenceId = $provider->personId;
+		$attachment->populateWithAttachmentReferenceId();
+		if ($attachment->attachmentId > 0) {
+			$db = Zend_Registry::get('dbAdapter');
+			$sqlSelect = $db->select()
+					->from('attachmentBlobs')
+					->where('attachmentId = ?',(int)$attachment->attachmentId);
+			if ($row = $db->fetchRow($sqlSelect)) {
+				$tmpFile = tempnam('/tmp','ch30_sig_');
+				file_put_contents($tmpFile,$row['data']);
+				$signatureFile = $tmpFile;
+				$prescription->prescriberSignature = $signatureFile;
+			}
+		}
+
+		$prescription->patientName = $patient->lastName.', '.$patient->firstName;
+		$address = $patient->homeAddress;
+		$prescription->patientAddress = $address->line1.' '.$address->line2;
+		$prescription->patientCity = $address->city;
+		$prescription->patientState = $address->state;
+		$prescription->patientPostalCode = $address->postalCode;
+		$prescription->patientDateOfBirth = date('m/d/Y',strtotime($patient->dateOfBirth));
+		$prescription->medicationDatePrescribed = date('m/d/Y',strtotime($medication->datePrescribed));
+		$prescription->medicationDescription = $medication->description;
+		$prescription->medicationComment = $medication->comment;
+		$prescription->medicationQuantity = $medication->quantity;
+		$prescription->medicationRefills = $medication->refills;
+		$prescription->medicationDirections = $medication->directions;
+		$prescription->medicationSubstitution = $medication->substitution;
+		$prescription->create();
+
+		$filename = $prescription->imageFile;
+		$fileType = pathinfo($filename,PATHINFO_EXTENSION);
+		$data['files'] = array();
+		$contents = file_get_contents($filename);
+		unlink($filename);
+		$data['files'][] = array('contents'=>base64_encode($contents),'type'=>$fileType);
+		return $data;
+	}
+
+	public static function handlereFaxAct(Audit $audit,Array $sourceData) {
+		if ($audit->objectClass != 'ESignature') {
+			return false;
+		}
+		$eSignature = new ESignature();
+		$eSignature->eSignatureId = $audit->objectId;
+		$eSignature->populate();
+		if ($eSignature->objectClass != 'Medication') {
+			return false;
+		}
+
+		$medication = new Medication();
+		$medication->medicationId = $eSignature->objectId;
+		$medication->populate();
+
+		$audit = $sourceData['_audit'];
+		$messaging = new Messaging(Messaging::TYPE_OUTBOUND_FAX);
+		$messaging->messagingId = (int)$sourceData['transmissionId'];
+		$messaging->transmissionId = $messaging->messagingId;
+		$messaging->populate();
+		$messaging->objectId = $messaging->messagingId;
+		$messaging->objectClass = $audit->objectClass;
+		$messaging->status = 'Faxed';
+		$messaging->dateStatus = date('Y-m-d H:i:s');
+		$messaging->auditId = $audit->auditId; // this must be required for retransmission in case of error
+		$messaging->persist();
+
+		$efax = new eFaxOutbound();
+		$url = Zend_Registry::get('config')->healthcloud->eFax->outboundUrl;
+		$url .= '?apiKey='.Zend_Registry::get('config')->healthcloud->apiKey;
+		$efax->setUrl($url);
+
+		$efax->setTransmissionId($sourceData['transmissionId']);
+		$efax->setNoDuplicate(eFaxOutbound::NO_DUPLICATE_ENABLE);
+		$efax->setDispositionMethod('POST');
+		// use the default disposition URL
+		$dispositionUrl = Zend_Registry::get('config')->healthcloud->eFax->dispositionUrl;
+		$efax->setDispositionUrl($dispositionUrl);
+
+		//$efax->setDispositionMethod('EMAIL');
+		//$efax->addDispositionEmail('Arthur Layese','arthur@layese.com');
+		foreach ($sourceData['recipients'] as $recipient) {
+			if ($messaging->resend && strlen($messaging->faxNumber) > 9) { // supersedes fax number from messaging
+				$recipient['fax'] = $messaging->faxNumber;
+			}
+			$efax->addRecipient($recipient['fax'],$recipient['name'],$recipient['company']);
+		}
+		foreach ($sourceData['files'] as $file) {
+			$efax->addFile($file['contents'],$file['type']);
+		}
+
+		$ret = $efax->send();
+		if (!$ret) {
+			$messaging->status = 'Fax Error';
+			$messaging->note = implode(PHP_EOL,$efax->getErrors());
+		}
+		else {
+			$messaging->docid = $efax->getDocId();
+			$messaging->status = 'Fax Sent';
+			$messaging->note = '';
+		}
+		if ($messaging->resend) {
+			$messaging->resend = 0;
+		}
+		$messaging->retries++;
+		$messaging->dateStatus = date('Y-m-d H:i:s');
+		$messaging->persist();
+		return true;
+	}
+
 	public function getNormalizedName() {
 		return Handler::normalizeHandlerName($this->name);
 	}

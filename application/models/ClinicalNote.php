@@ -56,15 +56,9 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 	}
 
 	function __get($key) {
-		if (isset($this->$key)) {
-			return $this->$key;
-		}
-		elseif (in_array($key,$this->clinicalNoteDefinition->ORMFields())) {
+		if (in_array($key,$this->clinicalNoteDefinition->ORMFields())) {
 			return $this->clinicalNoteDefinition->__get($key);
 		}
-		/*elseif (!is_null($this->clinicalNoteDefinition->__get($key))) {
-			return $this->clinicalNoteDefinition->__get($key);
-		}*/
 		return parent::__get($key);
 	}
 

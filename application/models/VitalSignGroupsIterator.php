@@ -36,9 +36,21 @@ class VitalSignGroupsIterator extends WebVista_Model_ORMIterator implements Iter
 		$dbSelect = $db->select()
 			       ->from("vitalSignGroups")
 				->join("vitalSignValues","vitalSignValues.vitalSignGroupId = vitalSignGroups.vitalSignGroupId")
-			       ->where("personId = ?", $filter['personId'])
 				->order("vitalSignGroups.dateTime DESC")
 				->order("vitalSignValues.vital ASC");
+		foreach ($filter as $key=>$value) {
+			switch ($key) {
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					$dbSelect->where("dateTime BETWEEN '{$start}' AND '{$end}'");
+					break;
+				case 'personId':
+					$dbSelect->where('personId = ?',(int)$value);
+					break;
+			}
+		}
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);

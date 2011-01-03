@@ -437,6 +437,10 @@ vitalSignsLabelGrid.setHeader("");
 vitalSignsLabelGrid.setNoHeader(true);
 vitalSignsLabelGrid.setSkin("xp");
 vitalSignsLabelGrid.init();
+vitalSignsLabelGrid.attachEvent("onRowSelect",function(rowId,cellIndex){
+	vitalSignsToolbar.disableItem("enteredInError");
+	if (cellIndex > 0) vitalSignsToolbar.enableItem("enteredInError");
+});
 
 function vitalSignsLabelGridOnLoaded() {
 	vitalSignsLabelGrid.setColumnColor("#ddd");
@@ -473,6 +477,16 @@ function vitalSignsToolbarOnClicked(itemId,itemValue) {
 			windowAddVitals("vitalSignsLabelGridReload");
 			break;
 		case "enteredInError":
+			var cellIndex = vitalSignsLabelGrid.getSelectedCellIndex();
+			if (cellIndex > 0) {
+				var groupId = vitalSignsLabelGrid.getUserData("","groupId"+cellIndex);
+				if (confirm("Are you sure you want to entered in error the selected vitals: "+vitalSignsLabelGrid.cells2(0,cellIndex).getValue()+"?")) {
+					vitalSignsEnteredInError(groupId);
+				}
+			}
+			else {
+				alert("No vitals selected");
+			}
 			break;
 		case "pediatricGrowth":
 			windowGrowthCharts();
@@ -487,6 +501,23 @@ function vitalSignsToolbarOnClicked(itemId,itemValue) {
 }
 vitalSignsToolbar.attachEvent("onClick",vitalSignsToolbarOnClicked);
 vitalSignsToolbar.loadXML("<?=$this->baseUrl?>/vital-signs.raw/toolbar-xml")
+
+function vitalSignsEnteredInError(groupId) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/vital-signs.raw/process-entered-in-error",
+		handleAs: "json",
+		content: {
+			"groupId": groupId,
+		},
+		load: function (data) {
+			vitalSignsLabelGridReload();
+		},
+		error: function (error) {
+			alert(error.responseText);
+			console.error("Error: ", error);
+		}
+	});
+}
 
 function vitalSignsPrint() {
 	var colsNum = vitalSignsLabelGrid.getColumnsNum();

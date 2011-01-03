@@ -65,4 +65,59 @@ class PatientAllergy extends WebVista_Model_ORM {
 		return $iterator;
 	}
 
+	public static function countAllergiesByPatientId($patientId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$ret = 0;
+		$sql = 'SELECT COUNT(patientId) AS ctr FROM patientAllergies WHERE enteredInError = 0 AND patientId = '.(int)$patientId;
+		if ($row = $db->fetchRow($sql)) {
+			$ret = $row['ctr'];
+		}
+		return $ret;
+	}
+
+	public function populateByNoKnowAllergies($patientId = null) {
+		$db = Zend_Registry::get('dbAdapter');
+		if ($patientId === null) {
+			$patientId = $this->patientId;
+		}
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('patientId = ?',(int)$patientId)
+				->where('noKnownAllergies = 1')
+				->limit(1);
+		//trigger_error($sqlSelect->__toString());
+		return $this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public static function listMedicationAllergies($filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('patientAllergies',array('symptoms','reactionType','active','causativeAgent','dateTimeReaction'))
+				->joinInner('chmed.basemed24','chmed.basemed24.md5 = patientAllergies.drugAllergy',array('rxnorm_cuid'))
+				->where("patientAllergies.reactionType = 'Specific Drug Allergy'")
+				->where('patientAllergies.noKnownAllergies = 0')
+				->group('patientAllergies.patientAllergyId');
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					//$sqlSelect->where("patientAllergies.dateTimeCreated BETWEEN '{$start}' AND '{$end}'");
+					$sqlSelect->where("patientAllergies.dateTimeReaction BETWEEN '{$start}' AND '{$end}'");
+					break;
+				case 'patientId':
+					$sqlSelect->where('patientAllergies.patientId = ?',(int)$value);
+					break;
+			}
+		}
+trigger_error($sqlSelect->__toString());
+		$rows = array();
+		$stmt = $db->query($sqlSelect);
+		while ($row = $stmt->fetch()) {
+			$rows[] = $row;
+		}
+		return $rows;
+	}
+
 }

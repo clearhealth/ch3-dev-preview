@@ -96,4 +96,83 @@ class PatientPicturesController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
+	public function thumbnailAction () {
+		$size = preg_replace('/[^0-9x]/','',$this->_getParam('size'));
+		$personId = (int)$this->_getParam('personId');
+		list($height, $width) = preg_split('/x/',$size);
+
+		$patientPicture = $this->_makeThumbnail($height, $width, $personId);
+
+		header('Content-type: image/png');
+		imagepng($patientPicture->image);
+		Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->setNoRender();
+		return;
+	}
+
+	public function thumbnailFileAction () {
+		$size = preg_replace('/[^0-9x]/','',$this->_getParam('size'));
+		$personId = (int)$this->_getParam('personId');
+		list($height, $width) = preg_split('/x/',$size);
+
+		$patientPicture = $this->_makeThumbnail($height, $width, $personId);
+		$thumbnailFile = tempnam("/tmp","thumbnail");
+		imagepng($patientPicture->image,$thumbnailFile);
+		Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->setNoRender();
+		$response = $this->getResponse();
+		$response->setBody($thumbnailFile);
+		return;
+	}
+
+	public function _makeThumbnail($height, $width, $personId) {
+		$patientDir = Zend_Registry::get('config')->document->legacyStorePath . '/' . $personId;
+
+		if ($personId == 0 || !file_exists($patientDir)) {$this->noPictureAction();}
+		$dir = dir($patientDir);
+		$picturePath = array();
+		while (false !== ($entry = $dir->read())) {
+			if (preg_match('/.*_pat_pic([0-9]+.*).jpg/',$entry,$matches)) {
+				$timestamp = strtotime($matches[1]);
+				if (!isset($picturePath['timestamp']) ||
+					(isset($picturePath['timestamp']) &&
+					$timestamp > $picturePath['timestamp'])) {
+					$picturePath['timestamp'] = $timestamp;
+					$picturePath['path'] = $patientDir . '/' . $entry;
+				}
+			}
+		}
+		if (!file_exists($picturePath['path'])) {$this->noPictureAction();}
+		$patientPicture = new ResizeImage();
+		$patientPicture->load($picturePath['path']);
+		$patientPicture->resize((int)$width,(int)$height);
+		return $patientPicture;
+	}
+
+	public function noPictureAction() {
+		header('Content-type: image/png');
+		readfile(Zend_Registry::get('basePath') . "/img/no-person-image.png");
+		Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->setNoRender();
+		return;
+	}
+
+	public function flashUploadAction() {
+		$attachmentReferenceId = (int) $this->_getParam('attachmentReferenceId');
+		$fileData = base64_decode($this->_getParam('uploadFile'));
+		$attachment = new Attachment();
+		$attachment->name = $_FILES['uploadFile']['name'];
+		$attachment->attachmentReferenceId = $attachmentReferenceId;
+		$attachment->mimeType = 'image/jpeg';
+		$attachment->md5sum = md5($fileData);
+		$attachment->dateTime = date('Y-m-d H:i:s');
+		$attachment->persist();
+
+		$attachmentBlobArray = array();
+		$attachmentBlobArray['attachmentId'] = $attachment->attachmentId;
+		$attachmentBlobArray['data'] = $fileData;
+
+		$db = Zend_Registry::get('dbAdapter');
+		$db->insert('attachmentBlobs',$attachmentBlobArray);
+		Zend_Controller_Action_HelperBroker::getStaticHelper('viewRenderer')->setNoRender();
+		return;
+	}
+
 }

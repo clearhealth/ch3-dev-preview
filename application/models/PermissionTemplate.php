@@ -35,6 +35,7 @@ class PermissionTemplate extends WebVista_Model_ORM {
 	const ACL_MEMKEY = 'aclList';
 
 	public function persist() {
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
 		$db = Zend_Registry::get('dbAdapter');
 		$permissionTemplateId = (int)$this->permissionTemplateId;
 		$data = $this->toArray();
@@ -46,7 +47,7 @@ class PermissionTemplate extends WebVista_Model_ORM {
 			$data['permissionTemplateId'] = $this->permissionTemplateId;
 			$ret = $db->insert($this->_table,$data);
 		}
-		return $ret;
+		return $this;
 	}
 
 	public static function serviceStatus() {
@@ -136,9 +137,33 @@ class PermissionTemplate extends WebVista_Model_ORM {
 	public static function auditAccess($controllerName,$actionName) {
 		$audit = new Audit();
 		$audit->objectClass = 'AccessRecord';
-		$audit->message = 'IP Address '.$_SERVER['REMOTE_ADDR'].' accessing '.$controllerName.'/'.$actionName;
+		$audit->message = 'Accessed '.$controllerName.'/'.$actionName;
+		if (isset($_GET['person_id']) && $_GET['person_id'] > 0) {
+			$audit->patientId = (int)$_GET['person_id'];
+		}
+		if (isset($_GET['patient_id']) && $_GET['patient_id'] > 0) {
+			$audit->patientId = (int)$_GET['patient_id'];
+		}
+		if (isset($_GET['personId']) && $_GET['personId'] > 0) {
+			$audit->patientId = (int)$_GET['personId'];
+		}
+		if (isset($_GET['patientId']) && $_GET['patientId'] > 0) {
+			$audit->patientId = (int)$_GET['patientId'];
+		}
+		//trigger_error($audit->message . $audit->patientId,E_USER_NOTICE);
 		$audit->dateTime = date('Y-m-d H:i:s');
 		$audit->persist();
+	}
+
+	public static function hasPermission($controllerName,$actionName) {
+		$ret = false;
+		$auth = Zend_Auth::getInstance();
+		$permissionTemplateId = $auth->getIdentity()->permissionTemplateId;
+		if ($auth->getIdentity()->emergencyAccess && ($controllerName != 'admin' && $controllerName != 'admin-persons')) $ret = true;
+		if ($permissionTemplateId == 'superadmin' || self::hasAccess($permissionTemplateId,$controllerName,$actionName)) {
+			$ret = true;
+		}
+		return $ret;
 	}
 
 }

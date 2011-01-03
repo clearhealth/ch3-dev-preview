@@ -55,6 +55,12 @@ class Visit extends WebVista_Model_ORM {
 		$this->_locationName = $locationName;
 	}
 	function getLocationName() {
+		if (!strlen($this->_locationName) > 0 && $this->buildingId > 0) {
+			$building = new Building();
+			$building->buildingId = $this->buildingId;
+			$building->populate();
+			$this->_locationName = $building->name;
+		}
 		return $this->_locationName;
 	}
 	function setProviderDisplayName($providerDisplayName) {
@@ -121,6 +127,37 @@ class Visit extends WebVista_Model_ORM {
 		$ret = $this->populateWithSql($sqlSelect->__toString());
 		$this->postPopulate();
 		return $ret;
+	}
+
+	public function getProviderId() {
+		return $this->treating_person_id;
+	}
+
+	public function setProviderId($id) {
+		$this->treating_person_id = (int)$id;
+	}
+
+	public function getDisplayStatus() {
+		if ($this->closed) {
+			return 'closed';
+		}
+		else if ($this->void) {
+			return 'void';
+		}
+		else {
+			return 'open';
+		}
+	}
+
+	public function populateLatestVisit($personId=null) {
+		if ($personId === null) $personId = $this->patient_id;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('patient_id = ?',(int)$personId)
+				->order('date_of_treatment DESC')
+				->limit(1);
+		return $this->populateWithSql($sqlSelect->__toString());
 	}
 
 }

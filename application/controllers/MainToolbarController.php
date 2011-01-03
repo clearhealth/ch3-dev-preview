@@ -167,8 +167,9 @@ class MainToolbarController extends WebVista_Controller_Action {
 
 		// VISITS
                 //$this->_visit = null;
-		if (!$visitId > 0) {
-                        $sql = "select * from encounter where patient_id = " . $patient->personId . "  and DATE_FORMAT(date_of_treatment,'%Y-%m-%d') = '" . date('Y-m-d') . "' order by date_of_treatment DESC, encounter_id DESC limit 1";
+                $visit = new Visit();
+                $visit->encounter_id = (int)$visitId;
+                if (!$visit->populate() || $visit->patientId != $patient->personId) {
                         try {
                                 $db = Zend_Registry::get('dbAdapter');
                                 $dbSelect = $db->select()
@@ -193,9 +194,6 @@ class MainToolbarController extends WebVista_Controller_Action {
 
                         return;
                 }
-                $visit = new Visit();
-                $visit->encounter_id = (int)$visitId;
-                $visit->populate();
 
 		$this->_visit = $visit;
 		$this->view->visit = $this->_visit;

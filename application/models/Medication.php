@@ -537,5 +537,20 @@ class Medication extends WebVista_Model_ORM implements Document {
 		return $ret;
 	}
 
+	public function getBaseMed24() {
+		static $baseMed24List = array();
+		if (isset($baseMed24List[$this->pkey])) return $baseMed24List[$this->pkey];
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('chmed.basemed24')
+				->where('chmed.basemed24.pkey = ?',$this->pkey)
+				->limit(1);
+		$baseMed24 = new BaseMed24();
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$baseMed24->populateWithArray($row);
+		}
+		$baseMed24List[$this->pkey] = $baseMed24;
+		return $baseMed24;
+	}
 
 }

@@ -502,9 +502,10 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'excells-dhtmlxgrid_excell_grid';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_drag';
 		$files['dhtmlxjs'][] = 'dhtmlxgrid_json';
+		$files['dhtmlxjs'][] = 'dhtmlxgrid_pivot';
 		$files['dhtmlxjs'][] = 'dhtmlxtree';
-		$files['dhtmlxjs'][] = 'ch3treegrid';
-		//$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
+		$files['dhtmlxjs'][] = 'dhtmlxtreegrid';
+		$files['dhtmlxjs'][] = 'dhtmlxtreegrid_lines';
 		$files['dhtmlxjs'][] = 'dhtmlxtree_json';
 		$files['dhtmlxjs'][] = 'dhtmlxlayout';
 		$files['dhtmlxjs'][] = 'dhtmlxaccordion';

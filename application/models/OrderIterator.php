@@ -24,46 +24,52 @@
 
 class OrderIterator extends WebVista_Model_ORMIterator implements Iterator {
 
-	public function __construct($dbSelect = null) {
-		parent::__construct("Order",$dbSelect);
-	}	
-
-	public function current() {
-		$ormObj = new $this->_ormClass();
-		$row = $this->_dbStmt->fetch(null,null,$this->_offset);
-		$ormObj->populateWithArray($row);
-		$ormObj->provider->populateWithArray($row);
-		return $ormObj;
+	public function __construct($dbSelect = null,$autoLoad = true) {
+		$this->_ormClass = 'Order';
+		// autoLoad gives an option to query the entire rows which takes time if more data in the table
+		if ($autoLoad) {
+			parent::__construct($this->_ormClass,$dbSelect);
+		}
 	}
 
-	public function setFilter($filter) {
+	public function setFilter($filters) {
+		$this->setFilters($filters);
+	}
+
+	public function setFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()->from('orders');
 
 		$currentDate = date('Y-m-d');
-		switch ($filter) {
-			case 'current_orders':
-				$dbSelect->orWhere('status = ?','Active');
-				$dbSelect->orWhere('status = ?','Pending');
-				break;
-			case 'expiring_orders':
-				// currently set to 1 week for expiring orders
-				$nextDate = date('Y-m-d',strtotime('+1week',strtotime($currentDate)));
-				$dbSelect->where("dateStop BETWEEN '{$currentDate}' AND '{$nextDate}'");
-				break;
-			case 'unsigned_orders':
-				$dbSelect->where('eSignatureId = ?',0);
-				break;
-			case 'recently_expired_orders':
-				$dbSelect->where("dateStop LIKE '{$currentDate}%'");
-				break;
-			default:
-				$dbSelect->orWhere('status = ?','Active');
-				$dbSelect->orWhere('status = ?','Pending');
-				$dbSelect->orWhere("dateStart LIKE '{$currentDate}%'");
-				break;
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'current':
+					$dbSelect->where("status = 'Active' OR status = 'Pending'");
+					break;
+				case 'expiring':
+					// currently set to 1 week for expiring orders
+					$nextDate = date('Y-m-d',strtotime('+1week',strtotime($currentDate)));
+					$dbSelect->where("dateStop BETWEEN '{$currentDate}' AND '{$nextDate}'");
+					break;
+				case 'unsigned':
+					$dbSelect->where('eSignatureId = ?',0);
+					break;
+				case 'recently_expired':
+					$dbSelect->where("dateStop LIKE '{$currentDate}%'");
+					break;
+				case 'patientId':
+					$dbSelect->where('patientId = ?',(int)$value);
+					break;
+				case 'service':
+					$dbSelect->where('service = ?',(string)$value);
+					break;
+				default:
+					$dbSelect->where("status = 'Active' OR status = 'Pending' OR dateStart LIKE '{$currentDate}%'");
+					break;
+			}
 		}
 
+		$dbSelect->order('dateTime DESC');
 		trigger_error($dbSelect->__toString(),E_USER_NOTICE);
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);

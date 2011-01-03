@@ -75,7 +75,16 @@ class ProblemListIterator extends WebVista_Model_ORMIterator implements Iterator
 					}
 					$dbSelect->where(implode(' OR ',$orWhere));
 				} else {
-					$dbSelect->where("pl.$fieldName = ?",$fieldValue);
+					switch ($fieldName) {
+						case 'dateRange':
+							$dateRange = explode(';',$fieldValue);
+							$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+							$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+							$dbSelect->where("pl.dateOfOnset BETWEEN '{$start}' AND '{$end}'");
+							break;
+						default:
+							$dbSelect->where("pl.$fieldName = ?",$fieldValue);
+					}
 				}
 			}
 		}

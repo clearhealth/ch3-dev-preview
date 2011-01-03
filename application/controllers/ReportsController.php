@@ -140,7 +140,7 @@ class ReportsController extends WebVista_Controller_Action {
 			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_PROVIDER) {
 				$orm = new Provider();
 				$list = array(
-					'ormIterator'=>$orm->getIterator(),
+					'ormIterator'=>$orm->getIter(),
 					'id'=>'personId',
 					'name'=>'displayName',
 				);
@@ -152,6 +152,39 @@ class ReportsController extends WebVista_Controller_Action {
 					'id'=>'roomId',
 					'name'=>'displayName',
 				);
+			}
+			else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_BUILDING_PREF
+				|| $reportFilter->type == ReportBase::FILTER_TYPE_LIST_ROOM_PREF
+				|| $reportFilter->type == ReportBase::FILTER_TYPE_LIST_PROVIDER_PREF) {
+				$room = User::myPreferencesLocation();
+				$practiceId = (int)$room->building->practiceId;
+				$buildingId = (int)$room->buildingId;
+				if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_BUILDING_PREF) {
+					$orm = new Building();
+					$orm->practiceId = $practiceId;
+					$list = array(
+						'ormIterator'=>$orm->getIteratorByPracticeId(),
+						'id'=>'buildingId',
+						'name'=>'displayName',
+					);
+				}
+				else if ($reportFilter->type == ReportBase::FILTER_TYPE_LIST_ROOM_PREF) {
+					$orm = new Room();
+					$orm->buildingId = $buildingId;
+					$list = array(
+						'ormIterator'=>$orm->getIteratorByBuildingId(),
+						'id'=>'roomId',
+						'name'=>'displayName',
+					);
+				}
+				else {
+					$orm = new Provider();
+					$list = array(
+						'ormIterator'=>$orm->getIteratorByPracticeId($practiceId),
+						'id'=>'personId',
+						'name'=>'displayName',
+					);
+				}
 			}
 			if ($list !== null) {
 				$filter['lists'] = array();
@@ -211,6 +244,8 @@ class ReportsController extends WebVista_Controller_Action {
 					break;
 				case 'pdr':
 					return $this->_forward('flat','files',null,array('data'=>$value));
+				case 'pqri':
+					return $this->_forward('zip','files',null,array('data'=>$value));
 			}
 		}
 		//trigger_error(print_r($data,true),E_USER_NOTICE);

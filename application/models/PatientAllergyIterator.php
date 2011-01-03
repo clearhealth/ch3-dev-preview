@@ -43,7 +43,16 @@ class PatientAllergyIterator extends WebVista_Model_ORMIterator implements Itera
 			if (!in_array($field,$fields)) {
 				continue;
 			}
-			$dbSelect->where($field.' = ?',$value);
+			switch ($field) {
+				case 'dateRange':
+					$dateRange = explode(';',$value);
+					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
+					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
+					$dbSelect->where("dateTimeCreated BETWEEN '{$start}' AND '{$end}'");
+					break;
+				default:
+					$dbSelect->where($field.' = ?',$value);
+			}
 		}
 
 		trigger_error($dbSelect->__toString(),E_USER_NOTICE);

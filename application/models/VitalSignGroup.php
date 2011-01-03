@@ -31,6 +31,7 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 	protected $user;
 	protected $visitId;
 	protected $vitalSignTemplateId;
+	protected $enteredInError;
 	protected $vitalSignValues = array();
 	protected $_primaryKeys = array('vitalSignGroupId');
 	protected $_table = "vitalSignGroups";
@@ -215,6 +216,7 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 				->where('vsg.personId = ?',$personId)
 				->where('vsg.vitalSignTemplateId = ?',$vitalSignTemplateId)
 				->where("vsg.dateTime BETWEEN '{$dateBegin}' AND '{$dateEnd}'")
+				->where('vsg.enteredInError = 0')
 				->order('vsg.dateTime ASC');
 		if (isset($filters['vitals'])) {
 			$vitals = $filters['vitals'];

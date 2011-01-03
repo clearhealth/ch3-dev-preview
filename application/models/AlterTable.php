@@ -277,27 +277,38 @@ class AlterTable extends XMLParserAbstract {
 					break;
 				}
 			}
-			if (preg_match('/\[@lastSequenceId(.*)\]/',$fieldValue,$matches)) {
+			if (preg_match_all('/\[@lastSequenceId=(\d+)\]/',$fieldValue,$matches)) {
 				$key = -1;
-				if (strlen($matches[1]) > 0) {
-					$index = substr($matches[1],1);
+				if (strlen($matches[1][0]) > 0) {
+					$index = $matches[1][0];
 					if (isset($this->_sequenceIds[$index])) {
 						$key = $index;
 					}
 				}
-				$fieldValue = $this->_sequenceIds[$key];
+				if (count($matches[1]) > 1) {
+					foreach ($matches[1] as $match) {
+						$index = -1;
+						if (isset($this->_sequenceIds[$match])) {
+							$index = $match;
+						}
+						$fieldValue = preg_replace('/\[@lastSequenceId='.$match.'\]/mi',$this->_sequenceIds[$index],$fieldValue);
+					}
+				}
+				else {
+					$fieldValue = $this->_sequenceIds[$key];
+				}
 			}
 			$tableColumns[$fieldName] = $fieldValue;
-			if ($this->_tables[$tableName][$fieldName]['Key'] == 'PRI' && !isset($matches[1])) {
+			if ($this->_tables[$tableName][$fieldName]['Key'] == 'PRI') {// && !isset($matches[1])) {
 				$primaryKey = $fieldName;
 			}
 		}
 		if ($this->_withSql && $primaryKey !== null) {
-			if (preg_match('/\[@nextSequenceId(.*)\]/',$tableColumns[$primaryKey],$matches)) {
+			if (preg_match('/\[@nextSequenceId=(\d+)\]/',$tableColumns[$primaryKey],$matches)) {
 				$tableColumns[$primaryKey] = WebVista_Model_ORM::nextSequenceId();
 				$key = -1;
 				if (strlen($matches[1]) > 0) {
-					$key = substr($matches[1],1);
+					$key = $matches[1];
 				}
 				$this->_sequenceIds[$key] = $tableColumns[$primaryKey];
 				trigger_error('nextSequenceId generated for: '.$tableName.'.'.$primaryKey,E_USER_NOTICE);

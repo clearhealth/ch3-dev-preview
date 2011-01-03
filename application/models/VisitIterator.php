@@ -31,7 +31,7 @@ class VisitIterator extends WebVista_Model_ORMIterator implements Iterator {
 	function setFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()->from('encounter',array('*','DATE_FORMAT(date_of_treatment,"%Y-%m-%d") AS date_of_treatment'));
-		$dbSelect->join('person', 'person.person_id = encounter.treating_person_id',array('concat(person.last_name, ", ", person.first_name, " ", person.middle_name) as providerDisplayName'));
+		$dbSelect->joinLeft('person', 'person.person_id = encounter.treating_person_id',array('concat(person.last_name, ", ", person.first_name, " ", person.middle_name) as providerDisplayName'));
 		$dbSelect->joinLeft('buildings', 'encounter.building_id = buildings.id', array('buildings.name as locationName'));
 		$dbSelect->where("patient_id = ?", $filters['patientId']);
 		$dbSelect->order('date_of_treatment DESC');

@@ -737,6 +737,15 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$providerIdFrom = (int)$this->_getParam('providerIdFrom');
 		$roomIdFrom = (int)$this->_getParam('roomIdFrom');
 
+		$start = $dateStart.' 00:00:00';
+		$end = $dateEnd.' 23:59:59';
+		$scheduleEvent = new ScheduleEvent();
+		$scheduleEvent->providerId = $providerIdTo;
+		$scheduleEvent->roomId = $roomIdTo;
+		$scheduleEvent->start = $start;
+		$scheduleEvent->end = $end;
+		$scheduleEvent->deleteByDateRange(); // remove any existing data
+
 		$data = 0;
 		$filters = array();
 		$filters['providerId'] = $providerIdFrom;

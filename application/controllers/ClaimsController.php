@@ -24,71 +24,163 @@
 
 class ClaimsController extends WebVista_Controller_Action {
 
+	protected $_session;
+
+	public function init() {
+		$this->_session = new Zend_Session_Namespace(__CLASS__);
+	}
+
 	public function indexAction() {
+		if (!isset($this->_session->filters)) {
+			$filters = array();
+			$filters['DOSStart'] = date('Y-m-d',strtotime('-1 month'));
+			$filters['DOSEnd'] = date('Y-m-d');
+			$filters['facility'] = '';
+			$filters['insurer'] = '';
+			$tmp = array('active'=>0,'operator'=>'=','operand1'=>'','operand2'=>'');
+			$filters['total'] = $tmp;
+			$filters['paid'] = $tmp;
+			$filters['writeoff'] = $tmp;
+			$filters['balance'] = $tmp;
+			$this->_session->filters = $filters;
+		}
 		$facilityIterator = new FacilityIterator();
 		$facilityIterator->setFilter(array('Practice','Building','Room'));
 		$this->view->facilityIterator = $facilityIterator;
 		$this->view->insurers = InsuranceProgram::getInsurancePrograms();
+		$this->view->filters = $this->_session->filters;
 		$this->render();
 	}
 
 	public function advancedFiltersAction() {
 		$this->view->balanceOperators = Claim::balanceOperators();
+		$filters = $this->_session->filters;
+		if (!isset($filters['total'])) {
+			$filters['total'] = array('active'=>0,'operator'=>'=','operand1'=>'','operand2'=>'');
+		}
+		if (!isset($filters['paid'])) $filters['paid'] = '';
+		if (!isset($filters['writeoff'])) $filters['writeoff'] = '';
+		if (!isset($filters['openClosed'])) $filters['openClosed'] = 2;
+		$this->view->filters = $filters;
 		$this->render();
 	}
 
-	public function listAction() {
-		$filters = array();
-		$dateRange = $this->_getParam('dateRange'); // mm/dd/yyyy-mm/dd/yyyy
-		$dosStart = date('Y-m-d');
-		$dosEnd = $dosStart;
-		if ($dateRange !== null) {
-			$x = explode('-',$dateRange);
-			$dosStart = date('Y-m-d',strtotime($x[0]));
-			$dosEnd = date('Y-m-d',strtotime($x[1]));
+	public function setFiltersAction() {
+		$params = $this->_getParam('filters');
+		if (is_array($params)) {
+			$filters = $this->_session->filters;
+			foreach ($params as $key=>$value) {
+				$filters[$key] = $value;
+			}
+			$this->_session->filters = $filters;
 		}
-		$filters['DOSDateRange'] = array('start'=>$dosStart,'end'=>$dosEnd);
-		$facility = $this->_getParam('facility'); // practiceId_buildingId_roomId
-		if (strlen($facility) > 0) {
+		$data = true;
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function getContextMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render('get-context-menu');
+	}
+
+	public function setBatchVisitsAction() {
+		$type = $this->_getParam('type');
+		$ids = $this->_getParam('ids');
+		$data = false;
+		if (strlen($ids) > 0) {
+			foreach (explode(',',$ids) as $id) {
+				$visit = new Visit();
+				$visit->visitId = (int)$id;
+				if (!$visit->populate()) continue;
+				if ($type == 'open') {
+					$visit->closed = 0;
+				}
+				else if ($type == 'closed') {
+					$visit->closed = 1;
+				}
+				else {
+					continue;
+				}
+				$visit->persist();
+				$data = true;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function listAction() {
+		$sessions = $this->_session->filters;
+		$filters = array();
+		$filters['DOSDateRange'] = array('start'=>$sessions['DOSStart'],'end'=>$sessions['DOSEnd']);
+		$facility = $sessions['facility'];
+		if (strlen($facility) > 0) { // practiceId_buildingId_roomId
 			$x = explode('_',$facility);
 			$practiceId = $x[0];
 			$buildingId = $x[1];
 			$roomId = $x[2];
 			$filters['facility'] = array('practice'=>$practiceId,'building'=>$buildingId,'room'=>$roomId);
 		}
-		$filters['insurer'] = (int)$this->_getParam('insurer');
-		$total = $this->_getParam('total');
-		if ($total !== null) {
-			$filters['total'] = (float)$total;
-		}
-		$paid = $this->_getParam('paid');
-		if ($paid !== null) {
-			$filters['paid'] = (float)$paid;
-		}
-		$writeoff = $this->_getParam('writeoff');
-		if ($writeoff !== null) {
-			$filters['writeoff'] = (float)$writeoff;
-		}
-		$balance = $this->_getParam('balance'); // operator::balance::balance2
-		if ($balance !== null) {
-			$x = explode('::',$balance);
-			$balance1 = $x[1];
-			$balance2 = 0;
-			if ($x[0] == 'between') {
-				$balance2 = $x[2];
+		$insurer = $sessions['insurer'];
+		if (strlen($insurer) > 0) $filters['insurer'] = (int)$insurer;
+		$filters['total'] = $sessions['total'];
+		$filters['paid'] = $sessions['paid'];
+		$filters['writeoff'] = $sessions['writeoff'];
+		$filters['balance'] = $sessions['balance'];
+		$filters['openClosed'] = isset($sessions['openClosed'])?(int)$sessions['openClosed']:2;
+
+		$rows = array();
+		$claimIterator = array();
+		foreach (ClaimLine::claimsList($filters) as $claim) {
+			$visit = $claim['visit'];
+			if (!$visit->dateOfTreatment || $visit->dateOfTreatment == '0000-00-00 00:00:00') {
+				$visit->dateOfTreatment = '0000-00-00';
 			}
-			$balanceOperator = $x[0];
-			$balanceOperators = Claim::balanceOperators();
-			if (!isset($balanceOperators[$balanceOperator])) {
-				$balanceOperator = '=';
+			else {
+				$visit->dateOfTreatment = date('Y-m-d',strtotime($visit->dateOfTreatment));
 			}
-			$filters['balance'] = array('operator'=>$balanceOperator,'operand1'=>$balance1,'operand2'=>$balance2);
+			$person = new Person();
+			$person->personId = (int)$visit->patientId;
+			$person->populate();
+			$total = $claim['claims']['totalOrig'] + $claim['miscCharges']['total'];
+			$billed = ($claim['claims']['totalOrig'] - $claim['claims']['totalDiscounted']) + $claim['miscCharges']['total'];
+			$paid = $claim['payments']['total'];
+			$writeoff = 0;
+			$balance = $billed - $paid;
+
+			$names = array('total','paid','writeoff','balance');
+			foreach ($names as $name) {
+				if (!$filters[$name]['active']) continue;
+				$operator = $filters[$name]['operator'];
+				$operand1 = $filters[$name]['operand1'];
+				$operand2 = $filters[$name]['operand2'];
+				if ($operator == '=' && $operand1 > 0 && !($$name == $operand1)) continue 2;
+				else if ($operator == '>' && $operand1 > 0 && !($$name > $operand1)) continue 2;
+				else if ($operator == '>=' && $operand1 > 0 && !($$name >= $operand1)) continue 2;
+				else if ($operator == '<' && $operand1 > 0 && !($$name < $operand1)) continue 2;
+				else if ($operator == '<=' && $operand1 > 0 && !($$name <= $operand1)) continue 2;
+				else if ($operator == 'between' && $operand1 > 0 && $operand2 > 0 && !($$name >= $operand1 && $$name <= $operand2)) {
+					continue 2;
+				}
+			}
+			$row = array();
+			$row['id'] = $visit->visitId;
+			$row['data'] = array();
+			$row['data'][] = $visit->dateOfTreatment;
+			$row['data'][] = $person->displayName;
+			$row['data'][] = number_format($total,2,'.',',');
+			$row['data'][] = number_format($billed,2,'.',',');
+			$row['data'][] = number_format($paid,2,'.',',');
+			$row['data'][] = number_format($balance,2,'.',',');
+			$row['data'][] = $visit->insuranceProgram;
+			$row['data'][] = $visit->displayStatus;
+			$rows[] = $row;
 		}
 
-		$claimIterator = new ClaimIterator();
-		$claimIterator->setFilters($filters);
-		$data = array();
-
+		$data = array('rows'=>$rows);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -364,7 +456,6 @@ class ClaimsController extends WebVista_Controller_Action {
 			$ctr = 1;
 			$payment = new Payment();
 			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
-			//$paymentIterator = $payment->getMostRecentPayments();
 			foreach ($paymentIterator as $pay) {
 				$row = array();
 				$row['id'] = $ctr++;

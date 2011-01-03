@@ -12,7 +12,7 @@
 	</div>
 	<br style="clear:left"/>
 	<div class="formRow">
-		<div id="immunizationsListContainer" style="float:left;width:740px;height:150px"></div>
+		<div id="immunizationsListContainer" style="float:left;width:740px;height:350px"></div>
 	</div>
 </div>
 <script>
@@ -95,22 +95,28 @@ function immunizationsSectionNameOnChecked(rowId,cellIndex,state) {
 
 var immunizationsListGrid = new dhtmlXGridObject("immunizationsListContainer");
 immunizationsListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-immunizationsListGrid.setHeader("<?=__('Date')?>,<?=__('Lot')?>,<?=__('Route')?>,<?=__('Site')?>,<?=__('Series')?>,<?=__('Reaction')?>,<?=__('Selected Immunizations')?>,<?=__('PR')?>,<?=__('Comment')?>");
+immunizationsListGrid.setHeader("<?=__('Date')?>{#special},<?=__('Lot')?>,<?=__('Amount')?>,<?=__('Units')?>,<?=__('Route')?>,<?=__('Site')?>,<?=__('Series')?>,<?=__('Reaction')?>,<?=__('Selected Immunizations')?>,<?=__('PR')?>,<?=__('Comment')?>");
+immunizationsListGrid._in_header_special=function(tag,index,data){ 
+	tag.innerHTML = data[0];
+	tag.title = "Format: yyyy-mm-dd H:i"; 
+}
 // defined the index for easy re-indexing in the future
 var indexPIMDate = 0;
 var indexPIMLot = 1;
-var indexPIMRoute = 2;
-var indexPIMSite = 3;
-var indexPIMSeries = 4;
-var indexPIMReaction = 5;
-var indexPIMImmunization = 6;
-var indexPIMPR = 7;
-var indexPIMComment = 8;
+var indexPIMAmount = 2;
+var indexPIMUnits = 3;
+var indexPIMRoute = 4;
+var indexPIMSite = 5;
+var indexPIMSeries = 6;
+var indexPIMReaction = 7;
+var indexPIMImmunization = 8;
+var indexPIMPR = 9;
+var indexPIMComment = 10;
 
-immunizationsListGrid.setInitWidths("75,45,80,60,80,85,*,25,*");
-immunizationsListGrid.setColTypes("dhxCalendar,ed,coro,coro,coro,coro,ro,ch,ed");
+<?$lotColType = ($this->useImmunizationInventory)?'coro':'ed'?>
+immunizationsListGrid.setInitWidths("100,45,60,45,80,60,80,85,*,25,*");
+immunizationsListGrid.setColTypes("ed,<?=$lotColType?>,ed,ed,coro,coro,coro,coro,ro,ch,ed");
 immunizationsListGrid._dtmask = "%Y-%m-%d"; // hacks for calendar date format
-immunizationsListGrid.setColAlign("right,left,left,left,left,left,left,center");
 immunizationsListGrid.setSkin("xp");
 immunizationsListGrid.attachEvent("onEditCell",immunizationsListGridOnEditCell);
 immunizationsListGrid.attachEvent("onCheck",immunizationsListGridOnChecked);
@@ -160,7 +166,21 @@ immunizationsListGrid.getCombo(indexPIMReaction).put("<?=$key?>","<?=$value?>");
 immunizationsListGrid.init();
 function immunizationsListGridReload() {
 	immunizationsListGrid.clearAll();
-	immunizationsListGrid.load("<?=$this->baseUrl?>/immunizations.raw/list-patient-immunizations.json?patientId="+mainController.getActivePatient(),immunizationsOnLoaded,"json");
+	immunizationsListGrid.load("<?=$this->baseUrl?>/immunizations.raw/list-patient-immunizations.json?patientId="+mainController.getActivePatient(),function(){
+	<?if($this->useImmunizationInventory):?>
+		immunizationsListGrid.getCombo(indexPIMLot).put("","");
+		immunizationsListGrid.forEachRow(function(rowId){
+			var lotNumbers = this.getUserData(rowId,"lotNumbers");
+			for (var i in lotNumbers) {
+				if (immunizationsListGrid.cells(rowId,indexPIMLot).getValue() == i) {
+					immunizationsListGrid.cells(rowId,indexPIMLot).setValue(lotNumbers[i]);
+					immunizationsListGrid.setUserData(rowId,"lotValue",i);
+					break;
+				}
+			}
+		});
+	<?endif;?>
+	},"json");
 }
 immunizationsListGridReload();
 
@@ -172,10 +192,29 @@ function immunizationsListGridOnChecked(rowId,cellIndex,state) {
 }
 
 function immunizationsListGridOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
+	<?if($this->useImmunizationInventory):?>
+	if (stage == 0) {
+		immunizationsListGrid.getCombo(indexPIMLot).clear();
+		immunizationsListGrid.getCombo(indexPIMLot).put("","");
+		var lotNumbers = this.getUserData(rowId,"lotNumbers");
+		if (typeof lotNumbers == "object") {
+			for (var i in lotNumbers) {
+				immunizationsListGrid.getCombo(indexPIMLot).put(i,lotNumbers[i]);
+			}
+		}
+		var lotNumber = immunizationsListGrid.getUserData(rowId,"lotValue");
+		if (lotNumber) {
+			immunizationsListGrid.cells(rowId,indexPIMLot).setValue(lotNumber);
+			immunizationsListGrid.setUserData(rowId,"lotValue","");
+		}
+	}
+	<?endif;?>
 	if (stage == 2 && newValue != oldValue) {
 		switch (cellIndex) {
 			case indexPIMDate:
 			case indexPIMLot:
+			case indexPIMAmount:
+			case indexPIMUnits:
 			case indexPIMRoute:
 			case indexPIMSite:
 			case indexPIMSeries:
@@ -231,6 +270,8 @@ function immunizationSave(rowId,code,description) {
 			"immunizations[patientId]": mainController.getActivePatient(),
 			"immunizations[dateAdministered]": immunizationsListGrid.cells(rowId,indexPIMDate).getValue(),
 			"immunizations[lot]": immunizationsListGrid.cells(rowId,indexPIMLot).getValue(),
+			"immunizations[amount]": immunizationsListGrid.cells(rowId,indexPIMAmount).getValue(),
+			"immunizations[units]": immunizationsListGrid.cells(rowId,indexPIMUnits).getValue(),
 			"immunizations[route]": immunizationsListGrid.cells(rowId,indexPIMRoute).getValue(),
 			"immunizations[site]": immunizationsListGrid.cells(rowId,indexPIMSite).getValue(),
 			"immunizations[series]": immunizationsListGrid.cells(rowId,indexPIMSeries).getValue(),
@@ -253,6 +294,9 @@ function immunizationSave(rowId,code,description) {
 				if (data.data[i] == null) continue;
 				immunizationsListGrid.cells(data.id,i).setValue(data.data[i]);
 			}
+			for (var i in data.userdata) {
+				immunizationsListGrid.setUserData(data.id,i,data.userdata[i]);
+			}
 		},
 		error: function (error) {
 			alert(error.responseText);
@@ -260,9 +304,6 @@ function immunizationSave(rowId,code,description) {
 		}
 	});
 
-}
-
-function immunizationsOnLoaded() {
 }
 
 function immunizationsOnChecked(rowId,cellIndex,state) {

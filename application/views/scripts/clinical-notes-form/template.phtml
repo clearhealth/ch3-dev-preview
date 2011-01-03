@@ -3,9 +3,19 @@
 <script>
 function utf8_encode ( argString ) {
    // Encodes an ISO-8859-1 string to UTF-8
+   //
    // version: 1006.1915
-   // *     example 1: utf8_encode('blah blah');
-   // *     returns 1: 'blah blah'
+   // discuss at: http://phpjs.org/functions/utf8_encode
+   // +   original by: Webtoolkit.info (http://www.webtoolkit.info/)
+   // +   improved by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+   // +   improved by: sowberry
+   // +    tweaked by: Jack
+   // +   bugfixed by: Onno Marsman
+   // +   improved by: Yves Sucaet
+   // +   bugfixed by: Onno Marsman
+   // +   bugfixed by: Ulrich
+   // *     example 1: utf8_encode('Kevin van Zonneveld');
+   // *     returns 1: 'Kevin van Zonneveld'
    var string = (argString+''); // .replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
    var utftext = "";
@@ -99,18 +109,21 @@ function base64_encode (data) {
    return enc;
 }
 
-function preSubmitcntemplateform() {
-	if (window.transcriptionNotesFormSubmit) {
-		var retval = transcriptionNotesFormSubmit();
-		if (retval === false) {
-			return false;
-		}
+var globalNoteTemplateCallbacks = [];
+function preSubmit<?=$this->form->getId()?>() {
+	var retval = true;
+	var cnCallback = null;
+	for (var i in globalNoteTemplateCallbacks) {
+		cnCallback= globalNoteTemplateCallbacks[i];
+		if (typeof cnCallback != "function") continue;
+		if (cnCallback() === false) retval = false;
 	}
-	return true;
+	return retval;
 }
 
 function postSubmit<?=$this->form->getId()?>(data) {
 	changeCNFilterOptions();
+	globalNoteIsEdited = false;
 	alert(data);
 	return false;
 }

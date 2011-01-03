@@ -51,6 +51,10 @@ class ReportBase extends WebVista_Model_ORM {
 	const FILTER_TYPE_LIST_PRACTICE = 'Practice List';
 	const FILTER_TYPE_LIST_PROVIDER = 'Provider List';
 	const FILTER_TYPE_LIST_ROOM = 'Room List';
+	const FILTER_TYPE_LIST_BUILDING_PREF = 'My Prefs Building List';
+	const FILTER_TYPE_LIST_ROOM_PREF = 'My Prefs Room List';
+	const FILTER_TYPE_LIST_PROVIDER_PREF = 'My Prefs Provider List';
+	const FILTER_TYPE_SPECIAL = 'Special';
 
 	public static $_filterOptions = array(
 		'sq'=>'Single Quotes',
@@ -58,6 +62,12 @@ class ReportBase extends WebVista_Model_ORM {
 		'lc'=>'Lower Case',
 		'uc'=>'Upper Case',
 		'qes'=>'Quote & Escape String',
+	);
+
+	public static $_specialOptions = array(
+		'currentPracticeId'=>'My Prefs->Current Practice Id',
+		'currentBuildingId'=>'My Prefs->Current Building Id',
+		'currentRoomId'=>'My Prefs->Current Room Id',
 	);
 
 	public function populate() {
@@ -117,6 +127,10 @@ class ReportBase extends WebVista_Model_ORM {
 		$filterTypes[self::FILTER_TYPE_LIST_PRACTICE] = array();
 		$filterTypes[self::FILTER_TYPE_LIST_PROVIDER] = array();
 		$filterTypes[self::FILTER_TYPE_LIST_ROOM] = array();
+		$filterTypes[self::FILTER_TYPE_LIST_BUILDING_PREF] = array();
+		$filterTypes[self::FILTER_TYPE_LIST_ROOM_PREF] = array();
+		$filterTypes[self::FILTER_TYPE_LIST_PROVIDER_PREF] = array();
+		$filterTypes[self::FILTER_TYPE_SPECIAL] = array();
 		return $filterTypes;
 	}
 
@@ -198,7 +212,7 @@ class ReportBase extends WebVista_Model_ORM {
 					$ret[] = $row;
 					continue;
 				}
-				$queryValue = $this->_applyFilters($filters,$queryValue,$tokens);
+				$queryValue = $this->_applyFilters($filters,$queryValue);
 			}
 			$columnDefinitions = array();
 			if (isset($viewColumnDefinitions[$query->reportQueryId])) {
@@ -216,6 +230,7 @@ class ReportBase extends WebVista_Model_ORM {
 			$columnDefinitionLen = count($columnDefinitions);
 			switch ($query->type) {
 				case ReportQuery::TYPE_SQL:
+					//file_put_contents('/tmp/query.sql',$queryValue);
 					trigger_error($queryValue,E_USER_NOTICE);
 					try {
 						$results = array();
@@ -249,8 +264,16 @@ class ReportBase extends WebVista_Model_ORM {
 								foreach ($columnInfo as $index=>$mapping) {
 									$tmp[$mapping->displayName] = $this->_applyTransforms($mapping->transforms,$fetchRow[$index]);
 								}
+								$tmpHeaders = $headers;
+								$headers = array();
 								foreach ($columnDefinitions as $id=>$mapping) { // id, queryId, queryName, resultSetName, displayName, transform
 									$tmpResult['data'][] = $tmp[$mapping->displayName];
+									foreach ($tmpHeaders as $key=>$header) {
+										if ($header != $mapping->displayName) continue;
+										$headers[] = $header;
+										unset($tmpHeaders[$key]);
+										break;
+									}
 								}
 							}
 							else {
@@ -275,10 +298,7 @@ class ReportBase extends WebVista_Model_ORM {
 					$nsdr = explode("\n",$queryValue);
 					$nsdrResults = array();
 					foreach ($nsdr as $key=>$value) {
-						$tokens = $this->_extractTokens($queryValue);
-						if (isset($tokens[0])) {
-							$value = $this->_applyFilters($filters,$value);
-						}
+						$value = $this->_applyFilters($filters,$value);
 						$resultSetName = ReportView::extractNamespace($value);
 						//$displayName = ReportView::metaDataPrettyName($resultSetName);
 						$nsdrResult = NSDR2::populate($value);
@@ -322,11 +342,11 @@ class ReportBase extends WebVista_Model_ORM {
 		return $tokens;
 	}
 
-	protected function _applyFilters(Array $filters,$value,Array $tokens) {
+	protected function _applyFilters(Array $filters,$value) {
 		$db = Zend_Registry::get('dbAdapter');
 		foreach ($this->reportFilters as $key=>$filter) {
 			$content = '';
-			if (isset($filters[$key]) && strlen($filters[$key]) > 0) {
+			if ((isset($filters[$key]) && strlen($filters[$key]) > 0) || $filter->type == self::FILTER_TYPE_SPECIAL) {
 				$content = $filters[$key];
 				switch ($filter->type) {
 					case self::FILTER_TYPE_DATE:
@@ -345,6 +365,18 @@ class ReportBase extends WebVista_Model_ORM {
 						$reportQuery->reportQueryId = (int)$content;
 						$reportQuery->populate();
 						$content = $reportQuery->query;*/
+						break;
+					case self::FILTER_TYPE_SPECIAL:
+						$room = User::myPreferencesLocation();
+						if ($filter->special == 'currentPracticeId') {
+							$content = (int)$room->building->practiceId;
+						}
+						else if ($filter->special == 'currentBuildingId') {
+							$content = (int)$room->buildingId;
+						}
+						else if ($filter->special == 'currentRoomId') {
+							$content = (int)$room->roomId;
+						}
 						break;
 				}
 			}
@@ -534,6 +566,9 @@ class ReportBase extends WebVista_Model_ORM {
 					return $ret;
 				case 'graph': // to be implemented
 					break;
+				case 'pqri':
+					$ret['value'] = NQFPQRIReport::generatePQRIXML($data);
+					return $ret;
 			}
 		}
 		return $ret;

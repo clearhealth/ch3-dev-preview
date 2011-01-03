@@ -109,7 +109,7 @@ function toggleActiveAlertButtons(disabled) {
 var hsaActiveAlertsGrid = new dhtmlXGridObject("hsaActiveAlertsGridId");
 hsaActiveAlertsGrid.setImagePath("<?=$this->baseUrl?>/img/");
 hsaActiveAlertsGrid.setHeader('<?=__('Alerts')?>,<?=__('Due Date')?>');
-hsaActiveAlertsGrid.setInitWidths("*,*");
+hsaActiveAlertsGrid.setInitWidths("*,120");
 hsaActiveAlertsGrid.setColTypes("ro,ro");
 hsaActiveAlertsGrid.setSkin("xp");
 function hsaActiveAlertsGridOnRowSelect(rowId,cellIndex) {

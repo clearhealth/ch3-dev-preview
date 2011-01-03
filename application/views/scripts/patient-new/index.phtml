@@ -74,8 +74,7 @@ input,select {
 			</div>
 			<br class="formRowDivider">
 			<div class="formRow">
-				<?=$this->form->formPerson->active->renderLabel()?>
-				<input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> />
+				<?=__('Active')?> <input type="checkbox" name="<?=$this->form->formPerson->active->getFullyQualifiedName()?>" id="<?=$this->form->formPerson->active->getId()?>" helper="formText"<?=($this->form->formPerson->active->getValue())?' checked="checked"':''?> style="width:30px;" />
 			</div>
 		</div>
 		</fieldset>

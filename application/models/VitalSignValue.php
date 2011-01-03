@@ -174,4 +174,55 @@ class VitalSignValue extends WebVista_Model_ORM {
 		return false;
 	}
 
+	public static function recalculate($vitalSignGroupId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('vitalSignGroupId = ?',(int)$vitalSignGroupId);
+		$factor = 1;
+		$bmi = null;
+		$bsa = null;
+		$height = null;
+		$weight = null;
+		$iterator = $orm->getIterator($sqlSelect);
+		foreach ($iterator as $vital) {
+			if ($vital->vital == 'BMI') {
+				$bmi = $vital;
+			}
+			else if ($vital->vital == 'BSA') {
+				$bsa = $vital;
+			}
+			else if ($vital->vital == 'height') {
+				$height = $vital;
+			}
+			else if ($vital->vital == 'weight') {
+				$weight = $vital;
+			}
+		}
+		// recalculate BMI
+		if ($bmi !== null && ($height !== null && $height->value > 0) && ($weight !== null && $weight->value > 0)) {
+			$h = $height->value;
+			$w = $weight->value;
+			if ($height->units == 'IN' && $weight->units == 'LB') {
+				$factor = 703;
+			}
+			$bmi->value = round((($w / ($h * $h)) * $factor ) * 100) / 100;
+			$bmi->persist();
+		}
+		// recalculate BSA
+		if ($bsa !== null && ($height !== null && $height->value > 0) && ($weight !== null && $weight->value > 0)) {
+			$h = $height->value;
+			$w = $weight->value;
+			if ($height->units == 'IN' && $weight->units == 'LB') {
+				$factor = 3131;
+			}
+			else if ($height->units == 'CM' && $weight->units == 'KG') { // TODO: it SHALL be meter and not CM
+				$factor = 3600;
+			}
+			$bsa->value = round(sqrt(($h * $w) / $factor) * 100) / 100;
+			$bsa->persist();
+		}
+	}
+
 }

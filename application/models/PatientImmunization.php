@@ -38,6 +38,8 @@ class PatientImmunization extends WebVista_Model_ORM {
 	protected $lot;
 	protected $route;
 	protected $site;
+	protected $amount;
+	protected $units;
 
 	protected $_primaryKeys = array('patientImmunizationId');
 	protected $_table = "patientImmunizations";

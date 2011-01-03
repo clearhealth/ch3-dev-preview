@@ -20,6 +20,7 @@
 <script>
 function openEducationLookupWindow() {
 	var params = new Array();
+	params.push("section=<?=$this->othersId?>");
 	params.push("callback=educationAddOthers");
 	globalCreateWindow("winLookupEducationId",params,"<?=$this->baseUrl?>/educations.raw/lookup","<?=__('Other Education Topics')?>",400,400);
 }
@@ -58,19 +59,18 @@ function educationOnSectionNameLoaded() {
 
 var educationSectionNameListGrid = new dhtmlXGridObject("educationSectionNameListContainer");
 educationSectionNameListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-educationSectionNameListGrid.setHeader(",,");
+educationSectionNameListGrid.setHeader(",,,");
 educationSectionNameListGrid.setNoHeader(true);
-educationSectionNameListGrid.setInitWidths("20,*,120");
-educationSectionNameListGrid.setColTypes("ch,ro,ro");
-educationSectionNameListGrid.setColAlign("right,left,left");
+educationSectionNameListGrid.setInitWidths("20,*,120,0");
+educationSectionNameListGrid.setColTypes("ch,ro,ro,ro");
 educationSectionNameListGrid.setSkin("xp");
 educationSectionNameListGrid.init();
 educationSectionNameListGrid.attachEvent("onCheck",educationSectionNameOnChecked);
 
 function educationSectionNameOnChecked(rowId,cellIndex,state) {
 	if (state) { // add to education list
-		educationListGrid.addRow(rowId,",");
-		educationListGrid.cells(rowId,1).setValue(educationSectionNameListGrid.cells(rowId,1).getValue());
+		educationListGrid.addRow(rowId,",,,");
+		educationListGrid.cells(rowId,1).setValue(educationSectionNameListGrid.cells(rowId,3).getValue());
 		educationSave(rowId);
 	}
 	else { // remove from education list

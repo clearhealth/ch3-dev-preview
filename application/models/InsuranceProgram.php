@@ -44,6 +44,12 @@ class InsuranceProgram extends WebVista_Model_ORM {
 	protected $_legacyORMNaming = true;
 	protected $_cascadePersist = false;
 
+	const INSURANCE_ENUM_NAME = 'Insurance Preferences';
+	const INSURANCE_ENUM_KEY = 'INSPREF';
+	const INSURANCE_ASSIGNING_ENUM_NAME = 'Assigning';
+	const INSURANCE_ASSIGNING_ENUM_KEY = 'ASSIGNING';
+	const INSURANCE_SUBSCRIBER_ENUM_NAME = 'Subscriber';
+	const INSURANCE_SUBSCRIBER_ENUM_KEY = 'SUBSCRIBER';
 	const ENUM_INSURANCE_PREFERENCES = 'Insurance Preferences';
 	const ENUM_PROGRAM_PREFERENCES = 'Program Preferences';
 	const ENUM_PROGRAM_TYPES = 'Program Types';

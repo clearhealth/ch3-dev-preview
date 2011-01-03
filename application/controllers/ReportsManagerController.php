@@ -195,6 +195,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 			'query'=>'',
 			'includeBlank'=>'',
 			'enumName'=>array('id'=>'','value'=>''),
+			'special'=>'',
 		);
 		if (isset($filters[$filterId])) {
 			$filter = $filters[$filterId];
@@ -207,6 +208,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 				'query'=>$filter->query,
 				'includeBlank'=>$filter->includeBlank,
 				'enumName'=>$filter->enumName,
+				'special'=>$filter->special,
 			);
 		}
 		$this->view->filterData = $filterData;
@@ -214,6 +216,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$reportQuery = new ReportQuery();
 		$reportQuery->reportBaseId = $baseId;
 		$this->view->reportQueries = $reportQuery->getIteratorByBaseId()->toArray('reportQueryId','displayName');
+		$this->view->reportSpecial = ReportBase::$_specialOptions;
 
 		$this->render('edit-filter');
 	}
@@ -269,6 +272,7 @@ class ReportsManagerController extends WebVista_Controller_Action {
 		$oFilter->options = $params['options'];
 		if ($oFilter->type == 'QUERY') $oFilter->query = $params['query'];
 		$oFilter->includeBlank = isset($params['includeBlank'])?1:0;
+		$oFilter->special = isset($params['special'])?$params['special']:'';
 		$oFilter->enumName = $params['enumName'];
 		$filters[$params['id']] = $oFilter;
 

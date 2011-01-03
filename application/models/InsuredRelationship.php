@@ -31,6 +31,7 @@ class InsuredRelationship extends WebVista_Model_ORM {
 	protected $person;
 	protected $subscriber_id;
 	protected $subscriber_to_patient_relationship;
+	protected $subscriber;
 	protected $copay;
 	protected $assigning;
 	protected $group_name;
@@ -59,6 +60,12 @@ class InsuredRelationship extends WebVista_Model_ORM {
 		$this->insuranceProgram->_cascadePersist = $this->_cascadePersist;
 		$this->person = new Person();
 		$this->person->_cascadePersist = $this->_cascadePersist;
+		$this->subscriber = new Person();
+	}
+
+	public function setSubscriberId($id) {
+		$this->subscriber_id = (int)$id;
+		$this->subscriber->personId = $this->subscriber_id;
 	}
 
 	public function getIteratorByPersonId($personId = null) {

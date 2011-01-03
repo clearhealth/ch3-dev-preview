@@ -293,11 +293,15 @@ class VitalSignsController extends WebVista_Controller_Action {
 			$row = $xml->addChild('row');
 			$row->addAttribute('id','dates');
 			$row->addChild('cell','');
-			foreach ($dates as $date) {
+			$ctr = 1;
+			foreach ($dates as $vitalSignGroupId=>$date) {
 				$row->addChild('cell',date('m/d/Y h:iA',strtotime($date)));
 				$column = $head->addChild('column','');
 				$column->addAttribute('type','ro');
 				$column->addAttribute('width','130');
+
+				$userdata = $xml->addChild('userdata',$vitalSignGroupId);
+				$userdata->addAttribute('name','groupId'.$ctr++);
 			}
 		}
 		$labelKeyValues = $this->getVitalSignsTemplateKeyValue();
@@ -358,8 +362,26 @@ class VitalSignsController extends WebVista_Controller_Action {
 				}
 				$vitalSignValue->$field  = $value;
 				$vitalSignValue->persist();
+				if ($vitalSignValue->vital == 'height' || $vitalSignValue->vital == 'weight') {
+					VitalSignValue::recalculate($vitalSignValue->vitalSignGroupId);
+				}
 				$ret = true;
 			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function processEnteredInErrorAction() {
+		$groupId = (int)$this->_getParam('groupId');
+		$ret = false;
+		$vitalSignGroup = new VitalSignGroup();
+		$vitalSignGroup->vitalSignGroupId = $groupId;
+		if ($vitalSignGroup->populate()) {
+			$vitalSignGroup->enteredInError = 1;
+			$vitalSignGroup->persist();
+			$ret = true;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

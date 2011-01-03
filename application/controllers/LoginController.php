@@ -33,9 +33,6 @@ class LoginController extends WebVista_Controller_Action
 
     public function indexAction()
     {
-        if (isset($this->_session->messages)) {
-            $this->view->messages = $this->_session->messages;
-        }
         $this->render();
     }
 	public function panelAction() {
@@ -51,16 +48,14 @@ class LoginController extends WebVista_Controller_Action
 		$data = array();
 		$auth = Zend_Auth::getInstance();
 		if ($auth->hasIdentity()) {
-			unset($this->_session->messages);
 			$identity = $auth->getIdentity();
 			//$this->_redirect('login/complete');
 			//$this->_forward('index','main');
 			$data['msg'] = __("Login successful.");
 			$data['code'] = 200;
 		} else {
-			$this->_session->messages = $result->getMessages();
 			//$this->_redirect('login');
-			$data['err'] = __("Invalid username/password.");
+			$data['err'] = $result->getMessage();
 			$data['code'] = 404;
 		}
 

@@ -57,25 +57,15 @@ class PostingsController extends WebVista_Controller_Action {
 			$filters['active'] = 1;
 		}
 		$patientNoteIterator->setFilters($filters);
-		$reasons = array();
-		$enumeration = new Enumeration();
-		$enumeration->populateByEnumerationName(PatientNote::ENUM_REASON_PARENT_NAME);
-		$enumerationsClosure = new EnumerationsClosure();
-		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
-		$ctr = 0;
-		foreach ($enumerationIterator as $enum) {
-			// since data type of patient_note.reason is tinyint we simply use the counter as id
-			$reasons[$ctr++] = $enum->name;
-		}
 		foreach ($patientNoteIterator as $note) {
 			$tmp = array();
 			$tmp['id'] = $note->patientNoteId;
 			$tmp['data'][] = $note->priority;
 			$tmp['data'][] = $note->noteDate;
 			$tmp['data'][] = $note->user->username;
-			$tmp['data'][] = isset($reasons[$note->reason])?$reasons[$note->reason]:'';
+			$tmp['data'][] = $note->reason;
 			$tmp['data'][] = $note->note;
-			$tmp['data'][] = ($note->active)?__('No'):__('Yes');
+			$tmp['data'][] = $note->active;
 			$tmp['data'][] = $note->active;
 			$rows[] = $tmp;
 		}

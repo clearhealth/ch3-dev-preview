@@ -97,13 +97,10 @@ function postSubmit<?=$this->form->getId()?>(data) {
 <?if (strlen($this->grid) > 0):?>
 	var jsonData = dojo.fromJson(data);
 	if (<?=$this->grid?>) {
-		<?=$this->grid?>.addRow(jsonData.id,"",0,jsonData.parentId);
-		for (var i in jsonData.data) {
-			<?=$this->grid?>.cells(jsonData.id,i).setValue(jsonData.data[i]);
+		if (!<?=$this->grid?>.doesRowExist(jsonData.id)) {
+			<?=$this->grid?>.addRow(jsonData.id,"",0,jsonData.parentId);
 		}
-		for (var i in jsonData.userdata) {
-			<?=$this->grid?>.setUserData(jsonData.id,i,jsonData.userdata[i]);
-		}
+		<?=$this->grid?>.renderRowData(jsonData);
 		if (jsonData.parentId) {
 			<?=$this->grid?>.openItem(jsonData.parentId);
 		}

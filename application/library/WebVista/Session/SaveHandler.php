@@ -37,6 +37,9 @@ class WebVista_Session_SaveHandler implements Zend_Session_SaveHandler_Interface
 	 */
 	public function open($savePath,$name) {
 		// file based session storage similar to the PHP sessions default save handler files
+		if (!strlen($savePath) > 0) {
+			$savePath = '/tmp';
+		}
 		$this->_sessionSavePath = $savePath;
 		$this->_sessionName = $name;
 		return true;

@@ -34,14 +34,6 @@ class CCIMEGroup extends WebVista_Model_ORM {
 	protected $_table = 'CCIMEGroups';
 	protected $_primaryKeys = array('codeRange','code');
 
-	public function __isset($key) { // this must be defined for parent::audit($obj)
-		$ret = false;
-		if (method_exists($this,'get'.ucfirst($key)) || isset($this->$key)) {
-			$ret = true;
-		}
-		return $ret;
-	}
-
 	public function getCCIMEGroupId() {
 		return $this->codeRange;
 	}

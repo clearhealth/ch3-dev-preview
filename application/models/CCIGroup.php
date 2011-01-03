@@ -34,14 +34,6 @@ class CCIGroup extends WebVista_Model_ORM {
 	protected $_table = 'CCIGroups';
 	protected $_primaryKeys = array('codeRange','code');
 
-	public function __isset($key) { // this must be defined for parent::audit($obj)
-		$ret = false;
-		if (method_exists($this,'get'.ucfirst($key)) || isset($this->$key)) {
-			$ret = true;
-		}
-		return $ret;
-	}
-
 	public function getCCIGroupId() {
 		return $this->codeRange;
 	}

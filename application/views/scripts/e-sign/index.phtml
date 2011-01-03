@@ -80,6 +80,9 @@ function preSubmit<?=$this->form->getId()?> () {
 			case "tab_Notes":
 				onButtonClick("refresh");
 				break;
+			case "tab_Orders":
+				orderListGridReload();
+				break;
 		}
 	     },
 	     error: function (error) {

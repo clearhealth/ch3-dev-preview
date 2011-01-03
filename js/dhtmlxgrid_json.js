@@ -86,8 +86,13 @@ dhtmlXGridObject.prototype._initDynamicLoading = function(){
 		// set the height of the last row based
 		var height = parseInt(this.rowsBuffer.length - max) * rowHeight;
 		var index = parseInt(max - 1);
-		this.rowsBuffer[index].style.height = height+"px";
-		this.rowsBuffer[index].style.display = "";
+		if (!this.rowsBuffer[index]) {
+			this.render_dataset(index,max);
+		}
+		if (this.rowsBuffer[index]) {
+			this.rowsBuffer[index].style.height = height+"px";
+			this.rowsBuffer[index].style.display = "";
+		}
 		this.attachEvent("onScroll",this._processOnScroll);
 	}
 };

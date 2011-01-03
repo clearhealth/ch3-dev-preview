@@ -35,7 +35,7 @@ function enumEditObject(enumerationId,isAdd) {
 	var params = [];
 	params.push("enumerationId="+enumerationId);
 	params.push("isAdd="+isAdd);
-	var winEditORM = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/generic-edit.raw",((isAdd)?"<?=__('Add')?>":"<?=__('Edit')?>")+" <?=__('ORM Object')?>",400,600);
+	var winEditORM = globalCreateWindow("windowEditORMObjectId",params,"<?=$this->baseUrl?>/generic-edit.raw",((isAdd)?"<?=__('Add')?>":"<?=__('Edit')?>")+" <?=__('ORM Object')?>",500,600);
 }
 
 function enumSingleUpdate(field,id,value,cellIndex,grid) {
@@ -123,11 +123,12 @@ function enumOnToolbarClicked(id) {
 	}
 }
 
-function enumerationDelete(enumerationId) {
+function enumerationDelete(enumerationId,grid) {
+	if (!grid) grid = enumListGrid;
 	if (!enumerationId) {
-		enumerationId = enumListGrid.getSelectedRowId();
+		enumerationId = grid.getSelectedRowId();
 	}
-	if (!enumerationId || !confirm("<?=__('Are you sure you want to delete enumeration')?>: "+enumListGrid.cells(enumerationId,0).getValue()+"?\n<?=__('NOTE: This will delete all its children recursively.')?>")) return;
+	if (!enumerationId || !confirm("<?=__('Are you sure you want to delete enumeration')?>: "+grid.cells(enumerationId,0).getValue()+"?\n<?=__('NOTE: This will delete all its children recursively.')?>")) return;
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/enumerations-manager.raw/process-delete",
 		handleAs: "json",

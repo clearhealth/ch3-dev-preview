@@ -31,6 +31,8 @@ class MiscCharge extends WebVista_Model_ORM {
 	protected $title;
 	protected $note;
 	protected $chargeType;
+	protected $personId;
+	protected $appointmentId;
 
 	protected $_table = 'misc_charge';
 	protected $_primaryKeys = array('misc_charge_id');
@@ -74,6 +76,40 @@ class MiscCharge extends WebVista_Model_ORM {
 
 	public function setVisitId($id) {
 		$this->encounter_id = $id;
+	}
+
+	public function getIteratorByAppointmentId($appointmentId = null) {
+		if ($appointmentId === null) {
+			$appointmentId = $this->appointmentId;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('appointmentId = ?',(int)$appointmentId)
+				->order('charge_date DESC');
+		return $this->getIterator($sqlSelect);
+	}
+
+	public function getUnpaidChargesByVisit($visitId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from(array('cc'=>'clearhealth_claim'))
+				->joinLeft(array('fc'=>'fbclaim'),'fc.claim_id=cc.claim_id')
+				->where('total_billed > total_paid')
+				->where('cc.encounter_id = ?',(int)$visitId);
+		// identifier = note?
+		$ret = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$ret[$row['claim_id']] = array(
+					'date'=>date('Y-m-d',strtotime($row['timestamp'])),
+					'type'=>'',
+					'amount'=>($row['total_billed'] - $row['total_paid']),
+					'note'=>'Encounter DOS: '.date('m/d/Y',strtotime($row['date_sent'])).' '.$row['identifier'],
+				);
+			}
+		}
+		return $ret;
 	}
 
 }

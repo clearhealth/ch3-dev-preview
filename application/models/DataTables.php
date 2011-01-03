@@ -24,7 +24,7 @@
 
 class DataTables {
 
-	protected static $unitsOfMeasure = array(
+	public static $unitsOfMeasure = array(
 		'BG'=>'Bag',
 		'BO'=>'Bottle',
 		'BX'=>'Box',

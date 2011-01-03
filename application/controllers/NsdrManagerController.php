@@ -82,9 +82,6 @@ class NsdrManagerController extends WebVista_Controller_Action {
 		$params = $this->_getParam('nsdrDefinitionMethod');
 		$nsdrDefinitionMethod = new NSDRDefinitionMethod();
 		$nsdrDefinitionMethod->populateWithArray($params);
-		if (!strlen($nsdrDefinitionMethod->uuid) > 0) {
-			$nsdrDefinitionMethod->uuid = NSDR::create_guid();
-		}
 		$nsdrDefinitionMethod->methodName = NSDRDefinitionMethod::normalizeMethodName($nsdrDefinitionMethod->methodName);
 		$validCode = NSDRDefinitionMethod::isPHPCodeValid($nsdrDefinitionMethod->method,$nsdrDefinitionMethod->methodName);
 		// check for method duplicates

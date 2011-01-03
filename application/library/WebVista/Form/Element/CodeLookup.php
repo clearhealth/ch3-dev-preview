@@ -78,31 +78,31 @@ class Zend_Form_Element_CodeLookup extends Zend_Form_Element_Xhtml {
 			$ret .= <<<EOL
 
 <div style="width:100%;height:100%;">
-	<input type="text" id="q" name="q" style="width:80%" onkeypress="return codeLookupKeyPressInput(event);" /><button id="searchLabel" onClick="return codeLookup();">Search</button>
+	<input type="text" id="{$src}q" name="{$src}q" style="width:80%" onkeypress="return {$src}CodeLookupKeyPressInput(event);" /><button id="{$src}SearchLabel" onClick="return {$src}CodeLookup();">Search</button>
 	<br />
 	<style>div.gridbox_xp table.obj td {border-bottom: none;border-right:none;}</style>
-	<div id="codeLookupGridContainer" style="height:150px;"></div>
-	<input type="button" id="codeLookupAddId" value="Add" onClick="codeLookupAdd()" disabled="true" />
+	<div id="{$src}CodeLookupGridContainer" style="height:150px;"></div>
+	<input type="button" id="{$src}CodeLookupAddId" value="Add" onClick="{$src}CodeLookupAdd()" disabled="true" />
 </div>
 
 <script>
 
-function codeLookup() {
-	codeLookupGrid.clearAll();
-	codeLookupGrid.load("{$view->baseUrl}/code-lookup.raw?src={$src}&q="+dojo.byId('q').value,function() {
-							dojo.byId("codeLookupAddId").disabled = true;},"json");
+function {$src}CodeLookup() {
+	{$src}CodeLookupGrid.clearAll();
+	{$src}CodeLookupGrid.load("{$view->baseUrl}/code-lookup.raw?src={$src}&q="+dojo.byId("{$src}q").value,function() {
+		dojo.byId("{$src}CodeLookupAddId").disabled = true;},"json");
 	return false;
 }
 
-function codeLookupAdd() {
-	var rowId = codeLookupGrid.getSelectedRowId();
+function {$src}CodeLookupAdd() {
+	var rowId = {$src}CodeLookupGrid.getSelectedRowId();
 	if (rowId == null) {
 		alert('No code selected');
 		return;
 	}
 
-	var codesContainer = dojo.byId("codesContainer");
-	var strTxt = codeLookupGrid.cells(rowId,0).getValue();
+	var {$src}CodesContainer = dojo.byId("{$src}CodesContainer");
+	var strTxt = {$src}CodeLookupGrid.cells(rowId,0).getValue();
 	var val = rowId + ' - ' + strTxt;
 
 	var cbInput = document.createElement("input");
@@ -115,34 +115,34 @@ function codeLookupAdd() {
 	var oDiv = document.createElement("div");
 	oDiv.appendChild(cbInput);
 	oDiv.innerHTML += ' ' + val + '<br />';
-	codesContainer.appendChild(oDiv);
+	{$src}CodesContainer.appendChild(oDiv);
 }
 
-function codeLookupKeyPressInput(e) {
+function {$src}CodeLookupKeyPressInput(e) {
 	var key = window.event ? e.keyCode : e.which;
 	if (key == 13) {
-		codeLookup();
+		{$src}CodeLookup();
 		return false;
 	}
 }
 
-var codeLookupGrid = new dhtmlXGridObject('codeLookupGridContainer');
-codeLookupGrid.setImagePath("{$view->baseUrl}/img/");
-codeLookupGrid.setHeader('Description,Code');
-codeLookupGrid.setInitWidths("*,120");
-codeLookupGrid.setColAlign("left,right");
-codeLookupGrid.setColTypes("ro");
-codeLookupGrid.setSkin("xp");
-codeLookupGrid.attachEvent("onRowSelect",codeLookupRowSelectHandler);
-codeLookupGrid.attachEvent("onRowDblClicked",codeLookupRowDoubleClickedHandler);
-codeLookupGrid.init();
+var {$src}CodeLookupGrid = new dhtmlXGridObject('{$src}CodeLookupGridContainer');
+{$src}CodeLookupGrid.setImagePath("{$view->baseUrl}/img/");
+{$src}CodeLookupGrid.setHeader('Description,Code');
+{$src}CodeLookupGrid.setInitWidths("*,120");
+{$src}CodeLookupGrid.setColAlign("left,right");
+{$src}CodeLookupGrid.setColTypes("ro");
+{$src}CodeLookupGrid.setSkin("xp");
+{$src}CodeLookupGrid.attachEvent("onRowSelect",{$src}CodeLookupRowSelectHandler);
+{$src}CodeLookupGrid.attachEvent("onRowDblClicked",{$src}CodeLookupRowDoubleClickedHandler);
+{$src}CodeLookupGrid.init();
 
-function codeLookupRowSelectHandler(rowId,cellIndex) {
-	dojo.byId("codeLookupAddId").disabled = false;
+function {$src}CodeLookupRowSelectHandler(rowId,cellIndex) {
+	dojo.byId("{$src}CodeLookupAddId").disabled = false;
 }
 
-function codeLookupRowDoubleClickedHandler(rowId,colIndex) {
-	codeLookupAdd();
+function {$src}CodeLookupRowDoubleClickedHandler(rowId,colIndex) {
+	{$src}CodeLookupAdd();
 }
 
 </script>
@@ -153,12 +153,11 @@ EOL;
 
 		$ret .= <<<EOL
 
-<div id="codesContainer">{$codesValues}</div>
+<div id="{$src}CodesContainer">{$codesValues}</div>
 <input type="hidden" id="{$id}" name="{$completeName}" value="{$value}" />
 
 <script>
-
-function transcriptionNotesFormSubmit() {
+globalNoteTemplateCallbacks.push(function(){
 	var codesEl = document.getElementsByName("{$name}Codes");
 	if (codesEl == null) {
 		return true;
@@ -173,8 +172,7 @@ function transcriptionNotesFormSubmit() {
 	}
 	dojo.byId('{$id}').value = val.join("^|^");
 	return true;
-}
-
+});
 </script>
 
 EOL;

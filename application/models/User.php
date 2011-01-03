@@ -148,12 +148,20 @@ class User extends WebVista_Model_ORM {
 			$user = new User();
 			$user->username = $identity;
 			$user->populateWithUsername();
-			$auth->getStorage()->write($user);
-			$audit->userId = $user->userId;
-			$message = __('user') . ': ' . $user->username . ' ' . __('login successful');
+			if ($user->person->active) {
+				$auth->getStorage()->write($user);
+				$audit->userId = $user->userId;
+				$message = __('user') . ': ' . $user->username . ' ' . __('login successful');
+			}
+			else {
+				$auth->clearIdentity();
+				$message = __('user') . ': ' . $username . ' ' . __('login failed due to inactive user');
+				$result = new Exception('Login failed due to inactive user');
+			}
 		} else {
 			$auth->clearIdentity();
 			$message = __('user') . ': ' . $username . ' ' . __('login failed due to bad password');
+			$result = new Exception('Invalid username/password');
 		}
 
 		$audit->message = $message;
@@ -161,6 +169,20 @@ class User extends WebVista_Model_ORM {
 		$audit->_ormPersist = true;
 		$audit->persist();
 		return $result;
+	}
+
+	public static function myPreferencesLocation() {
+		static $room = null;
+		if ($room !== null) return $room;
+		$identity = Zend_Auth::getInstance()->getIdentity();
+		$room = new Room();
+		if (strlen($identity->preferences) > 0) {
+			$xmlPreferences = new SimpleXMLElement($identity->preferences);
+			$roomId = (string)$xmlPreferences->currentLocation;
+			$room->roomId = (int)$roomId;
+			$room->populate();
+		}
+		return $room;
 	}
 
 }

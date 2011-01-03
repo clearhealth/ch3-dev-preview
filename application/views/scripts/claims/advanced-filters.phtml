@@ -1,72 +1,100 @@
 <style>
-#balanceOp {
+.filterOperator {
 	border:1px solid #b3b3b3;
 	font-size:7pt;
-	height:15px;
+	height:17px;
+	width:120px;
 }
 </style>
-<div class="formRow">
-	<dt><label for="total" class="optional"><?=('Total')?></label></dt>
-	<?=$this->formCurrencyText('total',null,array('id'=>'total','style'=>'width:150px;'))?>
-</div>
-<br style="clear:left;" />
-<div class="formRow">
-	<dt><label for="paid" class="optional"><?=('Paid')?></label></dt>
-	<?=$this->formCurrencyText('paid',null,array('id'=>'paid','style'=>'width:150px;'))?>
-</div>
-<br style="clear:left;" />
-<div class="formRow">
-	<dt><label for="writeoff" class="optional"><?=('Writeoff')?></label></dt>
-	<?=$this->formCurrencyText('writeoff',null,array('id'=>'writeoff','style'=>'width:150px;'))?>
-</div>
-<br style="clear:left;" />
-<div class="formRow">
-	<dt><label for="balance" class="optional"><?=('Balance')?></label></dt>
-	<?=$this->formSelect('balanceOp','=',array('id'=>'balanceOp','onChange'=>'balanceOpOnChanged(this.value)','style'=>'width:150px;'),$this->balanceOperators)?><br />
-	<?=$this->formCurrencyText('balance',null,array('id'=>'balance','style'=>'width:150px;'))?>
-	<div id="balanceDivId" style="display:none;"><?=__('AND')?><br />
-	<?=$this->formCurrencyText('balance2',null,array('id'=>'balance2','style'=>'width:150px;'))?>
+<?$inputFields = array(
+	'total'=>__('Total'),
+	'paid'=>__('Paid'),
+	'writeoff'=>__('Writeoff'),
+	'balance'=>__('Balance'),
+);
+foreach ($inputFields as $name=>$label):?>
+<div class="formRow" style="padding-top:5px;">
+	<div style="float:left;">
+		<input type="checkbox" name="<?=$name?>ActiveId" id="<?=$name?>ActiveId" value="1" onClick="filtersToggleInputFields('<?=$name?>',!this.checked)" /> <?=$label?>
+		<?=$this->formSelect($name.'Operator',$this->filters[$name]['operator'],array('id'=>$name.'Operator','class'=>'filterOperator','onChange'=>'filtersOperatorOnChanged(this,"'.$name.'")'),$this->balanceOperators)?>
+		<?=$this->formCurrencyText($name.'Id',$this->filters[$name]['operand1'],array('id'=>$name.'Id','style'=>'width:60px;vertical-align:bottom;margin-right:2px;'))?>
+	</div>
+	<div id="<?=$name?>DivId" style="float:left;display:none;">
+		<?=__('AND')?> <?=$this->formCurrencyText($name.'Id2',$this->filters[$name]['operand2'],array('id'=>$name.'Id2','style'=>'width:60px;margin-left:2px;'))?>
 	</div>
 </div>
 <br style="clear:left;" />
+<?endforeach;?>
+<div class="formRow" style="padding-top:5px;">
+	<div style="float:left;"><input type="radio" name="openClosed" id="openClosed" value="0" <?=($this->filters['openClosed'] == '0')?'checked="checked"':''?> /> <?=__('Open')?> </div>
+	<div style="float:left;"><input type="radio" name="openClosed" id="openClosed" value="1" <?=($this->filters['openClosed'] == '1')?'checked="checked"':''?> /> <?=__('Closed')?> </div>
+	<div style="float:left;"><input type="radio" name="openClosed" id="openClosed" value="2" <?=($this->filters['openClosed'] == '2')?'checked="checked"':''?> /> <?=__('Open & Closed')?> </div>
+</div>
+<br style="clear:left;" />
 <div class="formRow" style="padding-top:8px;">
-	<?=$this->formButton('ok',__('OK'),array('onClick'=>'claimsSetFilters()'))?>
+	<?=$this->formButton('ok',__('OK'),array('onClick'=>'claimsAdvancedFiltersSet()'))?>
 	<?=$this->formButton('cancel',__('Cancel'),array('onClick'=>'closeThisForm()'))?>
 </div>
 <script>
-function claimsSetFilters() {
-	var total = currencyTotal.getValue();
-	var paid = currencyPaid.getValue();
-	var writeoff = currencyWriteoff.getValue();
-	var balance = currencyBalance.getValue();
-	var balance2 = currencyBalance2.getValue();
-	var inValid = (isNaN(total) || isNaN(paid) || isNaN(writeoff) || isNaN(balance));
-	var balanceOpSelect = dojo.byId("balanceOp");
-	var balanceOp = balanceOpSelect.options[balanceOpSelect.selectedIndex].value;
-	var bal = balanceOp+"::"+balance;
-	if (balanceOp == "between") {
-		bal += "::"+balance2;
-		inValid = (inValid || isNaN(balance2))
-	}
-	if (inValid) {
-		alert("<?=__('Please correct all invalid fields')?>");
-		return;
-	}
-	var filters = {
-		"total": total,
-		"paid": paid,
-		"writeoff": writeoff,
-		"balance": bal,
-	};
-	claimsFilterChange(filters);
+function filtersToggleInputFields(name,value) {
+	dojo.byId(name+"Operator").disabled = value;
+	dojo.byId(name+"Id").disabled = value;
+	dojo.byId(name+"Id2").disabled = value;
 }
 
-function balanceOpOnChanged(value) {
-	var balanceDiv = dojo.byId("balanceDivId");
-	balanceDiv.style.display = "none";
-	if (value == "between") {
-		balanceDiv.style.display = "";
+var inputNames = [];
+<?foreach ($inputFields as $name=>$label) {
+	$active = ($this->filters[$name]['active'])?'true':'false';
+	echo '
+inputNames.push("'.$name.'");
+dojo.byId("'.$name.'ActiveId").checked = '.$active.';
+filtersToggleInputFields("'.$name.'",!'.$active.');
+filtersOperatorOnChanged(dojo.byId("'.$name.'Operator"),"'.$name.'")';
+}?>
+
+function filtersOperatorOnChanged(obj,name) {
+	var div = dojo.byId(name+"DivId");
+	div.style.display = "none";
+	if (obj.value == "between") {
+		div.style.display = "";
 	}
+}
+
+function claimsAdvancedFiltersSet() {
+	var openClosed = "";
+	var openClosedId = dojo.byId("openClosed");
+	var openClosedName = document.getElementsByName(openClosedId.name);
+	for (var i = 0; i < openClosedName.length; i++) {
+		if (openClosedName[i].checked) {
+			openClosed = openClosedName[i].value;
+		}
+	}
+	var filters = {
+		"filters[openClosed]": openClosed,
+	};
+
+	for (var i = 0; i < inputNames.length; i++) {
+		var name = inputNames[i];
+		filters["filters["+name+"][active]"] = dojo.byId(name+"ActiveId").checked?"1":"0";
+		var operatorSelect = dojo.byId(name+"Operator");
+		var operator = operatorSelect.options[operatorSelect.selectedIndex].value;
+		filters["filters["+name+"][operator]"] = operator;
+		var operand1 = dojo.byId(name+"Id").value;
+		var operand2 = 0;
+		var inValid = isNaN(operand1);
+		if (operator == "between") {
+			operand2 = dojo.byId(name+"Id2").value;
+			inValid = (inValid || isNaN(operand2))
+		}
+		if (inValid) {
+			alert("<?=__('Please correct all invalid fields')?>");
+			return;
+		}
+		filters["filters["+name+"][operand1]"] = operand1;
+		filters["filters["+name+"][operand2]"] = operand2;
+	}
+
+	claimsSetFilters(filters);
 }
 
 function closeThisForm() {

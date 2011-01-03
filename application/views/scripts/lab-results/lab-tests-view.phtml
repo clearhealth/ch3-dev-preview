@@ -65,9 +65,9 @@ testLayout.setEffect('collapse',true);
 testLayout.setEffect("resize",true);
 
 resultsGrid.setImagePath("<?=$this->baseUrl?>/img/");
-resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,,");
-resultsGrid.setInitWidths("120,*,*,*,*,60,50,0,0");
-resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro");
+resultsGrid.setHeader("<?=__('Date')?>,<?=__('Test Name')?>,<?=__('Value')?>,<?=__('Unit')?>,<?=__('Ref. Range')?>,<?=__('Abnormal')?>,<?=__('Status')?>,<?=__('I')?>,,");
+resultsGrid.setInitWidths("120,*,*,*,*,60,50,10,0,0");
+resultsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
 resultsGrid.setSkin("xp");
 resultsGrid.enableDynamicLoading(true);
 resultsGrid.init();
