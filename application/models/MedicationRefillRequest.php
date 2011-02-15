@@ -91,7 +91,7 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 		return $this->getIterator($sqlSelect);
 	}
 
-	public static function refillRequestDatasourceHandler(Audit $auditOrm,$eachTeam=false) {
+	public static function refillRequestDatasourceHandler(Audit $auditOrm,$eachTeam=true) {
 		$ret = array();
 		if ($auditOrm->objectClass != 'MedicationRefillRequest') {
 			WebVista::debug('Audit:objectClass is not MedicationRefillRequest');
@@ -105,15 +105,18 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 			return $ret;
 		}
 		$personId = (int)$orm->medication->personId;
+		$providerId = (int)$orm->medication->prescriberPersonId;
+		if ($personId <= 0 || $providerId <= 0) return $ret;
+		$teamId = $orm->medication->patient->teamId;
 		$alert = new GeneralAlert();
 		$filters = array();
 		$filters['objectClass'] = $auditOrm->objectClass;
 		//$filters['objectId'] = $personId;
 		if ($eachTeam) {
-			$filters['teamId'] = $orm->medication->patient->teamId;
+			$filters['teamId'] = $teamId;
 		}
 		else {
-			$filters['userId'] = (int)$orm->medication->prescriberPersonId;
+			$filters['userId'] = (int)$providerId;
 		}
 		$alert->populateOpenedAlertByFilters($filters);
 		$messages = array();
@@ -126,12 +129,8 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 			$alert->dateTime = date('Y-m-d H:i:s');
 			$alert->objectClass = $auditOrm->objectClass;
 			$alert->objectId = $auditOrm->objectId;
-			if ($eachTeam) {
-				$alert->teamId = $orm->medication->patient->teamId;
-			}
-			else {
-				$alert->userId = (int)$orm->medication->prescriberPersonId;
-			}
+			$alert->userId = (int)$providerId;
+			if ($eachTeam) $alert->teamId = $teamId;
 		}
 		$messages[] = 'Refill request pending. '.$orm->details;
 		$alert->message = implode("\n",$messages);

@@ -15,6 +15,7 @@
 			sysObjectsTree.insertNewChild(0,21,"<?=__('Appointment Rules')?>");
 			sysObjectsTree.insertNewChild(0,10,'Barcode Manager');
 			//sysObjectsTree.insertNewChild(0,24,"<?=__('Claim Edits Manager')?>");
+			sysObjectsTree.insertNewChild(0,27,"<?=__('Claim Rules')?>");
 			sysObjectsTree.insertNewChild(0,20,"<?=__('Dashboard Components Manager')?>");
 			//sysObjectsTree.insertNewChild(0,13,'Data Integration Logs');
 			sysObjectsTree.insertNewChild(0,26,"Discount Table Manager");
@@ -128,6 +129,9 @@ function onSystemObjectsTreeItemSelect(itemId) {
 			break;
 		case 26: // Discount Table Manager
 			changeAdminContainer(itemName,'<?=$this->baseUrl?>/discount-table-manager.raw');
+			break;
+		case 27: // Claim Rules
+			changeAdminContainer(itemName,'<?=$this->baseUrl?>/claim-rules.raw');
 			break;
 		default:
 			alert('\'' + itemName + '\' does not have an action defined');

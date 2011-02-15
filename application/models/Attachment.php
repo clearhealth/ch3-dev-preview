@@ -62,4 +62,18 @@ class Attachment extends WebVista_Model_ORM {
 		return $this->getIterator($sqlSelect);
 	}
 
+	public function getRawData() {
+		$data = '';
+		if ($this->attachmentId > 0) {
+			$db = Zend_Registry::get('dbAdapter');
+			$sql = 'SELECT data FROM attachmentBlobs WHERE attachmentId = '.(int)$this->attachmentId;
+			$stmt = $db->query($sql);
+			if ($row = $stmt->fetch()) {
+				$data = $row['data'];
+			}
+			$stmt->closeCursor();
+		}
+		return $data;
+	}
+
 }

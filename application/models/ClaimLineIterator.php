@@ -24,8 +24,9 @@
 
 class ClaimLineIterator extends WebVista_Model_ORMIterator implements Iterator {
 
-	public function __construct($dbSelect = null,$autoLoad = true) {
+	public function __construct($dbSelect = null,$autoLoad = false) {
 		$this->_ormClass = 'ClaimLine';
+		if ($dbSelect !== null) $this->_dbSelect = $dbSelect;
 		// autoLoad gives an option to query the entire rows which takes time if more data in the table
 		if ($autoLoad) {
 			parent::__construct($this->_ormClass,$dbSelect);
@@ -43,7 +44,8 @@ class ClaimLineIterator extends WebVista_Model_ORMIterator implements Iterator {
 		foreach ($filters as $key=>$value) {
 			switch ($key) {
 				case 'visitId':
-					$sqlSelect->where('visitId = ?',(int)$value);
+				case 'claimId':
+					$sqlSelect->where($key.' = ?',(int)$value);
 					break;
 			}
 		}

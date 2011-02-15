@@ -41,7 +41,7 @@ if (pscb != undefined) {
 	pscb = null;
 }
 var psac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/admin-persons.raw/auto-complete",requestMethod:"get"},"personSelectAutoComplete");
-pscb = new dijit.form.FilteringSelect({name:"personSelectAutoCompleteId",autocomplete:true,store:psac},"personSelectAutoCompleteDiv");
+pscb = new dijit.form.FilteringSelect({name:"personSelectAutoCompleteId",autocomplete:true,store:psac,searchDelay:500},"personSelectAutoCompleteDiv");
 pscb.validate = function () {
 	dojo.byId("btnAdd").disabled = true;
 	var username = pscb.getDisplayedValue();

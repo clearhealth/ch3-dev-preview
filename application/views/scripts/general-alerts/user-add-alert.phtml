@@ -54,7 +54,8 @@ function userAddAlertSubmit() {
 		dojo.connect(patscb,"onChange",'getPatDetails');
 		function getPatDetails(args) {
 			// don't need args coz it holds the selected value
-			dojo.byId('alert-user-id').value = args;
+			var value = patscb.getValue();
+			if (value.length > 0) dojo.byId("alert-user-id").value = value;
 		}
 		</script>
 	</div>

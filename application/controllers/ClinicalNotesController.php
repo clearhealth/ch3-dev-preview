@@ -439,7 +439,7 @@ EOL;
 
 		$data = array();
 		$data['currentPractice'] = $practice->name.'';
-		$data['selectedVisit'] = date('Y-m-d',strtotime($visit->timestamp));
+		$data['selectedVisit'] = substr($visit->dateOfTreatment,0,10).'';
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

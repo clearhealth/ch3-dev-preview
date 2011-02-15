@@ -56,9 +56,12 @@ class AppointmentController extends WebVista_Controller_Action {
 			$appointment = new Appointment();
 			$appointment->appointmentId = $appointmentId;
 			$appointment->populate();
-
+			$personId = (int)$appointment->patientId;
+			$insuredRelationship = new InsuredRelationship();
+			$insuredRelationship->personId = $personId;
 			$visit = new Visit();
-			$visit->patientId = $appointment->patientId;
+			$visit->patientId = $personId;
+			$visit->activePayerId = $insuredRelationship->defaultActivePayer;
 			$visit->roomId = $appointment->roomId;
 			$visit->practiceId = $appointment->practiceId;
 			$room = new Room();
@@ -69,7 +72,7 @@ class AppointmentController extends WebVista_Controller_Action {
 			$visit->lastChangeUserId = $appointment->lastChangeId;
 			$visit->treatingPersonId = $appointment->providerId;
 			$visit->encounterReason = $appointment->reason;
-			$visit->dateOfTreatment = $appointment->createdDate;
+			$visit->dateOfTreatment = $appointment->start;
 			$visit->timestamp = date('Y-m-d H:i:s');
 
 			$visit->appointmentId = $appointment->appointmentId;
@@ -104,7 +107,6 @@ class AppointmentController extends WebVista_Controller_Action {
 		$payment->personId = (int)$appointment->patientId;
 		$payment->appointmentId = $appointmentId;
 		if (!$visitId > 0) {
-			$payment->visitId = $this->_createVisit($appointmentId);
 			$columnId = (int)$this->_getParam('columnId');
 		}
 
@@ -129,13 +131,79 @@ class AppointmentController extends WebVista_Controller_Action {
 		$params = $this->_getParam('payment');
 		$payment = new Payment();
 		$payment->populateWithArray($params);
-		$payment->paymentDate = date('Y-m-d H:i:s');
+		if (!$payment->visitId > 0) {
+			$payment->visitId = $this->_createVisit($payment->appointmentId);
+		}
 		$payment->timestamp = date('Y-m-d H:i:s');
 		$payment->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$payment->persist();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(true);
+	}
+
+	public function historyAction() {
+		$this->view->personId = (int)$this->_getParam('personId');
+		$this->render();
+	}
+
+	public function listHistoryAction() {
+		$personId = (int)$this->_getParam('personId');
+		$rows = array();
+
+		$appointmentTemplate = new AppointmentTemplate();
+		$reasons = $appointmentTemplate->getAppointmentReasons();
+		$appointment = new Appointment();
+		foreach ($appointment->getIteratorByPatientId($personId) as $app) {
+			$personId = (int)$app->patientId;
+			$appointmentId = (int)$app->appointmentId;
+			$providerId = (int)$app->providerId;
+			$roomId = (int)$app->roomId;
+
+			list($dateStart,$timeStart) = explode(' ',$app->start);
+			list($dateEnd,$timeEnd) = explode(' ',$app->end);
+
+			$providerName = '';
+			if ($providerId > 0) {
+				$provider = new Provider();
+				$provider->setPersonId($providerId);
+				$provider->populate();
+				$providerName = $provider->displayName;
+			}
+			$roomName = '';
+			if ($roomId > 0) {
+				$room = new Room();
+				$room->setRoomId($roomId);
+				$room->populate();
+				$roomName = $room->displayName;
+			}
+
+			$routing = new Routing();
+			$routing->personId = $personId;
+			$routing->appointmentId = $appointmentId;
+			$routing->providerId = $providerId;
+			$routing->roomId = $roomId;
+			$routing->populateByAppointments();
+			$station = $routing->stationId;
+			$reason = $app->reason;
+			$appointmentReason = isset($reasons[$reason])?$reasons[$reason]['name']:'';
+			$row = array();
+			$row['id'] = $appointmentId;
+			$row['data'] = array();
+			$row['data'][] = $dateStart;
+			$row['data'][] = $timeStart.' - '.$timeEnd;
+			$row['data'][] = $providerName;
+			$row['data'][] = $app->title;
+			$row['data'][] = $roomName;
+			$row['data'][] = $appointmentReason;
+			$row['data'][] = $app->appointmentCode;
+			$row['data'][] = $routing->stationId;
+			$rows[] = $row;
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
 	}
 
 }

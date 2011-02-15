@@ -34,6 +34,25 @@ class GenericData extends WebVista_Model_ORM implements NSDRMethods {
 	protected $_table = "genericData";
 	protected $_primaryKeys = array("genericDataId");
 
+	public function persist() {
+		if ($this->_persistMode == WebVista_Model_ORM::DELETE) return parent::persist();
+		$db = Zend_Registry::get('dbAdapter');
+		$genericDataId = (int)$this->genericDataId;
+		$data = $this->toArray();
+		if ($genericDataId > 0) {
+			$ret = $db->update($this->_table,$data,'genericDataId = '.$genericDataId);
+		}
+		else {
+			$this->genericDataId = WebVista_Model_ORM::nextSequenceId();
+			$data['genericDataId'] = $this->genericDataId;
+			$ret = $db->insert($this->_table,$data);
+		}
+		if ($this->shouldAudit()) {
+			WebVista_Model_ORM::audit($this);
+		}
+		return $this;
+	}
+
 	public function getIteratorByFilters($filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()

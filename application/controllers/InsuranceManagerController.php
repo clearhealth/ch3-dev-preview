@@ -173,17 +173,23 @@ class InsuranceManagerController extends WebVista_Controller_Action {
 		$this->_form->setWindow('winEditProgramId');
 		$this->view->form = $this->_form;
 		$this->view->buildings = $this->_getBuildings();
+		$insurancePrefList = InsuranceProgram::getListInsurancePreferences();
 		$payerTypes = array(''=>'');
+		if (isset($insurancePrefList[InsuranceProgram::INSURANCE_PAYER_TYPE_ENUM_KEY])) {
+			foreach ($insurancePrefList[InsuranceProgram::INSURANCE_PAYER_TYPE_ENUM_KEY] as $key=>$value) $payerTypes[$key] = $value;
+		}
 		$this->view->payerTypes = $payerTypes;
 		$programTypes = array(''=>'');
-		foreach (InsuranceProgram::getListProgramTypes() as $key=>$value) {
-			$programTypes[$key] = $value;
+		if (isset($insurancePrefList[InsuranceProgram::INSURANCE_PROGRAM_TYPE_ENUM_KEY])) {
+			foreach ($insurancePrefList[InsuranceProgram::INSURANCE_PROGRAM_TYPE_ENUM_KEY] as $key=>$value) $programTypes[$key] = $value;
 		}
 		$this->view->programTypes = $programTypes;
 		$fundsSources = array(''=>'');
+		if (isset($insurancePrefList[InsuranceProgram::INSURANCE_FUNDS_SOURCE_ENUM_KEY])) {
+			foreach ($insurancePrefList[InsuranceProgram::INSURANCE_FUNDS_SOURCE_ENUM_KEY] as $key=>$value) $fundsSources[$key] = $value;
+		}
 		$this->view->fundsSources = $fundsSources;
-		$feeSchedules = array(''=>'');
-		$this->view->feeSchedules = $feeSchedules;
+		$this->view->feeScheduleDisplay = $this->_program->displayFeeSchedule;
 
 		$company = new Company();
 		$addressIterator = $company->getAddressIterator($companyId);

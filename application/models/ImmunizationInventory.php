@@ -104,4 +104,17 @@ class ImmunizationInventory extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function populateByImmunization($immunization = null) {
+		if ($immunization === null) $immunization = $this->immunization;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('immunization = ?',(string)$immunization)
+				->order('immunizationInventoryId DESC')
+				->limit(1);
+		$ret = $this->populateWithSql($sqlSelect->__toString());
+		$this->postPopulate();
+		return $ret;
+	}
+
 }

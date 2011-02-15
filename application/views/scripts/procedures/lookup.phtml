@@ -50,11 +50,10 @@ function keyPressInput(e) {
 <script>
 var proceduresLookupGrid = new dhtmlXGridObject("proceduresLookupGridId");
 proceduresLookupGrid.setImagePath("<?=$this->baseUrl?>/img/");
-proceduresLookupGrid.setHeader("");
-proceduresLookupGrid.setNoHeader(true);
-proceduresLookupGrid.setInitWidths("*");
-proceduresLookupGrid.setColAlign("left");
-proceduresLookupGrid.setColTypes("ro");
+proceduresLookupGrid.setHeader("<?=__('Name')?>,<?=__('Code')?>");
+proceduresLookupGrid.setSkin("xp");
+proceduresLookupGrid.setInitWidths("*,80");
+proceduresLookupGrid.setColTypes("ro,ro");
 function proceduresLookupGridOnRowDblClicked(rowId,colIndex) {
 	selectedProceduresLookup(rowId);
 }

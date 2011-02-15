@@ -63,6 +63,11 @@ class InsuredRelationship extends WebVista_Model_ORM {
 		$this->subscriber = new Person();
 	}
 
+	public function persist() {
+		if ((int)$this->program_order === 0) $this->program_order = self::maxProgramOrder($this) + 1;
+		return parent::persist();
+	}
+
 	public function setSubscriberId($id) {
 		$this->subscriber_id = (int)$id;
 		$this->subscriber->personId = $this->subscriber_id;
@@ -75,7 +80,8 @@ class InsuredRelationship extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from($this->_table)
-			       ->where('person_id = ?',(int)$personId);
+			       ->where('person_id = ?',(int)$personId)
+			       ->order('program_order');
 		return $this->getIterator($dbSelect);
 	}
 
@@ -115,8 +121,7 @@ class InsuredRelationship extends WebVista_Model_ORM {
 	}
 
 	public function getDisplayDateLastVerified() {
-		$date = date('Y-m-d',strtotime($this->dateLastVerified));
-		return $date;
+		return substr($this->dateLastVerified,0,10);
 		if ($date == date('Y-m-d')) {
 			$date = 'Today';
 		}
@@ -199,6 +204,58 @@ class InsuredRelationship extends WebVista_Model_ORM {
 			$ret = (int)$row['insurance_program_id'];
 		}
 		return $ret;
+	}
+
+	public static function maxProgramOrder(self $payer) {
+		$db = Zend_Registry::get('dbAdapter');
+		$table = $payer->_table;
+
+		$sql = 'SELECT MAX(program_order) AS programOrder FROM '.$table.' WHERE person_id = '.$payer->personId;
+		$ret = 0;
+		if ($row = $db->fetchRow($sql)) {
+			$ret = (int)$row['programOrder'];
+		}
+		return $ret;
+	}
+
+	public static function reorder(self $from,self $to) {
+		$db = Zend_Registry::get('dbAdapter');
+		$table = $from->_table;
+		$fromOrder = (int)$from->programOrder;
+		$toOrder = (int)$to->programOrder;
+		$personId = (int)$from->personId;
+		if ($fromOrder > $toOrder) { // bottom to top
+			$sql = 'UPDATE '.$table.' SET program_order = (program_order + 1) WHERE person_id = '.$personId.' AND program_order > '.$toOrder;
+			$db->query($sql);
+			$sql = 'UPDATE '.$table.' SET program_order = '.($toOrder+1).' WHERE insured_relationship_id = '.(int)$from->insuredRelationshipId;
+			$db->query($sql);
+			$sql = 'UPDATE '.$table.' SET program_order = (program_order - 1) WHERE person_id = '.$personId.' AND program_order > '.($fromOrder+1);
+			$db->query($sql);
+		}
+		else if ($fromOrder < $toOrder) { // top to bottom
+			$sql = 'UPDATE '.$table.' SET program_order = (program_order - 1) WHERE person_id = '.$personId.' AND program_order < '.($toOrder+1);
+			$db->query($sql);
+			$sql = 'UPDATE '.$table.' SET program_order = '.($toOrder).' WHERE insured_relationship_id = '.(int)$from->insuredRelationshipId;
+			$db->query($sql);
+		}
+		else {
+			return false; // nothing to reorder here
+		}
+		return true;
+	}
+
+	public static function filterByPayerPersonIds($insuranceProgramId,$personId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('insurance_program_id = ?',(int)$insuranceProgramId)
+				->where('person_id = ?',(int)$personId)
+				->where('active = 1')
+				->order('program_order')
+				->limit(1);
+		$orm->populateWithSql($sqlSelect->__toString());
+		return $orm;
 	}
 
 }

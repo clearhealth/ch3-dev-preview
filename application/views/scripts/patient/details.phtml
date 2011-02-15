@@ -567,11 +567,12 @@ function pdRemove(id,type,callback) {
 	<br style="clear:left;" />
 	<div style="float:left;width:100%;">
 		<fieldset><legend><?=__('Insurers')?> (<a href="javascript:pdInsurersEdit()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-			<div id="pdInsurersGridId" style="height:100px;"></div>
+			<div id="pdInsurersGridId" style="height:150px;"></div>
 		</fieldset>
 	</div>
 	<script>
 	var pdInsurersGrid = new dhtmlXGridObject("pdInsurersGridId");
+	pdInsurersGrid.enableDragAndDrop(true);
 	pdInsurersGrid.setImagePath("<?=$this->baseUrl?>/img/");
 	pdInsurersGrid.setHeader("<?=__('Company')?>,<?=__('Program')?>,<?=__('Group Name')?>,<?=__('Group Number')?>,<?=__('Co-pay')?>,<?=__('Subscriber')?>,<?=__('Effective')?>,<?=__('Active')?>");
 	pdInsurersGrid.setInitWidths("150,150,150,150,100,200,120,50");
@@ -587,6 +588,28 @@ function pdRemove(id,type,callback) {
 		pdInsurersEdit(rowId);
 	}
 	pdInsurersGrid.attachEvent("onRowDblClicked",pdInsurersGridOnDoubleClicked);
+	pdInsurersGrid.attachEvent("onDrag",function(idFrom,idTo,gridFrom,gridTo,colIndexFrom,colIndexTo){
+		dojo.xhrPost({
+			url: "<?=$this->baseUrl?>/patient.raw/process-reorder-payers",
+			handleAs: "json",
+			content: {
+				"from": idFrom,
+				"to": idTo,
+			},
+			load: function (data) {
+				pdInsurersGridReload();
+			},
+			error: function (error) {
+				alert(error);
+				console.error ('Error: ', error);
+			}
+		});
+		return false;
+	});
+
+	pdInsurersGrid.attachEvent("onDrop",function(idFrom,idTo,idMercy,gridFrom,gridTo,colIndexFrom,colIndexTo){
+		return false;
+	});
 	pdInsurersGrid.init();
 	pdInsurersGridReload();
 

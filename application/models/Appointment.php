@@ -180,4 +180,14 @@ class Appointment extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function getIteratorByPatientId($patientId=null) {
+		if ($patientId === null) $patientId = $this->patientId;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('patientId = ?',(int)$patientId)
+				->order('start DESC');
+		return $this->getIterator($sqlSelect);
+	}
+
 }

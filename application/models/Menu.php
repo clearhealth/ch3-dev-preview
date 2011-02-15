@@ -440,8 +440,8 @@ class Menu {
 		$mainTabs['Orders']['hrefMode'] =  'ajax-html';
 		$mainTabs['Claims']['url']   = $baseUrl.'/claims.raw';
 		$mainTabs['Claims']['hrefMode'] =  'ajax-html';
-		$mainTabs['A/R']['url']   = $baseUrl.'/../index.php/minimal/MasterAccountHistory/View';
-		$mainTabs['A/R']['hrefMode'] =  'iframe';
+		$mainTabs['A/R']['url']   = $baseUrl.'/accounts.raw';
+		$mainTabs['A/R']['hrefMode'] =  'ajax-html';
 		$mainTabs['Reports']['url']   = $baseUrl.'/reports.raw';
 		$mainTabs['Reports']['hrefMode'] =  'ajax-html';
 		//$mainTabs['Billing']['url']   = '/index.php/minimal/claim/list';

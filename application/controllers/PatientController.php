@@ -583,4 +583,24 @@ class PatientController extends WebVista_Controller_Action {
         	$this->_helper->autoCompleteDojo($matches);
 	}
 
+	public function processReorderPayersAction() {
+		$from = (int)$this->_getParam('from');
+		$to = (int)$this->_getParam('to');
+		$ret = false;
+
+		if ($from > 0 && $to > 0) {
+			$payerFrom = new InsuredRelationship();
+			$payerFrom->insuredRelationshipId = $from;
+			$payerFrom->populate();
+			$payerTo = new InsuredRelationship();
+			$payerTo->insuredRelationshipId = $to;
+			$payerTo->populate();
+			$ret = InsuredRelationship::reorder($payerFrom,$payerTo);
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
 }

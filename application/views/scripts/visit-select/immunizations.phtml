@@ -16,6 +16,11 @@
 	</div>
 </div>
 <script>
+function openImmunizationsBulkEntryWindow() {
+	var params = [];
+	var winImmunizationsBulkEntry = globalCreateWindow("windowImmunizationsBulkEntryId",params,"<?=$this->baseUrl?>/immunizations.raw/bulk-entry","<?=__('Make Immunizations Bulk Entry')?>",900,600);
+}
+
 function openImmunizationsSelectionListWindow() {
 	var params = [];
 	params.push("id=<?=$this->othersId?>");
@@ -131,6 +136,9 @@ immunizationsListMenu.loadXML("<?=$this->baseUrl?>/immunizations.raw/immunizatio
 immunizationsListMenu.attachEvent("onClick",immunizationsListMenuOnClicked);
 function immunizationsListMenuOnClicked(id) {
 	switch (id) {
+		case "bulkEntry":
+			openImmunizationsBulkEntryWindow();
+			break;
 		case "remove":
 			immunizationRemove();
 			break;
@@ -141,6 +149,16 @@ dhtmlxEvent(immunizationsListGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
 	return false;
 });
+
+immunizationsListMenu.attachEvent("onContextMenu",function(id){
+	immunizationsListMenu.hideItem("remove");
+	var rowId = immunizationsListGrid.getSelectedRowId();
+	if (rowId != null) {
+		immunizationsListMenu.showItem("remove");
+	}
+});
+immunizationsListGrid.hdr.id = immunizationsListGrid.uid();
+immunizationsListMenu.addContextZone(immunizationsListGrid.hdr.id);
 
 
 immunizationsListGrid.getCombo(indexPIMRoute).put("","");

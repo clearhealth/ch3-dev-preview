@@ -97,6 +97,30 @@
 			case "All_public_health":
 				globalCreateWindow("windowPatientListsId",[],"<?=$this->baseUrl?>/patient-list.raw","<?=__('Public Health Export')?>",900,650);
 				break;
+			case "All_appointment_history":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				globalCreateWindow("windowAppointmentHistory",["personId="+patientId],"<?=$this->baseUrl?>/appointment.raw/history","<?=__('Appointment History')?>",800,400);
+				break;
+			case "All_patient_account":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				globalCreateWindow("windowPatientAccount",["personId="+patientId],"<?=$this->baseUrl?>/accounts.raw/patient","<?=__('Patient Account')?>",900,650);
+				break;
+			case "All_unallocated_payment":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				globalCreateWindow("windowUnallocPayment",["personId="+patientId],"<?=$this->baseUrl?>/accounts.raw/payment","<?=__('Patient Unallocated Payment')?>",600,400);
+				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
                                 break;

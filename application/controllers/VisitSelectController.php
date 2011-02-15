@@ -65,12 +65,14 @@ class VisitSelectController extends WebVista_Controller_Action {
 	}
 
 	public function diagnosesAction() {
+		$this->view->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$this->render();
 	}
 
 	public function proceduresAction() {
 		$providerIterator = new ProviderIterator();
 		$this->view->listProviders = $providerIterator->toArray('personId','displayName');
+		$this->view->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$this->render();
 	}
 
@@ -90,19 +92,8 @@ class VisitSelectController extends WebVista_Controller_Action {
 			$appointment->populate();
 			$personId = (int)$visit->patientId;
 
-			$patientProcedureIterator = new PatientProcedureIterator();
-			$patientProcedureIterator->setFilters(array('patientId'=>$personId));
-			foreach ($patientProcedureIterator as $proc) {
-				if (ClaimLine::doesVisitProcedureRowExist($visitId,$proc->code)) continue;
-				$claimLine = new ClaimLine();
-				$claimLine->visitId = $visitId;
-				$claimLine->procedureCode = $proc->code;
-				$claimLine->persist();
-			}
-
 			$payment = new Payment();
 			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
-			//$paymentIterator = $payment->getMostRecentPayments();
 			foreach ($paymentIterator as $pay) {
 				$listPayments[$pay->paymentId] = array(
 					date('Y-m-d',strtotime($pay->paymentDate)), // date
@@ -144,6 +135,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 		if ($visit->populate()) {
 			$visit->activePayerId = $payerId;
 			$visit->persist();
+			$visit->syncClaimsInsurance();
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

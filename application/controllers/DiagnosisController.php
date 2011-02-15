@@ -100,29 +100,14 @@ class DiagnosisController extends WebVista_Controller_Action {
 
 	public function listPatientDiagnosesAction() {
 		$patientId = (int)$this->_getParam('patientId');
+		$visitId = (int)$this->_getParam('visitId');
 		$rows = array();
 		if ($patientId > 0) {
-			$filters = array();
-			$filters['status'] = 'Active';
-			$filters['personId'] = $patientId;
-			$problemListIterator = new ProblemListIterator();
-			$problemListIterator->setFilters($filters);
-			$diagnosesSections = array();
-			foreach ($problemListIterator as $problem) {
-				$diagnosesSections[$problem->code] = $problem->codeTextShort;
-			}
 			// add to problem list, primary, diagnosis, comment
 			$patientDiagnosisIterator = new PatientDiagnosisIterator();
-			$patientDiagnosisIterator->setFilters(array('patientId'=>$patientId));
+			$patientDiagnosisIterator->setFilters(array('patientId'=>$patientId,'visitId'=>$visitId));
 			foreach ($patientDiagnosisIterator as $patientDiagnosis) {
-				$tmp = array();
-				$tmp['id'] = $patientDiagnosis->code;
-				$tmp['data'][] = $patientDiagnosis->addToProblemList;
-				$tmp['data'][] = $patientDiagnosis->isPrimary;
-				$tmp['data'][] = $patientDiagnosis->diagnosis;
-				$tmp['data'][] = $patientDiagnosis->comments;
-				$tmp['data'][] = isset($diagnosesSections[$patientDiagnosis->code])?'1':'';
-				$rows[] = $tmp;
+				$rows[] = $this->_generateRowData($patientDiagnosis);
 			}
 		}
 		$data = array();
@@ -132,42 +117,44 @@ class DiagnosisController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
-	public function processPatientDiagnosesAction() {
-		$patientId = (int)$this->_getParam('patientId');
-		$diagnoses = $this->_getParam('diagnoses');
-		if ($patientId > 0) {
-			$patientDiagnosisIterator = new PatientDiagnosisIterator();
-			$patientDiagnosisIterator->setFilters(array('patientId'=>$patientId));
-			$existingDiagnoses = $patientDiagnosisIterator->toArray('code','patientId');
-			foreach ($diagnoses as $code=>$diagnosis) {
-				if (isset($existingDiagnoses[$code])) {
-					unset($existingDiagnoses[$code]);
-				}
-				$diagnosis['code'] = $code;
-				$diagnosis['patientId'] = $patientId;
-				$patientDiagnosis = new PatientDiagnosis();
-				$patientDiagnosis->code = $code;
-				$patientDiagnosis->populate();
-				if ($patientDiagnosis->dateTime == '0000-00-00 00:00:00') {
-					$diagnosis['dateTime'] = date('Y-m-d H:i:s');
-				}
-				$patientDiagnosis->populateWithArray($diagnosis);
-				$patientDiagnosis->persist();
-			}
-			// delete un-used records
-			foreach ($existingDiagnoses as $code=>$patientId) {
-				$patientDiagnosis = new PatientDiagnosis();
-				$patientDiagnosis->code = $code;
-				$patientDiagnosis->patientId = $patientId;
-				$patientDiagnosis->setPersistMode(WebVista_Model_ORM::DELETE);
-				$patientDiagnosis->persist();
+	protected function _generateRowData(PatientDiagnosis $diag) {
+		static $diagnosesSections = null;
+		if ($diagnosesSections === null) {
+			$filters = array();
+			$filters['status'] = 'Active';
+			$filters['personId'] = $diag->patientId;
+			$problemListIterator = new ProblemListIterator();
+			$problemListIterator->setFilters($filters);
+			$diagnosesSections = array();
+			foreach ($problemListIterator as $problem) {
+				$diagnosesSections[$problem->code] = $problem->codeTextShort;
 			}
 		}
-		$data = array();
-		$data['msg'] = __('Record saved successfully');
+		$code = $diag->code;
+		$ret = array();
+		$ret['id'] = $diag->patientDiagnosisId;
+		$ret['data'][] = $diag->addToProblemList;
+		$ret['data'][] = $diag->isPrimary;
+		$ret['data'][] = $diag->diagnosis;
+		$ret['data'][] = $diag->comments;
+		$ret['data'][] = isset($diagnosesSections[$code])?'1':'';
+		$ret['data'][] = $code;
+		return $ret;
+	}
+
+	public function processPatientDiagnosisAction() {
+		$params = $this->_getParam('diagnosis');
+		$patientDiagnosis = new PatientDiagnosis();
+		if (isset($params['patientDiagnosisId']) && $params['patientDiagnosisId'] > 0) {
+			$patientDiagnosis->patientDiagnosisId = (int)$params['patientDiagnosisId'];
+			$patientDiagnosis->populate();
+		}
+		$patientDiagnosis->populateWithArray($params);
+		$patientDiagnosis->persist();
+		$ret = $this->_generateRowData($patientDiagnosis);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$json->direct($data);
+		$json->direct($ret);
 	}
 
 	public function listAction() {
@@ -194,16 +181,36 @@ class DiagnosisController extends WebVista_Controller_Action {
 		$diagnosis = (int)$this->_getParam('diagnosis');
 		$closure = new EnumerationClosure();
 		foreach ($closure->getAllDescendants($diagnosis,1,true) as $enum) {
-			$row['id'] = $enum->enumerationId;
+			$row['id'] = $enum->key;
 			$row['data'] = array();
 			$row['data'][] = '';
 			$row['data'][] = $enum->name;
-			$row['data'][] = $enum->enumerationId;
+			$row['data'][] = $enum->key;
 			$rows[] = $row;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(array('rows'=>$rows),true);
+	}
+
+	public function getMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render('get-menu');
+	}
+
+	public function processDeletePatientDiagnosisAction() {
+		$id = (int)$this->_getParam('id');
+		$ret = false;
+		if ($id > 0) {
+			$patientDiagnosis = new PatientDiagnosis();
+			$patientDiagnosis->patientDiagnosisId = $id;
+			$patientDiagnosis->setPersistMode(WebVista_Model_ORM::DELETE);
+			$patientDiagnosis->persist();
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 }

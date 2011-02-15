@@ -24,30 +24,30 @@
 
 class PatientDiagnosis extends WebVista_Model_ORM {
 
+	protected $patientDiagnosisId;
 	protected $code;
 	protected $patientId;
 	protected $providerId;
+	protected $visitId;
 	protected $dateTime;
 	protected $addToProblemList;
 	protected $isPrimary;
 	protected $diagnosis;
 	protected $comments;
 
-	protected $_primaryKeys = array('code','patientId');
+	protected $_primaryKeys = array('patientDiagnosisId');
 	protected $_table = 'patientDiagnosis';
 
 	public function persist() {
 		if (!$this->dateTime || $this->dateTime == '0000-00-00 00:00:00') {
 			$this->dateTime = date('Y-m-d H:i:s');
 		}
+		if (!$this->patientDiagnosisId > 0) $this->updateVisitProcedures();
 		return parent::persist();
 	}
 
-	public function getPatientDiagnosisId() {
-		return $this->code.';'.$this->patientId;
-	}
-
 	public function populate() {
+		return parent::populate();
 		if ($this->code != $this->patientId) return parent::populate();
 		$x = explode(';',$this->code);
 		$this->code = $x[0];
@@ -67,6 +67,15 @@ class PatientDiagnosis extends WebVista_Model_ORM {
 
 	public function getPersonId() {
 		return $this->patientId;
+	}
+
+	public function updateVisitProcedures() {
+		$iterator = new PatientProcedureIterator();
+		$iterator->setFilters(array('visitId'=>$this->visitId));
+		foreach ($iterator as $patientProcedure) {
+			$patientProcedure->setUnsetDiagnosis($this->code,true);
+			$patientProcedure->persist();
+		}
 	}
 
 }

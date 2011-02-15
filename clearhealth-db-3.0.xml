@@ -323,8 +323,25 @@
 		<key Table="category_to_document" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="document_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="category_to_document" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="claimFiles">
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="destination" Type="char(32)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimIds" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<field Field="status" Type="char(16)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateTime" Type="dateTime" Null="NO" Key="" Default="" Extra="" />
+		<field Field="userId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="claimFiles" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimFileId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="claimFiles" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-13 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="claimFileBlobs">
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="data" Type="mediumblob" Null="NO" Key="" Default="" Extra="" />
+		<key Table="claimFileBlobs" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimFileId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="claimFileBlobs" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-13 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="claimLines">
 		<field Field="claimLineId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="claimId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="insuranceProgramId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="procedureCode" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
@@ -349,8 +366,31 @@
 		<field Field="unitsDoesNotEffectFee" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="linkedMedicationId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="ndc" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<field Field="note" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="claimLines" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimLineId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="claimLines" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="claimRules">
+		<field Field="claimRuleId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="title" Type="char(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="message" Type="text" Null="NO" Key="" Default="" Extra="" />
+		<field Field="event" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="type" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="operator" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="code" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="value" Type="char(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="operand" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="groupId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="rowOrder" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<key Table="claimRules" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimRuleId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="claimRules" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-04 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="claimSequences">
+		<field Field="id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<key Table="claimSequences" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="id" Collation="A" Cardinality="1" Null="" Index_type="BTREE" Comment="" />
+		<options Name="claimSequences" Engine="InnoDB" Version="10" Row_format="Compact" Rows="1" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-12 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="clearhealth_claim">
 		<field Field="claim_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -1901,6 +1941,7 @@
 		<field Field="component_code" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="status" Type="char(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="clia_disclosure" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="test_note" Type="text" Null="NO" Key="" Default="" Extra="" />
 		<key Table="lab_test" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="lab_test_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="lab_test" Non_unique="1" Key_name="lab_order_id" Seq_in_index="1" Column_name="lab_order_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="lab_test" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
@@ -2249,6 +2290,8 @@
 		<field Field="chargeType" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="personId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="appointmentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimLineId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="misc_charge" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="misc_charge_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="misc_charge" Non_unique="1" Key_name="encounter_id" Seq_in_index="1" Column_name="encounter_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="misc_charge" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="16384" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
@@ -2365,7 +2408,7 @@
 		<field Field="collectionType" Type="char(10)" Null="NO" Key="" Extra="" />
 		<field Field="dateCollection" Type="datetime" Null="NO" Key="" Default="" Extra="" />
 		<field Field="schedule" Type="char(10)" Null="NO" Key="" Extra="" />
-		<field Field="daysSupply" Type="int" Null="NO" Key="" Extra="" />
+		<field Field="daysSupply" Type="int(11)" Null="NO" Key="" Extra="" />
 		<key Table="orderLabTests" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="orderId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="orderLabTest" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -2451,16 +2494,17 @@
 		<options Name="patientAllergies" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientDiagnosis">
-		<field Field="code" Type="char(10)" Null="NO" Key="PRI" Default="" Extra="" />
-		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="patientDiagnosisId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="code" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="providerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
 		<field Field="addToProblemList" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="isPrimary" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="diagnosis" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="comments" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
-		<key Table="patientDiagnosis" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
-		<key Table="patientDiagnosis" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<key Table="patientDiagnosis" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="patientDiagnosisId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientDiagnosis" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientEducations">
@@ -2507,16 +2551,29 @@
 		<options Name="patientImmunizations" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientProcedures">
-		<field Field="code" Type="char(10)" Null="NO" Key="PRI" Default="" Extra="" />
-		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="patientProcedureId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="code" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="providerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="quantity" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="procedure" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="modifiers" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="comments" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
-		<key Table="patientProcedures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
-		<key Table="patientProcedures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<field Field="diagnosisCode1" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode2" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode3" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode4" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode5" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode6" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode7" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="diagnosisCode8" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="modifier1" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="modifier2" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="modifier3" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="modifier4" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="patientProcedures" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="patientProcedureId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientProcedures" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientStatistics">
@@ -2535,11 +2592,13 @@
 		<options Name="patientStatisticsDefinitions" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2010-05-11 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patientVisitTypes">
-		<field Field="providerId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
-		<field Field="patientId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="patientVisitTypeId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="providerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="isPrimary" Type="tinyint(1)" Null="NO" Key="" Default="" Extra="" />
-		<key Table="patientVisitTypes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="providerId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
-		<key Table="patientVisitTypes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="2" Column_name="patientId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="" Extra="" />
+		<key Table="patientVisitTypes" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="patientVisitTypeId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="patientVisitTypes" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="patient_chronic_code">
@@ -2624,6 +2683,9 @@
 		<field Field="title" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="personId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="appointmentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimLineId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="allocated" Type="float(11,2)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="payment" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="payment_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="payment" Non_unique="1" Key_name="foreign_id" Seq_in_index="1" Column_name="foreign_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="payment" Non_unique="1" Key_name="encounter_id" Seq_in_index="1" Column_name="encounter_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
@@ -2781,6 +2843,21 @@
 		<key Table="pharmacies" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="pharmacyId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="pharmacies" Non_unique="1" Key_name="Zip" Seq_in_index="1" Column_name="Zip" Collation="A" Cardinality="2231" Null="" Index_type="BTREE" Comment="" />
 		<options Name="pharmacies" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-12-04 10:19:03" Collation="latin1_swedish_ci" Create_options="" Comment="InnoDB free: 528384 kB" />
+	</table_structure>
+	<table_structure name="postingJournals">
+		<field Field="postingJournalId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="payerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimLineId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="amount" Type="float(11,2)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="note" Type="varchar(255)" Null="NO" Key="" Default="CURRENT_TIMESTAMP" Extra="" />
+		<field Field="userId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="datePosted" Type="date" Null="NO" Key="" Default="CURRENT_TIMESTAMP" Extra="" />
+		<field Field="dateTime" Type="datetime" Null="NO" Key="" Default="CURRENT_TIMESTAMP" Extra="" />
+		<key Table="postingJournals" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="postingJournalId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="postingJournals" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2011-01-29 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="practice_address">
 		<field Field="practice_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
@@ -3673,6 +3750,21 @@
 		<key Table="widget_form" Non_unique="1" Key_name="form_id" Seq_in_index="1" Column_name="form_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<key Table="widget_form" Non_unique="1" Key_name="report_id" Seq_in_index="1" Column_name="report_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="widget_form" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
+	<table_structure name="writeOffs">
+		<field Field="writeOffId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="personId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="appointmentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimLineId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimFileId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="amount" Type="float(11,2)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="userId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="timestamp" Type="timestamp" Null="NO" Key="" Default="CURRENT_TIMESTAMP" Extra="" />
+		<field Field="title" Type="char(255)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="payerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="writeOffs" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="writeOffId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="writeOffs" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="0" Max_data_length="0" Index_length="32768" Data_free="0" Create_time="2011-01-19 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="x12imported_data">
 		<field Field="x12imported_data_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />

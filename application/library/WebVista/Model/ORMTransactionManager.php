@@ -137,21 +137,19 @@ class WebVista_Model_ORMTransactionManager {
 					$preQueries = array($preQueries);
 				}
 				foreach ($preQueries as $sql) {
-					$stmt = $db->query($sql);
-					$stmt->closeCursor();
+					$db->query($sql);
 				}
 			}
 			foreach ($this->queries as $sql) {
-				$stmt = $db->query($sql);
-				$stmt->closeCursor();
+				//$db->query($sql);
+				$stmt = $db->getConnection()->exec($sql);
 			}
 			if ($postQueries !== null) {
 				if (!is_array($postQueries)) {
 					$postQueries = array($postQueries);
 				}
 				foreach ($postQueries as $sql) {
-					$stmt = $db->query($sql);
-					$stmt->closeCursor();
+					$db->query($sql);
 				}
 			}
 			if (isset($this->auditLogQueries[0])) {

@@ -61,16 +61,16 @@ class CCDMedications {
 			$rows[] = '<tr>
 					<td>'.$baseMed24->rxnorm_cuid.'</td>
 					<td>Medication</td>
-					<td>'.$medication->description.'</td>
-					<td>'.$baseMed24->fdaDrugname.'</td>
-					<td>'.$baseMed24->tradename.'</td>
-					<td>'.$medication->directions.'</td>
-					<td>'.$medication->strength.'</td>
-					<td>'.$medication->dose.'</td>
-					<td>'.$medication->route.'</td>
-					<td>'.$medication->schedule.'</td>
+					<td>'.htmlentities($medication->description).'</td>
+					<td>'.htmlentities($baseMed24->fdaDrugname).'</td>
+					<td>'.htmlentities($baseMed24->tradename).'</td>
+					<td>'.htmlentities($medication->directions).'</td>
+					<td>'.htmlentities($medication->strength).'</td>
+					<td>'.htmlentities($medication->dose).'</td>
+					<td>'.htmlentities($medication->route).'</td>
+					<td>'.htmlentities($medication->schedule).'</td>
 					<td>'.$datePrescribed.'</td>
-					<td>'.$medication->displayStatus.'</td>
+					<td>'.htmlentities($medication->displayStatus).'</td>
 				</tr>';
 		}
 		$text = '';
@@ -104,6 +104,7 @@ class CCDMedications {
 				if ($strength) $quantity = '<quantity value="'.$strength.'" unit="'.preg_replace('/ /','',strtolower($unit[0])).'"/>';
 			}
 			$status = $medication->displayStatus;
+			$description = htmlentities($medication->description);
 			$entry = '<substanceAdministration classCode="SBADM" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.3.88.11.83.8" assigningAuthorityName="HITSP C83"/>
 				<templateId root="2.16.840.1.113883.10.20.1.24" assigningAuthorityName="CCD"/>
@@ -132,10 +133,10 @@ class CCDMedications {
 						<templateId root="1.3.6.1.4.1.19376.1.5.3.1.4.7.2" assigningAuthorityName="IHE PCC"/>
 						<!-- Product template -->
 						<manufacturedMaterial>
-							<code code="309362" codeSystem="2.16.840.1.113883.6.88" displayName="'.$medication->description.'">
-								<originalText>'.$medication->description.'<reference/>
+							<code code="309362" codeSystem="2.16.840.1.113883.6.88" displayName="'.$description.'">
+								<originalText>'.$description.'<reference/>
 								</originalText>
-								<translation code="174742" codeSystem="2.16.840.1.113883.6.88" displayName="'.$medication->description.'" codeSystemName="RxNorm"/>
+								<translation code="174742" codeSystem="2.16.840.1.113883.6.88" displayName="'.$description.'" codeSystemName="RxNorm"/>
 							</code>
 							<name>Plavix</name>
 						</manufacturedMaterial>

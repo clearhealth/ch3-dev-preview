@@ -48,6 +48,7 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 				$byAuthoringPersonId = (int)$filter['authoringPersonId'];
 				if ($byAuthoringPersonId > 0) { // Signed Notes By Author
 					$dbSelect->where('clinicalNotes.authoringPersonId = ' . $byAuthoringPersonId);
+					$dbSelect->where('clinicalNotes.eSignatureId > 0');
 				}
 				break;
 			case 'byDateRange': // By Date Range
@@ -57,10 +58,11 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 					// increment by one day, right? because query using between has
 					$dateRange[1] = date('Y-m-d', strtotime('+1 day', strtotime($dateRange[1])));
 					$dbSelect->where("clinicalNotes.dateTime BETWEEN ? AND '{$dateRange[1]}'",$dateRange[0]);
+					$dbSelect->where('clinicalNotes.eSignatureId > 0');
 				}
 				break;
 			case 'byAllSigned': // By All Signed Notes
-				$dbSelect->where('clinicalNotes.eSignatureId = 1'); // is it 1 for signed?
+				$dbSelect->where('clinicalNotes.eSignatureId > 0');
 				break;
 			case 'byAllUserUncosigned': // By All Uncosigned Notes for [user]
 				$dbSelect->where('clinicalNotes.authoringPersonId = ' . (int)Zend_Auth::getInstance()->getIdentity()->personId);
@@ -111,11 +113,22 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 		// check if required status exists
 		if (isset($custom['status'])) {
 			$status = $custom['status']; // signed; unsigned; uncosigned
+			switch ($status) {
+				case 'signed':
+					$dbSelect->where('clinicalNotes.eSignatureId > 0');
+					break;
+				case 'unsigned':
+					$dbSelect->where('clinicalNotes.eSignatureId = 0');
+					break;
+				case 'uncosigned':
+					//$dbSelect->where('clinicalNotes.eSignatureId > 0');
+					break;
+			}
 			$authoringPersonId = (int)$custom['authoringPersonId'];
 			if ($authoringPersonId > 0) {
 				$dbSelect->where('clinicalNotes.authoringPersonId = ' . $authoringPersonId);
 			}
-			$filterDate = $custom['filterDate']; // on or undefined
+			$filterDate = isset($custom['filterDate'])?$custom['filterDate']:''; // on or undefined
 			if (strlen($filterDate) > 0) {
 				$dateBegin = $custom['dateBegin'];
 				$dateEnd = $custom['dateEnd'];
@@ -136,7 +149,7 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 					$dbSelect->where('clinicalNoteTemplates.name LIKE ?',$filterResults);
 				}
 			}
-			$groupDoc = $custom['groupDoc'];
+			$groupDoc = isset($custom['groupDoc'])?$custom['groupDoc']:'';
 			if (strlen($groupDoc) > 0) {
 				$groupBy = $custom['groupBy']; // groupDateVisit; groupLocation; groupTitle; groupAuthor
 				switch ($groupBy) {
@@ -175,7 +188,7 @@ class ClinicalNoteIterator extends WebVista_Model_ORMIterator implements Iterato
 					$dbSelect->order('clinicalNotes.locationId '.$sqlSort);
 					break;
 			}
-			$maxResults = $custom['maxResults'];
+			$maxResults = isset($custom['maxResults'])?$custom['maxResults']:'';
 			if (strlen($maxResults) > 0) {
 				$maxResultsValue = (int)$custom['maxResultsValue'];
 				$dbSelect->limit($maxResultsValue);

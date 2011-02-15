@@ -207,4 +207,96 @@ class ImmunizationsController extends WebVista_Controller_Action {
 		$json->direct(array('rows' => $rows),true);
 	}
 
+	public function bulkEntryAction() {
+		$othersId = 0;
+		$series = array();
+		$sites = array();
+		$reactions = array();
+		$routes = array();
+		$enumerationsClosure = new EnumerationsClosure();
+		$parentName = PatientImmunization::ENUM_PARENT_NAME;
+		$enumeration = new Enumeration();
+		$enumeration->populateByUniqueName($parentName);
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($enumeration->enumerationId,1);
+		foreach ($enumerationIterator as $enum) {
+			switch ($enum->name) {
+				case PatientImmunization::ENUM_SERIES_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$series = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_BODY_SITE_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$sites = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_SECTION_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					foreach ($enumIterator as $item) {
+						if ($item->name == PatientImmunization::ENUM_SECTION_OTHER_NAME) {
+							$othersId = $item->enumerationId;
+							break;
+						}
+					}
+					break;
+				case PatientImmunization::ENUM_REACTION_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$reactions = $enumIterator->toArray('key','name');
+					break;
+				case PatientImmunization::ENUM_ADMINISTRATION_ROUTE_NAME:
+					$enumIterator = $enumerationsClosure->getAllDescendants($enum->enumerationId,1);
+					$routes = $enumIterator->toArray('key','name');
+					break;
+
+
+			}
+		}
+		$enumerationsClosure = new EnumerationsClosure();
+		$enumerationIterator = $enumerationsClosure->getAllDescendants($othersId,1);
+		$lists = array();
+		foreach ($enumerationIterator as $enum) {
+			$lists[$enum->key] = $enum->name;
+		}
+		$this->view->lists = $lists;
+
+		$this->view->series = $series;
+		$this->view->sites = $sites;
+		$this->view->reactions = $reactions;
+		$this->view->routes = $routes;
+		$this->render();
+	}
+
+	public function processBulkEntryAction() {
+		$params = $this->_getParam('immunizations');
+		$config = Zend_Registry::get('config');
+		$useImmunizationInventory = ((string)$config->useImmunizationInventory == 'true')?true:false;
+		$data = false;
+		if (is_array($params)) {
+			foreach ($params as $key=>$values) {
+				$patientImmunization = new PatientImmunization();
+				$patientImmunization->populateWithArray($values);
+				$patientImmunization->dateAdministered = date('Y-m-d H:i',strtotime($patientImmunization->dateAdministered));
+				$patientImmunization->persist();
+				if ($useImmunizationInventory && strlen($patientImmunization->lot) > 0) {
+					$inventory = new ImmunizationInventory();
+					$inventory->immunization = $patientImmunization->immunization;
+					$inventory->populateByImmunization();
+					$inventory->immunization = $patientImmunization->immunization;
+					$inventory->immunizationInventoryId = 0;
+					$inventory->lotNumber = $patientImmunization->lot;
+					$inventory->expiration = '';
+					$inventory->manufacturer = '';
+					$inventory->mvxCode = '';
+					$inventory->immunizationId = $patientImmunization->patientImmunizationId;
+					$inventory->persist();
+
+					$patientImmunization->lot = $inventory->immunizationInventoryId;
+					$patientImmunization->persist();
+				}
+			}
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 }

@@ -28,13 +28,20 @@ class PatientDiagnosisIterator extends WebVista_Model_ORMIterator {
 		parent::__construct('PatientDiagnosis',$dbSelect);
 	}
 
-	public function setFilters(Array $filter) {
+	public function setFilters(Array $filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from('patientDiagnosis')
-			       ->where('patientId = ?',$filter['patientId'])
 				->order('isPrimary DESC')
 				->order('code');
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'patientId':
+				case 'visitId':
+					$dbSelect->where($key.' = ?',(int)$value);
+					break;
+			}
+		}
 		$this->_dbSelect = $dbSelect;
 		$this->_dbStmt = $db->query($this->_dbSelect);
 	}

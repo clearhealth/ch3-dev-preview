@@ -971,7 +971,7 @@ class CalendarController extends WebVista_Controller_Action {
 			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
 			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
 			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
-			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' -> '.$buildings[$event->buildingId]->displayName;
+			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' of '.$event->provider->displayName.' ('.$buildings[$event->buildingId]->displayName.')';
 			$tmpIndex++;
 		}
         }

@@ -46,10 +46,10 @@ class CCDResults {
 		foreach ($base->labResults as $orderId=>$value) {
 			foreach ($value['results'] as $lab) {
 				$tr = '<tr>
-						<td>'.$lab->identifier.'</td>
-						<td>'.$lab->description.'</td>
-						<td>'.$lab->value.' '.$lab->units.'</td>
-						<td>'.$lab->abnormalFlag.'</td>
+						<td>'.htmlentities($lab->identifier).'</td>
+						<td>'.htmlentities($lab->description).'</td>
+						<td>'.htmlentities($lab->value.' '.$lab->units).'</td>
+						<td>'.htmlentities($lab->abnormalFlag).'</td>
 						<td>'.date('M d, Y',strtotime($lab->observationTime)).'</td>
 					</tr>';
 				$rows[] = $tr;
@@ -78,7 +78,7 @@ class CCDResults {
 				<templateId root="2.16.840.1.113883.10.20.1.32"/>
 				<!--Result organizer template -->
 				<id root="'.NSDR::create_guid().'"/>
-				<code code="43789009" codeSystem="2.16.840.1.113883.6.96" displayName="'.$labTest->service.'"/>
+				<code code="43789009" codeSystem="2.16.840.1.113883.6.96" displayName="'.htmlentities($labTest->service).'"/>
 				<statusCode code="completed"/>
 				<effectiveTime value="'.date('YmdHi',strtotime($orderLabTest->dateCollection)).'"/>
 				<component>
@@ -87,11 +87,11 @@ class CCDResults {
 						<templateId root="2.16.840.1.113883.10.20.1.29" assigningAuthorityName="CCD"/>
 						<templateId root="1.3.6.1.4.1.19376.1.5.3.1.4.19" assigningAuthorityName="IHE PCC"/>
 						<id/>
-						<code code="43789009" codeSystem="2.16.840.1.113883.6.96" displayName="'.$labTest->service.'">
-							<originalText>'.$orderLabTest->order->orderText.'<reference value="Ptr to text  in parent Section"/>
+						<code code="43789009" codeSystem="2.16.840.1.113883.6.96" displayName="'.htmlentities($labTest->service).'">
+							<originalText>'.htmlentities($orderLabTest->order->orderText).'<reference value="Ptr to text  in parent Section"/>
 							</originalText>
 						</code>
-						<text>'.$orderLabTest->order->orderText.'<reference value="Ptr to text  in parent Section"/>
+						<text>'.htmlentities($orderLabTest->order->orderText).'<reference value="Ptr to text  in parent Section"/>
 						</text>
 						<statusCode code="completed"/>
 						<effectiveTime value="'.date('YmdHi',strtotime($orderLabTest->dateCollection)).'"/>
@@ -110,15 +110,15 @@ class CCDResults {
 					$referenceRange = '
 						<referenceRange>
 							<observationRange>
-								<text>'.$result->referenceRange.'</text>
+								<text>'.htmlentities($result->referenceRange).'</text>
 							</observationRange>
 						</referenceRange>';
 				}
 				if (is_numeric($result->value)) {
-					$resultValue = '<value xsi:type="PQ" value="'.$result->value.'" unit="'.$result->units.'"/>';
+					$resultValue = '<value xsi:type="PQ" value="'.htmlentities($result->value).'" unit="'.htmlentities($result->units).'"/>';
 				}
 				else {
-					$resultValue = '<value xsi:type="ST">'.$result->value.'</value>';
+					$resultValue = '<value xsi:type="ST">'.htmlentities($result->value).'</value>';
 				}
 				$entry .= '
 				<component>
@@ -129,7 +129,7 @@ class CCDResults {
 						<templateId root="2.16.840.1.113883.3.88.11.83.15.1"/>
 						<!-- Result observation template -->
 						<id root="'.NSDR::create_guid().'"/>
-						<code code="'.$result->identifier.'" codeSystem="2.16.840.1.113883.6.1" displayName="'.$result->description.'"/>
+						<code code="'.htmlentities($result->identifier).'" codeSystem="2.16.840.1.113883.6.1" displayName="'.htmlentities($result->description).'"/>
 						<text>
 							<reference value="PtrToValueInsectionText"/>
 						</text>

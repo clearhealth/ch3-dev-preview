@@ -46,7 +46,7 @@
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">
 	<?=$this->form->feeScheduleId->renderLabel()?>
-	<?=$this->formSelect('program[feeScheduleId]',$this->form->feeScheduleId->getValue(),array('id'=>'program-feeScheduleId','style'=>'width:300px;'),$this->feeSchedules);?>
+	<?=$this->formTextarea('feeScheduleDisplayId',$this->feeScheduleDisplay,array('id'=>'feeScheduleDisplayId','style'=>'height:40px;width:300px;border:0px;','readonly'=>'readonly'));?>
 </div>
 <br style="clear:left;" />
 <div class="formRow" style="padding-top:4px;">

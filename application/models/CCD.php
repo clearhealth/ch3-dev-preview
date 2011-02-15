@@ -206,7 +206,7 @@ class CCD {
 		$code->addAttribute('displayName',$displayName);
 		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
 		$code->addAttribute('codeSystemName','LOINC');
-		$xml->addChild('title',$this->_title);
+		$xml->addChild('title',htmlentities($this->_title));
 		$effectiveTime = $xml->addChild('effectiveTime');
 		$dateEffective = self::formatDate();
 		$effectiveTime->addAttribute('value',$dateEffective);
@@ -223,7 +223,7 @@ class CCD {
 		//$id->addAttribute('root','CLINICID');
 		$id->addAttribute('root','MRN');
 		//$id->addAttribute('extension','PatientID');
-		$id->addAttribute('extension',$this->patient->recordNumber);
+		$id->addAttribute('extension',htmlentities($this->patient->recordNumber));
 		// Address
 		$address = new Address();
 		$address->personId = $this->_patientId;
@@ -234,10 +234,10 @@ class CCD {
 		$addr = $patientRole->addChild('addr');
 		if ($address->addressId > 0) {
 			$addr->addAttribute('use','HP');
-			$addr->addChild('streetAddressLine',(strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1);
-			$addr->addChild('city',$address->city);
-			$addr->addChild('state',$address->state);
-			$addr->addChild('postalCode',$address->zipCode);
+			$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+			$addr->addChild('city',htmlentities($address->city));
+			$addr->addChild('state',htmlentities($address->state));
+			$addr->addChild('postalCode',htmlentities($address->zipCode));
 		}
 		// Telecom
 		$phone = null;
@@ -249,18 +249,18 @@ class CCD {
 		$telecom = $patientRole->addChild('telecom');
 		if ($phone && strlen($phone['number']) > 0) {
 			$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.$phone['number']);
+			$telecom->addAttribute('value','tel:'.htmlentities($phone['number']));
 		}
 		// Patient
 		$patient = $patientRole->addChild('patient');
 		$name = $patient->addChild('name');
-		$name->addChild('given',$patientName['given']);
-		$name->addChild('family',$patientName['family']);
-		$name->addChild('suffix',$patientName['suffix']);
+		$name->addChild('given',htmlentities($patientName['given']));
+		$name->addChild('family',htmlentities($patientName['family']));
+		$name->addChild('suffix',htmlentities($patientName['suffix']));
 
 		$genderCode = $patient->addChild('administrativeGenderCode');
-		$genderCode->addAttribute('code',$this->patient->person->gender);
-		$genderCode->addAttribute('displayName',$this->patient->person->displayGender);
+		$genderCode->addAttribute('code',htmlentities($this->patient->person->gender));
+		$genderCode->addAttribute('displayName',htmlentities($this->patient->person->displayGender));
 		$genderCode->addAttribute('codeSystem','2.16.840.1.113883.5.1');
 		$genderCode->addAttribute('codeSystemName','HL7 AdministrativeGender');
 		$birthTime = $patient->addChild('birthTime');
@@ -291,37 +291,37 @@ class CCD {
 		$id->addAttribute('root','20cf14fb-b65c-4c8c-a54d-b0cca834c18c');
 		$addr = $assignedAuthor->addChild('addr');
 		$addr->addAttribute('use','HP');
-		$addr->addChild('streetAddressLine',(strlen($building->line2) > 0)?$building->line1.' '.$building->line2:$building->line1);
-		$addr->addChild('city',$building->city);
-		$addr->addChild('state',$building->state);
-		$addr->addChild('postalCode',$building->zipCode);
+		$addr->addChild('streetAddressLine',htmlentities((strlen($building->line2) > 0)?$building->line1.' '.$building->line2:$building->line1));
+		$addr->addChild('city',htmlentities($building->city));
+		$addr->addChild('state',htmlentities($building->state));
+		$addr->addChild('postalCode',htmlentities($building->zipCode));
 		$telecom = $assignedAuthor->addChild('telecom');
 		if (strlen($building->phoneNumber) > 0) {
 			//$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.$building->phoneNumber);
+			$telecom->addAttribute('value','tel:'.htmlentities($building->phoneNumber));
 		}
 		$assignedPerson = $assignedAuthor->addChild('assignedPerson');
 		$name = $assignedPerson->addChild('name');
-		$name->addChild('prefix',$providerName['prefix']);
-		$name->addChild('given',$providerName['given']);
-		$name->addChild('family',$providerName['family']);
+		$name->addChild('prefix',htmlentities($providerName['prefix']));
+		$name->addChild('given',htmlentities($providerName['given']));
+		$name->addChild('family',htmlentities($providerName['family']));
 		$representedOrg = $assignedAuthor->addChild('representedOrganization');
 		$id = $representedOrg->addChild('id');
 		$id->addAttribute('root','2.16.840.1.113883.19.5');
-		$representedOrg->addChild('name',$buildingName);
+		$representedOrg->addChild('name',htmlentities($buildingName));
 		$address = $building->practice->primaryAddress;
 		$telecom = $representedOrg->addChild('telecom');
 		if (strlen($building->practice->mainPhone->number) > 0) {
 			//$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.$building->practice->mainPhone->number);
+			$telecom->addAttribute('value','tel:'.htmlentities($building->practice->mainPhone->number));
 		}
 		$addr = $representedOrg->addChild('addr');
 		if ($address->addressId > 0) {
 			$addr->addAttribute('use','HP');
-			$addr->addChild('streetAddressLine',(strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1);
-			$addr->addChild('city',$address->city);
-			$addr->addChild('state',$address->state);
-			$addr->addChild('postalCode',$address->zipCode);
+			$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+			$addr->addChild('city',htmlentities($address->city));
+			$addr->addChild('state',htmlentities($address->state));
+			$addr->addChild('postalCode',htmlentities($address->zipCode));
 		}
 
 		// CUSTODIAN
@@ -411,10 +411,10 @@ class CCD {
 			}
 			if ($address->addressId > 0) {
 				$addr->addAttribute('use','HP');
-				$addr->addChild('streetAddressLine',(strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1);
-				$addr->addChild('city',$address->city);
-				$addr->addChild('state',$address->state);
-				$addr->addChild('postalCode',$address->zipCode);
+				$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+				$addr->addChild('city',htmlentities($address->city));
+				$addr->addChild('state',htmlentities($address->state));
+				$addr->addChild('postalCode',htmlentities($address->zipCode));
 			}
 			$telecom = $assignedEntity->addChild('telecom');
 			$phoneNumber = new PhoneNumber();
@@ -424,15 +424,15 @@ class CCD {
 			}
 			if (strlen($phone['number']) > 0) {
 				$telecom->addAttribute('use','HP');
-				$telecom->addAttribute('value','tel:'.$phone['number']);
+				$telecom->addAttribute('value','tel:'.htmlentities($phone['number']));
 			}
 
 			$assignedPerson = $assignedEntity->addChild('assignedPerson');
 			$name = $assignedPerson->addChild('name');
 
-			$name->addChild('prefix',$provider->person->prefix);
-			$name->addChild('given',$provider->person->firstName);
-			$name->addChild('family',$provider->person->lastName);
+			$name->addChild('prefix',htmlentities($provider->person->prefix));
+			$name->addChild('given',htmlentities($provider->person->firstName));
+			$name->addChild('family',htmlentities($provider->person->lastName));
 			$representedOrg = $assignedEntity->addChild('representedOrganization');
 			$id = $representedOrg->addChild('id');
 			$id->addAttribute('root','2.16.840.1.113883.3.72.5');
@@ -755,9 +755,9 @@ class CCD {
 		foreach ($iterator as $immunization) {
 			$status = 'Completed'; // TODO: where to get the status?
 			$tr = '<tr>
-					<td>'.$immunization->immunization.'</td>
+					<td>'.htmlentities($immunization->immunization).'</td>
 					<td>'.date('M d, Y',strtotime($immunization->dateAdministered)).'</td>
-					<td>'.$status.'</td>
+					<td>'.htmlentities($status).'</td>
 				</tr>';
 			$rows[] = $tr;
 		}
@@ -802,10 +802,10 @@ class CCD {
 		$labelKeyValues = VitalSignTemplate::generateVitalSignsTemplateKeyValue();
 		foreach ($labelKeyValues as $key=>$value) {
 			if (!isset($vitals[$key])) continue;
-			$tr ='<tr>
-				<th align="left">'.$value.'</th>';
+			$tr = '<tr>
+				<th align="left">'.htmlentities($value).'</th>';
 			foreach ($vitals[$key] as $dateTime=>$vital) {
-				$tr .='<td>'.$vital->value.' '.$vital->units.'</td>';
+				$tr .= '<td>'.htmlentities($vital->value.' '.$vital->units).'</td>';
 			}
 			$tr .= '</tr>';
 			$rows[] = $tr;
@@ -839,7 +839,7 @@ class CCD {
 		foreach ($iterator as $procedure) {
 			$rows[] = '<tr>
 					<td>
-						<content ID="Proc'.$ctr++.'">'.$procedure->procedure.'</content>
+						<content ID="Proc'.$ctr++.'">'.htmlentities($procedure->procedure).'</content>
 					</td>
 					<td>'.date('M d, Y',strtotime($procedure->dateTime)).'</td>
 				</tr>';
@@ -884,8 +884,8 @@ class CCD {
 			$appointment->appointmentId = $visit->appointmentId;
 			$appointment->populate();
 			$tr ='<tr>
-					<td>'.$appointment->title.'</td>
-					<td>'.$building->displayName.'</td>
+					<td>'.htmlentities($appointment->title).'</td>
+					<td>'.htmlentities($building->displayName).'</td>
 					<td>'.date('M d, Y',strtotime($visit->dateOfTreatment)).'</td>
 				</tr>';
 			$rows[] = $tr;

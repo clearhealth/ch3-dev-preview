@@ -228,4 +228,40 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		return $gender;
 	}
 
+	public function getPhoneNumber($autoFix=true) {
+		foreach ($this->getPhoneNumbers($autoFix) as $phoneNumber) {
+			break;
+		}
+		if (!isset($phoneNumber)) {
+			$phoneNumber = new PhoneNumber();
+			$phoneNumber->personId = $this->person_id;
+			$phoneNumber->populateWithPersonId();
+		}
+		return $phoneNumber;
+	}
+
+	public function getPhoneNumbers($autoFix=true) {
+		$phoneNumber = new PhoneNumber();
+		$phoneNumber->personId = $this->person_id;
+		return $phoneNumber->getIteratorByPersonId();
+	}
+
+	public function getAddress() {
+		foreach ($this->getAddresses() as $address) {
+			break; // retrieves the top address
+		}
+		if (!isset($address)) {
+			$address = new Address();
+			$address->personId = $this->person_id;
+			$address->populateWithPersonId();
+		}
+		return $address;
+	}
+
+	public function getAddresses() {
+		$address = new Address();
+		$address->personId = $this->person_id;
+		return $address->getIteratorByPersonId();
+	}
+
 }

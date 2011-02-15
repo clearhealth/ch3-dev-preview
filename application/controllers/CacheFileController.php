@@ -485,6 +485,17 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dojojs'][] = 'form-FilteringSelect';
 		$files['dojojs'][] = 'currency';
 		$files['dojojs'][] = 'form-CurrencyTextBox';
+		$files['dojojs'][] = 'dnd-common';
+		$files['dojojs'][] = 'dnd-autoscroll';
+		$files['dojojs'][] = 'dnd-Mover';
+		$files['dojojs'][] = 'dnd-Moveable';
+		$files['dojojs'][] = 'dnd-TimedMoveable';
+		$files['dojojs'][] = 'fx';
+		$files['dojojs'][] = 'dijit-layout-ContentPane';
+		$files['dojojs'][] = 'dijit-form-Form';
+
+		$files['dojojs'][] = 'dijit-Dialog';
+		$files['dojojs'][] = 'dijit-form-Button';
 
 		$files['dhtmlxjs'] = array();
 		$files['dhtmlxjs'][] = 'dhtmlxcommon';

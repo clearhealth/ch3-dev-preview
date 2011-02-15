@@ -388,4 +388,9 @@ class VitalSignsController extends WebVista_Controller_Action {
 		$json->direct($ret);
 	}
 
+	public function getMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render('get-menu');
+	}
+
 }

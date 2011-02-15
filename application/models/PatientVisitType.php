@@ -24,15 +24,40 @@
 
 class PatientVisitType extends WebVista_Model_ORM {
 
+	protected $patientVisitTypeId;
+	protected $visitId;
 	protected $providerId;
 	protected $patientId;
 	protected $isPrimary;
+	protected $dateTime;
 
-	protected $_primaryKeys = array('providerId','patientId');
+	protected $_primaryKeys = array('patientVisitTypeId');
 	protected $_table = 'patientVisitTypes';
 
-	public function getPatientVisitTypeId() {
-		return $this->providerId;
+	public function persist() {
+		if (!$this->dateTime || $this->dateTime == '0000-00-00 00:00:00') {
+			$this->dateTime = date('Y-m-d H:i:s');
+		}
+		return parent::persist();
+	}
+
+	public function populateWithIds() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('visitId = ?',(int)$this->visitId)
+				->where('providerId = ?',(int)$this->providerId)
+				->where('patientId = ?',(int)$this->patientId)
+				->limit(1);
+		return $this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public function resetPrimaryProvider() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sql = 'UPDATE `'.$this->_table.'`
+				SET isPrimary = 0
+				WHERE visitId = '.(int)$this->visitId.' AND patientId = '.(int)$this->patientId;
+		return $db->query($sql);
 	}
 
 }

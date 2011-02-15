@@ -878,6 +878,7 @@ class EnumGenerator {
 						'flowSheet' => array('key' => 'FLOWSHEET', 'name' => 'Flow Sheet', 'active' => 1, 'guid' => '9decd97b-8462-4b89-89fc-991f53765e38'),
 					)),
 					'manageSchedule' => array('key' => 'MANSCHED', 'name' => 'Manage Schedules', 'active' => 1, 'guid' => '78dd7937-c0c6-407f-848f-192ebac2ac86'),
+					'appointmentHistory' => array('key' => 'APPHISTORY', 'name' => 'Appointment History', 'active' => 1, 'guid' => 'ad390c48-e73b-4834-aa14-f54a72a5dc95'),
 				)),
 			);
 
@@ -2863,9 +2864,42 @@ Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
 				array('key'=>'4','name'=>'other','active'=>1,'guid'=>'d67d6373-ec97-4a52-bf3d-4b3bcbe3503b'),
 			);
 
+			$payerTypes = array(
+				array('key'=>'1','name'=>'medicare','active'=>1,'guid'=>'d7a332c5-c214-40ce-b44e-e47f6901fdf8'),
+				array('key'=>'2','name'=>'champus','active'=>1,'guid'=>'006b9344-04c5-4b8e-8e59-df8b8c2a043c'),
+				array('key'=>'3','name'=>'medical','active'=>1,'guid'=>'e3bf8fcc-418f-40f2-b37d-e7e083d4cc64'),
+				array('key'=>'4','name'=>'private pay','active'=>1,'guid'=>'2ae1fc4e-f0db-457a-a215-267a4e1cc292'),
+				array('key'=>'5','name'=>'feca','active'=>1,'guid'=>'65b89fa8-db6a-49fe-bde8-0ba86cb4058c'),
+				array('key'=>'6','name'=>'medicaid','active'=>1,'guid'=>'dee85d96-6aab-461c-8fcc-4a3c0f242019'),
+				array('key'=>'7','name'=>'champusva','active'=>1,'guid'=>'5bc77ec2-865f-4f32-ab3f-31fc17f68bbb'),
+				array('key'=>'8','name'=>'otherhcfa','active'=>1,'guid'=>'17f044eb-947d-477d-a210-f1c65aed4fbe'),
+				array('key'=>'9','name'=>'litigation','active'=>1,'guid'=>'220a25a1-0abe-4741-9ce0-f0d3ea794412'),
+				array('key'=>'10','name'=>'private insurance','active'=>1,'guid'=>'f4ebd23a-3317-4d79-837b-07a241c8e08d'),
+				array('key'=>'11','name'=>'MPC','active'=>1,'guid'=>'ef749c0d-3289-4d85-883a-00586427da18'),
+				array('key'=>'12','name'=>'PCMI','active'=>1,'guid'=>'0571717d-367a-4a28-849f-edb9c25a2f19'),
+				array('key'=>'13','name'=>'DCHCA','active'=>1,'guid'=>'2609a4ca-aa81-4bee-bb52-c04edba30ba8'),
+				array('key'=>'14','name'=>'MCCP','active'=>1,'guid'=>'17607fb0-e7cf-4799-a747-15d75fe24efc'),
+				array('key'=>'15','name'=>'CFK','active'=>1,'guid'=>'82794349-2026-466f-ba6d-b788b0cbe3af'),
+				array('key'=>'16','name'=>'None','active'=>1,'guid'=>'3556a6c5-2a48-4ce7-a1d1-1914c938b518'),
+			);
+
+			$programTypes = array(
+				//array('key'=>'','name'=>'','active'=>1,'guid'=>''),
+			);
+
+			$fundsSources = array(
+				array('key'=>'1','name'=>'Patient','active'=>1,'guid'=>'93a98fb9-d3b7-4960-9f9e-c77232625a60'),
+				array('key'=>'2','name'=>'Private Insurance','active'=>1,'guid'=>'760a12fc-2519-49d7-abbb-fb5c7eb702e7'),
+				array('key'=>'3','name'=>'State Program','active'=>1,'guid'=>'4052ea1a-5c75-44dd-8197-d82d8b9d04e2'),
+				array('key'=>'4','name'=>'Federal Program','active'=>1,'guid'=>'7c58cf4d-3acb-4a1c-8f1e-eaf1b490bc05'),
+			);
+
 			$enums = array(
 				array('key'=>InsuranceProgram::INSURANCE_ASSIGNING_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_ASSIGNING_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$assignings),
 				array('key'=>InsuranceProgram::INSURANCE_SUBSCRIBER_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_SUBSCRIBER_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$subscribers),
+				array('key'=>InsuranceProgram::INSURANCE_PAYER_TYPE_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_PAYER_TYPE_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$payerTypes),
+				array('key'=>InsuranceProgram::INSURANCE_PROGRAM_TYPE_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_PROGRAM_TYPE_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$programTypes),
+				array('key'=>InsuranceProgram::INSURANCE_FUNDS_SOURCE_ENUM_KEY,'name'=>InsuranceProgram::INSURANCE_FUNDS_SOURCE_ENUM_NAME,'active'=>1,'guid'=>'','data'=>$fundsSources),
 			);
 
 			$level = array();

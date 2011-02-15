@@ -39,4 +39,16 @@ class Claim extends WebVista_Model_ORM {
 		);
 	}
 
+	public static function listOptions() {
+		return array(
+			'healthcloud'=>'Send to HealthCloud',
+			'download4010A'=>'Download 4010A1',
+			'download5010'=>'Download 5010',
+			'CMS1500PDF'=>'CMS1500 PDF',
+			'CMS1450PDF'=>'CMS1450 PDF',
+			'previewStatements'=>'Preview Statements',
+			'publishStatements'=>'Publish Statements',
+		);
+	}
+
 }

@@ -172,11 +172,11 @@ class DiscountTable extends WebVista_Model_ORM {
 	public static function checkDiscount($insuranceProgramId,$dateOfVisit,$familySize,$monthlyIncome) {
 		$db = Zend_Registry::get('dbAdapter');
 		$ret = false;
-		$familySize = $db->quote($familySize);
-		$monthlyIncome = $db->quote($monthlyIncome);
+		$familySize = $db->quote((int)$familySize);
+		$monthlyIncome = $db->quote((float)$monthlyIncome);
 		$orWhere = array();
 		for ($i = 1; $i <= 10; $i++) {
-			$orWhere[] = 'familySize'.$i.' != 0 AND familySize'.$i.' = '.$familySize.' AND income'.$i.' >= '.$monthlyIncome;
+			$orWhere[] = '(familySize'.$i.' != 0 AND familySize'.$i.' = '.$familySize.' AND income'.$i.' >= '.$monthlyIncome.')';
 		}
 		$orm = new self();
 		$sqlSelect = $db->select()

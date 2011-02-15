@@ -188,17 +188,28 @@ class VisitDetailsController extends WebVista_Controller_Action {
 				$modifierId = $enum->enumerationId;
 				continue;
 			}
-			$codes = array();
+			$enums = array(
+				'key'=>array(),
+				'value'=>array(),
+			);
 			foreach ($closure->getAllDescendants($enum->enumerationId,1,true) as $item) {
-				$codes[] = $item->key;
+				switch ($item->ormClass) {
+					case 'DiagnosisCodesICD':
+					case 'ProcedureCodesCPT':
+						break;
+					default:
+						continue 2;
+				}
+				$enums['key'][] = $item->key;
+				$enums['value'][] = $item->name;
 			}
-			if (!isset($codes[0])) continue;
-			$codes = implode(', ',$codes);
+			if (!isset($enums['key'][0])) continue;
+			$codes = implode(', ',$enums['key']);
 			$row['id'] = $enum->enumerationId;
 			$row['data'] = array();
 			$row['data'][] = '';
-			$row['data'][] = $enum->name.' ('.$codes.')';
-			$row['data'][] = $codes;
+			$row['data'][] = $enum->name.' ('.implode(', ',$enums['key']).')';
+			$row['data'][] = implode(', ',$enums['value']);
 			$rows[] = $row;
 		}
 		if ($modifierId > 0 && isset($rows[0])) {
@@ -254,7 +265,8 @@ class VisitDetailsController extends WebVista_Controller_Action {
 	}
 
 	public function providersJsonAction() {
-		$providerIterator = new ProviderIterator();
+		$provider = new Provider();
+		$providerIterator = $provider->getIter();
                 $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                 $json->suppressExit = true;
                 $json->direct(array("rows" => $providerIterator->toJsonArray('personId',array('displayName'))),true);
@@ -437,20 +449,18 @@ class VisitDetailsController extends WebVista_Controller_Action {
 
 	public function listPatientVisitTypesAction() {
 		$patientId = (int)$this->_getParam('patientId');
+		$visitId = (int)$this->_getParam('visitId');
 		$rows = array();
 		if ($patientId > 0) {
 			$patientVisitTypeIterator = new PatientVisitTypeIterator();
-			$patientVisitTypeIterator->setFilters(array('patientId'=>$patientId));
-			$providerIterator = new ProviderIterator();
-			$listProviders = $providerIterator->toArray('personId','displayName');
+			$patientVisitTypeIterator->setFilters(array('patientId'=>$patientId,'visitId'=>$visitId));
 			foreach ($patientVisitTypeIterator as $visitType) {
-				$provider = '';
-				if (isset($listProviders[$visitType->providerId])) {
-					$provider = $listProviders[$visitType->providerId];
-				}
+				$provider = new Provider();
+				$provider->personId = $visitType->providerId;
+				$provider->populate();
 				$tmp = array();
 				$tmp['id'] = $visitType->providerId;
-				$tmp['data'][] = $provider;
+				$tmp['data'][] = $provider->displayName;
 				$tmp['data'][] = ($visitType->isPrimary)?__('Primary'):'';
 				$rows[] = $tmp;
 			}
@@ -499,35 +509,118 @@ class VisitDetailsController extends WebVista_Controller_Action {
 
 	public function processAddVisitTypesAction() {
 		$personId = (int)$this->_getParam('personId');
+		$visitId = (int)$this->_getParam('visitId');
 		$id = (int)$this->_getParam('id');
 		$ret = false;
 		$closure = new EnumerationClosure();
+
+		$diagnoses = array();
+		$procedures = array();
 		foreach ($closure->getAllDescendants($id,1,true) as $enum) {
 			switch ($enum->ormClass) {
 				case 'DiagnosisCodesICD':
-					$orm = new PatientDiagnosis();
-					$orm->code = $enum->key;
-					$orm->dateTime = date('Y-m-d H:i:s');
-					$orm->diagnosis = $enum->name;
+					$diagnoses[] = $enum;
 					break;
 				case 'ProcedureCodesCPT':
-					$orm = new PatientProcedure();
-					$orm->code = $enum->key;
-					$orm->quantity = 1; // default to 1
-					$orm->procedure = $enum->name;
+					$procedures[] = $enum;
 					break;
-				default:
-					continue;
 			}
-			$orm->patientId = $personId;
-			$orm->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
-			$orm->persist();
+		}
 
+		$providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		foreach ($procedures as $procedure) {
+			$patientProcedure = new PatientProcedure();
+			$patientProcedure->code = $procedure->key;
+			$patientProcedure->quantity = 1; // default to 1
+			$patientProcedure->procedure = $procedure->name;
+			$patientProcedure->patientId = $personId;
+			$patientProcedure->providerId = $providerId;
+			$patientProcedure->visitId = $visitId;
+			$diagCtr = 1;
+			foreach ($diagnoses as $diagnosis) {
+				$key = $diagnosis->key;
+				$patientDiagnosis = new PatientDiagnosis();
+				$patientDiagnosis->code = $key;
+				$patientDiagnosis->dateTime = date('Y-m-d H:i:s');
+				$patientDiagnosis->diagnosis = $diagnosis->name;
+				$patientDiagnosis->patientId = $personId;
+				$patientDiagnosis->providerId = $providerId;
+				$patientDiagnosis->visitId = $visitId;
+				$patientDiagnosis->persist();
+
+				$diag = 'diagnosisCode'.$diagCtr++;
+				$patientProcedure->$diag = $key;
+			}
+			$patientProcedure->persist();
 			$ret = true;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
+	}
+
+	public function processAddVisitTypeProvidersAction() {
+		$providerIds = $this->_getParam('ids');
+		$visitId = (int)$this->_getParam('visitId');
+		$personId = (int)$this->_getParam('personId');
+		$primary = (int)$this->_getParam('primary');
+
+		$data = false;
+		$patientVisitType = new PatientVisitType();
+		$patientVisitType->patientId = $personId;
+		$patientVisitType->visitId = $visitId;
+		foreach (explode(',',$providerIds) as $providerId) {
+			$patientVisitType->patientVisitTypeId = 0;
+			$patientVisitType->isPrimary = 0;
+			if ($providerId == $primary) $patientVisitType->isPrimary = 1;
+			$patientVisitType->providerId = (int)$providerId;
+			$patientVisitType->persist();
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processDeleteVisitTypeProvidersAction() {
+		$providerIds = $this->_getParam('ids');
+		$visitId = (int)$this->_getParam('visitId');
+		$personId = (int)$this->_getParam('personId');
+		$data = false;
+		$patientVisitType = new PatientVisitType();
+		$patientVisitType->patientId = $personId;
+		$patientVisitType->visitId = $visitId;
+		foreach (explode(',',$providerIds) as $providerId) {
+			$patientVisitType->patientVisitTypeId = 0;
+			$patientVisitType->providerId = (int)$providerId;
+			$patientVisitType->populateWithIds();
+			if (!$patientVisitType->patientVisitTypeId > 0) continue;
+			$patientVisitType->setPersistMode(WebVista_Model_ORM::DELETE);
+			$patientVisitType->persist();
+			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processSetVisitTypePrimaryProviderAction() {
+		$providerId = (int)$this->_getParam('id');
+		$visitId = (int)$this->_getParam('visitId');
+		$personId = (int)$this->_getParam('personId');
+		$isPrimary = (int)$this->_getParam('isPrimary');
+		$data = false;
+		$patientVisitType = new PatientVisitType();
+		$patientVisitType->patientId = $personId;
+		$patientVisitType->visitId = $visitId;
+		$patientVisitType->providerId = (int)$providerId;
+		$patientVisitType->populateWithIds();
+		if ($patientVisitType->resetPrimaryProvider()) $data = true;
+		$patientVisitType->isPrimary = $isPrimary;
+		$patientVisitType->persist();
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

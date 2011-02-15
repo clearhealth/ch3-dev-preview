@@ -438,8 +438,6 @@ vitalSignsLabelGrid.setNoHeader(true);
 vitalSignsLabelGrid.setSkin("xp");
 vitalSignsLabelGrid.init();
 vitalSignsLabelGrid.attachEvent("onRowSelect",function(rowId,cellIndex){
-	vitalSignsToolbar.disableItem("enteredInError");
-	if (cellIndex > 0) vitalSignsToolbar.enableItem("enteredInError");
 });
 
 function vitalSignsLabelGridOnLoaded() {
@@ -468,15 +466,13 @@ dhtmlxEvent(vitalSignsLabelGrid.entBox,"contextmenu",function(e){
 	return false;
 });
 
-
-var vitalSignsToolbar = new dhtmlXToolbarObject("vitalSignsToolbarId","ClearSilver");
-vitalSignsToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
-function vitalSignsToolbarOnClicked(itemId,itemValue) {
-	switch(itemId) {
-		case "newVitals":
-			windowAddVitals("vitalSignsLabelGridReload");
-			break;
-		case "enteredInError":
+var vitalSignsMenu = new dhtmlXMenuObject(null,"standard");
+vitalSignsMenu.setImagePath("<?=$this->baseUrl?>/img/");
+vitalSignsMenu.renderAsContextMenu();
+vitalSignsMenu.setOpenMode("web");
+vitalSignsMenu.attachEvent("onClick",function(menuItemId,type) {
+	switch(menuItemId) {
+		case "markError":
 			var cellIndex = vitalSignsLabelGrid.getSelectedCellIndex();
 			if (cellIndex > 0) {
 				var groupId = vitalSignsLabelGrid.getUserData("","groupId"+cellIndex);
@@ -487,6 +483,23 @@ function vitalSignsToolbarOnClicked(itemId,itemValue) {
 			else {
 				alert("No vitals selected");
 			}
+			break;
+	}
+});
+vitalSignsMenu.loadXML("<?=$this->baseUrl?>/vital-signs.raw/get-menu",function(){});
+vitalSignsLabelGrid.enableContextMenu(vitalSignsMenu);
+vitalSignsLabelGrid.attachEvent("onBeforeContextMenu",function(rowId,colIndex,gridObj) {
+	vitalSignsMenu.hideItem("markError");
+	if (colIndex > 0) vitalSignsMenu.showItem("markError");
+	return true;
+});
+
+var vitalSignsToolbar = new dhtmlXToolbarObject("vitalSignsToolbarId","ClearSilver");
+vitalSignsToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
+function vitalSignsToolbarOnClicked(itemId,itemValue) {
+	switch(itemId) {
+		case "newVitals":
+			windowAddVitals("vitalSignsLabelGridReload");
 			break;
 		case "pediatricGrowth":
 			windowGrowthCharts();

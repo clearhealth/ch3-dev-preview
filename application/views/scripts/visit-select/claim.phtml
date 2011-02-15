@@ -39,7 +39,8 @@ div.gridbox#claimFeeGridId div.dhx_sub_row div.dhx_sub_row table.obj tr.rowselec
 	</div>
 	<br style="clear:both;" />
 	<fieldset><legend><?=__('Fees Table')?></legend>
-		<div id="claimFeeGridId" style="position:relative;width:800px;height:550px;overflow:hidden;" ></div>
+		<div id="claimFeeGridId" style="position:relative;width:800px;height:500px;overflow:hidden;" ></div>
+		<div style="margin-top:5px;">Discounts applied: <textarea id="discountId" style="border:0;width:800px;height:60px;" readonly="readonly"></textarea></div>
 	</fieldset>
 </div>
 <script>
@@ -104,6 +105,21 @@ function claimFeeSubGridOnLoaded(subgrid,rowId) {
 
 	var totalFee = 0;
 	var totalDiscount = 0;
+	if (rowId == "procedures") {
+		var discountApplied = dojo.byId("discountId");
+		discountApplied.value = "";
+		if (subgrid.getRowsNum() > 0) {
+			var firstRowId = subgrid.getRowId(0);
+			totalFee = subgrid.getUserData(firstRowId,"total");
+			totalDiscount = totalFee - subgrid.getUserData(firstRowId,"discounted");
+			discountApplied.value = subgrid.getUserData(firstRowId,"discountApplied");
+		}
+		claimFeeGrid.cells(rowId,2).setValue(claimFeeNumberFormat(totalFee.toFixed(2)));
+		claimFeeGrid.cells(rowId,3).setValue(claimFeeNumberFormat(totalDiscount.toFixed(2)));
+		claimFeeRecalculate();
+		return;
+	}
+
 	var fee = 0;
 	var discount = 0;
 	subgrid.forEachRow(function(id){
@@ -144,11 +160,14 @@ function claimFeeRecalculate() {
 
 function claimFeeRefreshProcedureModifier(claimId) {
 	dojo.xhrPost({
-		url: "<?=$this->baseUrl?>/claims.raw/list-procedures?visitId=<?=$this->visitId?>&claimId="+claimId,
+		url: "<?=$this->baseUrl?>/claims.raw/list-procedures?visitId=<?=$this->visitId?>&id="+claimId,
 		handleAs: "json",
 		load: function (data) {
 			if (data.rows.length > 0) {
 				var row = data.rows[0];
+				var firstRowId = procedureSubGrid.getRowId(0);
+				procedureSubGrid.setUserData(firstRowId,"total",row.userdata.total);
+				procedureSubGrid.setUserData(firstRowId,"discounted",row.userdata.discounted);
 				procedureSubGrid.cells(row.id,2).setValue(row.data[2]);
 				procedureSubGrid.cells(row.id,3).setValue(row.data[3]);
 			}
@@ -200,7 +219,7 @@ claimFeeGrid.attachEvent("onSubGridCreated",function(sub1grid,rowId,rowIndex,con
 			sub3grid.init();
 			function sub3gridReload(firstLoad) {
 				sub3grid.clearAll();
-				sub3grid.load("<?=$this->baseUrl?>/claims.raw/list-"+sub2RowId+"?visitId=<?=$this->visitId?>&claimId="+sub1RowId,function(){
+				sub3grid.load("<?=$this->baseUrl?>/claims.raw/list-"+sub2RowId+"?visitId=<?=$this->visitId?>&id="+sub1RowId,function(){
 					sub3grid.objBox.style.overflow="auto";
 					// workaround on top
 					claimFeeGrid.toggleSubRow(sub2grid.cells(sub2RowId,0).cell.firstChild);
@@ -216,7 +235,7 @@ claimFeeGrid.attachEvent("onSubGridCreated",function(sub1grid,rowId,rowIndex,con
 					handleAs: "json",
 					content: {
 						"code": rowId,
-						"claimId": sub1RowId,
+						"id": sub1RowId,
 						"state": checked,
 					},
 					load: function (data) {

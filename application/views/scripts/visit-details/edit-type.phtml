@@ -39,6 +39,10 @@
 	<?=$this->form->renderClose()?>
 </div>
 <script>
+function preSubmit<?=$this->form->getId()?>() {
+	dojo.byId("<?=$this->form->ormClass->getId()?>").disabled = false;
+}
+
 function postSubmit<?=$this->form->getId()?>(data) {
 	dhxWins.window("windowEditORMObjectId").close();
 	enumUpdateListGrid();

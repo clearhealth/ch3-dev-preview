@@ -32,12 +32,12 @@ class PatientProcedureIterator extends WebVista_Model_ORMIterator implements Ite
 		}
 	}
 
-	public function setFilters(Array $filter) {
+	public function setFilters(Array $filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from('patientProcedures');
-		foreach ($filter as $field=>$value) {
-			switch ($field) {
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
 				case 'dateRange':
 					$dateRange = explode(';',$value);
 					$start = isset($dateRange[0])?date('Y-m-d 00:00:00',strtotime($dateRange[0])):date('Y-m-d 00:00:00');
@@ -45,7 +45,9 @@ class PatientProcedureIterator extends WebVista_Model_ORMIterator implements Ite
 					$dbSelect->where("dateTime BETWEEN '{$start}' AND '{$end}'");
 					break;
 				case 'patientId':
-					$dbSelect->where('patientId = ?',(int)$value);
+				case 'visitId':
+					$dbSelect->where($key.' = ?',(int)$value);
+					break;
 			}
 		}
 		$this->_dbSelect = $dbSelect;

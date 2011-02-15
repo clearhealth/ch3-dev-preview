@@ -117,68 +117,43 @@ class ProceduresController extends WebVista_Controller_Action {
 	}
 
 	public function processPatientProcedureAction() {
-		$patientId = (int)$this->_getParam('patientId');
-		$procedures = $this->_getParam('procedures');
-		if ($patientId > 0) {
-			$patientProcedureIterator = new PatientProcedureIterator();
-			$patientProcedureIterator->setFilters(array('patientId'=>$patientId));
-			$existingProcedures = $patientProcedureIterator->toArray('code','patientId');
-			if (is_array($procedures)) {
-				foreach ($procedures as $code=>$procedure) {
-					if (isset($existingProcedures[$code])) {
-						unset($existingProcedures[$code]);
-					}
-					$procedure['code'] = $code;
-					$procedure['patientId'] = $patientId;
-					$patientProcedure = new PatientProcedure();
-					$patientProcedure->populateWithArray($procedure);
-					$patientProcedure->persist();
-				}
-			}
-			// delete un-used records
-			foreach ($existingProcedures as $code=>$patientId) {
-				$patientProcedure = new PatientProcedure();
-				$patientProcedure->code = $code;
-				$patientProcedure->patientId = $patientId;
-				$patientProcedure->setPersistMode(WebVista_Model_ORM::DELETE);
-				$patientProcedure->persist();
-			}
+		$params = $this->_getParam('procedure');
+
+		$patientProcedure = new PatientProcedure();
+		if (isset($params['patientProcedureId']) && $params['patientProcedureId'] > 0) {
+			$patientProcedure->patientProcedureId = (int)$params['patientProcedureId'];
+			$patientProcedure->populate();
 		}
-		$data = array();
-		$data['msg'] = __('Record saved successfully');
+		$patientProcedure->populateWithArray($params);
+		$patientProcedure->persist();
+		$ret = $this->_generateRowData($patientProcedure);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$json->direct($data);
+		$json->direct($ret);
+	}
+
+	protected function _generateRowData(PatientProcedure $proc) {
+		$quantity = $proc->quantity;
+		$procedure = $proc->procedure;
+		$ret = array();
+		$ret['id'] = $proc->patientProcedureId;
+		$ret['data'][] = $quantity;
+		$ret['data'][] = $procedure;
+		$ret['data'][] = $proc->providerId;
+		$ret['data'][] = $proc->comments;
+		$ret['data'][] = $proc->code;
+		return $ret;
 	}
 
 	public function listPatientProceduresAction() {
 		$patientId = (int)$this->_getParam('patientId');
+		$visitId = (int)$this->_getParam('visitId');
 		$rows = array();
 		if ($patientId > 0) {
 			$patientProcedureIterator = new PatientProcedureIterator();
-			$patientProcedureIterator->setFilters(array('patientId'=>$patientId));
-			$providerIterator = new ProviderIterator();
-			$listProviders = $providerIterator->toArray('personId','displayName');
+			$patientProcedureIterator->setFilters(array('patientId'=>$patientId,'visitId'=>$visitId));
 			foreach ($patientProcedureIterator as $proc) {
-				$quantity = $proc->quantity;
-				/*if ($quantity > 2) {
-					$quantity .= ' times';
-				}
-				else {
-					$quantity .= ' time';
-				}*/
-				$provider = '';
-				if (isset($listProviders[$proc->providerId])) {
-					$provider = $listProviders[$proc->providerId];
-				}
-				$tmp = array();
-				$tmp['id'] = $proc->code;
-				$tmp['data'][] = $quantity;
-				$tmp['data'][] = $proc->procedure;
-				$tmp['data'][] = $provider;
-				$tmp['data'][] = $proc->providerId;
-				$tmp['data'][] = $proc->comments;
-				$rows[] = $tmp;
+				$rows[] = $this->_generateRowData($proc);
 			}
 		}
 		$data = array();
@@ -186,6 +161,26 @@ class ProceduresController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
+	}
+
+	public function getMenuAction() {
+		header('Content-Type: application/xml;');
+		$this->render('get-menu');
+	}
+
+	public function processDeletePatientProcedureAction() {
+		$id = (int)$this->_getParam('id');
+		$ret = false;
+		if ($id > 0) {
+			$patientProcedure = new PatientProcedure();
+			$patientProcedure->patientProcedureId = $id;
+			$patientProcedure->setPersistMode(WebVista_Model_ORM::DELETE);
+			$patientProcedure->persist();
+			$ret = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
 	}
 
 }

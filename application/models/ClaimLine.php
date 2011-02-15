@@ -25,6 +25,7 @@
 class ClaimLine extends WebVista_Model_ORM {
 
 	protected $claimLineId;
+	protected $claimId;
 	protected $visitId;
 	protected $insuranceProgramId;
 	protected $procedureCode;
@@ -49,9 +50,18 @@ class ClaimLine extends WebVista_Model_ORM {
 	protected $unitsDoesNotEffectFee;
 	protected $linkedMedicationId;
 	protected $ndc;
+	protected $dateTime;
+	protected $note;
 
 	protected $_table = 'claimLines';
 	protected $_primaryKeys = array('claimLineId');
+
+	public function persist() {
+		if (!$this->dateTime || $this->dateTime == '0000-00-00 00:00:00') {
+			$this->dateTime = date('Y-m-d H:i:s');
+		}
+		return parent::persist();
+	}
 
 	public static function doesVisitProcedureRowExist($visitId,$procedureCode) {
 		$orm = new self();
@@ -162,12 +172,28 @@ class ClaimLine extends WebVista_Model_ORM {
 		$identity = Zend_Auth::getInstance()->getIdentity();
 		$sqlSelect = $db->select()
 				->from('encounter')
-				->where('treating_person_id = ?',(int)$identity->personId)
+				//->where('treating_person_id = ?',(int)$identity->personId)
 				->order('date_of_treatment DESC');
 		foreach ($filters as $key=>$value) {
 			switch ($key) {
 				case 'DOSDateRange':
 					$sqlSelect->where("date_of_treatment BETWEEN '{$value['start']} 00:00:00' AND '{$value['end']} 23:59:59'");
+					break;
+				case 'facilities':
+					// practice, building, room
+					if (!is_array($value)) $value = array($value);
+					$facilities = array();
+					foreach ($value as $val) {
+						$facilities[] = 'practice_id = '.(int)$val['practice'].' AND building_id = '.(int)$val['building'].' AND room_id = '.(int)$val['room'];
+					}
+					$sqlSelect->where(implode(' OR ',$facilities));
+					break;
+				case 'payers':
+					$payers = array();
+					foreach ($value as $payerId) {
+						$payers[] = (int)$payerId;
+					}
+					$sqlSelect->where('activePayerId IN ('.implode(',',$payers).')');
 					break;
 				case 'facility':
 					// practice, building, room
@@ -182,94 +208,40 @@ class ClaimLine extends WebVista_Model_ORM {
 					if ($value == '0') $sqlSelect->where('closed = 0');
 					else if ($value == '1') $sqlSelect->where('closed = 1');
 					break;
+				case 'visitId':
+					$sqlSelect->where('encounter_id = ?',(int)$value);
+					break;
+				case 'batchHistoryId':
+					if (!is_array($value)) {
+						$claimIds = $value;
+						$value = array();
+						foreach (explode(',',$claimIds) as $claimId) {
+							$value[] = (int)$claimId;
+						}
+					}
+					$sqlSelect->join('claimLines','claimLines.visitId = encounter.encounter_id')
+						->where('claimLines.claimId IN ('.implode(',',$value).')');
+					break;
 			}
 		}
 		$rows = array();
 		$visitIterator = new VisitIterator($sqlSelect);
 		foreach ($visitIterator as $visit) {
+			$visitId = (int)$visit->visitId;
 			$row = array();
 			$row['visit'] = $visit;
 
-			// PROCEDURES
-			$totalOrig = 0;
-			$totalDiscounted = 0;
-			$insuranceProgramId = $visit->activePayerId;
-			$dateOfVisit = date('Y-m-d',strtotime($visit->dateOfTreatment));
-			$statistics = PatientStatisticsDefinition::getPatientStatistics((int)$visit->patientId);
-			$familySize = isset($statistics['family_size'])?$statistics['family_size']:0;
-			$monthlyIncome = isset($statistics['monthly_income'])?$statistics['monthly_income']:0;
-			$flatDiscount = 0;
-			$percentageDiscount = 0;
+			$fees = $visit->calculateFees();
 			$row['claims'] = array();
-			$row['claims']['details'] = array();
-			$iterator = new ClaimLineIterator(null,false);
-			$iterator->setFilters(array('visitId'=>$visit->visitId));
-			foreach ($iterator as $claim) {
-				$code = $claim->procedureCode;
-				$feeOrig = '-.--';
-				$feeDiscounted = '-.--';
-				$discountedRate = '';
-				$retFee = FeeSchedule::checkFee($insuranceProgramId,$dateOfVisit,$code);
-				if ($retFee !== false && (float)$retFee['fee'] != 0) {
-					$feeOrig = (float)$retFee['fee'];
-					$tmpFee = 0;
-					for ($i = 1; $i <= 4; $i++) {
-						$modifier = 'modifier'.$i;
-						if (!strlen($claim->$modifier) > 0) continue;
-						switch ($claim->$modifier) {
-							case $retFee['modifier1']:
-								$tmpFee += (float)$retFee['modifier1fee'];
-								break;
-							case $retFee['modifier2']:
-								$tmpFee += (float)$retFee['modifier2fee'];
-								break;
-							case $retFee['modifier3']:
-								$tmpFee += (float)$retFee['modifier3fee'];
-								break;
-							case $retFee['modifier4']:
-								$tmpFee += (float)$retFee['modifier4fee'];
-								break;
-						}
-					}
-					if ($tmpFee > 0) $feeOrig = $tmpFee;
-					$totalOrig += $feeOrig;
-					$retDiscount = DiscountTable::checkDiscount($insuranceProgramId,$dateOfVisit,$familySize,$monthlyIncome);
-					if ($retDiscount !== false) {
-						$discount = (float)$retDiscount['discount'];
-						$discountType = $retDiscount['discountType'];
-						switch ($retDiscount['discountType']) {
-							case DiscountTable::DISCOUNT_TYPE_FLAT_VISIT:
-								$flatDiscount += $discount;
-								break;
-							case DiscountTable::DISCOUNT_TYPE_FLAT_CODE:
-								$feeDiscounted = $feeOrig - abs($discount);
-								$discountedRate = $discount;
-								break;
-							case DiscountTable::DISCOUNT_TYPE_PERC_VISIT:
-								$percentageDiscount += $discount;
-								break;
-							case DiscountTable::DISCOUNT_TYPE_PERC_CODE:
-								$percent = $discount / 100;
-								$feeDiscounted = $feeOrig - ($feeOrig * $percent);
-								$discountedRate = $discount.'%';
-								break;
-						}
-					}
-					$totalDiscounted += (float)$feeDiscounted;
-				}
-				$row['claims']['details'][$claim->claimLineId] = array();
-				$row['claims']['details'][$claim->claimLineId]['claim'] = $claim;
-				$row['claims']['details'][$claim->claimLineId]['feeOrig'] = $feeOrig;
-				$row['claims']['details'][$claim->claimLineId]['feeDiscounted'] = $feeDiscounted;
-			}
-			$row['claims']['totalOrig'] = $totalOrig;
-			$row['claims']['totalDiscounted'] = $totalDiscounted;
+			$row['claims']['details'] = $fees['details'];
+			$row['claims']['total'] = $fees['total'];
+			$row['claims']['discounted'] = $fees['discounted'];
 
 			// MISC CHARGES
 			$row['miscCharges'] = array();
 			$row['miscCharges']['details'] = array();
 			$miscCharge = new MiscCharge();
-			$results = $miscCharge->getUnpaidChargesByVisit($visit->visitId);
+			$results = $miscCharge->getUnpaidChargesByVisit($visitId);
 			$totalMiscCharges = 0;
 			foreach ($results as $result) {
 				$amount = (float)$result['amount'];
@@ -282,7 +254,7 @@ class ClaimLine extends WebVista_Model_ORM {
 			$row['payments'] = array();
 			$row['payments']['details'] = array();
 			$payment = new Payment();
-			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
+			$paymentIterator = $payment->getIteratorByVisitId($visitId);
 			$totalPayments = 0;
 			foreach ($paymentIterator as $pay) {
 				$amount = (float)$pay->amount;
@@ -290,9 +262,493 @@ class ClaimLine extends WebVista_Model_ORM {
 				$totalPayments += $amount;
 			}
 			$row['payments']['total'] = $totalPayments;
+
+			// WRITEOFFS
+			$row['writeoffs'] = array();
+			$row['writeoffs']['details'] = array();
+			$writeoff = new WriteOff();
+			$iterator = $writeoff->getIteratorByVisit($visit);
+			$totalWriteOffs = 0;
+			foreach ($iterator as $wo) {
+				$amount = (float)$wo->amount;
+				$row['writeoffs']['details'][] = $amount;
+				$totalWriteOffs += $amount;
+			}
+			$row['writeoffs']['total'] = $totalWriteOffs;
+
 			$rows[] = $row;
 		}
 		return $rows;
+	}
+
+	public function totalPaid($claimFileId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$payment = new Payment();
+		$sqlSelect = $db->select()
+				->from($payment->_table,'SUM(amount) AS total')
+				->where('encounter_id = ?',(int)$this->visitId)
+				->where('claimFileId = ?',(int)$claimFileId);
+		$ret = 0.0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = (float)$row['total'];
+		}
+		return $ret;
+	}
+
+	public function totalWriteOff($claimFileId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$writeOff = new WriteOff();
+		$sqlSelect = $db->select()
+				->from($writeOff->_table,'SUM(amount) AS total')
+				->where('visitId = ?',(int)$this->visitId)
+				->where('claimFileId = ?',(int)$claimFileId);
+		$ret = 0.0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = (float)$row['total'];
+		}
+		return $ret;
+	}
+
+	public function checkVisitStatus() {
+		$visit = new Visit();
+		$visit->visitId = (int)$this->visitId;
+		$visit->populate();
+		if ($visit->closed) { // recompute claims for closed visit
+			Visit::recalculateClaims($visit);
+		}
+	}
+
+	public function getId() {
+		return $this->claimLineId;
+	}
+
+	public function setId($id) {
+		$this->claimLineId = (int)$id;
+	}
+
+	public function populateWithPatientProcedure(PatientProcedure $patientProcedure,Visit $visit=null,$populate=false) {
+		$db = Zend_Registry::get('dbAdapter');
+		$visitId = $patientProcedure->visitId;
+		if ($visit === null) {
+			$visit = new Visit();
+			$visit->visitId = $visitId;
+			$visit->populate();
+		}
+		$this->visitId = $visitId;
+		$this->procedureCode = $patientProcedure->code;
+		if ($populate) {
+			$sqlSelect = $db->select()
+					->from($this->_table)
+					->where('visitId = ?',$visitId)
+					->where('procedureCode = ?',$this->procedureCode);
+			$this->populateWithSql($sqlSelect->__tostring());
+		}
+		$this->insuranceProgramId = (int)$visit->activePayerId;
+		$this->units = $patientProcedure->quantity;
+		$this->diagnosisCode1 = $patientProcedure->diagnosisCode1;
+		$this->diagnosisCode2 = $patientProcedure->diagnosisCode2;
+		$this->diagnosisCode3 = $patientProcedure->diagnosisCode3;
+		$this->diagnosisCode4 = $patientProcedure->diagnosisCode4;
+		$this->diagnosisCode5 = $patientProcedure->diagnosisCode5;
+		$this->diagnosisCode6 = $patientProcedure->diagnosisCode6;
+		$this->diagnosisCode7 = $patientProcedure->diagnosisCode7;
+		$this->diagnosisCode8 = $patientProcedure->diagnosisCode8;
+		$this->modifier1 = $patientProcedure->modifier1;
+		$this->modifier2 = $patientProcedure->modifier2;
+		$this->modifier3 = $patientProcedure->modifier3;
+		$this->modifier4 = $patientProcedure->modifier4;
+	}
+
+	public function getAmountBilled() {
+		$amountBilled = (float)$this->baseFee;
+		$adjustedFee = (float)$this->adjustedFee;
+		if ($amountBilled > 0 && $adjustedFee > 0) $amountBilled -= $adjustedFee;
+		return $amountBilled;
+	}
+
+	public function getPaid() {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new PostingJournal();
+		$journalTable = $orm->_table;
+		$sqlSelect = $db->select()
+				->from($this->_table,array($this->_table.'.procedureCode','SUM('.$journalTable.'.amount) AS paid'))
+				->join($journalTable,$journalTable.'.claimLineId = '.$this->_table.'.claimLineId')
+				->where($this->_table.'.visitId = ?',(int)$this->visitId)
+				->where($this->_table.'.procedureCode = ?',(int)$this->procedureCode)
+				->group($this->_table.'.procedureCode');
+		$paid = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$paid = (float)$row['paid'];
+		}
+		return $paid;
+	}
+
+	public function getWriteOff() {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new WriteOff();
+		/*$sqlSelect = $db->select()
+				->from($orm->_table,array('SUM(amount) AS writeOff'))
+				->where('claimLineId = ?',(int)$this->claimLineId);*/
+		$table = $orm->_table;
+		$sqlSelect = $db->select()
+				->from($this->_table,array($this->_table.'.procedureCode','SUM('.$table.'.amount) AS writeOff'))
+				->join($table,$table.'.claimLineId = '.$this->_table.'.claimLineId')
+				->where($this->_table.'.visitId = ?',(int)$this->visitId)
+				->where($this->_table.'.procedureCode = ?',(int)$this->procedureCode)
+				->group($this->_table.'.procedureCode');
+		$writeOff = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$writeOff = (float)$row['writeOff'];
+		}
+		return $writeOff;
+	}
+
+	public function populateByClaimId($claimId=null) {
+		if ($claimId === null) $claimId = $this->claimId;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('claimId = ?',(int)$claimId)
+				->limit(1);
+		return $this->populateWithSql($sqlSelect->__toString());
+	}
+
+	public function getUniqueCheckNumbers() {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new Payment();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('ref_num AS chkNo','SUM(amount - allocated)  AS unallocated'))
+				->where('(amount - allocated) > 0')
+				->where("payment_type = 'CHECK'")
+				->where("ref_num != ''")
+				->group('ref_num');
+		$ret = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$ret[] = $row;
+			}
+		}
+		return $ret;
+	}
+
+	public static function listAllClaimIds(Array $visitIds,$mostRecent=false) {
+		// sanitized visit ids
+		$sanitizedIds = array();
+		foreach ($visitIds as $id) {
+			$sanitizedIds[] = (int)$id;
+		}
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('claimId'))
+				->where('visitId IN ('.implode(',',$sanitizedIds).')')
+				->order('claimId DESC');
+				//->limit(1)
+				//->group('claimId');
+		if ($mostRecent) $sqlSelect->group('visitId');
+		else $sqlSelect->group('claimId');
+		$ret = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$ret[] = $row['claimId'];
+			}
+		}
+		return $ret;
+	}
+
+	public static function mostRecentClaim($visitId,$idOnly=false) {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$fields = array('claimId');
+		$sqlSelect = $db->select()
+				->where('visitId = ?',(int)$visitId)
+				->order('claimId DESC')
+				->group('claimId')
+				->limit(1);
+		if ($idOnly) {
+			$sqlSelect->from($orm->_table,array('claimId'));
+		}
+		else {
+			$sqlSelect->from($orm->_table);
+		}
+		$claimId = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$claimId = (int)$row['claimId'];
+			if (!$idOnly) $orm->populateWithArray($row);
+		}
+		if ($idOnly) return $claimId;
+		return $orm;
+	}
+
+	public static function mostRecentClaims($visitId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$claimId = self::mostRecentClaim($visitId,true);
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('claimId = ?',(int)$claimId);
+		return new ClaimLineIterator($sqlSelect);
+	}
+
+	public function getClaimLineIds() {
+		static $claimLineIds = array();
+		$claimId = (int)$this->claimId;
+		if (!isset($claimLineIds[$claimId])) {
+			$db = Zend_Registry::get('dbAdapter');
+			$orm = new self();
+			$sqlSelect = $db->select()
+					->from($orm->_table,array('claimLineId'))
+					->where('claimId = ?',$claimId);
+			$claimLineIds[$claimId] = array();
+			if ($rows = $db->fetchAll($sqlSelect)) {
+				foreach ($rows as $row) {
+					$claimLineIds[$claimId][] = (int)$row['claimLineId'];
+				}
+			}
+		}
+		return $claimLineIds[$claimId];
+	}
+
+	public function getTotal($includeAdjustedFee=false) {
+		$ret = self::total(array('claimId'=>$this->claimId));
+		if (!$includeAdjustedFee) $ret = $ret['baseFee'];
+		return $ret;
+	}
+
+	public static function total(Array $filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('SUM(baseFee) AS baseFee','SUM(adjustedFee) AS adjustedFee'));
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'claimId':
+				case 'visitId':
+					$sqlSelect->where($key.' = ?',(int)$value);
+					break;
+				case 'payerId':
+					$sqlSelect->where('insuranceProgramId = ?',(int)$value);
+					break;
+			}
+		}
+		$ret = array(
+			'baseFee'=>0,
+			'adjustedFee'=>0,
+		);
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret['baseFee'] = (float)$row['baseFee'];
+			$ret['adjustedFee'] = (float)$row['adjustedFee'];
+		}
+		return $ret;
+	}
+
+	public function getTotalMiscCharge() {
+		$db = Zend_Registry::get('dbAdapter');
+		$claimLineIds = $this->getClaimLineIds();
+		$orm = new MiscCharge();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('SUM(amount) AS miscCharge'))
+				->where('claimLineId IN (?)',implode(',',$claimLineIds));
+		$miscCharge = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$miscCharge = (float)$row['miscCharge'];
+		}
+		return $miscCharge;
+	}
+
+	public function getTotalPaid() {
+		$db = Zend_Registry::get('dbAdapter');
+		$claimLineIds = $this->getClaimLineIds();
+		/*$orm = new Payment();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('SUM(amount) AS paid'))
+				->where('claimLineId IN (?)',implode(',',$claimLineIds));*/
+		$orm = new PostingJournal();
+		$journalTable = $orm->_table;
+		$sqlSelect = $db->select()
+				->from($this->_table,array($this->_table.'.procedureCode','SUM('.$journalTable.'.amount) AS paid'))
+				->join($journalTable,$journalTable.'.claimLineId = '.$this->_table.'.claimLineId')
+				->where($this->_table.'.claimLineId IN (?)',implode(',',$claimLineIds))
+				->group($this->_table.'.claimId');
+		$paid = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$paid = (float)$row['paid'];
+		}
+		return $paid;
+	}
+
+	public function getTotalWriteOff() {
+		$db = Zend_Registry::get('dbAdapter');
+		$claimLineIds = $this->getClaimLineIds();
+		$orm = new WriteOff();
+		/*$sqlSelect = $db->select()
+				->from($orm->_table,array('SUM(amount) AS writeOff'))
+				->where('claimLineId IN (?)',implode(',',$claimLineIds));*/
+		$table = $orm->_table;
+		$sqlSelect = $db->select()
+				->from($this->_table,array($this->_table.'.procedureCode','SUM('.$table.'.amount) AS writeOff'))
+				->join($table,$table.'.claimLineId = '.$this->_table.'.claimLineId')
+				->where($this->_table.'.claimLineId IN (?)',implode(',',$claimLineIds))
+				->group($this->_table.'.claimId');
+		$writeOff = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$writeOff = (float)$row['writeOff'];
+		}
+		return $writeOff;
+	}
+
+	public static function listAccounts(Array $filters) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('claimLines')
+				->join('encounter','encounter.encounter_id = claimLines.visitId',array('SUM(claimLines.baseFee) AS totalBaseFee','SUM(claimLines.adjustedFee) AS totalAdjustedFee'))
+				->order('claimLines.dateTime DESC')
+				->order('encounter.appointmentId')
+				->group('claimLines.claimId');
+		foreach ($filters as $key=>$value) {
+			switch ($key) {
+				case 'dateRange':
+					$sqlSelect->where("encounter.date_of_treatment BETWEEN '{$value['start']} 00:00:00' AND '{$value['end']} 23:59:59'");
+					break;
+				case 'facilities':
+					// practice, building, room
+					if (!is_array($value)) $value = array($value);
+					$facilities = array();
+					foreach ($value as $val) {
+						$facilities[] = 'encounter.practice_id = '.(int)$val['practice'].' AND encounter.building_id = '.(int)$val['building'].' AND encounter.room_id = '.(int)$val['room'];
+					}
+					$sqlSelect->where(implode(' OR ',$facilities));
+					break;
+				case 'payers':
+					$payers = array();
+					foreach ($value as $payerId) {
+						$payers[] = (int)$payerId;
+					}
+					$sqlSelect->where('claimLines.insuranceProgramId IN ('.implode(',',$payers).')');
+					break;
+				case 'facility':
+					// practice, building, room
+					$sqlSelect->where('encounter.practice_id = ?',(int)$value['practice']);
+					$sqlSelect->where('encounter.building_id = ?',(int)$value['building']);
+					$sqlSelect->where('encounter.room_id = ?',(int)$value['room']);
+					break;
+				case 'insurer':
+					$sqlSelect->where('encounter.activePayerId = ?',(int)$value);
+					break;
+				case 'visitId':
+					$sqlSelect->where('encounter.encounter_id = ?',(int)$value);
+					break;
+				case 'provider':
+					$sqlSelect->where('encounter.treating_person_id = ?',(int)$value);
+					break;
+				case 'providers':
+					$providers = array();
+					foreach ($value as $providerId) {
+						$providers[] = (int)$providerId;
+					}
+					$sqlSelect->where('encounter.treating_person_id IN ('.implode(',',$providers).')');
+					break;
+			}
+		}
+
+		$rows = array();
+		$visits = array();
+		$payers = array();
+		$facilities = array();
+		$patients = array();
+		$providers = array();
+		$stmt = $db->query($sqlSelect);
+		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+			$claimLine = new ClaimLine();
+			$claimLine->populateWithArray($row);
+
+			$miscCharge = $claimLine->totalMiscCharge;
+			$baseFee = (float)$row['totalBaseFee'];
+			$adjustedFee = (float)$row['totalAdjustedFee'];
+			$paid = (float)$claimLine->totalPaid;
+			$writeoff = (float)$claimLine->totalWriteOff;
+
+			$total = $baseFee + $miscCharge;
+			$billed = $miscCharge;
+			if ($baseFee > 0) $billed += $baseFee - $adjustedFee;
+			$balance = abs($billed) - $paid;
+
+			$visitId = (int)$claimLine->visitId;
+			if (!isset($visits[$visitId])) {
+				$visit = new Visit();
+				$visit->visitId = $visitId;
+				$visit->populate();
+				$visits[$visitId] = $visit;
+			}
+			$visit = $visits[$visitId];
+			$payerId = (int)$visit->activePayerId;
+			if (!isset($payers[$payerId])) $payers[$payerId] = InsuranceProgram::getInsuranceProgram($payerId);
+			$patientId = (int)$visit->patientId;
+			if (!isset($patients[$patientId])) {
+				$patient = new Patient();
+				$patient->personId = $patientId;
+				$patient->populate();
+				$patients[$patientId] = $patient;
+			}
+			$facilityId = (int)$visit->roomId;
+			if (!isset($facilities[$facilityId])) {
+				$facilities[$facilityId] = $visit->facility;
+			}
+			$providerId = (int)$visit->providerId;
+			if (!isset($providers[$providerId])) {
+				$provider = new Provider();
+				$provider->personId = $providerId;
+				$provider->populate();
+				$providers[$providerId] = $provider;
+			}
+
+			$tmp = array();
+			$tmp['id'] = (int)$claimLine->claimId;
+			$tmp['billed'] = $billed;
+			$tmp['paid'] = $paid;
+			$tmp['writeOff'] = $writeoff;
+			$tmp['payer'] = $payers[$payerId];
+			$tmp['dateOfTreatment'] = $visit->dateOfTreatment;
+			$tmp['dateBilled'] = $claimLine->dateTime;
+			$tmp['patientName'] = $patients[$patientId]->displayName;
+			$tmp['facility'] = $facilities[$facilityId];
+			$tmp['providerName'] = $providers[$providerId]->displayName;
+			$rows[] = $tmp;
+		}
+		return $rows;
+	}
+
+	public function recalculateBaseFee(Visit $visit) {
+		$fee = 0;
+		$retFee = FeeSchedule::checkFee($this->insuranceProgramId,substr($visit->dateOfTreatment,0,10),$this->procedureCode);
+		if ($retFee !== false && (float)$retFee['fee'] != 0) {
+			$fee = (float)$retFee['fee'];
+			$tmpFee = 0;
+			for ($i = 1; $i <= 4; $i++) {
+				$modifier = 'modifier'.$i;
+				if (!strlen($this->$modifier) > 0) continue;
+				switch ($this->$modifier) {
+					case $retFee['modifier1']:
+						$tmpFee += (float)$retFee['modifier1fee'];
+						break;
+					case $retFee['modifier2']:
+						$tmpFee += (float)$retFee['modifier2fee'];
+						break;
+					case $retFee['modifier3']:
+						$tmpFee += (float)$retFee['modifier3fee'];
+						break;
+					case $retFee['modifier4']:
+						$tmpFee += (float)$retFee['modifier4fee'];
+						break;
+				}
+			}
+			if ($tmpFee > 0) $fee = $tmpFee;
+		}
+		$units = (int)$this->units;
+		if ($units > 0) {
+			$fee *= $units;
+		}
+		$this->baseFee = $fee;
 	}
 
 }

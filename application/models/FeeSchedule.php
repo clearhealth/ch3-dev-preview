@@ -88,26 +88,27 @@ class FeeSchedule extends WebVista_Model_ORM {
 			throw new Exception($error);
 		}
 
+		if (!$this->dateObsolete || $this->dateObsolete == '0000-00-00') $this->dateObsolete = $this->dateOfServiceEnd;
 		$updates = array();
 		$fields = array();
 		$values = array();
-		$columns = array('name','guid','insuranceProgramIds','dateOfServiceStart','dateOfServiceEnd','procedureCode','fee');
+		$columns = array('name','guid','insuranceProgramIds','dateOfServiceStart','dateOfServiceEnd','procedureCode','fee','dateObsolete');
 		foreach ($columns as $col) {
 			$fields[$col] = '`'.$col.'`';
 			$values[$col] = $db->quote($this->$col);
-			if ($col == 'fee') continue;
 			$updates[$col] = $fields[$col].' = '.$values[$col];
 		}
 		$values['procedureCode'] = '`code`';
 		unset($updates['guid']);
 		unset($updates['procedureCode']);
 		unset($updates['fee']);
+		unset($updates['dateObsolete']);
 
 		// name, guid, insuranceProgramIds, dateOfServiceStart, dateOfServiceEnd
 		$sql = 'INSERT INTO `feeSchedules` ('.implode(', ',$fields).')
 				SELECT '.implode(', ',$values).' FROM procedureCodesCPT
 			ON DUPLICATE KEY UPDATE '.implode(', ',$updates);
-		//WebVista::debug($sql);
+		WebVista::debug($sql);
 		$db->query($sql);
 		return $this;
 	}

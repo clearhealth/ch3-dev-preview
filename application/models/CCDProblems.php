@@ -48,12 +48,12 @@ class CCDProblems {
 		$icd9Rows = array();
 		$snomedRows = array();
 		foreach ($base->problemLists as $problem) {
-			$code = $problem->code;
+			$code = htmlentities($problem->code);
 			$tr = '<tr>
 					<td>'.$code.'</td>
-					<td>'.$problem->codeTextShort.'</td>
+					<td>'.htmlentities($problem->codeTextShort).'</td>
 					<td>'.date('M d, Y',strtotime($problem->dateOfOnset)).'</td>
-					<td>'.$problem->status.'</td>
+					<td>'.htmlentities($problem->status).'</td>
 				</tr>';
 			if (strpos($code,'.') !== false) {
 				$icd9Rows[] = $tr;
@@ -125,14 +125,14 @@ class CCDProblems {
 							<low nullFlavor="UNK"/>
 							<high nullFlavor="UNK"/>
 						</effectiveTime>
-						<value xsi:type="CD" displayName="'.$problem->codeTextShort.'" code="233604007" codeSystemName="SNOMED" codeSystem="2.16.840.1.113883.6.96"/>
+						<value xsi:type="CD" displayName="'.htmlentities($problem->codeTextShort).'" code="233604007" codeSystemName="SNOMED" codeSystem="2.16.840.1.113883.6.96"/>
 						<entryRelationship typeCode="REFR">
 							<observation classCode="OBS" moodCode="EVN">
 								<templateId root="2.16.840.1.113883.10.20.1.50"/>
 								<!-- Problem status observation template -->
 								<code code="33999-4" codeSystem="2.16.840.1.113883.6.1" displayName="Status"/>
 								<statusCode code="completed"/>
-								<value xsi:type="CE" code="413322009" codeSystem="2.16.840.1.113883.6.96" displayName="'.$problem->status.'"/>
+								<value xsi:type="CE" code="413322009" codeSystem="2.16.840.1.113883.6.96" displayName="'.htmlentities($problem->status).'"/>
 							</observation>
 						</entryRelationship>
 					</observation>

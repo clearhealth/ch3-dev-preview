@@ -1,6 +1,11 @@
 <div style="float:left;">
 	<?=$this->form->renderOpen()?>
 	<div class="formRow" style="padding-top:4px;">
+		<?=$this->form->paymentDate->renderLabel()?>
+		<?=$this->form->paymentDateInput('FormDateText')?>
+	</div>
+	<br style="clear:left;" />
+	<div class="formRow" style="padding-top:4px;">
 		<?=$this->form->amount->renderLabel()?>
 		<?=$this->form->amountInput()?>
 	</div>

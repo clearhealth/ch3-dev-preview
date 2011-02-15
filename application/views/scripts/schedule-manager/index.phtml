@@ -281,7 +281,7 @@ if (prscb != undefined) {
 }
 
 var prsac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/schedule-manager.raw/auto-complete",requestMethod:"get"},"personResourceSelectAutoComplete");
-prscb = new dijit.form.FilteringSelect({name:"personResourceSelectAutoCompleteId",autocomplete:true,store:prsac},"personResourceSelectAutoCompleteDiv");
+prscb = new dijit.form.FilteringSelect({name:"personResourceSelectAutoCompleteId",autocomplete:true,store:prsac,searchDelay:500},"personResourceSelectAutoCompleteDiv");
 prscb.validate = function () {return true;};
 dojo.connect(prscb,"onChange","getPersonResourceDetails");
 function getPersonResourceDetails(args) {

@@ -82,3 +82,21 @@ dojo.provide("dojo.cldr.monetary");
 dojo.cldr.monetary._built=true;
 dojo.provide("dojo.cldr.monetary");
 dojo.cldr.monetary=<?=$contents?>;
+
+<?$contents = trim(file_get_contents($basePath . '/js/dijit/nls/common.js'));?>
+// en and en-us are the same
+dojo.provide("dijit.nls.en.common");
+dijit.nls.en.common._built=true;
+dojo.provide("dijit.nls.common.en");
+dojo.provide("dijit.nls.common.en_us");
+dijit.nls.common.en=<?=$contents?>;
+dijit.nls.common.en_us=<?=$contents?>;
+
+<?$contents = trim(file_get_contents($basePath . '/js/dijit/nls/loading.js'));?>
+// en and en-us are the same
+dojo.provide("dijit.nls.en.loading");
+dijit.nls.en.loading._built=true;
+dojo.provide("dijit.nls.loading.en");
+dojo.provide("dijit.nls.loading.en_us");
+dijit.nls.loading.en=<?=$contents?>;
+dijit.nls.loading.en_us=<?=$contents?>;
