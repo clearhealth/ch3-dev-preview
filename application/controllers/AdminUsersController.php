@@ -35,8 +35,8 @@ class AdminUsersController extends WebVista_Controller_Action {
 		$this->_form = new WebVista_Form(array('name' => 'user-detail'));
 		$this->_form->setAction(Zend_Registry::get('baseUrl') . "admin-users.raw/edit-process");
 		$this->_user = new User();
-		$this->_user->populateWithPersonId($personId);
 		$this->_user->personId = $personId;
+		$this->_user->populateWithPersonId();
 		$this->_form->loadORM($this->_user, "User");
 		//var_dump($this->_form);
 		$this->view->form = $this->_form;
@@ -54,8 +54,8 @@ class AdminUsersController extends WebVista_Controller_Action {
 		$personId = (int)$this->_getParam('personId');
 		$params = $this->_getParam('user');
 		$this->_user = new User();
-		$this->_user->populateWithPersonId($personId);
 		$this->_user->personId = $personId;
+		$this->_user->populateWithPersonId();
 		$this->_user->populateWithArray($params);
 		$this->_user->persist();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -493,10 +493,22 @@ class AdminUsersController extends WebVista_Controller_Action {
 		$username = $this->_getParam('username');
 		$user = new User();
 		$user->username = $username;
-		$user->persist();
+		$user->personId = WebVista_Model_ORM::nextSequenceId();
+		$response = true;
+		if (User::communityEditionPlusEnabled()) { // new user
+			$response = $user->healthCloudActivation();
+		}
+		if ($response === true) {
+			$user->userId = $user->personId;
+			$user->persist();
+			$ret = $user->personId;
+		}
+		else {
+			$ret = array('error'=>$response);
+		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$json->direct($user->personId);
+		$json->direct($ret);
 	}
 
 	public function autoCompleteAction() {
