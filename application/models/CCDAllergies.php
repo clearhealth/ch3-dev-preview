@@ -69,11 +69,11 @@ class CCDAllergies {
 			$tr = '<tr>
 					<td>Drug Allergy</td>
 					<td>416098002</td>
-					<td>'.htmlentities($allergy['causativeAgent']).'</td>
-					<td>'.htmlentities($allergy['rxnorm_cuid']).'</td>
-					<td ID="ReactionID-'.$key.'">'.htmlentities(implode(', ',$symptoms)).'</td>
+					<td>'.html_convert_entities($allergy['causativeAgent']).'</td>
+					<td>'.html_convert_entities($allergy['rxnorm_cuid']).'</td>
+					<td ID="ReactionID-'.$key.'">'.html_convert_entities(implode(', ',$symptoms)).'</td>
 					<td>'.date('M d, Y',strtotime($allergy['dateTimeReaction'])).'</td>
-					<td>'.htmlentities($active).'</td>
+					<td>'.html_convert_entities($active).'</td>
 				</tr>';
 			$rows[] = $tr;
 		}
@@ -101,7 +101,7 @@ class CCDAllergies {
 		foreach ($allergies as $allergy) {
 			$type = $allergy['reactionType'];
 			if (!strlen($type) > 0) $type = 'Unknown';
-			$substance = htmlentities($allergy['causativeAgent']);
+			$substance = html_convert_entities($allergy['causativeAgent']);
 			$exp = explode(',',$allergy['symptoms']);
 			$symptoms = array();
 			foreach ($exp as $symp) {
@@ -109,7 +109,7 @@ class CCDAllergies {
 			}
 			$reaction = '';
 			if ($symptoms) {
-				$reaction = htmlentities(implode(', ',$symptoms));
+				$reaction = html_convert_entities(implode(', ',$symptoms));
 			}
 
 			$status = 'Inactive';

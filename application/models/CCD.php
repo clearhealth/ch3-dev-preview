@@ -154,15 +154,7 @@ class CCD {
 		$this->performers = $performers;
 		$this->populateHeader($this->_xml);
 		$this->populateBody($this->_xml);
-		$xml = $this->_xml->asXML();
-		$xml = str_replace('&lt;','<',$xml);
-		$xml = str_replace('&gt;','>',$xml);
-		return $xml;
-		$doc = new DOMDocument();
-		$doc->formatOutput = true;
-		$doc->loadXML($xml);
-		return $doc->saveXML();
-		//return $xml;
+		return $this->_xml->asXML();
 	}
 
 	public function populateHeader(SimpleXMLElement $xml) {
@@ -206,7 +198,7 @@ class CCD {
 		$code->addAttribute('displayName',$displayName);
 		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
 		$code->addAttribute('codeSystemName','LOINC');
-		$xml->addChild('title',htmlentities($this->_title));
+		$xml->addChild('title',html_convert_entities($this->_title));
 		$effectiveTime = $xml->addChild('effectiveTime');
 		$dateEffective = self::formatDate();
 		$effectiveTime->addAttribute('value',$dateEffective);
@@ -223,7 +215,7 @@ class CCD {
 		//$id->addAttribute('root','CLINICID');
 		$id->addAttribute('root','MRN');
 		//$id->addAttribute('extension','PatientID');
-		$id->addAttribute('extension',htmlentities($this->patient->recordNumber));
+		$id->addAttribute('extension',html_convert_entities($this->patient->recordNumber));
 		// Address
 		$address = new Address();
 		$address->personId = $this->_patientId;
@@ -234,10 +226,10 @@ class CCD {
 		$addr = $patientRole->addChild('addr');
 		if ($address->addressId > 0) {
 			$addr->addAttribute('use','HP');
-			$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
-			$addr->addChild('city',htmlentities($address->city));
-			$addr->addChild('state',htmlentities($address->state));
-			$addr->addChild('postalCode',htmlentities($address->zipCode));
+			$addr->addChild('streetAddressLine',html_convert_entities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+			$addr->addChild('city',html_convert_entities($address->city));
+			$addr->addChild('state',html_convert_entities($address->state));
+			$addr->addChild('postalCode',html_convert_entities($address->zipCode));
 		}
 		// Telecom
 		$phone = null;
@@ -249,18 +241,18 @@ class CCD {
 		$telecom = $patientRole->addChild('telecom');
 		if ($phone && strlen($phone['number']) > 0) {
 			$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.htmlentities($phone['number']));
+			$telecom->addAttribute('value','tel:'.html_convert_entities($phone['number']));
 		}
 		// Patient
 		$patient = $patientRole->addChild('patient');
 		$name = $patient->addChild('name');
-		$name->addChild('given',htmlentities($patientName['given']));
-		$name->addChild('family',htmlentities($patientName['family']));
-		$name->addChild('suffix',htmlentities($patientName['suffix']));
+		$name->addChild('given',html_convert_entities($patientName['given']));
+		$name->addChild('family',html_convert_entities($patientName['family']));
+		$name->addChild('suffix',html_convert_entities($patientName['suffix']));
 
 		$genderCode = $patient->addChild('administrativeGenderCode');
-		$genderCode->addAttribute('code',htmlentities($this->patient->person->gender));
-		$genderCode->addAttribute('displayName',htmlentities($this->patient->person->displayGender));
+		$genderCode->addAttribute('code',html_convert_entities($this->patient->person->gender));
+		$genderCode->addAttribute('displayName',html_convert_entities($this->patient->person->displayGender));
 		$genderCode->addAttribute('codeSystem','2.16.840.1.113883.5.1');
 		$genderCode->addAttribute('codeSystemName','HL7 AdministrativeGender');
 		$birthTime = $patient->addChild('birthTime');
@@ -291,37 +283,37 @@ class CCD {
 		$id->addAttribute('root','20cf14fb-b65c-4c8c-a54d-b0cca834c18c');
 		$addr = $assignedAuthor->addChild('addr');
 		$addr->addAttribute('use','HP');
-		$addr->addChild('streetAddressLine',htmlentities((strlen($building->line2) > 0)?$building->line1.' '.$building->line2:$building->line1));
-		$addr->addChild('city',htmlentities($building->city));
-		$addr->addChild('state',htmlentities($building->state));
-		$addr->addChild('postalCode',htmlentities($building->zipCode));
+		$addr->addChild('streetAddressLine',html_convert_entities((strlen($building->line2) > 0)?$building->line1.' '.$building->line2:$building->line1));
+		$addr->addChild('city',html_convert_entities($building->city));
+		$addr->addChild('state',html_convert_entities($building->state));
+		$addr->addChild('postalCode',html_convert_entities($building->zipCode));
 		$telecom = $assignedAuthor->addChild('telecom');
 		if (strlen($building->phoneNumber) > 0) {
 			//$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.htmlentities($building->phoneNumber));
+			$telecom->addAttribute('value','tel:'.html_convert_entities($building->phoneNumber));
 		}
 		$assignedPerson = $assignedAuthor->addChild('assignedPerson');
 		$name = $assignedPerson->addChild('name');
-		$name->addChild('prefix',htmlentities($providerName['prefix']));
-		$name->addChild('given',htmlentities($providerName['given']));
-		$name->addChild('family',htmlentities($providerName['family']));
+		$name->addChild('prefix',html_convert_entities($providerName['prefix']));
+		$name->addChild('given',html_convert_entities($providerName['given']));
+		$name->addChild('family',html_convert_entities($providerName['family']));
 		$representedOrg = $assignedAuthor->addChild('representedOrganization');
 		$id = $representedOrg->addChild('id');
 		$id->addAttribute('root','2.16.840.1.113883.19.5');
-		$representedOrg->addChild('name',htmlentities($buildingName));
+		$representedOrg->addChild('name',html_convert_entities($buildingName));
 		$address = $building->practice->primaryAddress;
 		$telecom = $representedOrg->addChild('telecom');
 		if (strlen($building->practice->mainPhone->number) > 0) {
 			//$telecom->addAttribute('use','HP');
-			$telecom->addAttribute('value','tel:'.htmlentities($building->practice->mainPhone->number));
+			$telecom->addAttribute('value','tel:'.html_convert_entities($building->practice->mainPhone->number));
 		}
 		$addr = $representedOrg->addChild('addr');
 		if ($address->addressId > 0) {
 			$addr->addAttribute('use','HP');
-			$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
-			$addr->addChild('city',htmlentities($address->city));
-			$addr->addChild('state',htmlentities($address->state));
-			$addr->addChild('postalCode',htmlentities($address->zipCode));
+			$addr->addChild('streetAddressLine',html_convert_entities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+			$addr->addChild('city',html_convert_entities($address->city));
+			$addr->addChild('state',html_convert_entities($address->state));
+			$addr->addChild('postalCode',html_convert_entities($address->zipCode));
 		}
 
 		// CUSTODIAN
@@ -411,10 +403,10 @@ class CCD {
 			}
 			if ($address->addressId > 0) {
 				$addr->addAttribute('use','HP');
-				$addr->addChild('streetAddressLine',htmlentities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
-				$addr->addChild('city',htmlentities($address->city));
-				$addr->addChild('state',htmlentities($address->state));
-				$addr->addChild('postalCode',htmlentities($address->zipCode));
+				$addr->addChild('streetAddressLine',html_convert_entities((strlen($address->line2) > 0)?$address->line1.' '.$address->line2:$address->line1));
+				$addr->addChild('city',html_convert_entities($address->city));
+				$addr->addChild('state',html_convert_entities($address->state));
+				$addr->addChild('postalCode',html_convert_entities($address->zipCode));
 			}
 			$telecom = $assignedEntity->addChild('telecom');
 			$phoneNumber = new PhoneNumber();
@@ -424,15 +416,15 @@ class CCD {
 			}
 			if (strlen($phone['number']) > 0) {
 				$telecom->addAttribute('use','HP');
-				$telecom->addAttribute('value','tel:'.htmlentities($phone['number']));
+				$telecom->addAttribute('value','tel:'.html_convert_entities($phone['number']));
 			}
 
 			$assignedPerson = $assignedEntity->addChild('assignedPerson');
 			$name = $assignedPerson->addChild('name');
 
-			$name->addChild('prefix',htmlentities($provider->person->prefix));
-			$name->addChild('given',htmlentities($provider->person->firstName));
-			$name->addChild('family',htmlentities($provider->person->lastName));
+			$name->addChild('prefix',html_convert_entities($provider->person->prefix));
+			$name->addChild('given',html_convert_entities($provider->person->firstName));
+			$name->addChild('family',html_convert_entities($provider->person->lastName));
 			$representedOrg = $assignedEntity->addChild('representedOrganization');
 			$id = $representedOrg->addChild('id');
 			$id->addAttribute('root','2.16.840.1.113883.3.72.5');
@@ -510,232 +502,48 @@ class CCD {
 			$program = '';
 			if (isset($insurancePrograms[$item->insuranceProgramId])) {
 				$exp = explode('->',$insurancePrograms[$item->insuranceProgramId]);
-				$company = $exp[0];
-				$program = $exp[1];
+				$company = html_convert_entities($exp[0]);
+				$program = html_convert_entities($exp[1]);
 			}
-			$rows[] = '<tr>
-					<td>'.$company.'</td>
-					<td>'.$program.'</td>
-					<td>'.$item->groupNumber.'</td>
-					<td></td>
-				</tr>';
+			$rows[] = array(
+				'company'=>$company,
+				'program'=>$program,
+				'groupNumber'=>html_convert_entities($item->groupNumber),
+			);
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-					<thead>
-						<tr>
-							<th>Payer name</th>
-							<th>Policy type / Coverage type</th>
-							<th>Covered party ID</th>
-							<th>Authorization(s)</th>
-						</tr>
-					</thead>
-					<tbody>'.implode("\n",$rows).'</tbody>
-				</table>';
-		$section->addChild('text',$text);
-		return;
-		$entry = $section->addChild('entry');
-		$entry->addAttribute('typeCode','DRIV');
-		$act = $entry->addChild('act');
-		$act->addAttribute('classCode','ACT');
-		$act->addAttribute('moodCode','DEF');
-		$templateId = $act->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.20');
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','Payer name');
+			$tr->addChild('th','Policy type / Coverage type');
+			$tr->addChild('th','Covered party ID');
+			$tr->addChild('th','Authorization(s)');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('td',$row['company']);
+				$tr->addChild('td',$row['program']);
+				$tr->addChild('td',$row['groupNumber']);
+				$tr->addChild('td','');
+			}
+		}
 	}
 
 	public function populateAdvanceDirectives(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.1');
-		// <!-- Advance directives section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','42348-3');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Advance Directives');
-		$section->addChild('text','<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Directive</th>
-									<th>Description</th>
-									<th>Verification</th>
-									<th>Supporting Document(s)</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Resuscitation status</td>
-									<td>
-										<content ID="AD1">Do not resuscitate</content>
-									</td>
-									<td>Dr. Robert Dolin, Nov 07, 1999</td>
-									<td>
-										<linkHtml href="AdvanceDirective.b50b7910-7ffb-4f4c-bbe4-177ed68cbbf3.pdf">Advance directive</linkHtml>
-									</td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
 	public function populateFunctionalStatus(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.5');
-		// <!-- Functional status section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','47420-5');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Functional Status');
-		$section->addChild('text','<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Functional Condition</th>
-									<th>Effective Dates</th>
-									<th>Condition Status</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Dependence on cane</td>
-									<td>1998</td>
-									<td>Active</td>
-								</tr>
-								<tr>
-									<td>Memory impairment</td>
-									<td>1999</td>
-									<td>Active</td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
 	public function populateFamilyHistory(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.4');
-		// <!-- Family history section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','10157-6');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Family history');
-		$section->addChild('text','<paragraph>Father (deceased)</paragraph>
-						<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Diagnosis</th>
-									<th>Age At Onset</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Myocardial Infarction (cause of death)</td>
-									<td>57</td>
-								</tr>
-								<tr>
-									<td>Hypertension</td>
-									<td>40</td>
-								</tr>
-							</tbody>
-						</table>
-						<paragraph>Mother (alive)</paragraph>
-						<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Diagnosis</th>
-									<th>Age At Onset</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Asthma</td>
-									<td>30</td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
 	public function populateSocialHistory(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.15');
-		// <!-- Social history section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','29762-2');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Social History');
-		$section->addChild('text','<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Social History Element</th>
-									<th>Description</th>
-									<th>Effective Dates</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Cigarette smoking</td>
-									<td>1 pack per day</td>
-									<td>1947 - 1972</td>
-								</tr>
-								<tr>
-									<td>"</td>
-									<td>None</td>
-									<td>1973 - </td>
-								</tr>
-								<tr>
-									<td>Alcohol consumption</td>
-									<td>None</td>
-									<td>1973 - </td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
 	public function populateMedicalEquipment(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.7');
-		// <!-- Medical equipment section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','46264-8');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Medical Equipment');
-		$section->addChild('text','<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Supply/Device</th>
-									<th>Date Supplied</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Automatic implantable cardioverter/defibrillator</td>
-									<td>Nov 1999</td>
-								</tr>
-								<tr>
-									<td>Total hip replacement prosthesis</td>
-									<td>1998</td>
-								</tr>
-								<tr>
-									<td>Wheelchair</td>
-									<td>1999</td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
 	public function populateImmunizations(SimpleXMLElement $xml) {
@@ -754,25 +562,28 @@ class CCD {
 		$iterator->setFilter(array('patientId'=>$this->_patientId));
 		foreach ($iterator as $immunization) {
 			$status = 'Completed'; // TODO: where to get the status?
-			$tr = '<tr>
-					<td>'.htmlentities($immunization->immunization).'</td>
-					<td>'.date('M d, Y',strtotime($immunization->dateAdministered)).'</td>
-					<td>'.htmlentities($status).'</td>
-				</tr>';
-			$rows[] = $tr;
+			$rows[] = array(
+				'vaccine'=>html_convert_entities($immunization->immunization),
+				'date'=>date('M d, Y',strtotime($immunization->dateAdministered)),
+				'status'=>html_convert_entities($status),
+			);
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Vaccine</th>
-									<th>Date</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody>'.implode("\n",$rows).'</tbody>
-						</table>';
-		$section->addChild('text',$text);
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','Vaccine');
+			$tr->addChild('th','Date');
+			$tr->addChild('th','Status');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('td',$row['vaccine']);
+				$tr->addChild('td',$row['date']);
+				$tr->addChild('td',$row['status']);
+			}
+		}
 	}
 
 	public function populateVitalSigns(SimpleXMLElement $xml) {
@@ -790,10 +601,10 @@ class CCD {
 		$this->setFiltersDateRange($filters);
 		$iterator = new VitalSignGroupsIterator();
 		$iterator->setFilter($filters);
-		$headers = array('<th align="right">Date / Time: </th>');
+		$headers = array('Date / Time:');
 		$vitals = array();
 		foreach ($iterator as $vsGroup) {
-			$headers[$vsGroup->dateTime] = '<th>'.date('M d, Y',strtotime($vsGroup->dateTime)).'</th>';
+			$headers[$vsGroup->dateTime] = date('M d, Y',strtotime($vsGroup->dateTime));
 			foreach ($vsGroup->vitalSignValues as $vital) {
 				$vitals[$vital->vital][$vsGroup->dateTime] = $vital;
 			}
@@ -802,22 +613,35 @@ class CCD {
 		$labelKeyValues = VitalSignTemplate::generateVitalSignsTemplateKeyValue();
 		foreach ($labelKeyValues as $key=>$value) {
 			if (!isset($vitals[$key])) continue;
-			$tr = '<tr>
-				<th align="left">'.htmlentities($value).'</th>';
+			$row = array(
+				'value'=>html_convert_entities($value),
+				'data'=>array(),
+			);
 			foreach ($vitals[$key] as $dateTime=>$vital) {
-				$tr .= '<td>'.htmlentities($vital->value.' '.$vital->units).'</td>';
+				$row['data'][] = html_convert_entities($vital->value.' '.$vital->units);
 			}
-			$tr .= '</tr>';
-			$rows[] = $tr;
+			$rows[] = $row;
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-					<thead>
-						<tr>'.implode("\n",$headers).'</tr>
-					</thead>
-					<tbody>'.implode("\n",$rows).'</tbody>
-				</table>';
-		$section->addChild('text',$text);
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$align = 'right';
+			foreach ($headers as $header) {
+				$th = $tr->addChild('th',$header);
+				$th->addAttribute('align',$align);
+				$align = 'left';
+			}
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('th',$row['value']);
+				foreach ($row['data'] as $data) {
+					$tr->addChild('td',$data);
+				}
+			}
+		}
 	}
 
 	public function populateProcedures(SimpleXMLELement $xml) {
@@ -837,24 +661,27 @@ class CCD {
 		$iterator->setFilters($filters);
 		$ctr = 1;
 		foreach ($iterator as $procedure) {
-			$rows[] = '<tr>
-					<td>
-						<content ID="Proc'.$ctr++.'">'.htmlentities($procedure->procedure).'</content>
-					</td>
-					<td>'.date('M d, Y',strtotime($procedure->dateTime)).'</td>
-				</tr>';
+			$rows[] = array(
+				'contents'=>array('id'=>'Proc'.$ctr++,'value'=>html_convert_entities($procedure->procedure)),
+				'date'=>date('M d, Y',strtotime($procedure->dateTime)),
+			);
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-					<thead>
-						<tr>
-							<th>Procedure</th>
-							<th>Date</th>
-						</tr>
-					</thead>
-					<tbody>'.implode("\n",$rows).'</tbody>
-				</table>';
-		$section->addChild('text',$text);
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','Procedure');
+			$tr->addChild('th','Date');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$td = $tr->addChild('td');
+				$content = $td->addChild('content',$row['contents']['value']);
+				$content->addAttribute('ID',$row['contents']['id']);
+				$tr->addChild('td',$row['date']);
+			}
+		}
 	}
 
 	public function populateEncounters(SimpleXMLElement $xml) {
@@ -883,53 +710,301 @@ class CCD {
 			$appointment = new Appointment();
 			$appointment->appointmentId = $visit->appointmentId;
 			$appointment->populate();
-			$tr ='<tr>
-					<td>'.htmlentities($appointment->title).'</td>
-					<td>'.htmlentities($building->displayName).'</td>
-					<td>'.date('M d, Y',strtotime($visit->dateOfTreatment)).'</td>
-				</tr>';
-			$rows[] = $tr;
+			$rows[] = array(
+				'encounter'=>html_convert_entities($appointment->title),
+				'location'=>html_convert_entities($building->displayName),
+				'date'=>date('M d, Y',strtotime($visit->dateOfTreatment)),
+			);
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-					<thead>
-						<tr>
-							<th>Encounter</th>
-							<th>Location</th>
-							<th>Date</th>
-						</tr>
-					</thead>
-					<tbody>'.implode("\n",$rows).'</tbody>
-				</table>';
-		$section->addChild('text',$text);
+
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','Encounter');
+			$tr->addChild('th','Location');
+			$tr->addChild('th','Date');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('td',$row['encounter']);
+				$tr->addChild('td',$row['location']);
+				$tr->addChild('td',$row['date']);
+			}
+		}
 	}
 
 	public function populateCarePlan(SimpleXMLElement $xml) {
-		// TODO: to be implemented
-		return;
-		$component = $xml->addChild('component');
-		$section = $component->addChild('section');
-		$templateId = $section->addChild('templateId');
-		$templateId->addAttribute('root','2.16.840.1.113883.10.20.1.10');
-		// <!-- Plan of Care section template -->
-		$code = $section->addChild('code');
-		$code->addAttribute('code','18776-5');
-		$code->addAttribute('codeSystem','2.16.840.1.113883.6.1');
-		$section->addChild('title','Plan');
-		$section->addChild('text','<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Planned Activity</th>
-									<th>Planned Date</th>
-								</tr>
-							</thead>
-							<tbody>
-								<tr>
-									<td>Pulmonary function test</td>
-									<td>April 21, 2000</td>
-								</tr>
-							</tbody>
-						</table>');
 	}
 
+}
+
+function html_convert_entities($string) {
+	$string = htmlentities($string);
+	return preg_replace_callback('/&([a-zA-Z][a-zA-Z0-9]+);/','convert_entity', $string);
+}
+
+/* Swap HTML named entity with its numeric equivalent. If the entity
+ * isn't in the lookup table, this function returns a blank, which
+ * destroys the character in the output - this is probably the 
+ * desired behaviour when producing XML. */
+function convert_entity($matches) {
+	static $table = array(
+		'quot'    => '&#34;',
+		'amp'      => '&#38;',
+		'lt'       => '&#60;',
+		'gt'       => '&#62;',
+		'OElig'    => '&#338;',
+		'oelig'    => '&#339;',
+		'Scaron'   => '&#352;',
+		'scaron'   => '&#353;',
+		'Yuml'     => '&#376;',
+		'circ'     => '&#710;',
+		'tilde'    => '&#732;',
+		'ensp'     => '&#8194;',
+		'emsp'     => '&#8195;',
+		'thinsp'   => '&#8201;',
+		'zwnj'     => '&#8204;',
+		'zwj'      => '&#8205;',
+		'lrm'      => '&#8206;',
+		'rlm'      => '&#8207;',
+		'ndash'    => '&#8211;',
+		'mdash'    => '&#8212;',
+		'lsquo'    => '&#8216;',
+		'rsquo'    => '&#8217;',
+		'sbquo'    => '&#8218;',
+		'ldquo'    => '&#8220;',
+		'rdquo'    => '&#8221;',
+		'bdquo'    => '&#8222;',
+		'dagger'   => '&#8224;',
+		'Dagger'   => '&#8225;',
+		'permil'   => '&#8240;',
+		'lsaquo'   => '&#8249;',
+		'rsaquo'   => '&#8250;',
+		'euro'     => '&#8364;',
+		'fnof'     => '&#402;',
+		'Alpha'    => '&#913;',
+		'Beta'     => '&#914;',
+		'Gamma'    => '&#915;',
+		'Delta'    => '&#916;',
+		'Epsilon'  => '&#917;',
+		'Zeta'     => '&#918;',
+		'Eta'      => '&#919;',
+		'Theta'    => '&#920;',
+		'Iota'     => '&#921;',
+		'Kappa'    => '&#922;',
+		'Lambda'   => '&#923;',
+		'Mu'       => '&#924;',
+		'Nu'       => '&#925;',
+		'Xi'       => '&#926;',
+		'Omicron'  => '&#927;',
+		'Pi'       => '&#928;',
+		'Rho'      => '&#929;',
+		'Sigma'    => '&#931;',
+		'Tau'      => '&#932;',
+		'Upsilon'  => '&#933;',
+		'Phi'      => '&#934;',
+		'Chi'      => '&#935;',
+		'Psi'      => '&#936;',
+		'Omega'    => '&#937;',
+		'alpha'    => '&#945;',
+		'beta'     => '&#946;',
+		'gamma'    => '&#947;',
+		'delta'    => '&#948;',
+		'epsilon'  => '&#949;',
+		'zeta'     => '&#950;',
+		'eta'      => '&#951;',
+		'theta'    => '&#952;',
+		'iota'     => '&#953;',
+		'kappa'    => '&#954;',
+		'lambda'   => '&#955;',
+		'mu'       => '&#956;',
+		'nu'       => '&#957;',
+		'xi'       => '&#958;',
+		'omicron'  => '&#959;',
+		'pi'       => '&#960;',
+		'rho'      => '&#961;',
+		'sigmaf'   => '&#962;',
+		'sigma'    => '&#963;',
+		'tau'      => '&#964;',
+		'upsilon'  => '&#965;',
+		'phi'      => '&#966;',
+		'chi'      => '&#967;',
+		'psi'      => '&#968;',
+		'omega'    => '&#969;',
+		'thetasym' => '&#977;',
+		'upsih'    => '&#978;',
+		'piv'      => '&#982;',
+		'bull'     => '&#8226;',
+		'hellip'   => '&#8230;',
+		'prime'    => '&#8242;',
+		'Prime'    => '&#8243;',
+		'oline'    => '&#8254;',
+		'frasl'    => '&#8260;',
+		'weierp'   => '&#8472;',
+		'image'    => '&#8465;',
+		'real'     => '&#8476;',
+		'trade'    => '&#8482;',
+		'alefsym'  => '&#8501;',
+		'larr'     => '&#8592;',
+		'uarr'     => '&#8593;',
+		'rarr'     => '&#8594;',
+		'darr'     => '&#8595;',
+		'harr'     => '&#8596;',
+		'crarr'    => '&#8629;',
+		'lArr'     => '&#8656;',
+		'uArr'     => '&#8657;',
+		'rArr'     => '&#8658;',
+		'dArr'     => '&#8659;',
+		'hArr'     => '&#8660;',
+		'forall'   => '&#8704;',
+		'part'     => '&#8706;',
+		'exist'    => '&#8707;',
+		'empty'    => '&#8709;',
+		'nabla'    => '&#8711;',
+		'isin'     => '&#8712;',
+		'notin'    => '&#8713;',
+		'ni'       => '&#8715;',
+		'prod'     => '&#8719;',
+		'sum'      => '&#8721;',
+		'minus'    => '&#8722;',
+		'lowast'   => '&#8727;',
+		'radic'    => '&#8730;',
+		'prop'     => '&#8733;',
+		'infin'    => '&#8734;',
+		'ang'      => '&#8736;',
+		'and'      => '&#8743;',
+		'or'       => '&#8744;',
+		'cap'      => '&#8745;',
+		'cup'      => '&#8746;',
+		'int'      => '&#8747;',
+		'there4'   => '&#8756;',
+		'sim'      => '&#8764;',
+		'cong'     => '&#8773;',
+		'asymp'    => '&#8776;',
+		'ne'       => '&#8800;',
+		'equiv'    => '&#8801;',
+		'le'       => '&#8804;',
+		'ge'       => '&#8805;',
+		'sub'      => '&#8834;',
+		'sup'      => '&#8835;',
+		'nsub'     => '&#8836;',
+		'sube'     => '&#8838;',
+		'supe'     => '&#8839;',
+		'oplus'    => '&#8853;',
+		'otimes'   => '&#8855;',
+		'perp'     => '&#8869;',
+		'sdot'     => '&#8901;',
+		'lceil'    => '&#8968;',
+		'rceil'    => '&#8969;',
+		'lfloor'   => '&#8970;',
+		'rfloor'   => '&#8971;',
+		'lang'     => '&#9001;',
+		'rang'     => '&#9002;',
+		'loz'      => '&#9674;',
+		'spades'   => '&#9824;',
+		'clubs'    => '&#9827;',
+		'hearts'   => '&#9829;',
+		'diams'    => '&#9830;',
+		'nbsp'     => '&#160;',
+		'iexcl'    => '&#161;',
+		'cent'     => '&#162;',
+		'pound'    => '&#163;',
+		'curren'   => '&#164;',
+		'yen'      => '&#165;',
+		'brvbar'   => '&#166;',
+		'sect'     => '&#167;',
+		'uml'      => '&#168;',
+		'copy'     => '&#169;',
+		'ordf'     => '&#170;',
+		'laquo'    => '&#171;',
+		'not'      => '&#172;',
+		'shy'      => '&#173;',
+		'reg'      => '&#174;',
+		'macr'     => '&#175;',
+		'deg'      => '&#176;',
+		'plusmn'   => '&#177;',
+		'sup2'     => '&#178;',
+		'sup3'     => '&#179;',
+		'acute'    => '&#180;',
+		'micro'    => '&#181;',
+		'para'     => '&#182;',
+		'middot'   => '&#183;',
+		'cedil'    => '&#184;',
+		'sup1'     => '&#185;',
+		'ordm'     => '&#186;',
+		'raquo'    => '&#187;',
+		'frac14'   => '&#188;',
+		'frac12'   => '&#189;',
+		'frac34'   => '&#190;',
+		'iquest'   => '&#191;',
+		'Agrave'   => '&#192;',
+		'Aacute'   => '&#193;',
+		'Acirc'    => '&#194;',
+		'Atilde'   => '&#195;',
+		'Auml'     => '&#196;',
+		'Aring'    => '&#197;',
+		'AElig'    => '&#198;',
+		'Ccedil'   => '&#199;',
+		'Egrave'   => '&#200;',
+		'Eacute'   => '&#201;',
+		'Ecirc'    => '&#202;',
+		'Euml'     => '&#203;',
+		'Igrave'   => '&#204;',
+		'Iacute'   => '&#205;',
+		'Icirc'    => '&#206;',
+		'Iuml'     => '&#207;',
+		'ETH'      => '&#208;',
+		'Ntilde'   => '&#209;',
+		'Ograve'   => '&#210;',
+		'Oacute'   => '&#211;',
+		'Ocirc'    => '&#212;',
+		'Otilde'   => '&#213;',
+		'Ouml'     => '&#214;',
+		'times'    => '&#215;',
+		'Oslash'   => '&#216;',
+		'Ugrave'   => '&#217;',
+		'Uacute'   => '&#218;',
+		'Ucirc'    => '&#219;',
+		'Uuml'     => '&#220;',
+		'Yacute'   => '&#221;',
+		'THORN'    => '&#222;',
+		'szlig'    => '&#223;',
+		'agrave'   => '&#224;',
+		'aacute'   => '&#225;',
+		'acirc'    => '&#226;',
+		'atilde'   => '&#227;',
+		'auml'     => '&#228;',
+		'aring'    => '&#229;',
+		'aelig'    => '&#230;',
+		'ccedil'   => '&#231;',
+		'egrave'   => '&#232;',
+		'eacute'   => '&#233;',
+		'ecirc'    => '&#234;',
+		'euml'     => '&#235;',
+		'igrave'   => '&#236;',
+		'iacute'   => '&#237;',
+		'icirc'    => '&#238;',
+		'iuml'     => '&#239;',
+		'eth'      => '&#240;',
+		'ntilde'   => '&#241;',
+		'ograve'   => '&#242;',
+		'oacute'   => '&#243;',
+		'ocirc'    => '&#244;',
+		'otilde'   => '&#245;',
+		'ouml'     => '&#246;',
+		'divide'   => '&#247;',
+		'oslash'   => '&#248;',
+		'ugrave'   => '&#249;',
+		'uacute'   => '&#250;',
+		'ucirc'    => '&#251;',
+		'uuml'     => '&#252;',
+		'yacute'   => '&#253;',
+		'thorn'    => '&#254;',
+		'yuml'     => '&#255;'
+	);
+
+	// Entity not found? Destroy it.
+	return isset($table[$matches[1]]) ? $table[$matches[1]] : '';
 }

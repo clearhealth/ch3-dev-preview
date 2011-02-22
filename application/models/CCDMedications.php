@@ -58,42 +58,56 @@ class CCDMedications {
 			}
 			$baseMed24 = $medication->baseMed24;
 			//$status = ($medication->status != 'Discontinued')?'Active':'Discontinued';
-			$rows[] = '<tr>
-					<td>'.$baseMed24->rxnorm_cuid.'</td>
-					<td>Medication</td>
-					<td>'.htmlentities($medication->description).'</td>
-					<td>'.htmlentities($baseMed24->fdaDrugname).'</td>
-					<td>'.htmlentities($baseMed24->tradename).'</td>
-					<td>'.htmlentities($medication->directions).'</td>
-					<td>'.htmlentities($medication->strength).'</td>
-					<td>'.htmlentities($medication->dose).'</td>
-					<td>'.htmlentities($medication->route).'</td>
-					<td>'.htmlentities($medication->schedule).'</td>
-					<td>'.$datePrescribed.'</td>
-					<td>'.htmlentities($medication->displayStatus).'</td>
-				</tr>';
+			$rows[] = array(
+				'rxnorm'=>$baseMed24->rxnorm_cuid,
+				'product'=>'Medication',
+				'medication'=>html_convert_entities($medication->description),
+				'generic'=>html_convert_entities($baseMed24->fdaDrugname),
+				'brand'=>html_convert_entities($baseMed24->tradename),
+				'instructions'=>html_convert_entities($medication->directions),
+				'strength'=>html_convert_entities($medication->strength),
+				'dose'=>html_convert_entities($medication->dose),
+				'route'=>html_convert_entities($medication->route),
+				'frequency'=>html_convert_entities($medication->schedule),
+				'date'=>$datePrescribed,
+				'status'=>html_convert_entities($medication->displayStatus),
+			);
 		}
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-						<thead>
-							<tr>
-								<th>RxNorm Code</th>
-								<th>Product</th>
-								<th>Medication</th>
-								<th>Generic Name</th>
-								<th>Brand Name</th>
-								<th>Instructions</th>
-								<th>Strength</th>
-								<th>Dose</th>
-								<th>Route</th>
-								<th>Frequency</th>
-								<th>Date Started</th>
-								<th>Status</th>
-							</tr>
-						</thead>
-						<tbody>'.implode("\n",$rows).'</tbody>
-					</table>';
-		$section->addChild('text',$text);
+
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','RxNorm Code');
+			$tr->addChild('th','Product');
+			$tr->addChild('th','Medication');
+			$tr->addChild('th','Generic Name');
+			$tr->addChild('th','Brand Name');
+			$tr->addChild('th','Instructions');
+			$tr->addChild('th','Strength');
+			$tr->addChild('th','Dose');
+			$tr->addChild('th','Route');
+			$tr->addChild('th','Frequency');
+			$tr->addChild('th','Date Started');
+			$tr->addChild('th','Status');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('td',$row['rxnorm']);
+				$tr->addChild('td',$row['product']);
+				$tr->addChild('td',$row['medication']);
+				$tr->addChild('td',$row['generic']);
+				$tr->addChild('td',$row['brand']);
+				$tr->addChild('td',$row['instructions']);
+				$tr->addChild('td',$row['strength']);
+				$tr->addChild('td',$row['dose']);
+				$tr->addChild('td',$row['route']);
+				$tr->addChild('td',$row['frequency']);
+				$tr->addChild('td',$row['date']);
+				$tr->addChild('td',$row['status']);
+			}
+		}
 
 		foreach ($medications as $medication) {
 			$quantity = '';
@@ -104,7 +118,7 @@ class CCDMedications {
 				if ($strength) $quantity = '<quantity value="'.$strength.'" unit="'.preg_replace('/ /','',strtolower($unit[0])).'"/>';
 			}
 			$status = $medication->displayStatus;
-			$description = htmlentities($medication->description);
+			$description = html_convert_entities($medication->description);
 			$entry = '<substanceAdministration classCode="SBADM" moodCode="EVN">
 				<templateId root="2.16.840.1.113883.3.88.11.83.8" assigningAuthorityName="HITSP C83"/>
 				<templateId root="2.16.840.1.113883.10.20.1.24" assigningAuthorityName="CCD"/>
