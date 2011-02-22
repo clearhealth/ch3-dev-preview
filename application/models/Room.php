@@ -78,7 +78,8 @@ class Room extends WebVista_Model_ORM {
 		$provider = new Provider();
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
-			 	->from('rooms', array('id', 'name'));
+				->from('rooms', array('id', 'name'))
+				->order('rooms.name ASC');
 		$data = $db->fetchAll($dbSelect);
 		foreach ($data as $row) {
 			$ret[$row['id']] = $row['name'];

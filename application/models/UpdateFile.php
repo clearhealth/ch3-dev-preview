@@ -36,6 +36,7 @@ class UpdateFile extends WebVista_Model_ORM {
 	protected $license;
 	protected $status = 'New';
 	protected $queue;
+	protected $notes;
 
 	protected $_table = 'updateFiles';
 	protected $_primaryKeys = array('updateFileId');
@@ -112,13 +113,14 @@ class UpdateFile extends WebVista_Model_ORM {
 	public function getAllVersions() {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
-				->from($this->_table,array('MAX(version) AS version','channelId'))
+				->from($this->_table,array('name','MAX(version) AS version','channelId'))
 				->where('channelId != ?',self::USER_CHANNEL_ID)
-				->group('channelId');
+				->group('channelId')
+				->group('name');
 		$versions = array();
 		if ($rows = $db->fetchAll($sqlSelect)) {
 			foreach ($rows as $row) {
-				$versions[$row['channelId']] = $row['version'];
+				$versions[] = $row;
 			}
 		}
 		return $versions;
@@ -138,18 +140,54 @@ class UpdateFile extends WebVista_Model_ORM {
 		if (!$fp) {
 			throw new Exception('Could not write file '.$file);
 		}
+		$tfile = $file.'.tmp';
+		$tfp = fopen($tfile,'w');
+		if (!$tfp) {
+			throw new Exception('Could not write temporary file '.$tfile);
+		}
 		$signatureTag = '';
-		$ctr = 1;
+		$licenseTag = '';
+		$notes = array();
+		$dumpStarted = false;
 		while (!gzeof($zd)) {
 			$buffer = gzgets($zd,4096);
-			if ($signatureTag == '' && $ctr++ == 2) { // line 2 is expected to be a <signature> tag
-				$signatureTag = $buffer;
-				continue;
+			$include = true;
+			if (!$dumpStarted && substr($buffer,0,10) == '<mysqldump') $dumpStarted = true;
+			if (!$dumpStarted) {
+				if ($signatureTag == '' && substr($buffer,0,11) == '<signature>') {
+					$signatureTag = $buffer;
+					continue;
+				}
+				else if ($licenseTag == '' && substr($buffer,0,9) == '<license>') {
+					$licenseTag = $buffer;
+					$include = false;
+				}
+				else {
+					$tagName = null;
+					$pos = strpos($buffer,'>');
+					if ($pos !== false && $pos > 0) {
+						$tagName = substr($buffer,1,($pos-1));
+						$x = explode(' ',$tagName);
+						$tagName = $x[0];
+					}
+					if ($tagName !== null) {
+						if (substr($tagName,0,4) != '?xml') {
+							$include = false;
+							$notes[$tagName] = $buffer;
+						}
+					}
+					else {
+						$notes[] = $buffer;
+					}
+				}
 			}
+			if ($include) fwrite($tfp,$buffer);
 			fwrite($fp,$buffer);
 		}
-		$signature = substr($signatureTag,11,strlen($signatureTag)-24);
 		gzclose($zd);
+		fclose($fp);
+		fclose($tfp);
+		$signature = strip_tags($signatureTag);
 		if ($signature == '') {
 			throw new Exception('Invalid signature');
 		}
@@ -167,6 +205,14 @@ class UpdateFile extends WebVista_Model_ORM {
 			trigger_error($error);
 			throw new Exception($error);
 		}
+		if (!rename($tfile,$file)) {
+			$error = __('Failed to rename update file.');
+			trigger_error($error);
+			throw new Exception($error);
+		}
+		$this->notes = serialize($notes);
+		$this->license = strip_tags($licenseTag);
+		$this->persist();
 		return true;
 	}
 
@@ -177,6 +223,50 @@ class UpdateFile extends WebVista_Model_ORM {
 				->where('queue = 1')
 				->order('dateTime DESC');
 		return parent::getIterator($sqlSelect);
+	}
+
+	public function install() {
+		$filename = $this->getUploadFilename();
+		if (file_exists($filename)) {
+			$size = sprintf("%u",filesize($filename));
+			$units = array('B','KB','MB','GB','TB');
+			$pow = floor(($size?log($size):0)/log(1024));
+			$pow = min($pow,count($units)-1);
+			$size /= pow(1024,$pow);
+			if (($pow == 2 && round($size,1) > 10) ||$pow > 2) { // queue if > 10 MB
+				$this->queue = 1;
+				$this->status = 'Pending';
+				$this->persist();
+			}
+		}
+		$audit = new Audit();
+		$audit->objectClass = 'UpdateManager';
+		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$audit->message = 'License of update file '.$this->name.' from '.$this->channel.' channel was accepted';
+		$audit->dateTime = date('Y-m-d H:i:s');
+
+		if ($this->queue) {
+			$audit->message .= ' and updates pending to apply.';
+			$ret = true;
+		}
+		else {
+			$this->queue = 0;
+			$alterTable = new AlterTable();
+			$ret = $alterTable->generateSqlChanges($filename);
+			if ($ret === true) {
+				$alterTable->executeSqlChanges();
+				//$this->active = 0;
+				$this->status = 'Completed';
+				$this->persist();
+				$audit->message .= ' and updates applied successfully.';
+			}
+			else {
+				$audit->message .= ' and updates failed to apply.';
+				$this->status = 'Error: '.$ret;
+				$this->persist();
+			}
+		}
+		$audit->persist();
 	}
 
 }

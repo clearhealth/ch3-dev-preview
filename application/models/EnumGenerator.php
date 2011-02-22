@@ -52,6 +52,7 @@ class EnumGenerator {
 		self::generateInsurancePreferencesEnum($force);
 		self::generateGenericNoteTemplateEnum($force);
 		self::generateTextOnlyTypesEnum($force);
+		self::generateEobAdjustmentTypesEnum($force);
 	}
 
 	public static function generateDemographicsPreferencesEnum($force = false) {
@@ -881,6 +882,38 @@ class EnumGenerator {
 					'appointmentHistory' => array('key' => 'APPHISTORY', 'name' => 'Appointment History', 'active' => 1, 'guid' => 'ad390c48-e73b-4834-aa14-f54a72a5dc95'),
 				)),
 			);
+/*
+*Add Vitals	10
+
+Print	PRINT				d7f5351c-0398-41c0-a2c0-04663bd0cd89	20
+
+*Manage Schedules	30
+
+General Encryption	GENCRYPT	29949f5c-eec0-4567-a030-d2f2c79e734e	40
+Export	EXPORT				26ef871f-e164-4788-bb1d-ce25cfff9bad	50
+	CQM	CQM			f906f8b6-1320-40c7-b6ee-f64bab1e3a56	60 (disabled)
+	HL7 Immunizations	HL7IMM	c65dd3de-5da6-4486-84b7-5c3be7dfd845	70
+	HL7 LabTest Results	HL7LABTEST	94127ad8-886e-440b-8f4a-ed3670c00267	80
+	Public Health	PUBHEALTH	9e078b42-74c6-45fa-8bdb-0401186972f6	90
+Audit Log Viewer	AUDITLOG 	fe6dac7f-25b7-45a8-bfb0-a2b500a575bb	100
+CCD	CCD 				40a3a3a8-aabd-4029-8155-ec4ce17ee421	120
+	View HL7 CCDASTM CCR	VIEWHL7CCD	67ee9875-73fa-462c-be97-50912b968aa3	130
+	All XML		ALLXML		ad7f189e-d7f0-45c8-a906-94daf3fe2b52	140
+	Visit XML	VISITXML	0d803438-e895-4407-8773-5af6c368965d	150
+	All View	ALLVIEW		4c86f48a-cea7-4fea-a183-52cb435589b6	160
+	Visit View	VISITVIEW	657e81f6-0f62-4c48-8f0f-321826ea7d63	170
+	All Print	ALLPRINT	65b98451-db43-4819-83c8-186a05a4fae0	180
+	Visit Print	VISITPRINT	719883f1-f552-4327-9e8b-7e89d7203a7d	190
+Patient Lists	PATLISTS		5ca70027-1e5c-4257-a136-dca0524b2115	200
+Patient Reminders	PATREMIND	a47b7c3d-f23c-46b5-9919-77a5ffbf6dc8	210
+Emergency Access	EMERACCESS	9625119d-eb1e-4c00-bf8d-3fc0ec5ad607	220
+Import Lab HL7	IMPORTLAB		d8776b4a-743b-4d4c-81d1-9eaa23471972	230
+
+*Appointment History	240
+
+Patient Account	PATIENTACC		8c13cad0-ff49-442b-94d3-f9169a0d4e85	250
+Unallocated Payment	UNALLOCPAY	c6e2259b-b659-44c2-8bd4-33ecd7f4da1a	260
+*/
 
 			$level = array();
 			$level['guid'] = '33fb13cb-577f-4a00-8765-b4a5334434c0';
@@ -2972,6 +3005,72 @@ Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
 
 			$level = array();
 			$level['guid'] = 'd0ba0f8d-3697-4fcb-a551-289ce0638022';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateEobAdjustmentTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Eob Adjustment Types';
+			$key = 'EOB_TYPES';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key'=>'1','name'=>'Deductible Amount','active'=>1,'guid'=>'5ee64e37-ac79-4a4c-b3a8-f9c0db9423af'),
+				array('key'=>'2','name'=>'Coinsurance Amount','active'=>1,'guid'=>'0976b636-1862-4b73-8318-3d4b6f7d03d2'),
+				array('key'=>'3','name'=>'Co-payment Amount','active'=>1,'guid'=>'05362c6e-b751-41da-b8d1-97d680e46b9e'),
+				array('key'=>'4','name'=>'The procedure code is inconsistent with the modifier used or a required modifier is missing.','active'=>1,'guid'=>'f98204c4-3d26-419d-826c-20a0ca14f855'),
+				array('key'=>'5','name'=>'The procedure code/bill type is inconsistent with the place of service.','active'=>1,'guid'=>'5449a251-990b-488c-9798-f2510d2ff791'),
+				array('key'=>'6','name'=>'The procedure/revenue code is inconsistent with the patient\'s age.','active'=>1,'guid'=>'047972e3-8b7d-4be1-a327-bd7193b15125'),
+				array('key'=>'7','name'=>'The procedure/revenue code is inconsistent with the patient\'s gender.','active'=>1,'guid'=>'baa58c20-f297-4180-a25a-7e0d141fd9ae'),
+				array('key'=>'8','name'=>'The procedure code is inconsistent with the provider type/specialty (taxonomy).','active'=>1,'guid'=>'7a4b49f3-2cf7-413f-b6f3-f8d886635d18'),
+				array('key'=>'9','name'=>'The diagnosis is inconsistent with the patient\'s age.','active'=>1,'guid'=>'97589107-b06b-4925-ae92-dcadd89434a2'),
+				array('key'=>'10','name'=>'The diagnosis is inconsistent with the patient\'s gender.','active'=>1,'guid'=>'afbdda44-532a-4e8b-be21-b59a1037276d'),
+				array('key'=>'11','name'=>'The diagnosis is inconsistent with the procedure.','active'=>1,'guid'=>'e96acde7-cd31-4373-b5cc-5f20c79069af'),
+				array('key'=>'12','name'=>'The diagnosis is inconsistent with the provider type.','active'=>1,'guid'=>'e8ac5131-4de3-4ff5-9709-b0fa80a79164'),
+				array('key'=>'13','name'=>'The date of death precedes the date of service.','active'=>1,'guid'=>'ca68e470-5e6e-4ac1-8543-4cd9b0a9d341'),
+				array('key'=>'14','name'=>'The date of birth follows the date of service.','active'=>1,'guid'=>'6dc954d4-1b93-45cd-9b76-cb48aa7e78c2'),
+				array('key'=>'15','name'=>'Payment adjusted because the submitted authorization number is missing','active'=>1,'guid'=>'69325efb-aa64-4c8e-baf6-3f04e4fbb481'),
+				array('key'=>'16','name'=>'Claim/service lacks information which is needed for adjudication. Additional information is supplied using remittance advice remarks codes whenever appropriate','active'=>1,'guid'=>'80a6a101-e4b6-486d-928b-791bd41d95b9'),
+				array('key'=>'17','name'=>'Payment adjusted because requested information was not provided or was insufficient/incomplete. Additional information is supplied using the remittance advice remarks codes whenever appropriate.','active'=>1,'guid'=>'20487461-58e7-41ba-b82a-3c15803770ae'),
+				array('key'=>'18','name'=>'Duplicate claim/service.','active'=>1,'guid'=>'be183a0e-3672-4b34-a25c-5cdf1d1ea969'),
+				array('key'=>'19','name'=>'Claim denied because this is a work-related injury/illness and thus the liability of the Worker\'s Compensation Carrier.','active'=>1,'guid'=>'ec7fdd65-925c-4678-a848-9af4584eee4a'),
+				array('key'=>'20','name'=>'Claim denied because this injury/illness is covered by the liability carrier.','active'=>1,'guid'=>'81461964-18a0-436a-9a46-5758d12a0b8c'),
+				array('key'=>'21','name'=>'Claim denied because this injury/illness is the liability of the no-fault carrier.','active'=>1,'guid'=>'3588fb7e-564c-4209-960e-4a7e36ea18c9'),
+				array('key'=>'22','name'=>'Payment adjusted because this care may be covered by another payer per coordination of benefits.','active'=>1,'guid'=>'59a023e4-c7cd-4b46-a68d-28f9ceb163e7'),
+				array('key'=>'23','name'=>'Payment adjusted due to the impact of prior payer(s) adjudication including payments and/or adjustments','active'=>1,'guid'=>'edc7f6fd-5ac3-4f2a-8e64-97d2d798a062'),
+				array('key'=>'24','name'=>'Payment for charges adjusted. Charges are covered under a capitation agreement/managed care plan.','active'=>1,'guid'=>'ce59e907-2bfa-4e76-98e6-3aa05cd21430'),
+				array('key'=>'25','name'=>'Payment denied. Your Stop loss deductible has not been met.','active'=>1,'guid'=>'0e6421c8-bd6e-4885-87a4-35333ee6d1bc'),
+				array('key'=>'26','name'=>'Expenses incurred prior to coverage.','active'=>1,'guid'=>'c4edbc3a-1763-4c72-bd0c-4afd5ddd904e'),
+				array('key'=>'27','name'=>'Expenses incurred after coverage terminated.','active'=>1,'guid'=>'c9acece8-7d07-48f2-b5ba-71a648d96c91'),
+				array('key'=>'28','name'=>'Coverage not in effect at the time the service was provided.','active'=>1,'guid'=>'aaf0ca09-3187-486e-9a8e-1fe9bdf8b74d'),
+				array('key'=>'29','name'=>'The time limit for filing has expired.','active'=>1,'guid'=>'9003d091-9eeb-494b-94f0-a570557da7a8'),
+				array('key'=>'30','name'=>'Payment adjusted because the patient has not met the required eligibilit','active'=>1,'guid'=>'9176c429-0faf-41f1-9da4-3b1808c60e2e'),
+				array('key'=>'31','name'=>'Claim denied as patient cannot be identified as our insured.','active'=>1,'guid'=>'ad3eea48-683b-47e9-87f4-5046a102fbfc'),
+			);
+
+			$level = array();
+			$level['guid'] = '93f9b91c-9911-4038-a3dc-69522d5816f6';
 			$level['key'] = $key;
 			$level['name'] = $name;
 			$level['category'] = 'System';

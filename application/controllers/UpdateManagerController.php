@@ -56,28 +56,17 @@ class UpdateManagerController extends WebVista_Controller_Action {
 		$channel = null;
 		$ctr = 1;
 		foreach ($updateFileIterator as $item) {
-			//$changes = $alterTable->generateChanges($item->data);
-			//if (!count($changes) > 0) {
-			//	continue;
-			//}
 			if ($channel === null || $channel != $item->channel) {
 				$channel = $item->channel;
 				$channelXml = $xml->addChild('row',$channel);
 				$channelXml->addAttribute('id',$ctr++);
 				$channelXml->addChild('cell',$channel);
-				//$channelXml->addChild('cell','');
 			}
 			$parent = $channelXml->addChild('row');
 			$parent->addAttribute('id',$item->updateFileId);
 			$parent->addChild('cell',$item->name.' (v'.$item->version.')');
 			$parent->addChild('cell',$item->status);
 			$parent->addChild('cell','');
-			//foreach ($changes as $key=>$val) {
-			//	$child = $parent->addChild('row');
-			//	$child->addAttribute('id',$item->updateFileId.'_'.$key);
-			//	$child->addChild('cell',$val);
-			//	$child->addChild('cell','');
-			//}
 		}
 		header('content-type: text/xml');
 		$this->view->content = $xml->asXml();
@@ -120,47 +109,60 @@ EOL;
 		$updateFile = new UpdateFile();
 		$updateFile->updateFileId = $updateFileId;
 		$updateFile->populate();
-		$filename = $updateFile->getUploadFilename();
-		if (file_exists($filename)) {
-			$size = sprintf("%u",filesize($filename));
-			$units = array('B','KB','MB','GB','TB');
-			$pow = floor(($size?log($size):0)/log(1024));
-			$pow = min($pow,count($units)-1);
-			$size /= pow(1024,$pow);
-			if (($pow == 2 && round($size,1) > 10) ||$pow > 2) { // queue if > 10 MB
-				$updateFile->queue = 1;
-				$updateFile->status = 'Pending';
-				$updateFile->persist();
+
+		$ok = true;
+		$ret = __('Failed to apply.');
+		$notes = unserialize($updateFile->notes);
+		if (isset($notes['validateApi'])) {
+			try {
+				$validateApi = new SimpleXMLElement($notes['validateApi']);
+				if ($validateApi->object) {
+					$className = (string)$validateApi->object;
+					$methodName = (string)$validateApi->method;
+					$params = array($updateFileId);
+					foreach ($validateApi->argument as $argument) {
+						$params[] = (string)$argument;
+					}
+					if (!class_exists($className) || !method_exists($className,$methodName)) {
+						throw new Exception('Your install may be out of date or is out of date for this update.'.$className.' '.$methodName);
+					}
+					if (strtolower(substr($className,-10)) == 'controller' && strtolower(substr($methodName,-6)) == 'action') {
+						$controller = substr(strtolower(preg_replace('/([A-Z]{1})/','-\1',substr($className,0,(strlen($className)-10)))),1);
+						$action = strtolower(preg_replace('/([A-Z]{1})/','-\1',substr($methodName,0,strlen($methodName)-6)));
+						$ctr = count($params);
+						$arg = array('updateFileId'=>$updateFileId);
+						for ($i=1,$ctr=count($params);$i<$ctr;$i++) {
+							$arg[$i] = $params[$i];
+						}
+						$ret = array('url'=>Zend_Registry::get('baseUrl').$controller.'.raw/'.$action.'?'.http_build_query($arg));
+					}
+					else {
+						$ret = array('data'=>call_user_func_array(array($className,$methodName),$params));
+					}
+					$ok = false;
+				}
+				else if ($validateApi->function) {
+					$functionName = (string)$validateApi->function;
+					$params = array($updateFileId);
+					foreach ($validateApi->argument as $argument) {
+						$params[] = (string)$argument;
+					}
+					if (!function_exists($functionName)) {
+						throw new Exception('Your install may be out of date or is out of date for this update.');
+					}
+					$ret = array('data'=>call_user_func_array($functionName,$params));
+					$ok = false;
+				}
+			}
+			catch (Exception $e) {
+				$ret = array('error'=>$e->getMessage());
+				$ok = false;
 			}
 		}
-		$audit = new Audit();
-		$audit->objectClass = 'UpdateManager';
-		$audit->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
-		$audit->message = 'License of update file '.$updateFile->name.' from '.$updateFile->channel.' channel was accepted';
-		$audit->dateTime = date('Y-m-d H:i:s');
-
-		if ($updateFile->queue) {
-			$audit->message .= ' and updates pending to apply.';
+		if ($ok) {
+			$updateFile->install();
 			$ret = true;
 		}
-		else {
-			$updateFile->queue = 0;
-			$alterTable = new AlterTable();
-			$ret = $alterTable->generateSqlChanges($filename);
-			if ($ret === true) {
-				$alterTable->executeSqlChanges();
-				//$updateFile->active = 0;
-				$updateFile->status = 'Completed';
-				$updateFile->persist();
-				$audit->message .= ' and updates applied successfully.';
-			}
-			else {
-				$audit->message .= ' and updates failed to apply.';
-				$updateFile->status = 'Error: '.$ret;
-				$updateFile->persist();
-			}
-		}
-		$audit->persist();
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
@@ -169,7 +171,8 @@ EOL;
 	public function checkAction() {
 		$data = array();
 		$sessVersions = array();
-		$output = $this->_fetch('check');
+		$updateFile = new UpdateFile();
+		$output = $this->_fetch('check',array('versions'=>$updateFile->getAllVersions()));
 		if ($output === false) {
 			$data['code'] = 400;
 			$data['msg'] = __('There was an error connecting to HealthCloud');
@@ -183,17 +186,17 @@ EOL;
 			}
 			else {
 				$data['code'] = 200;
-				$versions = array();
+				$ctr = 0;
 				foreach ($xml as $update) {
-					$version = (string)$update->version;
 					$tmp = array();
 					foreach ($update as $key=>$value) {
 						$tmp[$key] = (string)$value;
 					}
-					$sessVersions[$version] = $tmp;
-					$versions[] = $version;
+					$sessVersions[$tmp['id']] = $tmp;
+					$ctr++;
 				}
-				$data['msg'] = $versions;
+				$data['msg'] = $sessVersions;
+				$data['len'] = $ctr;
 			}
 		}
 		$this->_session->versions = $sessVersions;
@@ -203,14 +206,8 @@ EOL;
 	}
 
 	public function downloadAction() {
-		$param = $this->_getParam('version');
-		$x = explode('_',$param);
-		$version = (int)$x[0];
-		$channel = 0;
-		if (isset($x[1])) {
-			$channel = (int)$x[1];
-		}
-		$version = array('version'=>$version,'channel'=>$channel);
+		$updateId = (int)$this->_getParam('id');
+		$version = $this->_session->versions[$updateId];
 
 		$updateFile = new UpdateFile();
 		$uploadDir = $updateFile->getUploadDir();
@@ -227,7 +224,7 @@ EOL;
 		if ($error !== false) {
 			$ret = $error;
 		}
-		else if (($ret = $this->_fetch('download',$version)) === false) {
+		else if (($ret = $this->_fetch('download',array('updateFileId'=>$updateId))) === false) {
 			$ret = __('There was an error connecting to HealthCloud');
 			trigger_error($ret,E_USER_NOTICE);
 		}
@@ -239,25 +236,33 @@ EOL;
 				$updateFile->active = 1;
 				$updateFile->dateTime = date('Y-m-d H:i:s');
 				try {
-					$updateFile->populateWithArray($this->_session->versions[$param]);
+					$updateFile->populateWithArray($this->_session->versions[$updateId]);
 					if (substr($updateFile->name,-3) == '.gz') {
 						$updateFile->name = substr($updateFile->name,0,-3);
 					}
 					$updateFile->version = $version['version'];
 					$updateFile->persist();
 					$contents = $updateFile->verify($filename);
-					//file_put_contents($updateFile->getUploadFilename(),$contents);
-					unset($this->_session->versions[$param]);
+					unset($this->_session->versions[$updateId]);
 					$ret = true;
-					list($next,$val) = each($this->_session->versions);
+					list($index,$next) = each($this->_session->versions);
 					if ($next !== null) {
 						$ret = array('next'=>$next);
 					}
 				}
 				catch (Exception $e) {
-					$updateFile->setPersistMode(WebVista_Model_ORM::DELETE);
 					$error = __('Invalid signature');
-					$ret = $error.': '.$e->getMessage();
+					$msg = $error.': '.$e->getMessage();
+					try {
+						$xml = new SimpleXMLElement($ret);
+						if ($xml->error) {
+							$msg = (string)$xml->error->errorMsg;
+						}
+					}
+					catch (Exception $ex) {
+					}
+					$ret = $msg;
+					$updateFile->setPersistMode(WebVista_Model_ORM::DELETE);
 					trigger_error($ret,E_USER_NOTICE);
 				}
 				$updateFile->persist();
@@ -274,30 +279,35 @@ EOL;
 		$json->direct($ret);
 	}
 
-	protected function _fetch($action,$version=null) {
+	protected function _fetch($action,Array $versions) {
 		$ch = curl_init();
 		$updateServerUrl = Zend_Registry::get('config')->healthcloud->updateServerUrl;
 		$updateServerUrl .= '/'.$action;
-		$updateFile = new UpdateFile();
-		$data = array();
-		$data['apiKey'] = Zend_Registry::get('config')->healthcloud->apiKey;
-		if ($version === null) {
-			$data['version'] = $updateFile->getAllVersions();
+		$xml = new SimpleXMLElement('<clearhealth/>');
+		$xml->addChild('apiKey',Zend_Registry::get('config')->healthcloud->apiKey);
+		$xml->addChild('userId',(int)Zend_Auth::getInstance()->getIdentity()->personId);
+		$xml->addChild('username',Zend_Auth::getInstance()->getIdentity()->username);
+		foreach ($versions as $key=>$values) {
+			if (is_array($values)) {
+				foreach ($values as $id=>$value) {
+					$xmlChild = $xml->addChild($key);
+					foreach ($value as $k=>$v) {
+						$xmlChild->addChild($k,$v);
+					}
+				}
+			}
+			else {
+				$xml->addChild($key,$values);
+			}
 		}
-		else {
-			$data['version'] = $version;
-		}
-		$data = http_build_query($data);
 		curl_setopt($ch,CURLOPT_URL,$updateServerUrl);
 		curl_setopt($ch,CURLOPT_POST,true);
-		curl_setopt($ch,CURLOPT_POSTFIELDS,$data);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,$xml->asXML());
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true); 
-		curl_setopt($ch,CURLOPT_USERPWD,'admin:ch3!');
 		$ret = curl_exec($ch);
-		$curlErrno = curl_errno($ch);
-		if ($curlErrno) {
+		if (curl_errno($ch)) {
 			trigger_error(curl_error($ch));
 			$ret = false;
 		}

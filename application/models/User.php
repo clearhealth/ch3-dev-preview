@@ -184,5 +184,58 @@ class User extends WebVista_Model_ORM {
 		}
 		return $room;
 	}
+ 
+	public static function listActiveUsers() {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new self();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->join('person','person.person_id = '.$orm->_table.'.person_id',null)
+				->where('person.active = 1');
+		return $orm->getIterator($sqlSelect);
+	}
+
+	public static function communityEditionPlusEnabled() {
+		$ret = false;
+		$configItem = new ConfigItem();
+		$configItem->configId = 'communityEditionPlus';
+		$configItem->populate();
+		if ($configItem->value == 'true') $ret = true;
+		return $ret;
+	}
+
+	public function healthCloudActivation() {
+		$ret = true;
+		$xml = new SimpleXMLElement('<clearhealth/>');
+		$xml->addChild('apiKey',Zend_Registry::get('config')->healthcloud->apiKey);
+		$xml->addChild('authorizingUserId',(int)Zend_Auth::getInstance()->getIdentity()->personId);
+		$xml->addChild('authorizingUser',Zend_Auth::getInstance()->getIdentity()->username);
+		$xmlUser = $xml->addChild('user');
+		$xmlUser->addChild('userId',(int)$this->person_id);
+		$xmlUser->addChild('username',$this->username);
+		$ch = curl_init();
+		$url = Zend_Registry::get('config')->healthcloud->updateServerUrl.'/activate-users';
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_POST,true);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,$xml->asXML());
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true); 
+		try {
+			$response = curl_exec($ch);
+			if (curl_errno($ch)) throw new Exception(curl_error($ch));
+			curl_close($ch);
+			trigger_error('RESPONSE: '.$response);
+			$responseXml = new SimpleXMLElement($response);
+			if ($responseXml->error) throw new Exception((string)$responseXml->error->errorMsg,(string)$responseXml->error->errorCode);
+		}
+		catch (Exception $e) {
+			$error = $e->getMessage();
+			$code = $e->getCode();
+			trigger_error($error);
+			$ret = $error;
+		}
+		return $ret;
+	}
 
 }

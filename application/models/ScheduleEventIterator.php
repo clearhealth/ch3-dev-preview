@@ -71,9 +71,17 @@ class ScheduleEventIterator extends WebVista_Model_ORMIterator {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()->from('scheduleEvents');
 		$dbSelect->joinLeft("provider","scheduleEvents.providerId=provider.person_id");
-		$dbSelect->joinLeft("rooms","scheduleEvents.roomId=rooms.id");
-		$dbSelect->where("roomId = ?",(int)$filter['roomId']);
-		$dbSelect->where("providerId = ?",(int)$filter['providerId']);
+		if ((int)$filter['roomId'] > 0 && (int)$filter['providerId'] > 0) {
+			$dbSelect->joinLeft("buildings","scheduleEvents.buildingId=buildings.id");
+			$dbSelect->joinLeft("rooms","rooms.building_id=buildings.id");
+			$dbSelect->where("rooms.id = ?",(int)$filter['roomId']);
+			$dbSelect->where("providerId = ?",(int)$filter['providerId']);
+		}
+		else {
+			$dbSelect->joinLeft("rooms","scheduleEvents.roomId=rooms.id");
+			$dbSelect->where("roomId = ?",(int)$filter['roomId']);
+			$dbSelect->where("providerId = ?",(int)$filter['providerId']);
+		}
 		if (isset($filter['start'])) {
 			$dbSelect->where("start >= ?", $filter['start']);
 		}

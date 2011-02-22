@@ -1,15 +1,17 @@
+<div id="divContainerId">
 <fieldset><legend><?=$this->updateFile->name?></legend>
-	<?=$this->formTextarea('license',$this->updateFile->license,array('readonly'=>true,'style'=>'background-color:#fff;height:380px;width:560px;'))?>
+	<?=$this->formTextarea('license',$this->updateFile->license,array('id'=>'license','readonly'=>true,'style'=>'background-color:#fff;height:380px;width:560px;'))?>
 	<br />
 	<div style="float:right;margin-top:10px;">
 		<?=$this->formButton('accept',__('Accept'),array('id'=>'accept','onClick'=>'updateManagerApply()'))?>
 		<?=$this->formButton('decline',__('Decline'),array('id'=>'decline','onClick'=>'closeThisWindow()'))?>
 	</div>
 </fieldset>
+</div>
 <script>
 function updateManagerApply() {
-	dojo.byId("accept").disabled = true;
-	dojo.byId("decline").disabled = true;
+	var accept = dojo.byId("accept");
+	accept.disabled = true;
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/update-manager.raw/process-apply",
 		handleAs: "json",
@@ -17,15 +19,28 @@ function updateManagerApply() {
 			"updateFileId": "<?=$this->updateFile->updateFileId?>",
 		},
 		load: function (response) {
-			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.";
-			if (response !== true) {
-				alert(response);
-				dojo.byId("updateMgrProgressId").innerHTML += " ["+response+"]";
+			if (response.error) {
+				alert(response.error);
+				dojo.byId("updateMgrProgressId").innerHTML += " [CANCELLED]";
+			}
+			else if (response.url) {
+				if (dhxWins.window("winApplyUpdateId")) dhxWins.window("winApplyUpdateId").attachURL(response.url,true);
+				return;
+			}
+			else if (response.data) {
+				alert(response.data);
 			}
 			else {
-				dojo.byId("updateMgrProgressId").innerHTML += " [<?=__('OK')?>]";
+				dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.";
+				if (response !== true) {
+					alert(response);
+					dojo.byId("updateMgrProgressId").innerHTML += " ["+response+"]";
+				}
+				else {
+					dojo.byId("updateMgrProgressId").innerHTML += " [<?=__('OK')?>]";
+				}
 			}
-			dhxWins.window("winApplyUpdateId").close();
+			if (dhxWins.window("winApplyUpdateId")) dhxWins.window("winApplyUpdateId").close();
 		},
 		error: function (error) {
 			console.error ("Error: ", error);
@@ -34,7 +49,7 @@ function updateManagerApply() {
 }
 
 function closeThisWindow() {
-	dhxWins.window("winApplyUpdateId").close();
+	if (dhxWins.window("winApplyUpdateId")) dhxWins.window("winApplyUpdateId").close();
 	dojo.byId("updateMgrProgressId").innerHTML += "<?=__('done')?>. [<?=__('DECLINED')?>]";
 }
 </script>

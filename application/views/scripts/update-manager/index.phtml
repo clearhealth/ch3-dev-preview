@@ -24,7 +24,7 @@ function updateMgrCheck() {
 		load: function (response) {
 			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
 			if (response.code == "200") {
-				dojo.byId("updateMgrProgressId").innerHTML += " &nbsp; &nbsp; - <?=__('New updates available')?>: "+response.msg.length;
+				dojo.byId("updateMgrProgressId").innerHTML += " &nbsp; &nbsp; - <?=__('New updates available')?>: "+response.len;
 				for (var i in response.msg) {
 					updateMgrDownload(response.msg[i]);
 					break;
@@ -44,14 +44,12 @@ function updateMgrCheck() {
 }
 
 function updateMgrDownload(msg) {
-	var x = msg.split("_");
-	var version = x[0];
-	dojo.byId("updateMgrProgressId").innerHTML += "<br /><?=__('Downloading new update')?> (v"+version+")...";
+	dojo.byId("updateMgrProgressId").innerHTML += "<br /><?=__('Downloading new update')?> (" + msg.name + " v" + msg.version + ")...";
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/update-manager.raw/download",
 		handleAs: "json",
 		content: {
-			"version": msg,
+			"id": msg.id,
 		},
 		load: function (response) {
 			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.";
@@ -82,32 +80,8 @@ function updateMgrApply(id) {
 	var windowApplyUpdate = globalCreateWindow("winApplyUpdateId",params,"<?=$this->baseUrl?>/update-manager.raw/apply","<?=__('Apply Updates')?>",600,500);
 	windowApplyUpdate.button("close").hide();
 	windowApplyUpdate.attachEvent("onClose", function(win) {
-		//dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>. [<?=__('CANCELLED')?>]";
 		setTimeout("updateMgrNext('"+id+"');",500);
 		return true;
-	});
-	return;
-
-	dojo.xhrPost({
-		url: "<?=$this->baseUrl?>/update-manager.raw/apply",
-		handleAs: "json",
-		content: {
-			"id": id,
-		},
-		load: function (response) {
-			dojo.byId("updateMgrProgressId").innerHTML += " <?=__('done')?>.<br />";
-			if (response !== true) {
-				alert(response);
-			}
-			if (!updateMgrExec()) {
-				dojo.byId("updateMgrGridId").style.display = "";
-				dojo.byId("updateMgrProgressId").style.display = "none";
-				updateMgrGridReload();
-			}
-		},
-		error: function (error) {
-			console.error ("Error: ", error);
-		}
 	});
 }
 

@@ -15,7 +15,11 @@ function adminPersonAdd() {
 		varDump(matches);
 		return;
 	}
-	dojo.byId("btnAdd").disabled = true;
+	if (<?=(int)User::communityEditionPlusEnabled()?> == 1 && !confirm("<?=__('Adding new user requires HealthCloud registration which will cost you points, continue?')?>")) {
+		return false;
+	}
+	var btnAdd = dojo.byId("btnAdd");
+	btnAdd.disabled = true;
 	dojo.xhrPost({
 		url: globalBaseUrl+"/admin-users.raw/process-add",
 		content: {
@@ -23,9 +27,13 @@ function adminPersonAdd() {
 		},
 		handleAs: "json",
 		load: function(data,ioArgs) {
+			if (data.error) {
+				btnAdd.disabled = false;
+				alert(data.error);
+				return;
+			}
 			personId = data;
 			localRefreshCurrentTab();
-			dojo.byId("btnAdd").disabled = true;
 			return data;
 		},
 		error: function(response, ioArgs) {
