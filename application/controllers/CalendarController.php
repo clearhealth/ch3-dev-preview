@@ -29,6 +29,10 @@ class CalendarController extends WebVista_Controller_Action {
 
 	protected $_session;
 
+	const FILTER_MINUTES_INTERVAL = 15;
+	const FILTER_TIME_START = '07:00';
+	const FILTER_TIME_END = '17:00';
+
 	public function init() {
 		$this->_session = new Zend_Session_Namespace(__CLASS__);
 	}
@@ -50,9 +54,7 @@ class CalendarController extends WebVista_Controller_Action {
 		}
 		$data = array();
 		foreach ($columns as $index => $col) {
-			$data[$index]['events'] = $this->generateEventColumnData($index);
-			$header = $this->_generateColumnHeader($col);
-			$data[$index]['header'] = $header['header'];
+			$data[$index] = $this->generateEventColumnData($index,true);
 		}
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -337,6 +339,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$menus[] = array('text'=>__('Add Payment'), 'id'=>'add_payment');
 		$menus[] = array('text'=>__('Cancel Move'), 'id'=>'cancel_move');
 		$menus[] = array('text'=>__('Find First'), 'id'=>'find_first');
+		$menus[] = array('text'=>__('Time Search'), 'id'=>'timeSearch');
 		$this->view->menus =  $menus;
 		$this->view->stations = Enumeration::getEnumArray(Routing::ENUM_PARENT_NAME);
 		header('Content-Type: application/xml;');
@@ -771,9 +774,9 @@ class CalendarController extends WebVista_Controller_Action {
 	}
         $filter = new StdClass();
         $filter->date = date('Y-m-d');
-        $filter->increment = 15;
-        $filter->start = '07:00';
-        $filter->end = '17:00';
+        $filter->increment = self::FILTER_MINUTES_INTERVAL;
+        $filter->start = self::FILTER_TIME_START;
+        $filter->end = self::FILTER_TIME_END;
 	$filter->columns = array();
 	// retrieve from database
 	$filterStateIterator = new FilterStateIterator();
@@ -793,7 +796,7 @@ class CalendarController extends WebVista_Controller_Action {
 	return $filter;
     }
 
-    protected function generateEventColumnData($columnIndex) {
+    protected function generateEventColumnData($columnIndex,$includeHeader=false) {
 	$columnIndex = (int) $columnIndex;
 	$columnData = array();
         $scheduleEventIterator = new ScheduleEventIterator();
@@ -812,10 +815,8 @@ class CalendarController extends WebVista_Controller_Action {
 	if (isset($paramFilters['dateFilter'])) {
 		$filter->date = date('Y-m-d',strtotime($paramFilters['dateFilter']));
 	}
-	$paramFilters['start'] = $filter->date . ' ' . $filter->start;
-	$paramFilters['end'] = $filter->date . ' ' . $filter->end;
-	$paramFilters['start'] = $filter->date . ' ' . $filter->start;
-	$paramFilters['end'] = $filter->date . ' 23:59:59';
+	$paramFilters['start'] = $filter->date . ' ' . self::FILTER_TIME_START;
+	$paramFilters['end'] = $filter->date . ' ' . self::FILTER_TIME_END;
 	$scheduleEventIterator->setFilter($paramFilters);
 
 	// we need to get the length of time to create number of rows in the grid
@@ -927,7 +928,7 @@ class CalendarController extends WebVista_Controller_Action {
 		if ($row->patientId > 0) {
 			$nameLink = "<a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$patient->recordNumber})</a>";
 		}
-		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"setAppointmentId('$row->appointmentId')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this,{$height});\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} {$nameLink} {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\" style=\"white-space:normal;\">{$row->title}</div></div>";
+		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"appointmentDown(this,'{$columnIndex}')\" oncontextmenu=\"appointmentClicked(this,event,'{$columnIndex}');return false;\" onclick=\"appointmentClicked(this,event,'{$columnIndex}')\" appointmentId=\"$row->appointmentId\" visitId=\"$visit->visitId\" ondblclick=\"appointmentDoubleClicked(this,event,'{$columnIndex}')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this,{$height});\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} {$nameLink} {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\" style=\"white-space:normal;\">{$row->title}</div></div>";
 		$columnData[$tmpIndex]['userdata']['visitId'] = $visit->visitId;
 		$columnData[$tmpIndex]['userdata']['appointmentId'] = $row->appointmentId;
 		$columnData[$tmpIndex]['userdata']['length'] = $j;
@@ -943,6 +944,32 @@ class CalendarController extends WebVista_Controller_Action {
 		$roomId = $paramFilters['roomId'];
 	}
 	$columnData[0]['userdata']['roomId'] = $roomId;
+
+	if ($includeHeader) {
+		$header = "{$paramFilters['dateFilter']}<br>";
+		$title = $paramFilters['dateFilter'];
+		// temporarily set the header as providerId
+		$providerId = (int)$paramFilters['providerId'];
+		if ($providerId > 0) {
+			$provider = new Provider();
+			$provider->setPersonId($providerId);
+			$provider->populate();
+			$name = $provider->optionName;
+			// we simply replace the comma with its html equivalent (&#44;) because this may cause not to render the header
+			$header .= str_replace(',','&#44;',$name);
+			$title .= ' -> '.$name;
+		}
+		if ($roomId > 0) {
+			$room = new Room();
+			$room->id = $roomId;
+			$room->populate();
+			if ($providerId > 0) {
+				$header .= '<br>';
+			}
+			$header .= $room->name;
+			$title .= ' -> '.$room->name;
+		}
+	}
 
 	$buildings = array();
 	foreach($scheduleEventIterator as $event) {
@@ -971,14 +998,27 @@ class CalendarController extends WebVista_Controller_Action {
 			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
 			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
 			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
-			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' of '.$event->provider->displayName.' ('.$buildings[$event->buildingId]->displayName.')';
+			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' of '.$event->provider->optionName.' ('.$buildings[$event->buildingId]->displayName.')';
 			$tmpIndex++;
 		}
         }
+		$ret = array('rows'=>$columnData);
+		if ($includeHeader) {
+			$tmp = array();
+			foreach ($buildings as $building) {
+				$tmp[] = $building->displayName;
+			}
+			$eventBuilding = implode(', ',$tmp);
+			$header .= '<br>('.$eventBuilding.')';
+			$title .= ' -> ('.$eventBuilding.')';
 
-        $ret = array();
-        $ret['rows'] = $columnData;
-        return $ret;
+			$header = '<label title="'.$title.'">'.$header.'</label>';
+		        $ret = array(
+				'header'=>$header,
+				'events'=>$ret,
+			);
+		}
+        	return $ret;
     }
 
     protected function generateTimeColumnData() {
@@ -998,5 +1038,531 @@ class CalendarController extends WebVista_Controller_Action {
         $ret['rows'] = $data;
         return $ret;
     }
+
+	public function timeSearchAction() {
+		$columnId = (int)$this->_getParam('columnId');
+		$filter = $this->getCurrentDisplayFilter();
+		$columns = $filter->columns;
+		if (!isset($columns[$columnId])) {
+			throw new Exception(__('There is no filter defined for column Index: ').$columnId);
+		}
+		$column = $columns[$columnId];
+		$this->view->providerId = (int)$column['providerId'];
+		$this->view->roomId = (int)$column['roomId'];
+		$dateFilter = $column['dateFilter'];
+		if (!strlen($dateFilter) > 0 || $dateFilter == '0000-00-00') {
+			$dateFilter = date('Y-m-d');
+		}
+
+		$providers = array(0=>'');
+		$provider = new Provider();
+		foreach ($provider->getIter() as $row) {
+			$providers[$row->providerId] = $row->optionName;
+		}
+		$this->view->providers = $providers;
+		$rooms = array(0=>'');
+		foreach (Room::getArray() as $key=>$value) {
+			$rooms[$key] = $value;
+		}
+		$this->view->rooms = $rooms;
+
+		$dateStart = date('Y-m-d',strtotime('+1 day',strtotime($dateFilter)));
+		$startToTime = strtotime($dateStart);
+		$months = array();
+		for ($i=0;$i<4;$i++) {
+			$months[] = array(
+				'month'=>date('Y-m',$startToTime),
+				'jsmonth'=>date('Y',$startToTime).(int)date('m',$startToTime)-1,
+				'lastDay'=>date('t',$startToTime),
+			);
+			$startToTime = strtotime('+1 month',$startToTime);
+		}
+		$dateEnd = $months[3]['month'].'-'.$months[3]['lastDay'];
+		$this->view->months = $months;
+		$this->view->dateStart = $dateStart;
+		$this->view->dateEnd = $dateEnd;
+		$this->view->timeStart = '00:00';
+		$this->view->timeEnd = '23:59';
+
+		$this->render();
+	}
+
+	public function lookupTimeSearchAction() {
+		calcTS();
+		trigger_error('before free time search: '.calcTS(),E_USER_NOTICE);
+		$dateStart = date('Y-m-d H:i:s',strtotime($this->_getParam('dateStart')));
+		$dateEnd = date('Y-m-d H:i:s',strtotime($this->_getParam('dateEnd')));
+		$providerId = (int)$this->_getParam('providerId');
+		$roomId = (int)$this->_getParam('roomId');
+		$scheduleEvent = new ScheduleEvent();
+		$scheduleEvent->start = $dateStart;
+		$scheduleEvent->end = $dateEnd;
+		$scheduleEvent->providerId = $providerId;
+		$scheduleEvent->roomId = $roomId;
+		//file_put_contents('/tmp/schedule.txt','');
+		$data = $scheduleEvent->bookingAppointmentDetails();
+		$ret = array();
+		foreach($data as $date=>$value) {
+			$x = explode('-',$date);
+			if (!isset($x[2])) {
+				$ret[$date] = $value;
+				continue;
+			}
+			$x[1] -= 1; // month - 1
+			$year = (int)$x[0];
+			$month = (int)$x[1];
+			$day = (int)$x[2];
+			$ymd = $year.$month.$day;
+			$ret[$ymd] = array(
+				'month'=>$year.$month,
+				'value'=>$value,
+			);
+		}
+		trigger_error('after free time search: '.calcTS(),E_USER_NOTICE);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($ret);
+	}
+
+	public function getAppointmentDetailsAction() {
+		$dateFilter = date('Y-m-d',strtotime($this->_getParam('date')));
+		$providerId = (int)$this->_getParam('providerId');
+		$roomId = (int)$this->_getParam('roomId');
+		$filters = array(
+			'dateFilter'=>$dateFilter,
+			'providerId'=>$providerId,
+			'roomId'=>$roomId,
+		);
+		$data = $this->_generateEventColumnData($filters);
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	protected function _generateEventColumnData(Array $filters) { // filters assume to be sanitized
+		$appointment = new Appointment();
+		$appointment->providerId = $filters['providerId'];
+		$appointment->roomId = $filters['roomId'];
+		$appointment->start = $filters['dateFilter'].' '.self::FILTER_TIME_START;
+		$appointment->end = $filters['dateFilter'].' '.self::FILTER_TIME_END;
+
+		$scheduleEvent = new ScheduleEvent();
+		$scheduleEvent->providerId = $filters['providerId'];
+		$scheduleEvent->roomId = $filters['roomId'];
+		$scheduleEvent->start = $filters['dateFilter'].' '.self::FILTER_TIME_START;
+		$scheduleEvent->end = $filters['dateFilter'].' '.self::FILTER_TIME_END;
+
+		$startTime = strtotime($appointment->start);
+		$endTime = strtotime($appointment->end);
+		// we need to get the length of time to create number of rows in the grid
+		$timeLen = (($endTime - $startTime) / 60) / self::FILTER_MINUTES_INTERVAL;
+		// NOTE: height is 22px for xp, default 20px
+		// prepopulate return data
+		$columnData = array();
+		//$maps = array();
+		$start = $startTime;
+		$end = $endTime;
+		$ctr = 0;
+		while ($start <= $end) {
+			$map = array();
+			$map['start'] = $start;
+			$start = strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes',$start);
+			$map['end'] = $start;
+			//$maps[$ctr] = $map;
+
+			$row = array();
+			// assign row id as rowNumber and columnIndex
+			$columnData[$ctr] = array(
+				'id'=>($ctr+1),
+				'data'=>array(''),
+				'map'=>$map,
+			);
+			$ctr++;
+		}
+		$columnDataCtr = count($columnData);
+
+		$data = array(
+			'apps'=>array(),
+			'events'=>array(),
+		);
+
+		$mapIndex = 0;
+		$apps = array();
+		foreach ($appointment->getIter() as $app) {
+			$start = strtotime($app->start);
+			for ($i=$mapIndex;$i<$columnDataCtr;$i++) {
+				$map = $columnData[$mapIndex]['map'];
+				$mapIndex = $i;
+				if ($start >= $map['start'] && $start <= $map['end']) {
+					if (!isset($data['apps'][$i])) $data['apps'][$i] = array();
+					$data['apps'][$i][] = $app;
+					break;
+				}
+			}
+		}
+
+		$mapIndex = 0;
+		$events = array();
+		trigger_error('looping schedule event started');
+		foreach($scheduleEvent->getIter() as $event) {
+			$start = strtotime($event->start);
+			for ($i=$mapIndex;$i<$columnDataCtr;$i++) {
+				$map = $columnData[$mapIndex]['map'];
+				$mapIndex = $i;
+				if ($start >= $map['start'] && $start <= $map['end']) {
+					if (!isset($data['events'][$i])) $data['events'][$i] = array();
+					$data['events'][$i] = $event;
+					break;
+				}
+			}
+		}
+		trigger_error('looping schedule event ended');
+
+		$colMultiplier = 1;
+		$zIndex = 0;
+		foreach ($data['apps'] as $index=>$apps) {
+			$ctr = count($apps);
+			$columnData[$index]['userdata']['ctr'] = $ctr;
+			if ($ctr > $colMultiplier) $colMultiplier = $ctr;
+			for ($i=0;$i<$ctr;$i++) {
+				$app = $apps[$i];
+				$this->_populateAppointmentRow($app,$columnData,$index,$i,$ctr);
+			}
+		}
+
+		$header = "{$filters['dateFilter']}<br>";
+		$title = $filters['dateFilter'];
+		// temporarily set the header as providerId
+		$providerId = (int)$filters['providerId'];
+		$roomId = (int)$filters['roomId'];
+		if ($providerId > 0) {
+			$provider = new Provider();
+			$provider->setPersonId($providerId);
+			$provider->populate();
+			$name = $provider->optionName;
+			// we simply replace the comma with its html equivalent (&#44;) because this may cause not to render the header
+			$header .= str_replace(',','&#44;',$name);
+			$title .= ' -> '.$name;
+		}
+		if ($roomId > 0) {
+			$room = new Room();
+			$room->id = $roomId;
+			$room->populate();
+			if ($providerId > 0) {
+				$header .= '<br>';
+			}
+			$header .= $room->name;
+			$title .= ' -> '.$room->name;
+		}
+
+		$buildings = array();
+		foreach ($data['events'] as $index=>$event) {
+			$this->_populateScheduleEventRow($event,$columnData,$index);
+			$buildingId = (int)$event->buildingId;
+			$building = new Building();
+			$building->buildingId = $buildingId;
+			$building->populate();
+			$buildings[$buildingId] = $building->displayName;
+		}
+		$eventBuilding = implode(', ',$buildings);
+		$header .= '<br>('.$eventBuilding.')';
+		$title .= ' -> ('.$eventBuilding.')';
+
+		$header = '<label title="'.$title.'">'.$header.'</label>';
+
+		for ($i=0;$i<$columnDataCtr;$i++) {
+			unset($columnData[$i]['map']);
+		}
+
+		$columnData[0]['userdata']['colMultiplier'] = $colMultiplier;
+		$columnData[0]['userdata']['providerId'] = $appointment->providerId;
+		$columnData[0]['userdata']['roomId'] = $appointment->roomId;
+		$columnData[0]['userdata']['date'] = $filters['dateFilter'];
+
+		return array(
+			'header'=>$header,
+			'events'=>array(
+				'rows'=>$columnData,
+			),
+		);
+	}
+
+	protected function _populateAppointmentRow(Appointment $app,Array &$columnData,$colIndex,$index,$rowsLen) {
+		$startToTime = strtotime($app->start);
+		$endToTime = strtotime($app->end);
+		$tmpStart = date('H:i', $startToTime);
+		$tmpEnd = date('H:i', $endToTime);
+		$timeLen = ceil((($endToTime - $startToTime) / 60) / self::FILTER_MINUTES_INTERVAL);
+
+		$appointmentId = (int)$app->appointmentId;
+		$patientId = (int)$app->patientId;
+		$providerId = (int)$app->providerId;
+		$roomId = (int)$app->roomId;
+
+		$patient = new Patient();
+		$patient->personId = $patientId;
+		$patient->populate();
+		$room = new Room();
+		$room->roomId = $roomId;
+		$room->populate();
+		// where to use room?
+		$id = isset($columnData[$colIndex]['id'])?$columnData[$colIndex]['id']:'';
+		$columnData[$colIndex]['id'] = $appointmentId;
+		if (strlen($id) > 0) $columnData[$colIndex]['id'] .= 'i'.$id;
+
+		$visit = new Visit();
+		$visit->appointmentId = $appointmentId;
+		$visit->populateByAppointmentId();
+		$visitIcon = ($visit->visitId > 0)?'<img src="'.$this->view->baseUrl.'/img/appointment_visit.png" alt="'.__('Visit').'" title="'.__('Visit').'" style="border:0px;height:18px;width:18px;margin-left:5px;" />':'';
+
+		$routingStatuses = array();
+		if (strlen($app->appointmentCode) > 0) $routingStatuses[] = __('Mark').': '.$app->appointmentCode;
+
+		$routing = new Routing();
+		$routing->personId = $patientId;
+		$routing->appointmentId = $appointmentId;
+		$routing->providerId = $providerId;
+		$routing->roomId = $roomId;
+		$routing->populateByAppointments();
+		if (strlen($routing->stationId) > 0) $routingStatuses[] = __('Station').': '.$routing->stationId;
+
+		$routingStatus = implode(' ',$routingStatuses);
+		$nameLink = ($patientId > 0)?"<a href=\"javascript:showPatientDetails({$patientId});\">{$patient->person->displayName} (#{$patient->recordNumber})</a>":'';
+
+		$cellRow = 20;
+		$height = $cellRow * $timeLen * 1.1;
+
+		$marginTop = 2;
+		// compute and adjust margin top and height
+		$heightPerMinute = $cellRow / self::FILTER_MINUTES_INTERVAL;
+		$map = $columnData[$colIndex]['map'];
+		$diff = ($startToTime - $map['start']) / 60;
+		if ($diff > 0) {
+			$marginTop += $diff * $heightPerMinute;
+			$height -= $marginTop;
+		}
+
+		$marginLeft = ($rowsLen > 1 && $index > 0)?($index * 250):8;
+		$zIndex = $colIndex.$index;
+		$columnData[$colIndex]['data'][0] .= "<div onmousedown=\"calendarSetAppointmentId('$appointmentId')\" ondblclick=\"timeSearchDoubleClicked(this,event)\" appointmentId=\"{$appointmentId}\" visitId=\"{$visit->visitId}\" style=\"float:left;position:absolute;margin-top:{$marginTop}px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"calendarExpandAppointment({$appointmentId},this,{$height});\" onmouseout=\"calendarShrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} {$nameLink} {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\" style=\"white-space:normal;\">{$app->title}</div></div>";
+		$columnData[$colIndex]['userdata']['visitId'] = $visit->visitId;
+		$columnData[$colIndex]['userdata']['appointmentId'] = $appointmentId;
+		$columnData[$colIndex]['userdata']['length'] = $timeLen;
+	}
+
+	protected function _populateScheduleEventRow(ScheduleEvent $event,Array &$columnData,$colIndex) {
+		$buildings = array();
+
+		$eventTimeStart = strtotime($event->start);
+		$eventTimeEnd = strtotime($event->end);
+		// get the starting index
+		$tmpIndex = $colIndex;
+
+		$color = $event->provider->color;
+		if ($event->roomId > 0 && strlen($event->room->color) > 0) {
+			$color = $event->room->color;
+		}
+		if (substr($color,0,1) != '#') {
+			$color = '#'.$color;
+		}
+		if (!isset($buildings[$event->buildingId])) {
+			$building = new Building();
+			$building->buildingId = $event->buildingId;
+			$building->populate();
+			$buildings[$building->buildingId] = $building;
+		}
+		$columnData[$tmpIndex]['data'][0] = $event->title.' - '.$buildings[$event->buildingId]->displayName.$columnData[$tmpIndex]['data'][0];
+		while ($eventTimeStart < $eventTimeEnd) {
+			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
+			//$eventTimeStart = strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes',$eventTimeStart);
+			$eventTimeStart += self::FILTER_MINUTES_INTERVAL * 60;
+			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
+			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' of '.$event->provider->optionName.' ('.$buildings[$event->buildingId]->displayName.')';
+			$tmpIndex++;
+		}
+	}
+
+	public function generateTimeColumnAction() {
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($this->_generateTimeColumnData(date('Y-m-d')));
+	}
+
+	protected function _generateTimeColumnData($date) {
+		$data = array();
+		$timeStart = strtotime($date.' '.self::FILTER_TIME_START);
+		$timeEnd = strtotime($date.' '.self::FILTER_TIME_END);
+		$ctr = 0;
+		while ($timeStart <= $timeEnd) {
+			$tmp = array();
+			$tmp['id'] = $timeStart;
+			$tmp['data'][] = date('H:i',$timeStart);
+			$data[] = $tmp;
+			$timeStart = strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes',$timeStart);
+			$ctr++;
+		}
+		if ($ctr > 0) $data[0]['userdata']['numberOfRows'] = $ctr;
+		$ret = array();
+		$ret['rows'] = $data;
+		return $ret;
+	}
+
+	public function newAppointmentAction() {
+		$params = $this->_getParam('appointment');
+		if (!is_array($params)) $params = array();
+		$this->_editAppointment($params);
+	}
+
+	public function editAppointmentAction() {
+		$params = array('appointmentId'=>(int)$this->_getParam('appointmentId'));
+		$this->_editAppointment($params,'edit');
+	}
+
+	public function _editAppointment(Array $params,$action='new') {
+		$appointmentId = isset($params['appointmentId'])?(int)$params['appointmentId']:0;
+		$appointment = new Appointment();
+		$appointment->appointmentId = $appointmentId;
+		$date = isset($params['date'])?$params['date']:'';
+		if ($appointmentId > 0 && $appointment->populate()) {
+			$filter = $this->getCurrentDisplayFilter();
+			$start = explode(' ',date('Y-m-d H:i', strtotime($appointment->start)));
+			$date = $start[0];
+			$appointment->start = $start[1];
+			$appointment->end = date('H:i', strtotime($appointment->end));
+
+			$recordNumber = $appointment->patient->record_number;
+			$patientName = $appointment->patient->displayName;
+			$this->view->patient = "{$patientName} #{$recordNumber} PID:{$appointment->patient->person_id}";
+		}
+		else {
+			$start = isset($params['start'])?$params['start']:self::FILTER_TIME_START;
+			$appointment->start = $start;
+			$appointment->end = date('H:i',strtotime('+1 hour',strtotime($start)));
+			$appointment->providerId = isset($params['providerId'])?(int)$params['providerId']:0;
+			$appointment->roomId = isset($params['roomId'])?(int)$params['roomId']:0;
+		}
+		$this->view->date = $date;
+
+		$form = new WebVista_Form(array('name'=>$action.'-appointment'));
+		$form->setAction(Zend_Registry::get('baseUrl').'calendar.raw/process-'.$action.'-appointment');
+		$form->loadORM($appointment,'Appointment');
+		$form->setWindow('windowAppointmentId');
+		$this->view->form = $form;
+
+		$this->view->reasons = PatientNote::listReasons();
+
+		$phones = array();
+		$phone = new PhoneNumber();
+		$phoneIterator = $phone->getIteratorByPersonId($appointment->patientId);
+		foreach ($phoneIterator as $row) {
+			$phones[] = $row->number;
+		}
+		$this->view->phones = $phones;
+
+		$appointmentTemplate = new AppointmentTemplate();
+		$this->view->appointmentReasons = $appointmentTemplate->getAppointmentReasons();
+
+		$this->view->appointment = $appointment;
+		$this->view->callbackId = $this->_getParam('callbackId','');
+		$this->render('appointment');
+	}
+
+	public function processNewAppointmentAction() {
+		$params = $this->_getParam('appointment');
+		$this->_processEditAppointment($params);
+	}
+
+	public function processEditAppointmentAction() {
+		$params = $this->_getParam('appointment');
+		$this->_processEditAppointment($params);
+	}
+
+	public function _processEditAppointment(Array $params) {
+		$paramProviders = array();
+		foreach ($params as $key=>$val) {
+			$providerPrefix = 'providerId-';
+			if (substr($key,0,strlen($providerPrefix)) == $providerPrefix) {
+				$paramProviders[] = $val;
+				unset($params[$key]);
+			}
+		}
+		if (count($paramProviders) > 0) {
+			// assign the first providerId
+			$params['providerId'] = array_shift($paramProviders);
+		}
+		// extra providers if any, can be retrieved using $paramProviders variable, not sure where to place it
+		$forced = (int)$this->_getParam('forced');
+		$filter = $this->getCurrentDisplayFilter();
+
+		$app = new Appointment();
+		if (isset($params['appointmentId']) && $params['appointmentId'] > 0) {
+			$app->appointmentId = (int)$params['appointmentId'];
+			$app->populate();
+		}
+		$app->populateWithArray($params);
+		if ($app->appointmentId > 0) {
+			$app->lastChangeId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			$app->lastChangeDate = date('Y-m-d H:i:s');
+		}
+		else {
+			$app->creatorId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			$app->createdDate = date('Y-m-d H:i:s');
+		}
+		$date = isset($params['date'])?date('Y-m-d',strtotime($params['date'])):date('Y-m-d');
+		$app->walkin = isset($params['walkin'])?1:0;
+		$app->start = $date.' '.date('H:i:s', strtotime($params['start']));
+		$app->end = $date.' '.date('H:i:s', strtotime($params['end']));
+
+		$data = array();
+		if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
+			$data['error'] = $error;
+		}
+		else {
+			$app->persist();
+			//trigger_error(print_r($params,true));
+			$data['appointmentId'] = $app->appointmentId;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function changeTimeAppointmentAction() {
+		$appointmentId = (int)$this->_getParam('appointmentId');
+		$time = date('H:i:s',strtotime($this->_getParam('time')));
+		$forced = (int)$this->_getParam('forced');
+		$app = new Appointment();
+		$app->appointmentId = $appointmentId;
+		$data = array(
+			'error'=>'Appointment does not exists',
+		);
+		if ($app->populate()) {
+			$app->lastChangeId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			$app->lastChangeDate = date('Y-m-d H:i:s');
+			$startTime = strtotime($app->start);
+			$endTime = strtotime($app->end);
+			$diff = $endTime - $startTime;
+			$x = explode(' ',date('Y-m-d H:i:s',$startTime));
+			$date = $x[0];
+			$start = strtotime($date.' '.$time);
+			$end = $start + $diff;
+			$app->start = date('Y-m-d H:i:s',$start);
+			$app->end = date('Y-m-d H:i:s',$end);
+			$app->persist();
+			$data = array('appointmentId'=>$appointmentId);
+			if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
+				$data['confirmation'] = $error;
+			}
+			else {
+				$app->persist();
+				//trigger_error(print_r($params,true));
+				$data['appointmentId'] = $app->appointmentId;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
 
 }

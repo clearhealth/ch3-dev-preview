@@ -24,6 +24,7 @@
 
 class AlterTable extends XMLParserAbstract {
 
+	protected $_dbName = '';
 	protected $_newTables = array(); // list of all new tables
 	protected $_tables = array(); // list of all existing tables
 	protected $_changes = array(); // diff results container
@@ -41,6 +42,13 @@ class AlterTable extends XMLParserAbstract {
 	protected $_currentAttribs = array();
 	protected $_withSql = true;
 	protected $_tableColumnsCtr = array();
+	protected $_existingEnums = array();
+
+	public function __construct() {
+		$config = Zend_Registry::get('config');
+		$this->_dbName = $config->database->params->dbname;
+		parent::__construct();
+	}
 
 	public function startElement($parser,$name,array $attribs) {
 		$this->_depth++;
@@ -48,7 +56,16 @@ class AlterTable extends XMLParserAbstract {
 		$this->_currentAttribs = $attribs;
 
 		// depth: 1 = mysqldump, 2 = database, 3 = table_structure/table_data, 4 = field/key/options/row, 5 = field
-		if ($this->_tdStart && $this->_depth == 4 && $name == 'row') {
+		if ($this->_depth == 2 && $name == 'database' && $attribs['name'] == 'chmed') { // other database names are ignored
+			$this->_dbName = $attribs['name'];
+			$this->_populateDbTables();
+			if ($this->_withSql) {
+				$tmp = array("CREATE DATABASE IF NOT EXISTS `{$this->_dbName}`;");
+				$tmp[] = "USE `{$this->_dbName}`;";
+				fwrite($this->_fd,implode("\n",$tmp)."\n");
+			}
+		}
+		else if ($this->_tdStart && $this->_depth == 4 && $name == 'row') {
 			$this->_tdRowStart = true;
 			$this->_tdRowData['attribs'] = $attribs;
 			$this->_tdRowData['data'] = array();
@@ -261,8 +278,12 @@ class AlterTable extends XMLParserAbstract {
 			$tableColumns = array();
 		}
 		$primaryKey = null;
+		$guidRow = null;
 		foreach ($data['data'] as $val) {
 			$fieldName = isset($val['attribs']['name'])?$val['attribs']['name']:'';
+			if (isset($this->_tables[$tableName]) && isset($this->_tables[$tableName][$fieldName]) && $this->_tables[$tableName][$fieldName]['Key'] == 'PRI') {
+				$primaryKey = $fieldName;
+			}
 			$objType = isset($val['name'])?$val['name']:'';
 			if ($objType != 'field' || !array_key_exists($fieldName,$tableColumns)) {
 				continue;
@@ -270,11 +291,21 @@ class AlterTable extends XMLParserAbstract {
 			$fieldValue = isset($val['value'])?$val['value']:'';
 			if ($fieldName == 'guid') {
 				$sqlSelect = $db->select()
-						->from($tableName)
+						->from($this->_dbName.'.'.$tableName)
 						->where('guid != ?','')
 						->where('guid = ?',$fieldValue);
 				if ($guidRow = $db->fetchRow($sqlSelect)) { // data already exists
-					break;
+					if ($this->_withSql && $primaryKey !== null) {
+						if (preg_match('/\[@nextSequenceId=(\d+)\]/',$tableColumns[$primaryKey],$matches)) {
+							$tableColumns[$primaryKey] = $guidRow['enumerationId'];
+							$key = -1;
+							if (strlen($matches[1]) > 0) {
+								$key = $matches[1];
+							}
+							$this->_sequenceIds[$key] = $tableColumns[$primaryKey];
+							$this->_existingEnums[$tableColumns[$primaryKey]] = $tableColumns[$primaryKey];
+						}
+					}
 				}
 			}
 			if (preg_match_all('/\[@lastSequenceId=(\d+)\]/',$fieldValue,$matches)) {
@@ -299,9 +330,6 @@ class AlterTable extends XMLParserAbstract {
 				}
 			}
 			$tableColumns[$fieldName] = $fieldValue;
-			if ($this->_tables[$tableName][$fieldName]['Key'] == 'PRI') {// && !isset($matches[1])) {
-				$primaryKey = $fieldName;
-			}
 		}
 		if ($this->_withSql && $primaryKey !== null) {
 			if (preg_match('/\[@nextSequenceId=(\d+)\]/',$tableColumns[$primaryKey],$matches)) {
@@ -314,10 +342,10 @@ class AlterTable extends XMLParserAbstract {
 				trigger_error('nextSequenceId generated for: '.$tableName.'.'.$primaryKey,E_USER_NOTICE);
 			}
 		}
-		if (!(isset($guidRow) && $guidRow)) {
-			if (!isset($this->_tableColumnsCtr[$tableName])) {
-				$this->_tableColumnsCtr[$tableName] = 0;
-			}
+		if (!isset($this->_tableColumnsCtr[$tableName])) {
+			$this->_tableColumnsCtr[$tableName] = 0;
+		}
+		if (!($guidRow || ($tableName == 'enumerationsClosure' && isset($tableColumns['descendant']) && isset($this->_existingEnums[$tableColumns['descendant']])))) {
 			$this->_tableColumnsCtr[$tableName]++;
 			if (!$this->_withSql) return '';
 			//trigger_error(print_r($tableColumns,true));
@@ -346,23 +374,29 @@ class AlterTable extends XMLParserAbstract {
 	}
 
 	protected function _populateTableDefinitions($filename) {
-		$db = Zend_Registry::get('dbAdapter');
-		$tableRes = $db->query('SHOW TABLES');
-		$tableRes->setFetchMode(Zend_Db::FETCH_NUM);
+		$this->_populateDbTables();
+		$this->parse($filename);
+	}
+
+	protected function _populateDbTables($dbName=null) {
+		if ($dbName === null) $dbName = $this->_dbName;
 		$this->_tables = array();
+		$db = Zend_Registry::get('dbAdapter');
+		$dbRes = $db->query('SHOW DATABASES LIKE '.$db->quote($dbName));
+		if (!$dbRes->fetch()) return;
+		$tableRes = $db->query('SHOW TABLES FROM `'.$dbName.'`');
+		$tableRes->setFetchMode(Zend_Db::FETCH_NUM);
 		foreach ($tableRes->fetchAll() as $table) {
 			$this->_tables[$table[0]] = true;
 		}
 		foreach ($this->_tables as $tableName=>$value) {
-			$res = $db->query("SHOW COLUMNS FROM `$tableName`");
+			$res = $db->query("SHOW COLUMNS FROM `$dbName`.`$tableName`");
 			$res->setFetchMode(Zend_Db::FETCH_ASSOC);
 			$this->_tables[$tableName] = array();
 			foreach ($res->fetchAll() as $row) {
 				$this->_tables[$tableName][$row['Field']] = $row;
 			}
 		}
-
-		$this->parse($filename);
 	}
 
 	public function getChanges($data) {
@@ -395,6 +429,7 @@ class AlterTable extends XMLParserAbstract {
 	}
 
 	protected function _generateSql($filename) {
+		$this->_existingEnums = array();
 		$ts = self::calcTS();
 		$msg = 'generating update file';
 		if ($this->_withSql) {

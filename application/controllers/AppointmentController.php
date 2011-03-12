@@ -149,12 +149,18 @@ class AppointmentController extends WebVista_Controller_Action {
 
 	public function listHistoryAction() {
 		$personId = (int)$this->_getParam('personId');
+		$future = (int)$this->_getParam('future');
 		$rows = array();
 
 		$appointmentTemplate = new AppointmentTemplate();
 		$reasons = $appointmentTemplate->getAppointmentReasons();
-		$appointment = new Appointment();
-		foreach ($appointment->getIteratorByPatientId($personId) as $app) {
+		$iterator = new AppointmentIterator(null,false);
+		$filters = array(
+			'patientId'=>$personId,
+		);
+		if ($future) $filters['start'] = date('Y-m-d');
+		$iterator->setFilters($filters);
+		foreach ($iterator as $app) {
 			$personId = (int)$app->patientId;
 			$appointmentId = (int)$app->appointmentId;
 			$providerId = (int)$app->providerId;

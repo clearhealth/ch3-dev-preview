@@ -260,4 +260,126 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 		return base64_decode(strtr($value,'___','+/='));
 	}
 
+	protected function _addChild(SimpleXMLElement $xml,$key,$value,$checked=true) {
+		if (is_object($value)) trigger_error($key.'='.get_class($value));
+		if (!$checked || (strlen($key) > 0 && strlen($value) > 0)) $xml->addChild($key,htmlentities($value));
+	}
+
+	public function populateXML(SimpleXMLElement $xml=null,$revisionId=null,$checked=true) {
+		if ($xml === null) $xml = new SimpleXMLElement('<data/>');
+		$db = Zend_Registry::get('dbAdapter');
+		$clinicalNoteId = (int)$this->clinicalNoteId;
+		if ($revisionId === null) $revisionId = GenericData::getMostRecentRevisionId('ClinicalNote',$clinicalNoteId);
+		$sqlSelect = $db->select()
+				->from('genericData',array('name','value'))
+				->where("objectClass = 'ClinicalNote'")
+				->where('objectId = ?',$clinicalNoteId)
+				->where('revisionId = ?',(int)$revisionId)
+				->order('name');
+		//trigger_error($sqlSelect->__toString());
+		$stmt = $db->query($sqlSelect);
+		$namespaces = array();
+		while ($row = $stmt->fetch()) {
+			$value = $row['value'];
+			if (!strlen($value) > 0) continue;
+			$namespace = explode('.',$row['name']);
+			$tags = array();
+			$prevKey = null;
+			for ($i=0,$ctr=count($namespace);$i<$ctr;$i++) {
+				$tagName = $namespace[$i];
+				$tags[] = $tagName;
+				$key = implode('.',$tags);
+				if (!isset($namespaces[$key])) {
+					if ($prevKey === null) {
+						$namespaces[$key] = $xml->addChild($tagName);
+					}
+					else if ($i + 1 >= $ctr) {
+						$this->_addChild($namespaces[$prevKey],$tagName,$value,$checked);
+					}
+					else {
+						$namespaces[$key] = $namespaces[$prevKey]->addChild($tagName);
+					}
+				}
+				$prevKey = $key;
+			}
+		}
+
+		$signatureId = (int)$this->eSignatureId;
+		if ($signatureId > 0) {
+			$esig = new ESignature();
+			$esig->eSignatureId = $signatureId;
+			$esig->populate();
+			$signingUserId = (int)$esig->signingUserId;
+			if ($signingUserId > 0) {
+				$person = new Person();
+				$person->personId = $signingUserId;
+				$person->populate();
+				$xmlSigned = $xml->addChild('signingInfo');
+				$this->_addChild($xmlSigned,'signedBy',$person->displayName,$checked);
+				$this->_addChild($xmlSigned,'dateSigned',$esig->signedDateTime,$checked);
+			}
+		}
+		return $xml;
+	}
+
+	public function toASCII($revisionId) {
+		$template = $this->clinicalNoteDefinition->clinicalNoteTemplate->template;
+		$xml = new SimpleXMLElement($template);
+
+		$elements = array();
+		foreach ($xml as $question) {
+			$elements[] = (string)$question->attributes()->label;
+			foreach($question as $key=>$item) {
+				if ($key == 'dataPoint') $dataPoint = $item;
+				else if ($key == 'heading') {
+					$elements[] = "\t".(string)$item;
+					continue;
+				}
+				else continue;
+				$namespace = (string)$dataPoint->attributes()->namespace;
+
+				$type = (string)$dataPoint->attributes()->type;
+				if ($type == 'img') {
+					$elements[] = $namespace.': Source note includes annotated diagram';
+				}
+				else {
+					$label = "\t\t".(string)$dataPoint->attributes()->label;
+					if (substr($label,-1) != ':') $label .= ':';
+					$elements[$namespace] = $label.' ';
+				}
+			}
+		}
+
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('genericData',array('name','value'))
+				->where("objectClass = 'ClinicalNote'")
+				->where('objectId = ?',(int)$this->clinicalNoteId)
+				->where('revisionId = ?',(int)$revisionId);
+		$stmt = $db->query($sqlSelect);
+		while ($row = $stmt->fetch()) {
+			$namespace = $row['name'];
+			if (!isset($elements[$namespace])) continue;
+			$elements[$namespace] .= $row['value'];
+		}
+
+		return implode("\n",$elements);
+	}
+
+	public static function mostRecent($personId,$clinicalNoteDefinitionId=0) {
+		$db = Zend_Registry::get('dbAdapter');
+		$clinicalNote = new self();
+		$sqlSelect = $db->select()
+				->from($clinicalNote->_table)
+				->where('personId = ?',(int)$personId)
+				->order('dateTime DESC')
+				->limit(1);
+		$clinicalNoteDefinitionId = (int)$clinicalNoteDefinitionId;
+		if ($clinicalNoteDefinitionId > 0) {
+			$sqlSelect->where('clinicalNoteDefinitionId = ?',$clinicalNoteDefinitionId);
+		}
+		$clinicalNote->populateWithSql($sqlSelect->__toString());
+		return $clinicalNote;
+	}
+
 }

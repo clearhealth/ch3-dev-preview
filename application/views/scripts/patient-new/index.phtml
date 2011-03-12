@@ -61,11 +61,11 @@ input,select {
 			<div class="formRow">
 				<div style="float:left;">
 					<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-					<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
+					<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','key')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->confidentiality->renderLabel()?>
-					<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
+					<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','key')))?>
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->defaultProvider->renderLabel()?>

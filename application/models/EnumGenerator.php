@@ -879,41 +879,32 @@ class EnumGenerator {
 						'flowSheet' => array('key' => 'FLOWSHEET', 'name' => 'Flow Sheet', 'active' => 1, 'guid' => '9decd97b-8462-4b89-89fc-991f53765e38'),
 					)),
 					'manageSchedule' => array('key' => 'MANSCHED', 'name' => 'Manage Schedules', 'active' => 1, 'guid' => '78dd7937-c0c6-407f-848f-192ebac2ac86'),
+					'generalEncryption' => array('key' => 'GENCRYPT', 'name' => 'General Encryption', 'active' => 1, 'guid' => '29949f5c-eec0-4567-a030-d2f2c79e734e'),
+					'export' => array('key' => 'EXPORT', 'name' => 'Export', 'active' => 1, 'guid' => '26ef871f-e164-4788-bb1d-ce25cfff9bad', 'data' => array(
+						'cqm' => array('key' => 'CQM', 'name' => 'CQM', 'active' => 0, 'guid' => 'f906f8b6-1320-40c7-b6ee-f64bab1e3a56'),
+						'hl7Immunizations' => array('key' => 'HL7IMM', 'name' => 'HL7 Immunizations', 'active' => 1, 'guid' => 'c65dd3de-5da6-4486-84b7-5c3be7dfd845'),
+						'hl7LabTest' => array('key' => 'HL7LABTEST', 'name' => 'HL7 LabTest Results', 'active' => 1, 'guid' => '94127ad8-886e-440b-8f4a-ed3670c00267'),
+						'publicHealth' => array('key' => 'PUBHEALTH', 'name' => 'Public Health', 'active' => 1, 'guid' => '9e078b42-74c6-45fa-8bdb-0401186972f6'),
+					)),
+					'auditLogViewer' => array('key' => 'AUDITLOG', 'name' => 'Audit Log Viewer', 'active' => 1, 'guid' => 'fe6dac7f-25b7-45a8-bfb0-a2b500a575bb'),
+					'ccd' => array('key' => 'CCD', 'name' => 'CCD', 'active' => 1, 'guid' => '40a3a3a8-aabd-4029-8155-ec4ce17ee421', 'data' => array(
+						'viewHL7CCD' => array('key' => 'VIEWHL7CCD', 'name' => 'View HL7 CCD/ASTM CCR', 'active' => 1, 'guid' => '67ee9875-73fa-462c-be97-50912b968aa3'),
+						'allXML' => array('key' => 'ALLXML', 'name' => 'All XML', 'active' => 1, 'guid' => 'ad7f189e-d7f0-45c8-a906-94daf3fe2b52'),
+						'visitXML' => array('key' => 'VISITXML', 'name' => 'Visit XML', 'active' => 1, 'guid' => '0d803438-e895-4407-8773-5af6c368965d'),
+						'allView' => array('key' => 'ALLVIEW', 'name' => 'All View', 'active' => 1, 'guid' => '4c86f48a-cea7-4fea-a183-52cb435589b6'),
+						'visitView' => array('key' => 'VISITVIEW', 'name' => 'Visit View', 'active' => 1, 'guid' => '657e81f6-0f62-4c48-8f0f-321826ea7d63'),
+						'allPrint' => array('key' => 'ALLPRINT', 'name' => 'All Print', 'active' => 1, 'guid' => '65b98451-db43-4819-83c8-186a05a4fae0'),
+						'visitPrint' => array('key' => 'VISITPRINT', 'name' => 'Visit Print', 'active' => 1, 'guid' => '719883f1-f552-4327-9e8b-7e89d7203a7d'),
+					)),
+					'patientList' => array('key' => 'PATLISTS', 'name' => 'Patient Lists', 'active' => 1, 'guid' => '5ca70027-1e5c-4257-a136-dca0524b2115'),
+					'patientReminders' => array('key' => 'PATREMIND', 'name' => 'Patient Reminders', 'active' => 1, 'guid' => 'a47b7c3d-f23c-46b5-9919-77a5ffbf6dc8'),
+					'emergencyAccess' => array('key' => 'EMERACCESS', 'name' => 'Emergency Access', 'active' => 1, 'guid' => '9625119d-eb1e-4c00-bf8d-3fc0ec5ad607'),
+					'importLabHL7' => array('key' => 'IMPORTLAB', 'name' => 'Import Lab HL7', 'active' => 1, 'guid' => 'd8776b4a-743b-4d4c-81d1-9eaa23471972'),
 					'appointmentHistory' => array('key' => 'APPHISTORY', 'name' => 'Appointment History', 'active' => 1, 'guid' => 'ad390c48-e73b-4834-aa14-f54a72a5dc95'),
+					'patientAccount' => array('key' => 'PATIENTACC', 'name' => 'Patient Account', 'active' => 1, 'guid' => '8c13cad0-ff49-442b-94d3-f9169a0d4e85'),
+					'unallocatedPayment' => array('key' => 'UNALLOCPAY', 'name' => 'Unallocated Payment', 'active' => 1, 'guid' => 'c6e2259b-b659-44c2-8bd4-33ecd7f4da1a'),
 				)),
 			);
-/*
-*Add Vitals	10
-
-Print	PRINT				d7f5351c-0398-41c0-a2c0-04663bd0cd89	20
-
-*Manage Schedules	30
-
-General Encryption	GENCRYPT	29949f5c-eec0-4567-a030-d2f2c79e734e	40
-Export	EXPORT				26ef871f-e164-4788-bb1d-ce25cfff9bad	50
-	CQM	CQM			f906f8b6-1320-40c7-b6ee-f64bab1e3a56	60 (disabled)
-	HL7 Immunizations	HL7IMM	c65dd3de-5da6-4486-84b7-5c3be7dfd845	70
-	HL7 LabTest Results	HL7LABTEST	94127ad8-886e-440b-8f4a-ed3670c00267	80
-	Public Health	PUBHEALTH	9e078b42-74c6-45fa-8bdb-0401186972f6	90
-Audit Log Viewer	AUDITLOG 	fe6dac7f-25b7-45a8-bfb0-a2b500a575bb	100
-CCD	CCD 				40a3a3a8-aabd-4029-8155-ec4ce17ee421	120
-	View HL7 CCDASTM CCR	VIEWHL7CCD	67ee9875-73fa-462c-be97-50912b968aa3	130
-	All XML		ALLXML		ad7f189e-d7f0-45c8-a906-94daf3fe2b52	140
-	Visit XML	VISITXML	0d803438-e895-4407-8773-5af6c368965d	150
-	All View	ALLVIEW		4c86f48a-cea7-4fea-a183-52cb435589b6	160
-	Visit View	VISITVIEW	657e81f6-0f62-4c48-8f0f-321826ea7d63	170
-	All Print	ALLPRINT	65b98451-db43-4819-83c8-186a05a4fae0	180
-	Visit Print	VISITPRINT	719883f1-f552-4327-9e8b-7e89d7203a7d	190
-Patient Lists	PATLISTS		5ca70027-1e5c-4257-a136-dca0524b2115	200
-Patient Reminders	PATREMIND	a47b7c3d-f23c-46b5-9919-77a5ffbf6dc8	210
-Emergency Access	EMERACCESS	9625119d-eb1e-4c00-bf8d-3fc0ec5ad607	220
-Import Lab HL7	IMPORTLAB		d8776b4a-743b-4d4c-81d1-9eaa23471972	230
-
-*Appointment History	240
-
-Patient Account	PATIENTACC		8c13cad0-ff49-442b-94d3-f9169a0d4e85	250
-Unallocated Payment	UNALLOCPAY	c6e2259b-b659-44c2-8bd4-33ecd7f4da1a	260
-*/
 
 			$level = array();
 			$level['guid'] = '33fb13cb-577f-4a00-8765-b4a5334434c0';

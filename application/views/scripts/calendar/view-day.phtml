@@ -68,7 +68,6 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	var gridObjects = new Array();
 	var menuObjects = new Array();
 	var winFilterObjects = new Array();
-	var currentRowId = 0;
 	var numberOfRows = null;
 	var appointmentCopy = false;
 
@@ -236,20 +235,11 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		apptFlag = true;
 	}
 
-	var globalAppointmentId = null;
-	function setAppointmentId(appointmentId) {
-		globalAppointmentId = appointmentId;
-	}
-
 	var apptFlag = false;
 	function dblClickedEvent(columnIndex,rowId,colIndex,appointmentId) {
 		if (apptFlag) {
 			apptFlag = false;
 			return;
-		}
-		if (!appointmentId && globalAppointmentId != null) {
-			appointmentId = globalAppointmentId;
-			globalAppointmentId = null;
 		}
 		var providerId = gridObjects[columnIndex].getUserData(gridObjects[columnIndex].getRowId(0),'providerId');
 		if (providerId == 'placeHolderId') {
@@ -309,12 +299,14 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		gridObjects[columnIndex].enableContextMenu(menuObjects[columnIndex]);
 		gridObjects[columnIndex].attachEvent('onBeforeContextMenu',beforeContextMenuEvent);
 		gridObjects[columnIndex].rowToDragElement = function(rowId){
+			var appointmentId = 0;
+			if (this.appointmentDiv) appointmentId = this.appointmentDiv.getAttribute("appointmentId");
 			var text = this.cells(rowId,0).getValue();
 			if (parseInt(this.getUserData(rowId,"ctr")) > 1) { // double book detected
 				var childNodes = this.cells(rowId,0).cell.childNodes;
 				for (var i = 0; i < childNodes.length; i++) {
 					var node = childNodes[i];
-					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+globalAppointmentId)) {
+					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+appointmentId)) {
 						var marginLeft = node.style.marginLeft;
 						node.style.marginLeft = "8px";
 						var attributes = [];
@@ -350,21 +342,23 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		return true;
 	}
 
-	function beforeContextMenuEvent(rowId,colIndex,gridObj) {
-		columnId = gridObj.getColumnId(colIndex); // columnId is equal to columnIndex; columnIndex here is always zero
-		var rowIndex = gridObj.getRowIndex(rowId);
-		var value = gridObj.cellByIndex(rowIndex,colIndex).getValue();
-		if (menuObjects[columnId]) {
-			menuObjects[columnId].hideItem('cancel_move');
-			menuObjects[columnId].hideItem('edit_appointment');
-			menuObjects[columnId].hideItem("create_visit");
-			menuObjects[columnId].hideItem("add_payment");
-			menuObjects[columnId].hideItem("route");
-			menuObjects[columnId].hideItem("mark");
-			if (value != "") {
-				menuObjects[columnId].showItem('edit_appointment');
+	function beforeContextMenuEvent(rowId,colIndex,gridObj,obj) {
+		var columnId = gridObj.getColumnId(0);
+		menuObjects[columnId].hideItem("cancel_move");
+		menuObjects[columnId].hideItem("edit_appointment");
+		menuObjects[columnId].hideItem("create_visit");
+		menuObjects[columnId].hideItem("add_payment");
+		menuObjects[columnId].hideItem("route");
+		menuObjects[columnId].hideItem("mark");
+		var appointmentId = null;
+		if (obj.nodeName == "DIV" && obj.id.substr(0,5) == "event") { // edit
+			var appointmentId = parseInt(obj.getAttribute("appointmentId"));
+			if (isNaN(appointmentId)) appointmentId = 0;
+			var visitId = parseInt(obj.getAttribute("visitId"));
+			if (isNaN(visitId)) visitId = 0;
+			if (appointmentId > 0) {
+				menuObjects[columnId].showItem("edit_appointment");
 				menuObjects[columnId].showItem("add_payment");
-				var visitId = gridObj.getUserData(rowId,"visitId");
 				if (visitId <= 0) {
 					menuObjects[columnId].showItem("create_visit");
 				}
@@ -372,7 +366,6 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 				menuObjects[columnId].showItem("mark");
 			}
 		}
-		currentRowId = rowId;
 		return true;
 	}
 
@@ -470,6 +463,13 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	}
 
 	function menuGridEvent(columnId, menuItemId, type) {
+		var appointmentId = 0;
+		var visitId = 0;
+		if (gridObjects[columnId] && gridObjects[columnId].appointmentDiv) {
+			var appointmentDiv = gridObjects[columnId].appointmentDiv;
+			var appointmentId = appointmentDiv.getAttribute("appointmentId");
+			var visitId = appointmentDiv.getAttribute("visitId");
+		}
 		switch(menuItemId) {
 			case "new_schedule":
 				// new schedule interface
@@ -490,12 +490,9 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 				selectDateColumnId = columnId;
 				openCalendar('.rowselected');
 				break;
-			case 'edit_appointment':
-				/*var rowIndex = gridObjects[columnId].getRowIndex(currentRowId);
-				var value = gridObjects[columnId].cellByIndex(rowIndex,gridObjects[columnId].getColIndexById(columnId)).getValue();
-				var appointmentId = gridObjects[columnId].getUserData(currentRowId,'appointmentId');*/
-				openAppointmentWindow({"appointmentId":globalAppointmentId});
-				winAddAppointment.setText('<?=__('Edit Appointment')?>');
+			case "edit_appointment":
+				openAppointmentWindow({"appointmentId":appointmentId});
+				winAddAppointment.setText("<?=__('Edit Appointment')?>");
 				break;
 			case 'cancel_move':
 				cancelMoveEvent();
@@ -510,7 +507,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 				dojo.xhrPost({
 					url: "<?=$this->baseUrl?>/appointment.raw/process-create-visit",
 					content: {
-						"appointmentId": globalAppointmentId,
+						"appointmentId": appointmentId,
 					},
 					handleAs: "json",
 					load: function(responseObject,ioArgs){
@@ -522,12 +519,16 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 				});
 				break;
 			case "add_payment":
-				var visitId = gridObjects[columnId].getUserData(currentRowId,"visitId");
 				var params = [];
 				params.push("visitId="+visitId);
-				params.push("appointmentId="+globalAppointmentId);
+				params.push("appointmentId="+appointmentId);
 				params.push("columnId="+columnId);
 				globalCreateWindow("winPaymentId",params,"<?=$this->baseUrl?>/appointment.raw/add-payment","<?=__('Add Payment')?>",300,300);
+				break;
+			case "timeSearch":
+				var params = [];
+				params.push("columnId="+columnId);
+				globalCreateWindow("winTimeSearchId",params,"<?=$this->baseUrl?>/calendar.raw/time-search","<?=__('Time Search')?>",900,800);
 				break;
 			default:
 				action = menuItemId.split('_');
@@ -537,7 +538,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 						dojo.xhrPost({
 							url: "<?=$this->baseUrl?>/routing.raw/process-next-station-by-appointment",
 							content : {
-								appointmentId: globalAppointmentId,
+								appointmentId: appointmentId,
 								stationId: action[1],
 							},
 							handleAs: 'json',
@@ -551,7 +552,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 						dojo.xhrPost({
 							url: "<?=$this->baseUrl?>/appointment.raw/ajax-mark-appointment",
 							content : {
-								appointmentId: globalAppointmentId,
+								appointmentId: appointmentId,
 								mark: action[1],
 							},
 							handleAs: 'json',
@@ -678,9 +679,11 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 
 			if (parseInt(gridFrom.getUserData(idFrom,"ctr")) > 1) { // double book detected
 				var childNodes = gridFrom.cells(idFrom,colIndexFrom).cell.childNodes;
+				var appointmentId = 0;
+				if (gridFrom.appointmentDiv) appointmentId = gridFrom.appointmentDiv.getAttribute("appointmentId");
 				for (var i = 0; i < childNodes.length; i++) {
 					var node = childNodes[i];
-					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+globalAppointmentId)) {
+					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+appointmentId)) {
 						var marginLeft = node.style.marginLeft;
 						node.style.marginLeft = "8px";
 						var attributes = [];
@@ -689,11 +692,9 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 						}
 						node.style.marginLeft = marginLeft;
 						valFrom = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
-						appointmentId = globalAppointmentId;
 						break;
 					}
 				}
-				globalAppointmentId = null;
 			}
 
 			gridTo.setUserData(idTo,'appointmentId',appointmentId);
@@ -846,16 +847,14 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 
 		var rowIndexTo = gridTo.getRowIndex(idTo);
 		var timeTo = timeColumnGrid.cellByIndex(rowIndexTo,colIndexTo).getValue();
-		if (globalAppointmentId != null) {
-			var ids = idFrom.split("i");
-			idFrom = globalAppointmentId+"i"+ids[ids.length-1];
-		}
+		var appointmentId = 0;
+		if (gridFrom.appointmentDiv) appointmentId = gridFrom.appointmentDiv.getAttribute("appointmentId");
 
 		dojo.xhrPost ({
 			url: "<?=$this->baseUrl?>/calendar.raw/ajax-update-appointment",
 			handleAs: "json",
 			content: {
-				idFrom: idFrom,
+				idFrom: appointmentId,
 				idTo: idTo,
 				columnIdFrom: columnIdFrom,
 				columnIdTo: columnIdTo,
@@ -939,5 +938,60 @@ function viewCalendarFindFirst(columnId) {
 function showPatientDetails(personId) {
 	mainController.setActivePatient(personId);
 	windowPatientDetails();
+}
+
+function appointmentDown(obj,columnIndex) {
+	if (!gridObjects[columnIndex]) return;
+	gridObjects[columnIndex].appointmentDiv = obj;
+}
+
+function appointmentClicked(obj,evt,columnIndex) {
+	var appointmentId = parseInt(obj.getAttribute("appointmentId"));
+	if (isNaN(appointmentId) || !gridObjects[columnIndex]) return;
+
+	var grid = gridObjects[columnIndex];
+	//grid.appointmentDiv = obj;
+
+	var target;
+	if (!evt) evt = window.event;
+
+	// cancel bubbles
+	if (evt.stopPropagation) evt.stopPropagation();
+	else evt.cancelBubble = true;
+
+	if (evt.target) target = evt.target;
+	else if (evt.srcElement) target = evt.srcElement;
+	if (target.nodeType == 3) target = target.parentNode; // defeat Safari bug
+
+	var rightclick = false;
+	if (!evt) evt = window.event;
+	if (evt.which) rightclick = (evt.which == 3);
+	else if (evt.button) rightclick = (evt.button == 2);
+
+	if (!rightclick || !menuObjects[columnIndex] || !beforeContextMenuEvent(0,0,grid,obj)) return;
+
+	var posx = 0;
+	var posy = 0;
+	if (evt.pageX || evt.pageY) {
+		posx = evt.pageX;
+		posy = evt.pageY;
+	}
+	else if (evt.clientX || evt.clientY) {
+		posx = evt.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+		posy = evt.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+	}
+
+	var menu = menuObjects[columnIndex];
+	menu.showContextMenu(posx,posy);
+}
+
+function appointmentDoubleClicked(obj,evt,columnIndex) {
+	if (!evt) evt = window.event;
+	// cancel bubbles
+	if (evt.stopPropagation) evt.stopPropagation();
+	else evt.cancelBubble = true;
+
+	openAppointmentWindow({"appointmentId":obj.getAttribute("appointmentId")});
+	winAddAppointment.setText("<?=__('Edit Appointment')?>");
 }
 </script>

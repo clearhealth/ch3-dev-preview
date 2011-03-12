@@ -526,6 +526,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxfolders_drag';
 
 		$files['chbootstrap'][] = 'ch3main';
+		$files['chbootstrap'][] = 'ch3AppointmentCalendar';
 		$files['chbootstrap'][] = 'menuActions';
 		return $files;
 	}

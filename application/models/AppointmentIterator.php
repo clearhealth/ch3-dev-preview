@@ -24,9 +24,10 @@
 
 class AppointmentIterator extends WebVista_Model_ORMIterator implements Iterator {
 
-    public function __construct($dbSelect = null) {
-        parent::__construct("Appointment",$dbSelect);
-    }
+	public function __construct($dbSelect = null,$autoload=true) {
+		$this->_ormClass = 'Appointment';
+		if ($autoload) parent::__construct($this->_ormClass,$dbSelect);
+	}
 
     public function current() {
         $ormObj = new $this->_ormClass();
@@ -36,16 +37,19 @@ class AppointmentIterator extends WebVista_Model_ORMIterator implements Iterator
     }
 
 
-	public function setFilter($filter) {
+	public function setFilter(Array $filters) {
+		$this->setFilters($filters);
+	}
+
+	public function setFilters(Array $filters) {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()->from('appointments');
-		foreach ($filter as $field=>$value) {
+		foreach ($filters as $field=>$value) {
 			switch($field) {
 				case 'roomId':
-					$dbSelect->where("roomId = ?",(int)$value);
-					break;
 				case 'providerId':
-					$dbSelect->where("providerId = ?",(int)$value);
+				case 'patientId':
+					$dbSelect->where("{$field} = ?",(int)$value);
 					break;
 				case 'start':
 					$dbSelect->where("start >= ?", $value);

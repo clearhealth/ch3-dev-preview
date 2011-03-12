@@ -24,7 +24,7 @@ ul {
 				<?$rooms = array('0'=>__('No Room'));
 				foreach (Room::getArray() as $key=>$value) $rooms[$key] = $value;
 				$options = array('style'=>'width:325px;','options'=>$rooms);
-				if (isset($this->columnId)) $options['disabled'] = '';
+				if ($this->form->providerId->getValue() > 0 || $this->form->roomId->getValue() > 0) $options['disabled'] = '';
 				?>
 				<?=$this->form->roomIdInput('FormSelect',$options)?>
 			</div>
@@ -47,12 +47,11 @@ ul {
 			</div>
 			<br style="clear:left"/>
 			<div style="text-align:right;margin-top:10px;">
-				<input type="hidden" name="columnId" value="<?=(isset($this->columnId))?$this->columnId:''?>" />
+				<?=$this->formHidden('appointment[date]',$this->date)?>
 				<?=$this->form->patientIdInput('FormHidden')?>
-				<input type="hidden" name="rowId" value="<?=(isset($this->rowId))?$this->rowId:''?>" />
 				<?=$this->form->appointmentIdInput('FormHidden')?>
 				<?=$this->formButton('cancel',__('Cancel'),array('onClick'=>'dhxWins.window(\''.$this->form->getWindow().'\').close()'))?>
-				<?=$this->formButton('appointmentButtonId',($this->form->appointmentId->getValue())?__('Update Appointment'):__('Make Appointment'),array('id'=>'appointmentButtonId','onClick'=>'calendarMakeAppointment(false,function(){if (window.appAccordion) window.appAccordion.callEvent("onActive",["appointmentInfo"]);});'))?>
+				<?=$this->formButton('appointmentButtonId',($this->form->appointmentId->getValue())?__('Update Appointment'):__('Make Appointment'),array('id'=>'appointmentButtonId','onClick'=>'calendarMakeAppointment()'))?>
 			</div>
 			<div style="margin-top:20px;">
 				<?=__('Appointment Created')?>: <?=$this->form->createdDate->getValue()?> <?=__('by')?> <?=$this->form->formCreator->username->getValue()?>
@@ -104,34 +103,46 @@ function appointmentHasChanges() {
 	return false;
 }
 
-function calendarMakeAppointment(forced,callback) {
+function calendarMakeAppointment() {
+	calendarProcessMakeAppointment(false,"<?=$this->callbackId?>");
+	/*calendarProcessMakeAppointment(false,function(){
+		//if (window.appAccordion) window.appAccordion.callEvent("onActive",["appointmentInfo"]);
+	});*/
+}
+
+function calendarProcessMakeAppointment(forced,callbackId) {
 	enableButtons(true);
+	var appointmentButton = dojo.byId("appointmentButtonId");
+	appointmentButton.disabled = true;
 	dojo.xhrPost({
-		url: "<?=$this->baseUrl?>/calendar.raw/process-add-appointment",
-		form: "addappointment",
+		url: "<?=$this->form->getAction()?>",
+		form: "<?=$this->form->getId()?>",
 		content: {
 			"forced": (forced)?"1":"0",
 		},
 		handleAs: "json",
 		load: function (data) {
-			if ((data.columnId != undefined || data.columnId != "") && window.calendarLoadEvents) {
-				window.calendarLoadEvents([data.columnId]);
+			appointmentButton.disabled = false;
+			if (callbackId && globalCallbackList[callbackId]) {
+				var callback = globalCallbackList[callbackId];
+				callback.func.apply(callback.object,callback.params);
 			}
 			if (data.error) {
 				if (confirm(data.error + "\n\n<?=__('Continue?')?>")) {
-					calendarMakeAppointment(true,callback);
+					calendarProcessMakeAppointment(true,callbackId);
 				}
 				else {
 					enableButtons(false);
 				}
 				return;
 			}
-			if (callback && typeof callback == "function") {
-				callback(data);
+			if (callbackId && globalCallbackList[callbackId]) {
+				globalCallbackList[callbackId] = null;
 			}
-
+			enableButtons(false);
 		},
 		error: function (er) {
+			appointmentButton.disabled = false;
 			alert("err: " + er);
 		}
 	});
@@ -153,6 +164,10 @@ appointmentReasons.push({reasonId:<?=(int)$enumerationId?>,id:<?=(int)$data['orm
 <?endforeach;?>
 
 function adjustAppointmentTime(minutes) {
+	if (globalFirstLoad) {
+		globalFirstLoad = false;
+		return;
+	}
 	if (!minutes || parseInt(minutes) == 0) {
 		return;
 	}
@@ -224,7 +239,7 @@ function appointmentProvidersChanged(reason) {
 
 function appendProviderSlot(id,labelText,isSelDisabled,defOptVal) {
 	if (typeof isSelDisabled == "undefined") {
-		isSelDisabled = <?=(isset($this->columnId))?'true':'false'?>;
+		isSelDisabled = <?=($this->form->providerId->getValue() > 0 || $this->form->roomId->getValue() > 0)?'true':'false'?>;
 	}
 	if (!defOptVal) {
 		defOptVal = "<?=$this->form->providerId->getValue()?>";
@@ -388,5 +403,9 @@ function pNotesGridReload() {
 }
 pNotesGridReload();
 
+var globalFirstLoad = false;
+<?if($this->form->appointmentId->getValue() > 0):?>
+globalFirstLoad = true;
+<?endif;?>
 appointmentReasonOnChanged();
 </script>

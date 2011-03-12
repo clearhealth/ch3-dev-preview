@@ -523,4 +523,148 @@ class Patient extends WebVista_Model_ORM {
 		return $rows;
 	}
 
+	protected function _addChild(SimpleXMLElement $xml,$key,$value,$checked=true) {
+		if (is_object($value)) trigger_error($key.'='.get_class($value));
+		if (!$checked || (strlen($key) > 0 && strlen($value) > 0)) $xml->addChild($key,htmlentities($value));
+	}
+
+	public function populateXML(SimpleXMLElement $xml=null,$checked=true) {
+		if ($xml === null) $xml = new SimpleXMLElement('<data/>');
+		$personId = (int)$this->person_id;
+		$person = $this->person;
+		$picture = '';
+		if ($person->activePhoto > 0) {
+			$attachment = new Attachment();
+			$attachment->attachmentId = (int)$person->activePhoto;
+			$attachment->populate();
+			$picture = base64_encode($attachment->rawData);
+		}
+
+		$xmlPatient = $xml->addChild('patient');
+		$xmlPerson = $xmlPatient->addChild('person');
+		$this->_addChild($xmlPerson,'picture',$picture,$checked);
+		$this->_addChild($xmlPerson,'lastName',$person->lastName,$checked);
+		$this->_addChild($xmlPerson,'firstName',$person->firstName,$checked);
+		$this->_addChild($xmlPerson,'middleName',$person->middleName,$checked);
+		$identifier = '';
+		if ($person->identifierType == 'SSN') $identifier = $person->identifier;
+		$this->_addChild($xmlPerson,'identifier',$identifier,$checked);
+		$this->_addChild($xmlPerson,'gender',$person->gender,$checked);
+		$dateOfBirth = explode(' ',date('m d Y',strtotime($person->dateOfBirth)));
+		$this->_addChild($xmlPerson,'dobMonth',$dateOfBirth[0],$checked);
+		$this->_addChild($xmlPerson,'dobDay',$dateOfBirth[1],$checked);
+		$this->_addChild($xmlPerson,'dobYear',$dateOfBirth[2],$checked);
+		$statistics = PatientStatisticsDefinition::getPatientStatistics($personId);
+		$race = '';
+		if (isset($statistics['Race'])) $race = $statistics['Race'];
+		else if (isset($statistics['race'])) $race = $statistics['race'];
+		$this->_addChild($xmlPerson,'race',$race,$checked);
+		$maritalStatus = ($person->maritalStatus)?$person->maritalStatus:'Other';
+		$this->_addChild($xmlPerson,'maritalStatus',$maritalStatus,$checked);
+
+		$addresses = Address::listAddresses($personId);
+		foreach ($addresses as $address) {
+			switch ($address->type) {
+				case Address::TYPE_MAIN:
+					$type = 'mainAddress';
+					break;
+				case Address::TYPE_SEC:
+					$type = 'secondaryAddress';
+					break;
+				case Address::TYPE_HOME:
+					$type = 'homeAddress';
+					break;
+				case Address::TYPE_EMPLOYER:
+					$type = 'employerAddress';
+					break;
+				case Address::TYPE_BILLING:
+					$type = 'billingAddress';
+					break;
+				case Address::TYPE_OTHER:
+				default:
+					$type = 'otherAddress';
+					break;
+			}
+			$xmlAddress = $xmlPatient->addChild($type);
+			$this->_addChild($xmlAddress,'line1',$address->line1,$checked);
+			$this->_addChild($xmlAddress,'city',$address->city,$checked);
+			$this->_addChild($xmlAddress,'state',$address->state,$checked);
+			$this->_addChild($xmlAddress,'zip',$address->postalCode,$checked);
+		}
+
+		$phoneNumbers = PhoneNumber::listPhoneNumbers($personId);
+		foreach ($phoneNumbers as $phoneNumber) {
+			switch ($phoneNumber->type) {
+				case PhoneNumber::TYPE_HOME:
+					$type = 'homePhone';
+					break;
+				case PhoneNumber::TYPE_WORK:
+					$type = 'workPhone';
+					break;
+				case PhoneNumber::TYPE_BILLING:
+					$type = 'billingPhone';
+					break;
+				case PhoneNumber::TYPE_EMPLOYER:
+					$type = 'employerPhone';
+					break;
+				case PhoneNumber::TYPE_MOBILE:
+					$type = 'mobilePhone';
+					break;
+				case PhoneNumber::TYPE_EMERGENCY:
+					$type = 'emergencyPhone';
+					break;
+				case PhoneNumber::TYPE_FAX:
+					$type = 'faxPhone';
+					break;
+				case PhoneNumber::TYPE_HOME_EVE:
+					$type = 'homeEvePhone';
+					break;
+				case PhoneNumber::TYPE_HOME_DAY:
+					$type = 'homeDayPhone';
+					break;
+				case PhoneNumber::TYPE_BEEPER:
+					$type = 'beeperPhone';
+					break;
+				default:
+					$type = 'otherPhone';
+					break;
+			}
+			$xmlPhone = $xmlPatient->addChild($type);
+			$this->_addChild($xmlPhone,'number',$phoneNumber->number,$checked);
+		}
+
+		if ($person->primaryPracticeId > 0) {
+			$practice = new Practice();
+			$practice->practiceId = (int)$person->primaryPracticeId;
+			$practice->populate();
+			$address = $practice->primaryAddress;
+			$xmlPractice = $xmlPatient->addChild('practice');
+			$this->_addChild($xmlPractice,'name',$practice->name,$checked);
+			$xmlPrimaryAddress = $xmlPractice->addChild('primaryAddress');
+			$this->_addChild($xmlPrimaryAddress,'line1',$address->line1,$checked);
+			$this->_addChild($xmlPrimaryAddress,'city',$address->city,$checked);
+			$this->_addChild($xmlPrimaryAddress,'state',$address->state,$checked);
+			$this->_addChild($xmlPrimaryAddress,'zip',$address->postalCode,$checked);
+			$this->_addChild($xmlPractice,'mainPhone',$practice->mainPhone->number,$checked);
+			$this->_addChild($xmlPractice,'faxNumber',$practice->fax->number,$checked);
+		}
+
+		$insuredRelationship = new InsuredRelationship();
+		$insuredRelationshipIterator = $insuredRelationship->getIteratorByPersonId($personId);
+		$primary = null;
+		$secondary = null;
+		foreach ($insuredRelationshipIterator as $item) {
+			if (!$item->active) continue;
+			if ($primary === null) $primary = $item;
+			else if ($secondary === null) $secondary = $item;
+			else break;
+		}
+
+		$xmlPayer = $xmlPatient->addChild('payer');
+		if ($primary !== null) $this->_addChild($xmlPayer,'medicareNumber',$primary->insuranceProgram->payerIdentifier,$checked);
+		if ($secondary !== null) $this->_addChild($xmlPayer,'medicaidNumber',$secondary->insuranceProgram->payerIdentifier,$checked);
+
+		return $xml;
+	}
+
 }

@@ -1,9 +1,12 @@
 <div id="ppLayoutId" style="height:100%;"></div>
 <div id="ppLeftPaneId" style="width:100%;height:100%;">
-	<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="550" height="400" id="ch-vid-upload" align=
+	<object classid="clsid:d27cdb6e-ae6d-11cf-96b8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=8,0,0,0" width="550" height="400" id="ch-vid-upload" align="middle">
 		<param name="allowScriptAccess" value="sameDomain" />
 		<param name="allowFullScreen" value="false" />
-		<param name="movie" value="<?=$this->baseUrl?>/img/patientPicture.swf?attachmentReferenceId=<?=$this->personId?>" /><param name="quality" value="high" /><param name="bgcolor" value="#ffffff" />
+		<param name="movie" value="<?=$this->baseUrl?>/img/patientPicture.swf?attachmentReferenceId=<?=$this->personId?>" />
+		<param name="quality" value="high" />
+		<param name="bgcolor" value="#ffffff" />
+		<embed src="<?=$this->baseUrl?>/img/patientPicture.swf?attachmentReferenceId=<?=$this->personId?>" quality="high" bgcolor="#ffffff" width="700" height="400" name="ch-vid-upload" align="middle" allowScriptAccess="sameDomain" allowFullScreen="false" type="application/x-shockwave-flash" pluginspage="http://www.macromedia.com/go/getflashplayer" />
 	</object>
 </div>
 <div id="ppBottomRightId" style="width:100%;height:100%;">
@@ -97,6 +100,7 @@ ppToolbar.addButton("delete",ctr++,"<?=__('Delete')?>","removeproblem.png","remo
 ppToolbar.disableItem("delete");
 ppToolbar.addButton("setActive",ctr++,"<?=__('Set Active')?>","editproblem.png","editproblem.png");
 ppToolbar.disableItem("setActive");
+ppToolbar.addButton("reload",ctr++,"<?=__('Reload')?>","refresh.png","refresh.png");
 function ppToolbarOnClicked(id) {
 	switch (id) {
 		case "delete":
@@ -106,6 +110,9 @@ function ppToolbarOnClicked(id) {
 		case "setActive":
 			ppToolbar.disableItem(id);
 			ppSetActivePicture();
+			break;
+		case "reload":
+			patientPicturesReload();
 			break;
 	}
 }
@@ -133,6 +140,8 @@ function patientPicturesReload() {
 	ppToolbar.disableItem("delete");
 	ppFolders.clearAll();
 	ppFolders.loadXML("<?=$this->baseUrl?>/patient-pictures.raw/list-pictures?personId=<?=$this->personId?>","<?=$this->baseUrl?>/files.raw/types?type=thumbs");
+	// refresh patient toolbar
+	initMainToolbar(null,mainController.getActivePatient());
 }
 patientPicturesReload();
 
@@ -151,7 +160,8 @@ function ajaxUploadFile() {
 			dojo.byId("ppUploadFormId").reset();
 			clearTimeout(progressTimer);
 			dojo.byId("uploadProgressBarId").style.width = "100%";
-			patientPicturesReload();
+			if (data.attachmentId) ppSetActivePicture(data.attachmentId);
+			else patientPicturesReload();
 			dojo.byId("fileUploadProgressId").style.display = "none";
 			dojo.byId("fileUploadFormId").style.display = "";
 		},

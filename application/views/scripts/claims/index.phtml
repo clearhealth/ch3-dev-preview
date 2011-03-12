@@ -534,7 +534,7 @@ function claimsMakePayment() {
 
 function openMakePaymentWindow() {
 	var url = "<?=$this->baseUrl?>/claims.raw/make-payment";
-	winMakePayment = globalCreateWindow("windowClaimsMakePaymentId",[],url,"<?=__('Record Payment')?>",800,700,{attachURL:false,setModal:false});
+	winMakePayment = globalCreateWindow("windowClaimsMakePaymentId",[],url,"<?=__('Record Payment')?>",800,800,{attachURL:false,setModal:false});
 	paymentAccordion = winMakePayment.attachAccordion();
 	paymentAccordion.skin = "dhx_blue";
 	paymentAccordion.setIconsPath("<?=$this->baseUrl?>/img/");

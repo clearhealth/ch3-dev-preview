@@ -331,4 +331,14 @@ class PhoneNumber extends WebVista_Model_ORM {
 		return $type;
 	}
 
+	public static function listPhoneNumbers($personId) {
+		$ret = array();
+		$orm = new self();
+		$orm->personId = (int)$personId;
+		foreach ($orm->getIteratorByPersonId() as $row) {
+			$ret[$row->type] = $row;
+		}
+		return $ret;
+	}
+
 }

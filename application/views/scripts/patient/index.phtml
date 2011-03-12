@@ -73,11 +73,11 @@ div.gridbox_xp table.obj td {
 			</div>
 			<div class="formRow">
 			<?=$this->form->formPerson->maritalStatus->renderLabel()?>
-			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','enumerationId')))?>
+			<?=$this->form->formPerson->maritalStatusInput('FormSelect',array("options" => Enumeration::getEnumArray('Marital Status','key')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->confidentiality->renderLabel()?>
-			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','enumerationId')))?>
+			<?=$this->form->confidentialityInput('FormSelect',array("options" => Enumeration::getEnumArray('Confidentiality','key')))?>
 			</div>
 			<div class="formRow">
 			<?=$this->form->signedHipaaDate->renderLabel()?>

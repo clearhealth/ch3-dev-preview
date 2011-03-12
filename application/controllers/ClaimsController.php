@@ -735,10 +735,10 @@ class ClaimsController extends WebVista_Controller_Action {
 					break;
 			}
 			$db = Zend_Registry::get('dbAdapter');
-			$ret = $db->insert('claimFileBlobs',array(
+			/*$ret = $db->insert('claimFileBlobs',array(
 				'claimFileId'=>$claimFile->claimFileId,
 				'data'=>$data,
-			));
+			));*/
 		}
 		$this->_session->visitIds = array();
 		$this->view->content = $data;
@@ -1509,9 +1509,9 @@ class ClaimsController extends WebVista_Controller_Action {
 		$data['patient'] = $patient->displayName;
 		$data['payerId'] = $claimLine->insuranceProgramId;
 		$data['facility'] = $visit->facility;
-		$checkNos = array(''=>'');
-		foreach ($claimLine->uniqueCheckNumbers as $chk) {
-			$checkNos[htmlentities($chk['chkNo'])] = (float)$chk['unallocated'];
+		$checkNos = array(''=>array('checkNo'=>'','unallocated'=>''));
+		foreach ($claimLine->checkNumbers as $chk) {
+			$checkNos[(int)($chk['paymentId'])] = array('checkNo'=>$chk['checkNo'],'unallocated'=>(float)$chk['unallocated']);
 		}
 		$data['checkNos'] = $checkNos;
 
@@ -1649,6 +1649,48 @@ class ClaimsController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
+	}
+
+	public function processSaveAdjustmentAction() {
+		$params = $this->_getParam('adj');
+		$data = false;
+		if (is_array($params)) {
+			$eobAdjustmentId = isset($params['eobAdjustmentId'])?(int)$params['eobAdjustmentId']:0;
+			$eobAdjustment = new EobAdjustment();
+			if ($eobAdjustment->eobAdjustmentId > 0) {
+				$eobAdjustment->eobAdjustmentId = $eobAdjustmentId;
+				$eobAdjustment->populate();
+			}
+			$eobAdjustment->populateWithArray($params);
+			$eobAdjustment->persist();
+			$data = $this->_generateAdjustmentRowData($eobAdjustment);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	protected function _generateAdjustmentRowData(EobAdjustment $eobAdjustment) {
+		$row = array();
+		$row['id'] = $eobAdjustment->eobAdjustmentId;
+		$row['data'] = array();
+		$row['data'][] = (int)$eobAdjustment->claimLineId;
+		$row['data'][] = (string)$eobAdjustment->type;
+		$row['data'][] = (string)$eobAdjustment->value;
+		return $row;
+	}
+
+	public function listAdjustmentsAction() {
+		$claimId = (int)$this->_getParam('claimId');
+		$rows = array();
+		$iterator = new EobAdjustmentIterator();
+		$iterator->setFilters(array('claimId'=>$claimId));
+		foreach ($iterator as $eobAdjustment) {
+			$rows[] = $this->_generateAdjustmentRowData($eobAdjustment);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
 	}
 
 }

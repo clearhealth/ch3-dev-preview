@@ -608,4 +608,47 @@ class ReportBase extends WebVista_Model_ORM {
 		return $str;
 	}
 
+	public static function mergepdfset(SimpleXMLElement $xml,$data) {
+		$error = null;
+		$pdfset = '/usr/local/bin/pdfset';
+		if (!file_exists($pdfset)) $error = 'pdfset binary does not exists';
+		if (!is_executable($pdfset)) $error = 'pdfset binary is not executable';
+		if (!$data) $error = 'Failed to merge pdf, data is empty';
+		if ($error !== null) {
+			trigger_error($error);
+			throw new Exception($error);
+		}
+		$xml = preg_replace('/<\?.*\?>/','',$xml->asXML());
+
+		$inputFile = tempnam('/tmp','tmp_');
+		if (!file_put_contents($inputFile,$data)) {
+			unlink($inputFile);
+			$error = 'Failed to write '.$inputFile;
+			trigger_error($error);
+			throw new Exception($error);
+		}
+		$xmlFile = tempnam('/tmp','tmp_');
+		if (!file_put_contents($xmlFile,$xml)) {
+			unlink($inputFile);
+			unlink($xmlFile);
+			$error = 'Failed to write '.$xmlFile;
+			trigger_error($error);
+			throw new Exception($error);
+		}
+		$outputFile = tempnam('/tmp','tmp_');
+		$cmd = "$pdfset -i $inputFile -X $xmlFile -o $outputFile";
+		$output = system($cmd,$ret);
+		if ($ret != 1) $error = $output;
+		$content = file_get_contents($outputFile);
+		// cleanup mess
+		unlink($inputFile);
+		unlink($outputFile);
+		unlink($xmlFile);
+		if ($error) {
+			trigger_error($error);
+			throw new Exception($error);
+		}
+		return $content;
+	}
+
 }

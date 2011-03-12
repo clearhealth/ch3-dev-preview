@@ -938,6 +938,16 @@
 		<key Table="eob_adjustment" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="eob_adjustment_id" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="eob_adjustment" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-01 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
+	<table_structure name="eobAdjustments">
+		<field Field="eobAdjustmentId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="claimId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="paymentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="claimLineId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="type" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="value" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
+		<key Table="eobAdjustments" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="eobAdjustmentId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
+		<options Name="eobAdjustments" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-02-16 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
+	</table_structure>
 	<table_structure name="event">
 		<field Field="event_id" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="start" Type="datetime" Null="NO" Key="MUL" Default="" Extra="" />
@@ -2463,7 +2473,7 @@
 		<field Field="default_provider" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="record_number" Type="char(16)" Null="NO" Key="MUL" Default="" Extra="" />
 		<field Field="employer_name" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="confidentiality" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="confidentiality" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="specialNeedsNote" Type="varchar(255)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="specialNeedsTranslator" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="teamId" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
@@ -2727,7 +2737,7 @@
 		<field Field="has_photo" Type="enum('0','1')" Null="NO" Key="" Default="" Extra="" />
 		<field Field="identifier" Type="varchar(100)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="identifier_type" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
-		<field Field="marital_status" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="marital_status" Type="char(10)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="inactive" Type="int(1)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="active" Type="tinyint(4)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="primary_practice_id" Type="int(11)" Null="NO" Key="MUL" Default="" Extra="" />

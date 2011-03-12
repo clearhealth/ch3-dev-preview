@@ -155,6 +155,11 @@ function contextMenuClickHandler(id) {
 		case "forwardForSigning":
 			windowForwardForSigning("ClinicalNote",cnGrid.cells(rowId,indexCNNoteId).getValue());
 			break;
+		case "defaultPrint":
+			var clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
+			var revisionId = cnGrid.cells(rowId,indexCNRevisionId).getValue();
+			window.open("<?=$this->baseUrl?>/reports.raw/default-patient-note?referenceId=bf9f3f39-dbc2-493f-9ca7-dde335f54de3&clinicalNoteId="+clinicalNoteId+"&revisionId="+revisionId,"pdfTemplate");
+			break;
 	}
 }
 

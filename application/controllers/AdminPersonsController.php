@@ -121,7 +121,7 @@ class AdminPersonsController extends WebVista_Controller_Action {
 		$this->view->genders = $genders;
 
 		$maritalStatuses = array(''=>'');
-		$maritalStatus = Enumeration::getEnumArray('Marital Status','enumerationId');
+		$maritalStatus = Enumeration::getEnumArray('Marital Status','key');
 		foreach ($maritalStatus as $key=>$value) {
 			$maritalStatuses[$key] = $value;
 		}

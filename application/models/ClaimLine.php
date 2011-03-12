@@ -431,6 +431,23 @@ class ClaimLine extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function getCheckNumbers() {
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new Payment();
+		$sqlSelect = $db->select()
+				->from($orm->_table,array('payment_id AS paymentId','ref_num AS checkNo','(amount - allocated)  AS unallocated'))
+				->where('(amount - allocated) > 0')
+				->where("payment_type = 'CHECK'")
+				->where("ref_num != ''");
+		$ret = array();
+		if ($rows = $db->fetchAll($sqlSelect)) {
+			foreach ($rows as $row) {
+				$ret[] = $row;
+			}
+		}
+		return $ret;
+	}
+
 	public static function listAllClaimIds(Array $visitIds,$mostRecent=false) {
 		// sanitized visit ids
 		$sanitizedIds = array();

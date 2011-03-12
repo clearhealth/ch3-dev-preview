@@ -121,6 +121,28 @@
 				}
 				globalCreateWindow("windowUnallocPayment",["personId="+patientId],"<?=$this->baseUrl?>/accounts.raw/payment","<?=__('Patient Unallocated Payment')?>",600,400);
 				break;
+			case "All_patient_intake":
+			case "All_default_patient_header":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				if (itemId == "All_patient_intake") {
+					window.open("<?=$this->baseUrl?>/reports.raw/patient-intake?referenceId=bd3a6ca7-63e4-432c-a0f1-623c7f5bb839&personId="+mainController.getActivePatient(),"pdfTemplate");
+				}
+				else {
+					window.open("<?=$this->baseUrl?>/reports.raw/default-patient-header?referenceId=e76f18cd-d388-4c53-b940-53cb81b80c5e&personId="+mainController.getActivePatient(),"pdfTemplate");
+				}
+				break;
+			case "All_tb___":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				window.open("<?=$this->baseUrl?>/reports.raw/default-patient-most-recent-note?referenceId=ab3d26a7-49c5-4091-b496-23169f5ed41a&clinicalNoteDefinitionId=86815&personId="+mainController.getActivePatient(),"pdfTemplate");
+				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
                                 break;

@@ -156,6 +156,8 @@ class Appointment extends WebVista_Model_ORM {
 				->where('providerId = ?',$this->providerId)
 				->where('`start` >= ?',date('Y-m-d H:i:s',strtotime($this->start)))
 				->where('`end` <= ?',date('Y-m-d H:i:s',strtotime($this->end)))
+				->where('appointmentCode != ?','CAN')
+				->where('start <= end')
 				->limit(1);
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$ret = true;
@@ -167,11 +169,16 @@ class Appointment extends WebVista_Model_ORM {
 		$ret = true;
 		$scheduleEvent = new ScheduleEvent();
 		$db = Zend_Registry::get('dbAdapter');
+		$start = $db->quote(date('Y-m-d H:i:s',strtotime($this->start)));
+		$end = $db->quote(date('Y-m-d H:i:s',strtotime($this->end)));
 		$sqlSelect = $db->select()
 				->from($scheduleEvent->_table)
 				->where('providerId = ?',$this->providerId)
-				->where("'".date('Y-m-d H:i:s',strtotime($this->start))."' BETWEEN `start` AND `end`")
-				->where("'".date('Y-m-d H:i:s',strtotime($this->end))."' BETWEEN `start` AND `end`")
+				->where($start.' >= `start`')
+				->where($start.' <= `end`')
+				->where($end.' >= `start`')
+				->where($end.' <= `end`')
+				->where('start <= end')
 				->limit(1);
 		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
 		if ($row = $db->fetchRow($sqlSelect)) {
@@ -188,6 +195,33 @@ class Appointment extends WebVista_Model_ORM {
 				->where('patientId = ?',(int)$patientId)
 				->order('start DESC');
 		return $this->getIterator($sqlSelect);
+	}
+
+	public function getIter($excludeCancelled=true) {
+		$db = Zend_Registry::get('dbAdapter');
+		$providerId = (int)$this->providerId;
+		$roomId = (int)$this->roomId;
+		$start = $this->start;
+		$end = $this->end;
+		if (!strlen($start) > 0) $start = date('Y-m-d 00:00:00');
+		if (!strlen($end) > 0) $end = date('Y-m-d 23:59:59',strtotime($start));
+		$dateStart = date('Y-m-d H:i:s',strtotime($start));
+		$dateEnd = date('Y-m-d H:i:s',strtotime($end));
+
+		// check date end's time if it's 23:59, if so then add one day and set it's time to 00:00:00
+		$x = explode(' ',$dateEnd);
+		if (substr($x[1],0,5) == '23:59') $dateEnd = date('Y-m-d 00:00:00',strtotime('+1 day',$endTime));
+
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('roomId = ?',$roomId)
+				->where('providerId = ?',$providerId)
+				->where('start >= ?',$dateStart)
+				->where('end <= ?',$dateEnd)
+				->where('start <= end')
+				->order('start ASC');
+		if ($excludeCancelled) $sqlSelect->where("appointmentCode != 'CAN'");
+		return new AppointmentIterator($sqlSelect);
 	}
 
 }

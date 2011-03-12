@@ -42,6 +42,8 @@
 	<div id="paymentContainerId" style="display:none;">
 		<div id="paymentGridId" style="width:auto;height:130px;"></div>
 		<br style="clear:left;" />
+		<div id="adjustmentGridId" style="width:auto;height:100px;"></div>
+		<br style="clear:left;" />
 		<div style="float:left;">
 			<div style="float:left;">
 				<div class="formRow" style="padding-top:4px;">
@@ -158,7 +160,7 @@ function checkNosOnChanged(obj) {
 	});
 
 	dojo.byId("sourceOfFundsId1").checked = true;
-	dojo.byId("checkNoId").value = obj.options[obj.selectedIndex].value;
+	dojo.byId("checkNoId").value = obj.options[obj.selectedIndex].text;
 	var funds = parseFloat(obj.options[obj.selectedIndex].label);
 	if (isNaN(funds)) funds = 0;
 	var amount = funds.toFixed(2);
@@ -305,8 +307,9 @@ function claimPaymentLoadClaims(claimId) {
 			var checkNosSelect = dojo.byId("checkNosId");
 			checkNosSelect.options.length = 0;
 			for (var i in data.checkNos) {
-				var opt = new Option(i,i);
-				opt.label = data.checkNos[i];
+				var chk = data.checkNos[i];
+				var opt = new Option(chk.checkNo,i);
+				opt.label = chk.unallocated;
 				checkNosSelect.options[checkNosSelect.options.length] = opt;
 			}
 		},
@@ -338,7 +341,7 @@ function paymentRecordPayment(callback,params) {
 			var checkNosSelect = dojo.byId("checkNosId");
 			var selectedIndex = checkNosSelect.selectedIndex;
 			if (selectedIndex > 0) {
-				checkNo = checkNosSelect.options[selectedIndex].value;
+				checkNo = checkNosSelect.options[selectedIndex].text;
 			}
 		}
 		break;
@@ -497,7 +500,13 @@ function paymentGridReload(claimId) {
 	paymentGrid.load("<?=$this->baseUrl?>/claims.raw/list-claim-lines?claimId="+claimId,function(){
 		var hasRow = false;
 		var totalBalance = 0;
+		var procedureCodes = [];
+		var comboApplied = adjustmentGrid.getCombo(0);
+		comboApplied.clear();
 		paymentGrid.forEachRow(function(rowId){
+			var code = this.cells(rowId,indexCode).getValue() + "";
+			var tmp = code.split(" ");
+			comboApplied.put(rowId,tmp[0]);
 			hasRow = true;
 			var balance = parseFloat(this.cells(rowId,indexBalance).getValue());
 			if (isNaN(balance)) return;
@@ -506,6 +515,7 @@ function paymentGridReload(claimId) {
 			this.setUserData(rowId,"writeOff",this.cells(rowId,indexWriteOff).getValue());
 			this.setUserData(rowId,"balance",this.cells(rowId,indexBalance).getValue());
 		});
+		adjustmentGridReload(claimId);
 		dojo.byId("checkFundsId").value = totalBalance.toFixed(2);
 		if (hasRow) {
 			dojo.byId("paymentNoCodesId").style.display = "none";
@@ -573,6 +583,86 @@ paymentGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,old
 	}
 	return true;
 });
+
+var adjustmentGrid = new dhtmlXGridObject("adjustmentGridId");
+adjustmentGrid.setImagePath("<?=$this->baseUrl?>/img/");
+var indexAppliedTo = 0;
+var indexType = 1;
+var indexValue = 2;
+adjustmentGrid.setHeader("<?=__('Applied To')?>,<?=__('Type')?>,<?=__('Value')?>");
+adjustmentGrid.setColTypes("coro,coro,ed");
+adjustmentGrid.setInitWidths("*,*,*");
+adjustmentGrid.setSkin("xp");
+adjustmentGrid.enableAutoHeight(true,100);
+adjustmentGrid.init();
+var comboType = adjustmentGrid.getCombo(1);
+<?$eobs = array(); foreach(Enumeration::getEnumArray('Eob Adjustment Types') as $key=>$value) $eobs[$key] = $value;
+ksort($eobs,SORT_NUMERIC);
+foreach($eobs as $key=>$value):?>
+comboType.put("<?=$key?>",(<r><![CDATA[<?=$key?>: <?=$value?>]]></r>).toString());
+<?endforeach;?>
+
+adjustmentGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
+	if (stage == 2 && newValue != oldValue) {
+		adjustmentSave(rowId,cellIndex);
+	}
+	return true;
+});
+
+function adjustmentGridReload(claimId) {
+	adjustmentGrid.clearAll(); 
+	adjustmentGrid.load("<?=$this->baseUrl?>/claims.raw/list-adjustments?claimId="+claimId,function(){
+		adjustmentGrid.addRow("trailingId","");
+	},"json"); 
+}
+
+function adjustmentSave(rowId,cellIndex) {
+	var id = rowId;
+	if (id == "trailingId") id = 0;
+	var paymentId = 0;
+	var sourceOfFundsEl = document.getElementsByName("sourceOfFundsId");
+	for(var i = 0; i < sourceOfFundsEl.length; i++) {
+		if (!sourceOfFundsEl[i].checked) continue;
+		if (sourceOfFundsEl[i].value == "checkFundsId") {
+			var checkNosSelect = dojo.byId("checkNosId");
+			var selectedIndex = checkNosSelect.selectedIndex;
+			if (selectedIndex >= 0) {
+				paymentId = checkNosSelect.options[selectedIndex].value;
+			}
+		}
+		break;
+	}
+	var visit = listVisits[currTransIndex];
+	var claimId = (visit.claimIds[currClaimId])?visit.claimIds[currClaimId]:0;
+	dojo.xhrPost({
+		url: globalBaseUrl + "/claims.raw/process-save-adjustment",
+		handleAs: "json",
+		content: {
+			"adj[eobAdjustmentId]": id,
+			"adj[claimId]": claimId,
+			"adj[paymentId]": paymentId,
+			"adj[claimLineId]": adjustmentGrid.cells(rowId,indexAppliedTo).getValue(),
+			"adj[type]": adjustmentGrid.cells(rowId,indexType).getValue(),
+			"adj[value]": adjustmentGrid.cells(rowId,indexValue).getValue(),
+		},
+		load: function(data) {
+			if (!data.id) {
+				alert("<?=__('Failed to save')?>");
+				return;
+			}
+			if (data.id && rowId == "trailingId") {
+				adjustmentGrid.setRowId(adjustmentGrid.getRowIndex("trailingId"),data.id);
+				adjustmentGrid.addRow("trailingId","");
+			}
+			adjustmentGrid.renderRowData(data);
+			return data;
+		},
+		error: function(response) {
+			console.error("ERROR: ",response.responseText);
+			return response;
+		}
+	});
+}
 
 dojo.byId("queueId").innerHTML = listVisits.length;
 

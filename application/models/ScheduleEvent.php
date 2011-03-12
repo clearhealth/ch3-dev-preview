@@ -183,4 +183,155 @@ class ScheduleEvent extends WebVista_Model_ORM {
 		return $ret;
 	}
 
+	public function bookingAppointmentDetails($minutesInterval=1) {
+		list($usec,$sec) = explode(' ',microtime());
+		$appTs = ((float)$usec + (float)$sec);
+
+		$ret = array();
+
+		$providerId = (int)$this->providerId;
+		$roomId = (int)$this->roomId;
+		$dateStart = date('Y-m-d H:i:s',strtotime($this->start));
+		$endTime = strtotime($this->end);
+		$dateEnd = date('Y-m-d H:i:s',$endTime);
+		// check date end's time if it's 23:59, if so then add one day and set it's time to 00:00:00
+		$x = explode(' ',$dateEnd);
+		if (substr($x[1],0,5) == '23:59') $dateEnd = date('Y-m-d 00:00:00',strtotime('+1 day',$endTime));
+
+		$db = Zend_Registry::get('dbAdapter');
+		$appSelect = $db->select()
+				->from('appointments',array('start','end'))
+				->where('roomId = ?',$roomId)
+				->where('providerId = ?',$providerId)
+				->where('start >= ?',$dateStart)
+				->where('end <= ?',$dateEnd)
+				->where('start <= end')
+				->where("appointmentCode != 'CAN'")
+				->order('start ASC');
+		/*$sql = $appSelect->__toString();
+		$sql = str_replace('SELECT','SELECT SQL_NO_CACHE',$sql);
+		$sqlAppointment = $sql;*/
+
+		$sqlSelect = $db->select()
+				->from($this->_table,array('start','end'))
+				->where('providerId = ?',$providerId)
+				->where('roomId = ?',$roomId)
+				->where('start >= ?', $dateStart)
+				->where('end <= ?',$dateEnd)
+				->where('start <= end')
+				->order('start ASC');
+		/*$sql = $sqlSelect->__toString();
+		$sql = str_replace('SELECT','SELECT SQL_NO_CACHE',$sql);
+		$sqlSchedule = $sql;*/
+		$stmtSchedule = $db->query($sqlSelect);
+
+		$stmtAppointment = $db->query($appSelect);
+
+		$currentDate = null;
+		$appStack = array();
+		while ($row = $stmtAppointment->fetch(PDO::FETCH_ASSOC)) {
+			$date = substr($row['start'],0,10);
+			if ($currentDate === null) $currentDate = $date;
+			if ($date == $currentDate) {
+				array_push($appStack, $row);
+			}
+			else {
+				$hasUnbooked = $this->_checkUnbooked($ret,$currentDate,$appStack,$stmtSchedule,$minutesInterval);
+				if ($hasUnbooked !== null) $ret[$currentDate] = $hasUnbooked;
+
+				$appStack = array();
+				array_push($appStack, $row);
+				$currentDate = $date;
+			}
+		}
+		if (isset($appStack[0])) {
+			$hasUnbooked = $this->_checkUnbooked($ret,$currentDate,$appStack,$stmtSchedule,$minutesInterval);
+			if ($hasUnbooked !== null) $ret[$currentDate] = $hasUnbooked;
+		}
+		$stmtAppointment->closeCursor();
+		$stmtSchedule->closeCursor();
+
+		list($usec,$sec) = explode(' ',microtime());
+		$appTe = ((float)$usec + (float)$sec);
+		trigger_error('overall compute time: '.($appTe-$appTs));
+		//file_put_contents('/tmp/schedule.txt',print_r($ret,true));
+		return $ret;
+	}
+
+	protected function _checkUnbooked(&$data,$currentDate,Array $appStack,$stmtSchedule,$minutesInterval) {
+		//file_put_contents('/tmp/schedule.txt',$currentDate.' APPSTACK = '.print_r($appStack,true),FILE_APPEND);
+		// plot schedule of the day
+		$ranges = array();
+		$currentRowSchedule = null;
+		while ($rowSchedule = $stmtSchedule->fetch(PDO::FETCH_ASSOC)) {
+			$dateSchedule = substr($rowSchedule['start'],0,10);
+			$data[$dateSchedule] = true; // default: has free time unless proven that all time schedules have appointments
+			if ($dateSchedule == $currentDate) {
+				self::fillupTimeRange($rowSchedule['start'],$rowSchedule['end'],$ranges,false,$minutesInterval);
+				$currentRowSchedule = $rowSchedule;
+			}
+			else if ($currentRowSchedule !== null || strtotime($dateSchedule) > strtotime($currentDate)) {
+				break;
+			}
+		}
+		$hasUnbooked = null;
+		if ($currentRowSchedule === null) { // no schedule event
+			return $hasUnbooked;
+		}
+
+		for ($i=0,$ctr=count($appStack);$i<$ctr;$i++) {
+			self::fillupTimeRange($appStack[$i]['start'],$appStack[$i]['end'],$ranges,true,$minutesInterval);
+		}
+		//file_put_contents('/tmp/schedule.txt',$currentDate.' = '.print_r($ranges,true),FILE_APPEND);
+
+		$hasUnbooked = false;
+		foreach ($ranges as $value) {
+			if (!$value) {
+				$hasUnbooked = true;
+				break;
+			}
+		}
+		return $hasUnbooked;
+	}
+
+	public static function fillupTimeRange($start,$end,&$ranges,$value,$minutesInterval=1) {
+		$startToTime = strtotime($start);
+		$endToTime = strtotime($end);
+		// we need to deduct a minute on end time
+		$endToTime = strtotime('-1 minute',$endToTime);
+		//trigger_error(date('Y-m-d H:i:s',$endToTime));
+		$incTime = $startToTime;
+		do {
+			$min = date('H:i',$incTime);
+			$ranges[$min] = $value;
+			$incTime = strtotime('+'.$minutesInterval.' minutes',$incTime);
+		} while ($incTime <= $endToTime);
+	}
+
+	public function getIter() {
+		$db = Zend_Registry::get('dbAdapter');
+		$providerId = (int)$this->providerId;
+		$roomId = (int)$this->roomId;
+		$start = $this->start;
+		$end = $this->end;
+		if (!strlen($start) > 0) $start = date('Y-m-d 00:00:00');
+		if (!strlen($end) > 0) $end = date('Y-m-d 23:59:59',strtotime($start));
+		$dateStart = date('Y-m-d H:i:s',strtotime($start));
+		$dateEnd = date('Y-m-d H:i:s',strtotime($end));
+
+		// check date end's time if it's 23:59, if so then add one day and set it's time to 00:00:00
+		$x = explode(' ',$dateEnd);
+		if (substr($x[1],0,5) == '23:59') $dateEnd = date('Y-m-d 00:00:00',strtotime('+1 day',$endTime));
+
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('providerId = ?',$providerId)
+				->where('roomId = ?',$roomId)
+				->where('start >= ?', $dateStart)
+				->where('end <= ?',$dateEnd)
+				->where('start <= end')
+				->order('start ASC');
+		return new ScheduleEventIterator($sqlSelect);
+	}
+
 }

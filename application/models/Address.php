@@ -297,4 +297,14 @@ class Address extends WebVista_Model_ORM {
 		return $state;
 	}
 
+	public static function listAddresses($personId) {
+		$ret = array();
+		$orm = new self();
+		$orm->personId = (int)$personId;
+		foreach ($orm->getIteratorByPersonId() as $row) {
+			$ret[$row->type] = $row;
+		}
+		return $ret;
+	}
+
 }
