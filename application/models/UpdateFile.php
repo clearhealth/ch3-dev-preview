@@ -158,8 +158,15 @@ class UpdateFile extends WebVista_Model_ORM {
 					$signatureTag = $buffer;
 					continue;
 				}
+				else if (isset($licenseTagComplete) && !$licenseTagComplete) {
+					$licenseTag .= $buffer;
+					if (substr($buffer,-10) == '</license>') $licenseTagComplete = true;
+					$include = false;
+				}
 				else if ($licenseTag == '' && substr($buffer,0,9) == '<license>') {
 					$licenseTag = $buffer;
+					$licenseTagComplete = false;
+					if (substr($buffer,-10) == '</license>') $licenseTagComplete = true;
 					$include = false;
 				}
 				else {
