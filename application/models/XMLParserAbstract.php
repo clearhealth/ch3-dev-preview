@@ -63,6 +63,7 @@ abstract class XMLParserAbstract extends WebVista_Model_ORM {
 			return -1;
 		}
 
+		set_time_limit(0);
 		while ($data = fread($fp, 4096)) {
 			if (!xml_parse($this->_xp,$data,feof($fp))) {
 				trigger_error(sprintf("XML error: %s at line %d",xml_error_string(xml_get_error_code($this->_xp)),xml_get_current_line_number($this->_xp)));

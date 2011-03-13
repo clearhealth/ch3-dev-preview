@@ -198,7 +198,6 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 	}
 
 	var div = null;
-	var nodeIndex = parseInt(td._this.grid.getRowIndex(cell.parentNode.idd)) + 1;
 
 	if (cell._annotationIndex && divBox.childNodes[cell._annotationIndex]) {
 		div = divBox.childNodes[cell._annotationIndex];
@@ -215,22 +214,22 @@ dhtmlXGridObject.prototype.expandSubRow = function(cell) {
 		// fixed scrolling issue
 		var that = this;
 		td._this.grid.attachEvent("onScroll",function(scrollLeft,scrollTop){
-			if (!this.objBox.childNodes[nodeIndex].origTop) {
-				var origTop = this.objBox.childNodes[nodeIndex].style.top + "";
+			if (!div.origTop) {
+				var origTop = div.style.top + "";
 				var x = origTop.toLowerCase().split("px");
-				this.objBox.childNodes[nodeIndex].origTop = parseInt(x[0]);
+				div.origTop = parseInt(x[0]);
 			}
-			var tp = parseInt(this.objBox.childNodes[nodeIndex].origTop) - parseInt(scrollTop);
-			this.objBox.childNodes[nodeIndex].style.top = tp + "px";
+			var tp = parseInt(div.origTop) - parseInt(scrollTop);
+			div.style.top = tp + "px";
 
-			if (!this.objBox.childNodes[nodeIndex].origLeft) {
-				var origLeft = this.objBox.childNodes[nodeIndex].style.left + "";
+			if (!div.origLeft) {
+				var origLeft = div.style.left + "";
 				var x = origLeft.toLowerCase().split("px");
-				this.objBox.childNodes[nodeIndex].origLeft = parseInt(x[0]);
+				div.origLeft = parseInt(x[0]);
 			}
-			var lft = parseInt(this.objBox.childNodes[nodeIndex].origLeft) - parseInt(scrollLeft);
-			this.objBox.childNodes[nodeIndex].origLeft = scrollLeft;
-			this.objBox.childNodes[nodeIndex].style.left = lft + "px";
+			var lft = parseInt(div.origLeft) - parseInt(scrollLeft);
+			div.origLeft = scrollLeft;
+			div.style.left = lft + "px";
 		});
 		div.className = "dhx_sub_row";
 		div.style.cssText = "position:absolute;overflow:auto;font-family:Tahoma;font-size:8pt;margin-top:2px;margin-left:4px;";

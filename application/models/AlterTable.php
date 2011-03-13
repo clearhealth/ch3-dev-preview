@@ -43,6 +43,7 @@ class AlterTable extends XMLParserAbstract {
 	protected $_withSql = true;
 	protected $_tableColumnsCtr = array();
 	protected $_existingEnums = array();
+	protected $_sqlInsert = '';
 
 	public function __construct() {
 		$config = Zend_Registry::get('config');
@@ -92,7 +93,7 @@ class AlterTable extends XMLParserAbstract {
 			foreach ($this->_tables[$tableName] as $fieldName=>$col) {
 				$columnNames[] = $db->quoteIdentifier($fieldName);
 			}
-			fwrite($this->_fd,"\nINSERT INTO ".$db->quoteTableAs($tableName)." (".implode(',',$columnNames).") VALUES");
+			$this->_sqlInsert = "\nINSERT INTO ".$db->quoteTableAs($tableName)." (".implode(',',$columnNames).") VALUES";
 		}
 	}
 
@@ -356,10 +357,7 @@ class AlterTable extends XMLParserAbstract {
 			if ($this->_tdFirstRow) {
 				$this->_tdFirstRow = false;
 			}
-			else {
-				fwrite($this->_fd,',');
-			}
-			fwrite($this->_fd,"\n(".$db->quote($row).')');
+			fwrite($this->_fd,$this->_sqlInsert."(".$db->quote($row).');');
 		}
 	}
 
@@ -411,8 +409,11 @@ class AlterTable extends XMLParserAbstract {
 	}
 
 	public function executeSqlChanges() {
-		$dbParams = Zend_Registry::get('config')->database->params;
-		$cmd = 'mysql -f --user="'.$dbParams->username.'"';
+		$config = Zend_Registry::get('config');
+		$dbParams = $config->database->params;
+		$mysqlClient = exec('which mysql');
+		if ($config->bin && $config->bin->mysqlClient) $mysqlClient = (string)$config->bin->mysqlClient; // overrides autodetected mysql client directory
+		$cmd = $mysqlClient.' -f --user="'.$dbParams->username.'"';
 		if (strlen($dbParams->password) > 0) {
 			$cmd .= ' --password="'.$dbParams->password.'"';
 		}
