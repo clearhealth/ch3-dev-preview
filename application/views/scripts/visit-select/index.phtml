@@ -14,7 +14,8 @@ div.gridbox#visitListGridId table.obj tr.rowselected td {
 function setBuildingRooms(practiceId) {
 	if (!practiceId) {
 		var practiceSelect = dojo.byId("visit-practiceId");
-		practiceId = practiceSelect.options[practiceSelect.selectedIndex].value;
+		var practiceIndex = practiceSelect.selectedIndex;
+		practiceId = (practiceIndex >= 0)?practiceSelect.options[practiceIndex].value:0;
 	}
 	var practiceBuildingRoomMap = new Array();
 	<?$this->facilityIterator->rewind()?>
@@ -303,7 +304,8 @@ function visitProcessVoid() {
 
 function visitProcess(action) {
 	var buildingRoomSelect = dojo.byId("visit-buildingRoomId");
-	var buildingRoomId = buildingRoomSelect.options[buildingRoomSelect.selectedIndex].value;
+	var roomIndex = buildingRoomSelect.selectedIndex;
+	var buildingRoomId = (roomIndex >= 0)?buildingRoomSelect.options[roomIndex].value:0;
 	// explode buildingRoomId to buildingId and roomId
 	var splittedBuildingRoomId = buildingRoomId.split("_");
 	dojo.byId("visit-buildingId").value = (splittedBuildingRoomId[0]||0);

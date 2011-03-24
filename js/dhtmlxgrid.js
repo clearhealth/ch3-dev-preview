@@ -5094,10 +5094,12 @@ dhtmlXGridObject.prototype.renderRowData = function(row) {
 		this.addRow(row.id,"");
 	}
 	for (var i in row.data) {
-		this.cells(row.id,i).setValue(row.data[i]);
+		var value = (row.data[i] !== null)?row.data[i]:"";
+		this.cells(row.id,i).setValue(value);
 	}
 	for (var i in row.userdata) {
-		this.setUserData(row.id,i,row.userdata[i]);
+		var value = (row.userdata[i] !== null)?row.userdata[i]:"";
+		this.setUserData(row.id,i,value);
 	}
 	return true;
 };

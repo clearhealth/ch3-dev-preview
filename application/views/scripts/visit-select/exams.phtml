@@ -142,7 +142,10 @@ function examsListGridOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 			case indexPEXResults:
 			case indexPEXExams:
 			case indexPEXRefused:
-				examSave(rowId);
+				examSave(rowId,function(data){
+					var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+					examsListGrid.cells(rowId,cellIndex).setValue(value);
+				});
 				break;
 		}
 	}
@@ -172,7 +175,7 @@ function examRemove(rowId) {
 	});
 }
 
-function examSave(rowId) {
+function examSave(rowId,callback) {
 	if (rowId == undefined) {
 		rowId = examsListGrid.getSelectedRowId();
 	}
@@ -196,6 +199,10 @@ function examSave(rowId) {
 		handleAs: "json",
 		content: examsContent,
 		load: function (data) {
+			if (typeof callback == "function") {
+				callback(data);
+				return;
+			}
 			examsListGridReload();
 		},
 		error: function (error) {

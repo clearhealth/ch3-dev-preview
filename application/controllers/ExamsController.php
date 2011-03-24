@@ -138,7 +138,16 @@ class ExamsController extends WebVista_Controller_Action {
 		$patientExam = new PatientExam();
 		$patientExam->populateWithArray($exams);
 		$patientExam->persist();
-		$data = true;
+		$data = array(
+			'id'=>$patientExam->code,
+			'data'=>array(
+				date('Y-m-d',strtotime($patientExam->dateExamined)),
+				(string)$patientExam->result,
+				(string)$patientExam->exam,
+				(string)$patientExam->refused,
+				(string)$patientExam->comments,
+			),
+		);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);

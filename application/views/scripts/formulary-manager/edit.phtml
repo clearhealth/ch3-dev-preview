@@ -227,20 +227,18 @@ formularyGrid.attachEvent("onRowSelect",onFormularyRowSelected);
 function onFormularyRowSelected(rowId,cellIndex) {
 }
 
-function formularySingleUpdate(field,id,value,callback) {
+function formularySingleUpdate(rowId,cellIndex,value) {
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/formulary-manager.raw/process-single-update",
 		handleAs: "json",
 		content: {
 			name: '<?=$this->tableName?>',
-			field: field,
-			id: id,
+			field: fieldNameLookup[cellIndex],
+			id: rowId,
 			value: value,
 		},
 		load: function (data) {
-			if (typeof callback == 'function') {
-				callback(data);
-			}
+			formularyGrid.cells(rowId,cellIndex).setValue(data);
 		},
 		error: function (error) {
 			alert(error);
@@ -249,16 +247,12 @@ function formularySingleUpdate(field,id,value,callback) {
 	});
 }
 
-function formularyOnUpdated(data) {
-	formularyGridReload();
-}
-
 formularyGrid.attachEvent("onEditCell",formularyOnEditCell);
 function formularyOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 	switch (stage) {
 		case 2:
 			if (cellIndex > 0 && newValue != oldValue) {
-				formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
+				formularySingleUpdate(rowId,cellIndex,newValue);
 			}
 			break;
 	}
@@ -270,7 +264,7 @@ function formularyGridOnChecked(rowId,cellIndex,value) {
 	if (value) {
 		newValue = 1;
 	}
-	formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
+	formularySingleUpdate(rowId,cellIndex,newValue);
 }
 
 var formularyMenu = new dhtmlXMenuObject(null,'standard');

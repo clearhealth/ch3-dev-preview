@@ -240,7 +240,10 @@ function immunizationsListGridOnEditCell(stage,rowId,cellIndex,newValue,oldValue
 			case indexPIMImmunization:
 			case indexPIMPR:
 			case indexPIMComment:
-				immunizationSave(rowId);
+				immunizationSave(rowId,null,null,function(data){
+					var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+					immunizationsListGrid.cells(rowId,cellIndex).setValue(value);
+				});
 				break;
 		}
 	}
@@ -274,7 +277,7 @@ function immunizationRemove(rowId) {
 	});
 }
 
-function immunizationSave(rowId,code,description) {
+function immunizationSave(rowId,code,description,callback) {
 	if (rowId == null) {
 		var immunizationContent = {
 			"immunizations[patientId]": mainController.getActivePatient(),
@@ -305,16 +308,11 @@ function immunizationSave(rowId,code,description) {
 		content: immunizationContent,
 		load: function (data) {
 			if (!data.id) return;
-			if (!immunizationsListGrid.doesRowExist(data.id)) {
-				immunizationsListGrid.addRow(data.id,"");
+			if (typeof callback == "function") {
+				callback(data);
+				return;
 			}
-			for (var i = 0; i < data.data.length; i++) {
-				if (data.data[i] == null) continue;
-				immunizationsListGrid.cells(data.id,i).setValue(data.data[i]);
-			}
-			for (var i in data.userdata) {
-				immunizationsListGrid.setUserData(data.id,i,data.userdata[i]);
-			}
+			immunizationsListGrid.renderRowData(data);
 		},
 		error: function (error) {
 			alert(error.responseText);

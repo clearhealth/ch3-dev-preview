@@ -71,7 +71,10 @@ function educationSectionNameOnChecked(rowId,cellIndex,state) {
 	if (state) { // add to education list
 		educationListGrid.addRow(rowId,",,,");
 		educationListGrid.cells(rowId,1).setValue(educationSectionNameListGrid.cells(rowId,3).getValue());
-		educationSave(rowId);
+		educationSave(rowId,function(data){
+			var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+			educationListGrid.cells(rowId,cellIndex).setValue(value);
+		});
 	}
 	else { // remove from education list
 		educationRemoveSelected(rowId);
@@ -87,7 +90,10 @@ educationListGrid.setSkin("xp");
 educationListGrid.init();
 function educationListGridOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 	if (stage == 2 && newValue != oldValue) {
-		educationSave(rowId);
+		educationSave(rowId,function(data){
+			var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+			educationListGrid.cells(rowId,cellIndex).setValue(value);
+		});
 	}
 	return true;
 }
@@ -148,7 +154,7 @@ function educationRemoveSelected(rowId) {
 	});
 }
 
-function educationSave(rowId) {
+function educationSave(rowId,callback) {
 	if (rowId == undefined) {
 		rowId = educationListGrid.getSelectedRowId();
 	}
@@ -168,6 +174,10 @@ function educationSave(rowId) {
 		handleAs: "json",
 		content: educationContent,
 		load: function (data) {
+			if (typeof callback == "function") {
+				callback(data);
+				return;
+			}
 			educationListGridReload();
 		},
 		error: function (error) {

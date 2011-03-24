@@ -132,7 +132,10 @@ diagnosesListGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newVal
 	if (stage == 2 && newValue != oldValue) {
 		switch (cellIndex) {
 			case indexDiagComments:
-				diagnosisSave(rowId);
+				diagnosisSave(rowId,function(data){
+					var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+					diagnosesListGrid.cells(rowId,cellIndex).setValue(value);
+				});
 				break;
 		}
 	}
@@ -140,7 +143,10 @@ diagnosesListGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newVal
 });
 
 diagnosesListGrid.attachEvent("onCheck",function(rowId,cellIndex,state){
-	diagnosisSave(rowId);
+	diagnosisSave(rowId,function(data){
+		var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+		diagnosesListGrid.cells(rowId,cellIndex).setValue(value);
+	});
 });
 
 function diagnosesListOnLoaded() {
@@ -192,7 +198,7 @@ diagnosesListMenu.attachEvent("onContextMenu",function(id){
 diagnosesListGrid.hdr.id = diagnosesListGrid.uid();
 diagnosesListMenu.addContextZone(diagnosesListGrid.hdr.id);
 
-function diagnosisSave(rowId) {
+function diagnosisSave(rowId,callback) {
 	if (!rowId) rowId = diagnosesListGrid.getSelectedRowId();
 	if (!rowId) {
 		alert("<?=__('No selected diagnosis')?>");
@@ -221,6 +227,10 @@ function diagnosisSave(rowId) {
 			}
 			if (patientDiagnosisId != rowId) {
 				diagnosesListGrid.setRowId(diagnosesListGrid.getRowIndex(rowId),data.id);
+			}
+			if (typeof callback == "function") {
+				callback(data)
+				return;
 			}
 			diagnosesListGrid.renderRowData(data);
 		},

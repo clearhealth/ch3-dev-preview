@@ -53,10 +53,22 @@ class ImmunizationInventoryController extends WebVista_Controller_Action {
 		}
 		$inventory->populateWithArray($params);
 		$inventory->persist();
-		$data = true;
+		$data = $this->_generateImmunizationInventoryRowData($inventory);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
+	}
+
+	protected function _generateImmunizationInventoryRowData(ImmunizationInventory $inventory) {
+		$row = array();
+		$row['id'] = $inventory->immunizationInventoryId;
+		$row['data'] = array();
+		$row['data'][] = (string)$inventory->manufacturer;
+		$row['data'][] = (string)$inventory->mvxCode;
+		$row['data'][] = (string)$inventory->lotNumber;
+		$row['data'][] = date('Y-m-d',strtotime($inventory->expiration));
+		$row['data'][] = (int)$inventory->immunizationId;
+		return $row;
 	}
 
 	public function processAddAction() {
@@ -83,16 +95,8 @@ class ImmunizationInventoryController extends WebVista_Controller_Action {
 		$iterator = new ImmunizationInventoryIterator();
 		$iterator->setFilters(array('immunization'=>$immunization));
 		foreach ($iterator as $inventory) {
-			$row = array();
-			$row['id'] = $inventory->immunizationInventoryId;
-			$row['data'] = array();
-			$row['data'][] = $inventory->manufacturer;
-			$row['data'][] = $inventory->mvxCode;
-			$row['data'][] = $inventory->lotNumber;
-			$row['data'][] = $inventory->expiration;
-			$row['data'][] = (int)$inventory->immunizationId;
 			if (!isset($parLevel)) $parLevel = (int)$inventory->parLevel;
-			$rows[] = $row;
+			$rows[] = $this->_generateImmunizationInventoryRowData($inventory);
 		}
 		if (isset($parLevel)) $rows[0]['userdata']['parLevel'] = $parLevel;
 		$data = array('rows'=>$rows);

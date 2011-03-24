@@ -260,7 +260,6 @@ class InsuranceManagerController extends WebVista_Controller_Action {
 				break;
 		}
 
-		$retVal = false;
 		if ($orm !== null && (in_array($field,$orm->ormFields()) || in_array($field,$orm->$ormLink->ormFields()))) {
 			if ($id > 0) {
 				$primaryKey = $ormLink.'Id';
@@ -274,10 +273,7 @@ class InsuranceManagerController extends WebVista_Controller_Action {
 				$orm->$field = $value;
 			}
 			$orm->persist();
-			$retVal = true;
-		}
-		if ($retVal) {
-			$data = true;
+			$data = $value;
 		}
 		else {
 			$data = array('error' => __('There was an error attempting to update the selected record.'));

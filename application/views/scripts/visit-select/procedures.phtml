@@ -152,7 +152,10 @@ proceduresListGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newVa
 			case indexProcQuantity:
 			case indexProcProvider:
 			case indexProcComments:
-				procedureSave(rowId);
+				procedureSave(rowId,function(data){
+					var value = (data.data[cellIndex])?data.data[cellIndex]:"";
+					proceduresListGrid.cells(rowId,cellIndex).setValue(value);
+				});
 				break;
 		}
 	}
@@ -188,7 +191,7 @@ proceduresListGrid.hdr.id = proceduresListGrid.uid();
 proceduresListMenu.addContextZone(proceduresListGrid.hdr.id);
 
 
-function procedureSave(rowId) {
+function procedureSave(rowId,callback) {
 	if (!rowId) rowId = proceduresListGrid.getSelectedRowId();
 	if (!rowId) {
 		alert("<?=__('No selected procedure')?>");
@@ -216,6 +219,10 @@ function procedureSave(rowId) {
 			}
 			if (patientProcedureId != rowId) {
 				proceduresListGrid.setRowId(proceduresListGrid.getRowIndex(rowId),data.id);
+			}
+			if (typeof callback == "function") {
+				callback(data);
+				return;
 			}
 			proceduresListGrid.renderRowData(data);
 		},

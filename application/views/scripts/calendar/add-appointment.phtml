@@ -323,27 +323,39 @@ function getDetails(args) {
 	dojo.byId("<?=$this->form->patientId->getId()?>").value = pscb.selectedKey;
 }
 
-
-function pNotesProcessEdit(id,field,value,type,callback) {
+function pNotesProcessEdit(action,params,callback) {
 	dojo.xhrPost({
-		url: "<?=$this->baseUrl?>/patient.raw/process-edit-by-field",
+		url: "<?=$this->baseUrl?>/patient.raw/"+action,
 		handleAs: "json",
-		content: {
-			personId: "<?=$this->form->patientId->getValue()?>",
-			type: type,
-			id: id,
-			field: field,
-			value: value,
-		},
+		content: params,
 		load: function (data) {
-			if (typeof callback == "function") {
-				callback(data);
+			if (data.error) {
+				alert(data.error);
+				return;
 			}
+			if (typeof callback == "function") callback(data);
 		},
 		error: function (error) {
 			alert(error);
-			console.error("Error: ", error);
+			console.error ('Error: ', error);
 		}
+	});
+}
+
+// NOTES GRID
+function pNotesEdit(rowId,cellIndex,value) {
+	var params = {};
+	params["patientNote[patientNoteId]"] = rowId;
+	params["patientNote[patientId]"] = "<?=$this->form->patientId->getValue()?>";
+	params["patientNote["+pNotesColFields[cellIndex]+"]"] = value;
+	var action = (rowId > 0)?"process-edit-note":"process-add-note";
+	pNotesProcessEdit(action,params,function(data){
+		if (action == "process-add-note") {
+			pNotesGrid.renderRowData(data);
+			return;
+		}
+		if (data.id && !pNotesGrid.doesRowExist(data.id)) pNotesGrid.addRow(data.id,",,,,,");
+		if (data.data[cellIndex]) pNotesGrid.cells(data.id,cellIndex).setValue(data.data[cellIndex]);
 	});
 }
 var pNotesGrid = new dhtmlXGridObject("pNotesGridId");
@@ -369,9 +381,7 @@ pNotesColFields.push("reason");
 pNotesColFields.push("note");
 pNotesColFields.push("active");
 pNotesGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
-	if (stage == 2 && newValue != oldValue) {
-		pNotesProcessEdit(rowId,pNotesColFields[cellIndex],newValue,"note",pNotesGridReload);
-	}
+	if (stage == 2 && newValue != oldValue) pNotesEdit(rowId,cellIndex,newValue);
 	return true;
 });
 for (var i = 1; i <= 5; i++) {

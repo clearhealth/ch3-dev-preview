@@ -475,12 +475,8 @@ function reportViewMappingGridOnCellEdited(stage,rowId,cellIndex,newValue,oldVal
 			},
 			load: function (data) {
 				if (!data) return;
-				if (!reportViewMappingGrid.doesRowExist(data.id)) {
-					reportViewMappingGrid.addRow(data.id,"");
-				}
-				for (var i in data.data) {
-					reportViewMappingGrid.cells(data.id,i).setValue(data.data[i]);
-				}
+				if (!reportViewMappingGrid.doesRowExist(data.id)) reportViewMappingGrid.addRow(data.id,"");
+				if (data.data[i]) reportViewMappingGrid.cells(data.id,i).setValue(data.data[i]);
 			},
 			error: function (error) {
 				alert(error);

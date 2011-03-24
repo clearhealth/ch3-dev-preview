@@ -30,6 +30,13 @@ function locationSyncAll() {
 	});
 }
 
+var indexLocationFields = [
+	"buildingId",
+	"serviceLevel",
+	"dateActiveStart",
+	"dateActiveEnd",
+	"SSID",
+];
 var locationGrid = new dhtmlXGridObject("locationGridId");
 locationGrid.setImagePath("<?=$this->baseUrl?>/img/");
 locationGrid.setHeader("<?=__('Building')?>,<?=__('Service Level')?>,<?=__('Active Start')?>,<?=__('Active End')?>,<?=__('SureScripts SPI')?>");
@@ -39,14 +46,7 @@ locationGrid.setSkin("xp");
 locationGrid.init();
 locationGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue) {
 	if (stage == 2 && newValue != oldValue) {
-		var indexLocationFields = [
-			"buildingId",
-			"serviceLevel",
-			"dateActiveStart",
-			"dateActiveEnd",
-			"SSID",
-		];
-		locationEdit(rowId,indexLocationFields[cellIndex],newValue);
+		locationEdit(rowId,cellIndex,newValue);
 	}
 	return true;
 });
@@ -136,12 +136,12 @@ function locationDoProcess(action,content,callback) {
 	});
 }
 
-function locationEdit(rowId,field,value) {
+function locationEdit(rowId,cellIndex,value) {
 	var content = {
 		"prescriber[providerId]":"<?=$this->personId?>",
 	};
 	if (rowId) {
-		content["prescriber["+field+"]"] = value;
+		content["prescriber["+indexLocationFields[cellIndex]+"]"] = value;
 		content["prescriber[ePrescriberId]"] = rowId;
 	}
 	locationDoProcess("edit",content,function(data){
@@ -149,8 +149,11 @@ function locationEdit(rowId,field,value) {
 		if (!locationGrid.doesRowExist(data.id)) {
 			locationGrid.addRow(data.id,"");
 		}
-		for (var i = 0; i < data.data.length; i++) {
-			locationGrid.cells(data.id,i).setValue(data.data[i]);
+		if (rowId) {
+			if (data.data[cellIndex]) locationGrid.cells(data.id,cellIndex).setValue(data.data[cellIndex]);
+		}
+		else {
+			locationGrid.renderRowData(data);
 		}
 	});
 }

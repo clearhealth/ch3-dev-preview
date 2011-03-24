@@ -1,83 +1,88 @@
 <div style="width:100%;">
+	<div style="float:left;width:280px;">
+		<fieldset><legend><?=__('Company Details')?></legend>
+		<?if ($this->message) :?>
+		<div style="background-color:PaleGreen; width:100%;">
+			<?=$this->message?>
+		</div>
+		<?endif;?>
+		<?=$this->form->renderOpen()?>
+		<div style="margin-left:10px;">
+			<?foreach ($this->form->getErrorMessages() as $error) {?>
+				<?=$error?>
+			<?}?>
+		</div>
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->name->renderLabel()?>
+			<?$this->form->name->setAttrib('size',35)?>
+			<?=$this->form->nameInput()?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->payerIdentifier->renderLabel()?>
+			<?$this->form->payerIdentifier->setAttrib('size',35)?>
+			<?=$this->form->payerIdentifierInput()?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->payerType->renderLabel()?>
+			<?=$this->formSelect('program[payerType]',$this->form->payerType->getValue(),array('id'=>'program-payerType','style'=>'width:250px;'),$this->payerTypes);?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->programType->renderLabel()?>
+			<?=$this->formSelect('program[programType]',$this->form->programType->getValue(),array('id'=>'program-programType','style'=>'width:250px;'),$this->programTypes);?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->fundsSource->renderLabel()?>
+			<?=$this->formSelect('program[fundsSource]',$this->form->fundsSource->getValue(),array('id'=>'program-fundsSource','style'=>'width:250px;'),$this->fundsSources);?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->feeScheduleId->renderLabel()?>
+			<?=$this->formTextarea('feeScheduleDisplayId',$this->feeScheduleDisplay,array('id'=>'feeScheduleDisplayId','style'=>'height:40px;width:250px;border:0px;','readonly'=>'readonly'));?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<dt><label for="program-x12SenderId" class="optional"><?=__('E-Billing Sender ID')?></label></dt>
+			<?$this->form->x12SenderId->setAttrib('size',35)?>
+			<?=$this->form->x12SenderIdInput()?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<dt><label for="program-x12ReceiverId" class="optional"><?=__('E-Billing Receiver ID')?></label></dt>
+			<?$this->form->x12ReceiverId->setAttrib('size',35)?>
+			<?=$this->form->x12ReceiverIdInput()?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<dt><label for="program-x12Version" class="optional"><?=__('E-Billing Version')?></label></dt>
+			<?$this->form->x12Version->setAttrib('size',35)?>
+			<?=$this->form->x12VersionInput()?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->form->addressId->renderLabel()?>
+			<?=$this->formSelect('program[addressId]',$this->form->addressId->getValue(),array('id'=>'program-addressId','style'=>'width:250px;'),$this->addresses);?>
+		</div>
+		<br style="clear:left;" />
+		<div class="formRow" style="padding-top:4px;">
+			<?=$this->formHidden('id',$this->form->insuranceProgramId->getValue())?>
+			<?=$this->form->companyIdInput('FormHidden')?>
+			<?=$this->form->insuranceProgramIdInput('FormHidden')?>
+			<?=$this->form->okInput()?>
+			<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winEditProgramId').close()"/>
+		</div>
+		<?=$this->form->renderClose()?>
+		</fieldset>
+	</div>
 
-<div style="float:left;width:45%;">
-<fieldset><legend><?=__('Company Details')?></legend>
-
-<?if ($this->message) :?>
-<div style="background-color:PaleGreen; width:100%;">
-<?=$this->message?>
-</div>
-<?endif;?>
-
-<?=$this->form->renderOpen()?>
-
-<div style="margin-left:10px;">
-<?foreach ($this->form->getErrorMessages() as $error) {?>
-<?=$error?>
-<?}?>
-</div>
-
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->name->renderLabel()?>
-	<?$this->form->name->setAttrib('size',35)?>
-	<?=$this->form->nameInput()?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->payerIdentifier->renderLabel()?>
-	<?$this->form->payerIdentifier->setAttrib('size',35)?>
-	<?=$this->form->payerIdentifierInput()?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->payerType->renderLabel()?>
-	<?=$this->formSelect('program[payerType]',$this->form->payerType->getValue(),array('id'=>'program-payerType','style'=>'width:300px;'),$this->payerTypes);?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->programType->renderLabel()?>
-	<?=$this->formSelect('program[programType]',$this->form->programType->getValue(),array('id'=>'program-programType','style'=>'width:300px;'),$this->programTypes);?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->fundsSource->renderLabel()?>
-	<?=$this->formSelect('program[fundsSource]',$this->form->fundsSource->getValue(),array('id'=>'program-fundsSource','style'=>'width:300px;'),$this->fundsSources);?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->feeScheduleId->renderLabel()?>
-	<?=$this->formTextarea('feeScheduleDisplayId',$this->feeScheduleDisplay,array('id'=>'feeScheduleDisplayId','style'=>'height:40px;width:300px;border:0px;','readonly'=>'readonly'));?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<dt><label for="program-x12SenderId" class="optional"><?=__('E-Billing Sender ID')?></label></dt>
-	<?$this->form->x12SenderId->setAttrib('size',35)?>
-	<?=$this->form->x12SenderIdInput()?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<dt><label for="program-x12ReceiverId" class="optional"><?=__('E-Billing Receiver ID')?></label></dt>
-	<?$this->form->x12ReceiverId->setAttrib('size',35)?>
-	<?=$this->form->x12ReceiverIdInput()?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<dt><label for="program-x12Version" class="optional"><?=__('E-Billing Version')?></label></dt>
-	<?$this->form->x12Version->setAttrib('size',35)?>
-	<?=$this->form->x12VersionInput()?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->form->addressId->renderLabel()?>
-	<?=$this->formSelect('program[addressId]',$this->form->addressId->getValue(),array('id'=>'program-addressId','style'=>'width:300px;'),$this->addresses);?>
-</div>
-<br style="clear:left;" />
-<div class="formRow" style="padding-top:4px;">
-	<?=$this->formHidden('id',$this->form->insuranceProgramId->getValue())?>
-	<?=$this->form->companyIdInput('FormHidden')?>
-	<?=$this->form->insuranceProgramIdInput('FormHidden')?>
-	<?=$this->form->okInput()?>
-	<input type="button" value="<?=__("Cancel")?>" onClick="dhxWins.window('winEditProgramId').close()"/>
+	<div style="float:left;width:480px;margin-left:10px;">
+		<fieldset><legend><?=__('Building Program Identifier')?> (<a href="javascript:pBIAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
+			<div id="pBIGridId" style="height:410px;"></div>
+		</fieldset>
+	</div>
 </div>
 
 <script>
@@ -86,20 +91,7 @@ function postSubmiteditprogram(data) {
 	dhxWins.window("winEditProgramId").close();
 	return false;
 }
-</script>
 
-<?=$this->form->renderClose()?>
-
-</fieldset>
-</div>
-
-
-<div style="float:left;width:50%;margin-left:10px;">
-	<fieldset><legend><?=__('Building Program Identifier')?> (<a href="javascript:pBIAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)</legend>
-		<div id="pBIGridId" style="height:300px;"></div>
-	</fieldset>
-</div>
-<script>
 var pBIColFields = new Array();
 // Phone field names, in order based on pBIGrid.setHeader
 pBIColFields.push("building_id");
@@ -126,7 +118,14 @@ function pBIGridOnCellEdited(stage,rowId,cellIndex,newValue,oldValue) {
 				}
 				break;
 		}
-		companySingleUpdate(rowId,pBIColFields[cellIndex],newValue,"programIdentifier","<?=$this->form->insuranceProgramId->getValue()?>",pBIGridReload);
+		companySingleUpdate(rowId,pBIColFields[cellIndex],newValue,"programIdentifier","<?=$this->form->insuranceProgramId->getValue()?>",function(data){
+			if (data.error) {
+				alert(data.error);
+				return;
+			}
+			if (cellIndex == 0) pBIGridReload();
+			else pBIGrid.cells(rowId,cellIndex).setValue(data);
+		});
 	}
 	return true;
 }
@@ -186,6 +185,3 @@ dhtmlxEvent(pBIGrid.entBox,"contextmenu",function(e){
 });
 
 </script>
-
-
-</div>

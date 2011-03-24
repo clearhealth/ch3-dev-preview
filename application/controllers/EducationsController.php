@@ -169,7 +169,13 @@ class EducationsController extends WebVista_Controller_Action {
 		$patientEducation = new PatientEducation();
 		$patientEducation->populateWithArray($params);
 		$patientEducation->persist();
-		$data = true;
+		$data = array(
+			'id'=>$patientEducation->code,
+			'data'=>array(
+				$patientEducation->level,
+				$patientEducation->education,
+			),
+		);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
