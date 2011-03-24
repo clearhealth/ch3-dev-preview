@@ -2967,7 +2967,7 @@
 	</table_structure>
 	<table_structure name="procedureCodesCPT">
 		<field Field="textLong" Type="varchar(255)" Null="YES" Key="MUL" Extra="" />
-		<field Field="textShort" Type="varchar(24)" Null="YES" Key="" Extra="" />
+		<field Field="textShort" Type="varchar(50)" Null="YES" Key="" Extra="" />
 		<field Field="code" Type="char(10)" Null="YES" Key="MUL" Extra="" />
 		<key Table="procedureCodesCPT" Non_unique="1" Key_name="code_text" Seq_in_index="1" Column_name="textLong" Collation="A" Cardinality="0" Null="YES" Index_type="BTREE" Comment="" />
 		<key Table="procedureCodesCPT" Non_unique="1" Key_name="code" Seq_in_index="1" Column_name="code" Collation="A" Cardinality="0" Null="YES" Index_type="BTREE" Comment="" />

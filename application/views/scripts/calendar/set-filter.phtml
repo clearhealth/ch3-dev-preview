@@ -6,7 +6,7 @@
 	<select id="calendar-provider-id"  name="calendar[providerId]" style="width:325px;">
 		<option value=""></option>
         <?foreach(Provider::getArray() as $personId => $name):?>
-                <option value="<?=$personId?>" <?if ($personId == $this->data['providerId']):?>selected="selected"<?endif;?>><?=$name?></option>
+                <option value="<?=$personId?>" <?if (isset($this->data['providerId']) && $personId == $this->data['providerId']):?>selected="selected"<?endif;?>><?=$name?></option>
         <?endforeach;?>
         </select>
 	</div>
@@ -15,8 +15,8 @@
         <dt><label for="calendar-room-id"><?=__("Room")?></label></dt>
 	<select id="calendar-room-id"  name="calendar[roomId]" style="width:325px;">
 		<option value=""></option>
-	<?foreach(Room::getArray() as $roomId => $name):?>
-		<option value="<?=$roomId?>" <?if ($roomId == $this->data['roomId']):?>selected="selected"<?endif;?>><?=$name?></option>
+	<?foreach(Room::getRoomArray() as $roomId => $name):?>
+		<option value="<?=$roomId?>" <?if (isset($this->data['roomId']) && $roomId == $this->data['roomId']):?>selected="selected"<?endif;?>><?=$name?></option>
 	<?endforeach;?>
 	</select>
 	</div>
@@ -33,12 +33,12 @@
 <br style="clear:both;" />
 	<div class="formRow" style="padding-top:4px;">
 		<input type="hidden" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="0" />
-		<input type="checkbox" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="1" <?=($this->data['showCancelledAppointments'])?'checked="checked"':''?> /> <?=__('Show Cancelled Appointments')?>
+		<input type="checkbox" name="calendar[showCancelledAppointments]" id="calendar-showCancelledAppointments" value="1" <?=(isset($this->data['showCancelledAppointments']) && $this->data['showCancelledAppointments'])?'checked="checked"':''?> /> <?=__('Show Cancelled Appointments')?>
 	</div>
 
 <br style="clear:left"/>
 <div style="text-align:right;margin-top:10px;">
-	<input type="hidden" id="calendar-filter-state-id" name="calendar[filterStateId]" value="<?=$this->data['filterStateId']?>" />
+	<input type="hidden" id="calendar-filter-state-id" name="calendar[filterStateId]" value="<?=isset($this->data['filterStateId'])?$this->data['filterStateId']:0?>" />
 	<input type="hidden" id="calendar-column-id" name="calendar[columnId]" value="<?=$this->columnId?>" />
 	<input type="button" value="<?=__("Cancel")?>" onClick="closeFilterWindow('<?=$this->columnId?>')" />
 	<input type="button" value="<?=__("Select")?>" onClick="calendarSetFilter()" />
@@ -57,9 +57,9 @@ function calendarSetFilter() {
 		form: "setFilterForm",
 		handleAs: "json",
 		load: function (data) {
-			window.applyNewFilter("<?=$this->columnId?>");
+			window.applyNewFilter("<?=$this->columnId?>",data.id);
 		},
-		error: function (er) {
+		error: function (err) {
 			console.error ("Error: ", err);
 		}
 	});

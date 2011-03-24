@@ -73,4 +73,26 @@ class PatientNote extends WebVista_Model_ORM {
 		return $reasons;
 	}
 
+	public function __get($key) {
+		if (in_array($key,$this->ORMFields())) {
+			return $this->$key;
+		}
+		elseif (!is_null(parent::__get($key))) {
+			return parent::__get($key);
+		}
+		elseif (in_array($key,$this->patient->ORMFields())) {
+			return $this->patient->__get($key);
+		}
+		elseif (!is_null($this->patient->__get($key))) {
+			return $this->patient->__get($key);
+		}
+		elseif (in_array($key,$this->user->ORMFields())) {
+			return $this->user->__get($key);
+		}
+		elseif (!is_null($this->user->__get($key))) {
+			return $this->user->__get($key);
+		}
+		return parent::__get($key);
+	}
+
 }

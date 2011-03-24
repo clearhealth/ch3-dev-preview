@@ -110,6 +110,7 @@ calendarScheduleGrid.attachEvent("onDrop",function(idFrom,idTo,idMercy,gridFrom,
 	return false;
 });
 calendarScheduleGrid.attachEvent("onRowDblClicked",function(rowId,colIndex){
+	this._appointmentCalendar.appointmentId = null;
 	var callbackId = calendarScheduleGrid.uid();
 	globalCallbackList[callbackId] = {
 		"func": calendarScheduleGridReload,
@@ -127,6 +128,7 @@ function calendarSetAppointmentId(appointmentId) {
 
 function calendarExpandAppointment(appointmentId,obj,height) {
 	obj.style.height = "auto";
+	if (parseInt(obj.offsetHeight) < parseInt(height)) obj.style.height = height+"px";
 	obj.style.zIndex = 9999;
 }
 

@@ -32,6 +32,7 @@ class CalendarController extends WebVista_Controller_Action {
 	const FILTER_MINUTES_INTERVAL = 15;
 	const FILTER_TIME_START = '07:00';
 	const FILTER_TIME_END = '17:00';
+	const TAB_NAME = 'Calendar';
 
 	public function init() {
 		$this->_session = new Zend_Session_Namespace(__CLASS__);
@@ -91,7 +92,7 @@ class CalendarController extends WebVista_Controller_Action {
 	public function ajaxStoreAppointmentAction() {
 		$appointmentId = $this->_getParam('appointmentId');
 		$columnId = $this->_getParam('columnId');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($columnId);
 
 		$app = new Appointment();
 		$app->appointmentId = $appointmentId;
@@ -209,7 +210,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 	public function ajaxGetColumnHeaderAction() {
 		$columnIndex = $this->_getParam('columnIndex');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($columnIndex);
 		if (!isset($filter->columns[$columnIndex])) {
 			throw new Exception(__("Cannot generate column with that index, there is no filter defined for that column Index: ") . $columnIndex);
 		}
@@ -227,7 +228,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 	public function setFilterAction() {
 		$id = $this->_getParam('id');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($id);
 		if (!isset($filter->columns[$id])) {
 			throw new Exception(__("Cannot set filter column with that index, there is no filter defined for that column Index: ") . $id);
 		}
@@ -240,24 +241,23 @@ class CalendarController extends WebVista_Controller_Action {
 	public function processSetFilterAction() {
 		$calendar = $this->_getParam('calendar');
 		$id = $calendar['columnId'];
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($id);
 		if (!isset($filter->columns[$id])) {
 			throw new Exception(__("Cannot set filter column with that index, there is no filter defined for that column Index: ") . $id);
 		}
 
 		$filterState =  new FilterState();
-		$data = array();
 		if ($id > 0) {
 			$filterState->filterStateId = $id;
 			$filterState->populate();
 		}
-		if (!isset($calendar['tabName'])) {
-			$filterState->tabName = Menu::getCurrentlySelectedActivityGroup();
-		}
+		if (!isset($calendar['tabName'])) $filterState->tabName = self::TAB_NAME;
 		$filterState->populateWithArray($calendar);
 		$filterState->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$filterState->persist();
-		$this->_session->filter->columns[$id] = $filterState->toArray();
+		$filterStateId = (int)$filterState->filterStateId;
+		$data = array('id'=>$filterStateId);
+		$this->_session->filter->columns[$filterStateId] = $filterState->toArray();
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -272,7 +272,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$isCopy = $this->_getParam('isCopy');
 		$timeTo = $this->_getParam('timeTo');
 
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter(array($columnIdFrom,$columnIdTo));
 		$columns = $filter->columns;
 		if (!isset($columns[$columnIdFrom])) {
 			throw new Exception(__("Cannot generate SOURCE column with that index, there is no filter defined for that column Index: ") . $columnIdFrom);
@@ -290,37 +290,41 @@ class CalendarController extends WebVista_Controller_Action {
 
 		$app = new Appointment();
 		$app->appointmentId = (int)$idFrom;
-		$app->populate();
+		$data = array(
+			'error'=>'Appointment does not exists',
+		);
+		if ($app->populate()) {
+			$data = array();
+			$startDate = isset($columnTo['dateFilter'])?$columnTo['dateFilter']:$filter->date;
 
-		$data = array();
-		if ($this->_getParam('changeDate') && $this->_getParam('changeDate') == 1) {
-			$startDate = $filter->date;
+			$startTime = strtotime($app->start);
+			$endTime = strtotime($app->end);
+			$diffTime = $endTime - $startTime;
+
+			$newStartTime = strtotime($startDate . ' ' . $timeTo);
+			$newEndTime = $newStartTime + $diffTime;
+
+			$app->start = date('Y-m-d H:i:s', $newStartTime);
+			$app->end = date('Y-m-d H:i:s', $newEndTime);
+			$data['timeTo'] = $timeTo;
+
+			$app->lastChangeDate = date('Y-m-d H:i:s');
+			$app->providerId = $providerIdTo;
+			$app->roomId = $roomIdTo;
+			if (strtolower($isCopy) == 'true') {
+				// zero out appointmentId to act a new copy
+				$app->appointmentId = 0;
+			}
+			$forced = (int)$this->_getParam('forced');
+			if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
+				$data['confirmation'] = $error;
+			}
+			else {
+				$app->persist();
+				//trigger_error(print_r($params,true));
+				$data['appointmentId'] = $app->appointmentId;
+			}
 		}
-		else {
-			//$x = explode(' ', $app->start);
-			//$startDate = $x[0];
-			$startDate = $columnTo['dateFilter'];
-		}
-
-		$startTime = strtotime($app->start);
-		$endTime = strtotime($app->end);
-		$diffTime = $endTime - $startTime;
-
-		$newStartTime = strtotime($startDate . ' ' . $timeTo);
-		$newEndTime = $newStartTime + $diffTime;
-
-		$app->start = date('Y-m-d H:i:s', $newStartTime);
-		$app->end = date('Y-m-d H:i:s', $newEndTime);
-		$data['timeTo'] = $timeTo;
-
-		$app->lastChangeDate = date('Y-m-d H:i:s');
-		$app->providerId = $providerIdTo;
-		$app->roomId = $roomIdTo;
-		if (strtolower($isCopy) == 'true') {
-			// zero out appointmentId to act a new copy
-			$app->appointmentId = 0;
-		}
-		$app->persist();
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -348,14 +352,14 @@ class CalendarController extends WebVista_Controller_Action {
 
 	public function ajaxRemoveColumnAction() {
 		$id = $this->_getParam('id');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($id);
 		$columns = $filter->columns;
 		if (!isset($columns[$id])) {
 			throw new Exception(__("Cannot generate column with that index, there is no filter defined for that column Index: ") . $id);
 		}
 		$filterState = new FilterState();
-		if (isset($this->_session->filter->columns[$id]['filterStateId'])) {
-			$filterStateId = $this->_session->filter->columns[$id]['filterStateId'];
+		if (isset($columns[$id]['filterStateId'])) {
+			$filterStateId = $columns[$id]['filterStateId'];
 			$filterState->deleteByFilterStateId($filterStateId);
 		}
 		unset($this->_session->filter->columns[$id]);
@@ -377,25 +381,13 @@ class CalendarController extends WebVista_Controller_Action {
 		$providerId = $calendar['providerId'];
 		$roomId = $calendar['roomId'];
 
-		/*
-		$scheduleEvent = new ScheduleEvent();
-		$scheduleEvent->providerId = $providerId;
-		$scheduleEvent->roomId = $roomId;
-		$scheduleEvent->title = "Event {$providerId}";
-		$scheduleEvent->start = $filter->date . ' ' . $filter->end;
-		$scheduleEvent->end = $filter->date . ' ' . $filter->start;
-		$scheduleEvent->persist();
-		*/
-
 		$filterState =  new FilterState();
-		if (!isset($calendar['tabName'])) {
-			$filterState->tabName = Menu::getCurrentlySelectedActivityGroup();
-		}
+		if (!isset($calendar['tabName'])) $filterState->tabName = self::TAB_NAME;
 		$filterState->populateWithArray($calendar);
 		$filterState->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 		$filterState->persist();
 
-		$this->_session->filter->columns[] = $filterState->toArray();
+		$this->_session->filter->columns[$filterState->filterStateId] = $filterState->toArray();
 		$data = array();
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -407,9 +399,10 @@ class CalendarController extends WebVista_Controller_Action {
 
 	public function addAppointmentAction() {
 		$appointmentId = (int)$this->_getParam('appointmentId');
+		$columnId = $this->_getParam('columnId');
 		$appointment = new Appointment();
 		if ($appointmentId > 0) {
-			$filter = $this->getCurrentDisplayFilter();
+			$filter = $this->getCurrentDisplayFilter($columnId);
 			$appointment->appointmentId = (int)$appointmentId;
 			$appointment->populate();
 			$appointment->start = date('H:i', strtotime($appointment->start));
@@ -432,12 +425,11 @@ class CalendarController extends WebVista_Controller_Action {
 			$this->view->patient = "{$lastName}, {$firstName} {$middleInitial} #{$recordNumber} PID:{$appointment->patient->person_id}";
 		}
 		else {
-			$columnId = $this->_getParam('columnId');
 			$rowId = $this->_getParam('rowId');
 			$start = $this->_getParam('start');
 			if (strlen($columnId) > 0) {
 				$this->view->columnId = $columnId;
-				$filter = $this->getCurrentDisplayFilter();
+				$filter = $this->getCurrentDisplayFilter($columnId);
 				if (!isset($filter->columns[$columnId])) {
 					throw new Exception(__("Cannot generate column with that index, there is no filter defined for that column Index: ") . $columnId);
 				}
@@ -492,7 +484,7 @@ class CalendarController extends WebVista_Controller_Action {
 		$columnId = $this->_getParam('columnId');
 		$rowId = $this->_getParam('rowId');
 		$forced = (int)$this->_getParam('forced');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($columnId);
 
 		if (strlen($columnId) <= 0) {
 			// look for the column of the input provider
@@ -511,10 +503,13 @@ class CalendarController extends WebVista_Controller_Action {
 		}
 
 		$column = $filter->columns[$columnId];
+		$dateFilter = isset($column['dateFilter'])?$column['dateFilter']:$filter->date;
 
 		$data = array();
 		$data['columnId'] = $columnId;
 		$data['rowId'] = $rowId;
+		$roomId = isset($column['roomId'])?(int)$column['roomId']:0;
+		if ($roomId > 0) $appointment['roomId'] = $roomId;
 
 		$app = new Appointment();
 		if (isset($appointment['appointmentId']) && $appointment['appointmentId'] > 0) {
@@ -534,8 +529,8 @@ class CalendarController extends WebVista_Controller_Action {
 
 		//$app->patientId = substr($appointment['patient'],stripos($appointment['patient'],'PID:') + 4);
 		$app->walkin = isset($appointment['walkin'])?1:0;
-		$app->start = $filter->date . ' ' . date('H:i:s', strtotime($appointment['start']));
-		$app->end = $filter->date . ' ' . date('H:i:s', strtotime($appointment['end']));
+		$app->start = $dateFilter . ' ' . date('H:i:s', strtotime($appointment['start']));
+		$app->end = $dateFilter . ' ' . date('H:i:s', strtotime($appointment['end']));
 
 		if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
 			$data['error'] = $error;
@@ -556,12 +551,10 @@ class CalendarController extends WebVista_Controller_Action {
 		if ($day == 'next') {
 			$time = '+1 day';
 			$date = strtotime($time,strtotime($filter->date));
-			$this->_session->filter->date = date('Y-m-d',$date);
 		}
 		else if ($day == 'previous') {
 			$time = '-1 day';
 			$date = strtotime($time,strtotime($filter->date));
-			$this->_session->filter->date = date('Y-m-d',$date);
 		}
 		else {
 			$x = explode('-',$day);
@@ -572,18 +565,26 @@ class CalendarController extends WebVista_Controller_Action {
 				$msg = 'Invalid date format!';
 				throw new Exception($msg);
 			}
-			$this->_session->filter->date = date('Y-m-d',strtotime($day));
+			$date = strtotime($day);
 		}
+		$this->_session->filter->date = date('Y-m-d',$date);
 		$columns = $this->_session->filter->columns;
 		foreach ($columns as $index=>$col) {
-			if (isset($col['dateFilter'])) {
-				if ($time === 0) {
-					$tmpDate = $this->_session->filter->date;
-				}
-				else {
-					$tmpDate = date('Y-m-d',strtotime($time,strtotime($col['dateFilter'])));
-				}
-				$this->_session->filter->columns[$index]['dateFilter'] = $tmpDate;
+			if (!isset($col['dateFilter'])) continue;
+			if ($time === 0) {
+				$tmpDate = $this->_session->filter->date;
+			}
+			else {
+				$tmpDate = date('Y-m-d',strtotime($time,strtotime($col['dateFilter'])));
+			}
+			$this->_session->filter->columns[$index]['dateFilter'] = $tmpDate;
+			$fs = $this->_session->filter->columns[$index];
+			if (isset($fs['filterStateId'])) {
+				$filterState = new FilterState();
+				$filterState->filterStateId = (int)$fs['filterStateId'];
+				$filterState->populate();
+				$filterState->populateWithArray($fs);
+				$filterState->persist();
 			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -767,42 +768,63 @@ class CalendarController extends WebVista_Controller_Action {
 		$json->direct($this->$method($obj));
 	}
 
-    protected function getCurrentDisplayFilter() {
-	//unset($this->_session->filter);
-	if (isset($this->_session->filter)) {
-		return $this->_session->filter;
+	protected function getCurrentDisplayFilter($ids=null) {
+		//unset($this->_session->filter);
+		$date = date('Y-m-d');
+		$placeHolder = array('providerId'=>'placeHolderId','roomId'=>0,'dateFilter'=>$date);
+		if (isset($this->_session->filter)) {
+			$columns = $this->_session->filter->columns;
+			$ctr = count($columns);
+			if ($ctr > 1) {
+				if (isset($columns[0])) {
+					unset($this->_session->filter->columns[0]); // remove placeholder column
+					unset($columns[0]);
+				}
+				if (!is_array($ids)) $ids = array($ids);
+				foreach ($ids as $id) {
+					$id = (int)$id;
+					if ($id > 0 && !isset($this->_session->filter->columns[$id])) {
+						$filterState = new FilterState();
+						$filterState->filterStateId = $id;
+						$filterState->populate();
+						$this->_session->filter->columns[$id] = $filterState->toArray();
+					}
+				}
+			}
+			else {
+				if ($ids !== null && $ids == 0 && !isset($columns[$ids])) $this->_session->filter->columns[$ids] = $placeHolder;
+			}
+			return $this->_session->filter;
+		}
+		$filter = new StdClass();
+		$filter->date = $date;
+		$filter->increment = self::FILTER_MINUTES_INTERVAL;
+		$filter->start = self::FILTER_TIME_START;
+		$filter->end = self::FILTER_TIME_END;
+		$filter->columns = array();
+		// retrieve from database
+		$filterStateIterator = new FilterStateIterator();
+		$filters = array();
+		$filters['tabName'] = self::TAB_NAME;
+		$filters['userId'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$filterStateIterator->setFilters($filters);
+		foreach ($filterStateIterator as $state) {
+			$filter->columns[$state->filterStateId] = $state->toArray();
+		}
+		if (!count($filter->columns) > 0) {
+			$filter->columns[] = $placeHolder;
+		}
+		// save to session
+		$this->_session->filter = $filter;
+		return $filter;
 	}
-        $filter = new StdClass();
-        $filter->date = date('Y-m-d');
-        $filter->increment = self::FILTER_MINUTES_INTERVAL;
-        $filter->start = self::FILTER_TIME_START;
-        $filter->end = self::FILTER_TIME_END;
-	$filter->columns = array();
-	// retrieve from database
-	$filterStateIterator = new FilterStateIterator();
-	$filters = array();
-	$filters['tabName'] = Menu::getCurrentlySelectedActivityGroup();
-	$filters['userId'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
-	$filterStateIterator->setFilters($filters);
-	foreach ($filterStateIterator as $state) {
-        	//$filter->columns[] = array('providerId' => $state->providerId,'roomId'=>$state->roomId);
-        	$filter->columns[] = $state->toArray();
-	}
-	if (!count($filter->columns) > 0) {
-       		$filter->columns[] = array('providerId'=>'placeHolderId');
-	}
-	// save to session
-        $this->_session->filter = $filter;
-	return $filter;
-    }
 
     protected function generateEventColumnData($columnIndex,$includeHeader=false) {
 	$columnIndex = (int) $columnIndex;
-	$columnData = array();
         $scheduleEventIterator = new ScheduleEventIterator();
         $appointmentIterator = new AppointmentIterator();
 
-	if (!isset($this->getCurrentDisplayFilter()->columns[$columnIndex])) {
+	if (!isset($this->getCurrentDisplayFilter($columnIndex)->columns[$columnIndex])) {
 		throw new Exception(__("Cannot generate column with that index, there is no filter defined for that column Index: ") . $columnIndex);
 	}
 
@@ -819,6 +841,7 @@ class CalendarController extends WebVista_Controller_Action {
 	$paramFilters['end'] = $filter->date . ' ' . self::FILTER_TIME_END;
 	$scheduleEventIterator->setFilter($paramFilters);
 
+	$columnData = array();
 	// we need to get the length of time to create number of rows in the grid
 	$timeLen = (($filterTimeEnd - $filterTimeStart) / 60) / $filter->increment;
 	for ($i=0;$i<=$timeLen;$i++) {
@@ -835,51 +858,51 @@ class CalendarController extends WebVista_Controller_Action {
 	$tmpDataCtr = array();
 	$colMultiplier = 1;
 	$zIndex = 0;
+	$refHeight = 22;
 	foreach ($appointmentIterator as $row) {
 		$startToTime = strtotime($row->start);
 		$endToTime = strtotime($row->end);
 		$tmpStart = date('H:i', $startToTime);
 		$tmpEnd = date('H:i', $endToTime);
-		$timeLen = (($endToTime - $startToTime) / 60) / $filter->increment;
-		$tmpIndex = (($startToTime - $filterToTimeStart) / 60) / $filter->increment;
+		$tmpLen = (($endToTime - $startToTime) / 60) / $filter->increment;
+		$timeLen = ceil($tmpLen);
+		$tmpIdx = (($startToTime - $filterToTimeStart) / 60) / $filter->increment;
+		$tmpIndex = ceil($tmpIdx);
 
-		if (!isset($columnData[$tmpIndex])) {
-			break;
+		if (!isset($columnData[$tmpIndex])) break;
+
+		$height = $refHeight * $timeLen;
+		$heightDiff = 0;
+		if ($tmpLen != $timeLen) {
+			$diff = $refHeight * ($timeLen - $tmpLen);
+			$heightDiff = $refHeight - $diff;
+			$height -= $heightDiff;
 		}
-
-		$index = $tmpIndex;
-		for ($j=1;$j<=$timeLen;$j++) {
-			if (!isset($columnData[$index])) {
-				break;
-			}
-			$index++;
-		}
-		$j--;
-
-		$height = 20 * $j * 1.1;
 		$marginLeft = 8;
 		$multiplier = 1;
 
-		// generate ranges code inside if ($multiplier === 1) block
-		$incTime = $startToTime;
-		$ranges = array();
-		for ($ctr=1;$ctr<=$timeLen;$ctr++) {
-			$ranges[] = date('H:i',$incTime);
-			$incTime = strtotime("+{$filter->increment} minutes",$incTime);
+		$marginTop = -11.9;
+		if ($tmpIdx != $tmpIndex) {
+			$marginTop -= $refHeight * ($tmpIndex - $tmpIdx);
+			$height -= $refHeight;
+			$timeLen--;
+			$height += ($heightDiff * 2);
 		}
 
 		// check for appointment intersection
 		foreach ($tmpDataCtr as $keyCtr=>$dataCtr) {
-			if (in_array($tmpStart,$dataCtr['ranges'])) {
-				// merge the ranges if we need to have a nested multiple bookings
-				// uncomment if this is not the case and move the generate ranges to its proper location for code optimization
-				$tmpDataCtr[$keyCtr]['ranges'] = array_merge($dataCtr['ranges'],$ranges);
+			if ($startToTime >= $dataCtr['ranges']['start'] && $startToTime < $dataCtr['ranges']['end']) {
+				if ($endToTime > $dataCtr['ranges']['end']) $tmpDataCtr[$keyCtr]['ranges']['end'] = $endToTime;
 				$tmpDataCtr[$keyCtr]['multiplier']++;
 				$multiplier = $tmpDataCtr[$keyCtr]['multiplier'];
 				break;
 			}
 		}
 		if ($multiplier === 1) {
+			$ranges = array(
+				'start'=>$startToTime,
+				'end'=>$endToTime,
+			);
 			$tmpDataCtr[] = array('ranges'=>$ranges,'multiplier'=>$multiplier);
 		}
 		else {
@@ -928,10 +951,41 @@ class CalendarController extends WebVista_Controller_Action {
 		if ($row->patientId > 0) {
 			$nameLink = "<a href=\"javascript:showPatientDetails({$row->patientId});\">{$person->last_name}, {$person->first_name} (#{$patient->recordNumber})</a>";
 		}
-		$columnData[$tmpIndex]['data'][0] .= "<div onmousedown=\"appointmentDown(this,'{$columnIndex}')\" oncontextmenu=\"appointmentClicked(this,event,'{$columnIndex}');return false;\" onclick=\"appointmentClicked(this,event,'{$columnIndex}')\" appointmentId=\"$row->appointmentId\" visitId=\"$visit->visitId\" ondblclick=\"appointmentDoubleClicked(this,event,'{$columnIndex}')\" style=\"float:left;position:absolute;margin-top:-11.9px;height:{$height}px;width:230px;overflow:hidden;border:thin solid black;margin-left:{$marginLeft}px;padding-left:2px;background-color:lightgrey;z-index:{$zIndex};\" class=\"dataForeground\" id=\"event{$appointmentId}\" onmouseover=\"expandAppointment({$appointmentId},this,{$height});\" onmouseout=\"shrinkAppointment({$appointmentId},this,{$height},{$zIndex});\">{$tmpStart}-{$tmpEnd} {$nameLink} {$visitIcon} <br />{$routingStatus}<div class=\"bottomInner\" id=\"bottomInnerId{$appointmentId}\" style=\"white-space:normal;\">{$row->title}</div></div>";
+		$columnIndex = (int)$columnIndex;
+		$divContent = '<div';
+		$divContent .= ' id="event'.$appointmentId.'"';
+		$divContent .= ' class="dataForeground"';
+		$divContent .= ' appointmentId="'.(int)$row->appointmentId.'" visitId="'.(int)$visit->visitId.'"';
+		$divContent .= ' style="float:left;position:absolute;margin-top:'.$marginTop.'px;height:'.$height.'px;width:230px;overflow:hidden;border:thin solid black;margin-left:'.$marginLeft.'px;padding-left:2px;background-color:lightgrey;z-index:'.$zIndex.';"';
+		$divContent .= ' onmouseover="appointmentMouseOver('.$appointmentId.',this,'.$height.');"';
+		$divContent .= ' onmouseout="appointmentMouseOut('.$appointmentId.',this,'.$height.','.$zIndex.');"';
+		$divContent .= ' ondblclick="appointmentDoubleClicked(event,'.$appointmentId.')"';
+		$divContent .= ' oncontextmenu="appointmentClicked(this,event,'.$columnIndex.');return false;"';
+
+		$divContent .= '>';
+
+		// Header
+		$divHeader = '<div id="eventHeader'.$appointmentId.'"';
+		$divHeader .= ' style="margin-left:-2px;border-bottom:thin dotted black;cursor:move;text-shadow:0px1px0px#e5e5ee;"';
+		$divHeader .= ' onmousedown="appointmentHeaderMouseDown(this.parentNode,'.$columnIndex.')"';
+		$divHeader .= '>';
+		$divHeader .= $tmpStart.'-'.$tmpEnd;
+		$divHeader .= '</div>';
+
+		// Body
+		$divBody = '<div id="eventBody'.$appointmentId.'"';
+		$divBody .= ' style="width:230px;overflow:hidden;z-index:'.$zIndex.';"';
+		$divBody .= ' onmousedown="appointmentMouseDown(this.parentNode,event,'.$columnIndex.')"';
+		$divBody .= '>'.$nameLink.' '.$visitIcon.' <br />'.$routingStatus.'<div class="bottomInner" id="bottomInnerId'.$appointmentId.'" style="white-space:normal;">'.$row->title.'</div></div>';
+
+		$divContent .= $divHeader;
+		$divContent .= $divBody;
+		$divContent .= '</div>';
+
+		$columnData[$tmpIndex]['data'][0] .= $divContent;
 		$columnData[$tmpIndex]['userdata']['visitId'] = $visit->visitId;
 		$columnData[$tmpIndex]['userdata']['appointmentId'] = $row->appointmentId;
-		$columnData[$tmpIndex]['userdata']['length'] = $j;
+		$columnData[$tmpIndex]['userdata']['length'] = $timeLen;
 		if (!isset($columnData[$tmpIndex]['userdata']['ctr'])) {
 			$columnData[$tmpIndex]['userdata']['ctr'] = 0;
 		}
@@ -993,7 +1047,7 @@ class CalendarController extends WebVista_Controller_Action {
 			$building->populate();
 			$buildings[$building->buildingId] = $building;
 		}
-		$columnData[$tmpIndex]['data'][0] = $event->title.' - '.$buildings[$event->buildingId]->displayName.$columnData[$tmpIndex]['data'][0];
+		$columnData[$tmpIndex]['data'][0] = '<div style="position:absolute;margin-top:-6px;">'.$event->title.' - '.$buildings[$event->buildingId]->displayName.'</div>'.$columnData[$tmpIndex]['data'][0];
 		while ($eventTimeStart < $eventTimeEnd) {
 			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
 			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
@@ -1041,7 +1095,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 	public function timeSearchAction() {
 		$columnId = (int)$this->_getParam('columnId');
-		$filter = $this->getCurrentDisplayFilter();
+		$filter = $this->getCurrentDisplayFilter($columnId);
 		$columns = $filter->columns;
 		if (!isset($columns[$columnId])) {
 			throw new Exception(__('There is no filter defined for column Index: ').$columnId);
@@ -1549,7 +1603,6 @@ class CalendarController extends WebVista_Controller_Action {
 			$end = $start + $diff;
 			$app->start = date('Y-m-d H:i:s',$start);
 			$app->end = date('Y-m-d H:i:s',$end);
-			$app->persist();
 			$data = array('appointmentId'=>$appointmentId);
 			if (!$forced && $error = $app->checkRules()) { // prompt the user if the appointment being made would be a double book or is outside of schedule time.
 				$data['confirmation'] = $error;

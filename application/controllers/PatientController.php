@@ -228,14 +228,7 @@ class PatientController extends WebVista_Controller_Action {
 		$phoneNumber = new PhoneNumber();
 		$phoneNumberIterator = $phoneNumber->getIteratorByPersonId($patientId);
 		foreach ($phoneNumberIterator as $phone) {
-			$tmp = array();
-			$tmp['id'] = $phone->number_id;
-			$tmp['data'][] = $phone->name;
-			$tmp['data'][] = $phone->type;
-			$tmp['data'][] = $phone->number;
-			$tmp['data'][] = $phone->notes;
-			$tmp['data'][] = $phone->active;
-			$rows[] = $tmp;
+			$rows[] = $this->_toJSON($phone,'phoneNumberId',array('name','type','number','notes','active'));
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -248,19 +241,7 @@ class PatientController extends WebVista_Controller_Action {
 		$address = new Address();
 		$addressIterator = $address->getIteratorByPersonId($patientId);
 		foreach ($addressIterator as $addr) {
-			$tmp = array();
-			$tmp['id'] = $addr->address_id;
-			$tmp['data'][] = $addr->name;
-			$tmp['data'][] = $addr->type;
-			$tmp['data'][] = $addr->line1;
-			$tmp['data'][] = $addr->line2;
-			$tmp['data'][] = $addr->city;
-			//$tmp['data'][] = $addr->region;
-			$tmp['data'][] = $addr->state;
-			$tmp['data'][] = $addr->postal_code;
-			$tmp['data'][] = $addr->notes;
-			$tmp['data'][] = $addr->active;
-			$rows[] = $tmp;
+			$rows[] = $this->_toJSON($addr,'addressId',array('name','type','line1','line2','city','state','postal_code','notes','active'));
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -601,6 +582,80 @@ class PatientController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($ret);
+	}
+
+	protected function _toJson(ORM $obj,$key,Array $fields) {
+		$data = array(
+			'id'=>$obj->$key,
+			'data'=>array(),
+		);
+		foreach ($fields as $field) {
+			$data['data'][] = (string)$obj->$field;
+		}
+		return $data;
+	}
+
+	protected function _processEdit(ORM $obj,$key,Array $fields,Array $values) {
+		if (isset($values[$key])) {
+			$obj->$key = (int)$values[$key];
+			$obj->populate();
+		}
+		$obj->populateWithArray($values);
+		$obj->persist();
+		$data = $this->_toJSON($obj,$key,$fields);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function processAddPhoneAction() {
+		$params = $this->_getParam('phone');
+		$this->_processEditPhone($params);
+	}
+
+	public function processEditPhoneAction() {
+		$params = $this->_getParam('phone');
+		$this->_processEditPhone($params);
+	}
+
+	protected function _processEditPhone(Array $params) {
+		$obj = new PhoneNumber();
+		$this->_processEdit($obj,'phoneNumberId',array('name','type','number','notes','active'),$params);
+	}
+
+	public function processAddAddressAction() {
+		$params = $this->_getParam('address');
+		$this->_processEditAddress($params);
+	}
+
+	public function processEditAddressAction() {
+		$params = $this->_getParam('address');
+		$this->_processEditAddress($params);
+	}
+
+	protected function _processEditAddress(Array $params) {
+		$obj = new Address();
+		$this->_processEdit($obj,'addressId',array('name','type','line1','line2','city','state','postal_code','notes','active'),$params);
+	}
+
+	public function processAddNoteAction() {
+		$params = $this->_getParam('patientNote');
+		// defaults for new note
+		$params['note_date'] = date('Y-m-d H:i:s');
+		$params['user_id'] = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$params['priority'] = 5;
+		$params['active'] = 1;
+		$this->_processEditNote($params);
+	}
+
+	public function processEditNoteAction() {
+		$params = $this->_getParam('patientNote');
+		$this->_processEditNote($params);
+	}
+
+	protected function _processEditNote(Array $params) {
+		$obj = new PatientNote();
+		$this->_processEdit($obj,'patientNoteId',array('priority','note_date','username','reason','note','active'),$params);
 	}
 
 }

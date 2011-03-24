@@ -174,10 +174,13 @@ class User extends WebVista_Model_ORM {
 	public static function myPreferencesLocation() {
 		static $room = null;
 		if ($room !== null) return $room;
-		$identity = Zend_Auth::getInstance()->getIdentity();
+		$auth = Zend_Auth::getInstance();
 		$room = new Room();
-		if (strlen($identity->preferences) > 0) {
-			$xmlPreferences = new SimpleXMLElement($identity->preferences);
+		if ((int)$auth->getIdentity()->personId > 0) {
+			$user = new User();
+			$user->userId = (int)$auth->getIdentity()->personId;
+			$user->populate();
+			$xmlPreferences = new SimpleXMLElement($user->preferences);
 			$roomId = (string)$xmlPreferences->currentLocation;
 			$room->roomId = (int)$roomId;
 			$room->populate();

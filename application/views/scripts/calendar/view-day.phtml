@@ -56,6 +56,7 @@ function calendarLoadEvents(columns) {
 
 function expandAppointment(appointmentId,obj,height) {
 	obj.style.height = "auto";
+	if (parseInt(obj.offsetHeight) < parseInt(height)) obj.style.height = height+"px";
 	obj.style.zIndex = 9999;
 }
 
@@ -118,6 +119,9 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 	}
 
 	function removeColumnObjects(columnIndex) {
+		var child = dojo.byId("eventColumn"+columnIndex+"Container");
+		var parentDiv = dojo.byId("scheduleContainer");
+		parentDiv.removeChild(child);
 		delete columnIds[columnIndex];
 		delete gridObjects[columnIndex];
 		delete menuObjects[columnIndex];
@@ -287,6 +291,10 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		gridObjects[columnIndex].attachEvent("onDrag",dragHandler);
 		gridObjects[columnIndex].attachEvent("onDrop",dropHandler);
 		gridObjects[columnIndex].attachEvent("onRowDblClicked",function(rowId,colIndex) { dblClickedEvent(columnIndex,rowId,colIndex); });
+		gridObjects[columnIndex].attachEvent("onRowSelect",function(rowId,colIndex){
+			// reset the appointmentDiv to null
+			if (this.appointmentDiv) this.appointmentDiv = null;
+		});
 		gridObjects[columnIndex].attachEvent('onKeyPress',keyPressEvent);
 
 		menuObjects[columnIndex] = new dhtmlXMenuObject('cxColumnMenu','standard');
@@ -299,25 +307,17 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		gridObjects[columnIndex].enableContextMenu(menuObjects[columnIndex]);
 		gridObjects[columnIndex].attachEvent('onBeforeContextMenu',beforeContextMenuEvent);
 		gridObjects[columnIndex].rowToDragElement = function(rowId){
-			var appointmentId = 0;
-			if (this.appointmentDiv) appointmentId = this.appointmentDiv.getAttribute("appointmentId");
 			var text = this.cells(rowId,0).getValue();
-			if (parseInt(this.getUserData(rowId,"ctr")) > 1) { // double book detected
-				var childNodes = this.cells(rowId,0).cell.childNodes;
-				for (var i = 0; i < childNodes.length; i++) {
-					var node = childNodes[i];
-					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+appointmentId)) {
-						var marginLeft = node.style.marginLeft;
-						node.style.marginLeft = "8px";
-						var attributes = [];
-						for (var j = 0; j < node.attributes.length; j++) {
-							attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
-						}
-						node.style.marginLeft = marginLeft;
-						text = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
-						break;
-					}
+			if (this.appointmentDiv) {
+				var node = this.appointmentDiv;
+				var marginLeft = node.style.marginLeft;
+				node.style.marginLeft = "4px";
+				var attributes = [];
+				for (var j = 0; j < node.attributes.length; j++) {
+					attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
 				}
+				node.style.marginLeft = marginLeft;
+				text = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
 			}
 			return text;
 		};
@@ -445,9 +445,6 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			},
 			load: function (data) {
 				if (data.ret) {
-					child = dojo.byId('eventColumn'+columnId+'Container');
-					parentDiv = dojo.byId('scheduleContainer');
-					parentDiv.removeChild(child);
 					removeColumnObjects(columnId);
 					resizeScheduleContainer();
 				}
@@ -677,23 +674,21 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			var appointmentId = splittedId[0];
 			var columnId = gridFrom.getColumnId(colIndexFrom);
 
-			if (parseInt(gridFrom.getUserData(idFrom,"ctr")) > 1) { // double book detected
-				var childNodes = gridFrom.cells(idFrom,colIndexFrom).cell.childNodes;
-				var appointmentId = 0;
-				if (gridFrom.appointmentDiv) appointmentId = gridFrom.appointmentDiv.getAttribute("appointmentId");
-				for (var i = 0; i < childNodes.length; i++) {
-					var node = childNodes[i];
-					if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+appointmentId)) {
-						var marginLeft = node.style.marginLeft;
-						node.style.marginLeft = "8px";
-						var attributes = [];
-						for (var j = 0; j < node.attributes.length; j++) {
-							attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
-						}
-						node.style.marginLeft = marginLeft;
-						valFrom = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
-						break;
+			var childNodes = gridFrom.cells(idFrom,colIndexFrom).cell.childNodes;
+			var appointmentId = 0;
+			if (gridFrom.appointmentDiv) appointmentId = gridFrom.appointmentDiv.getAttribute("appointmentId");
+			for (var i = 0; i < childNodes.length; i++) {
+				var node = childNodes[i];
+				if (node.nodeName.toLowerCase() == "div" && node.id == ("event"+appointmentId)) {
+					var marginLeft = node.style.marginLeft;
+					node.style.marginLeft = "8px";
+					var attributes = [];
+					for (var j = 0; j < node.attributes.length; j++) {
+						attributes.push(node.attributes[j].name+"=\""+node.attributes[j].value+"\"");
 					}
+					node.style.marginLeft = marginLeft;
+					valFrom = "<div "+attributes.join(" ")+">"+node.innerHTML+"</div>";
+					break;
 				}
 			}
 
@@ -763,29 +758,14 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 					var timeTo = valTime.split(' ', 1);
 
 					var rowIdFrom =  gridFrom.getUserData(idFrom,'appointmentId');
-					dojo.xhrPost ({
-						url: "<?=$this->baseUrl?>/calendar.raw/ajax-update-appointment?changeDate=1",
-						handleAs: "json",
-						content: {
-							idFrom: rowIdFrom,
-							idTo: idTo,
-							columnIdFrom: columnIdFrom,
-							columnIdTo: columnIdTo,
-							timeTo: timeTo,
-							isCopy: appCopy,
-						},
-						load: function (jsData) {
-							calendarLoadEvents([columnIdTo]);
-							if (!appCopy) {
-								if (data.existsInOtherColumn) {
-									calendarLoadEvents([data.columnId]);
-								}
-								resizeTimeColumnContainer();
+
+					appointmentUpdate(rowIdFrom,idTo,columnIdFrom,columnIdTo,timeTo,appCopy,false,function(){
+						calendarLoadEvents([columnIdTo]);
+						if (!appCopy) {
+							if (data.existsInOtherColumn) {
+								calendarLoadEvents([data.columnId]);
 							}
-						},
-						error: function (error) {
-							alert(error);
-							console.error ('Error: ', error);
+							resizeTimeColumnContainer();
 						}
 					});
 				},
@@ -828,7 +808,7 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 			// 0 = there is only one column in the Time column
 			timeVal = timeColumnGrid.cellByIndex(i,0).getValue();
 			if (timeVal.split('<div').length > 1) {
-				defaultTimeWidth += (250 * 1.1);
+				defaultTimeWidth += 250;
 				break;
 			}
 		}
@@ -850,34 +830,24 @@ function shrinkAppointment(appointmentId,obj,height,zIndex) {
 		var appointmentId = 0;
 		if (gridFrom.appointmentDiv) appointmentId = gridFrom.appointmentDiv.getAttribute("appointmentId");
 
-		dojo.xhrPost ({
-			url: "<?=$this->baseUrl?>/calendar.raw/ajax-update-appointment",
-			handleAs: "json",
-			content: {
-				idFrom: appointmentId,
-				idTo: idTo,
-				columnIdFrom: columnIdFrom,
-				columnIdTo: columnIdTo,
-				timeTo: timeTo,
-			},
-			load: function (data) {
-				// recreate the affected columns
-				var columns = [columnIdFrom];
-				if (columnIdFrom != columnIdTo) {
-					columns.push(columnIdTo);
-				}
-				calendarLoadEvents(columns);
-			},
-			error: function (error) {
-				alert(error);
-				console.error ('Error: ', error);
+		appointmentUpdate(appointmentId,idTo,columnIdFrom,columnIdTo,timeTo,false,false,function(){
+			// recreate the affected columns
+			var columns = [columnIdFrom];
+			if (columnIdFrom != columnIdTo) {
+				columns.push(columnIdTo);
 			}
+			calendarLoadEvents(columns);
 		});
 	}
 
-	function applyNewFilter(columnIndex) {
+	function applyNewFilter(columnIndex,id) {
 		// close window before reloading the column
 		closeFilterWindow(columnIndex);
+		if (typeof id != "undefined" && columnIndex != id) {
+			removeColumnObjects(columnIndex);
+			columnIndex = id;
+			createColumn(columnIndex);
+		}
 		// reload column
 		calendarLoadEvents([columnIndex]);
 	}
@@ -940,31 +910,41 @@ function showPatientDetails(personId) {
 	windowPatientDetails();
 }
 
-function appointmentDown(obj,columnIndex) {
+function appointmentHeaderMouseDown(obj,columnIndex) {
 	if (!gridObjects[columnIndex]) return;
 	gridObjects[columnIndex].appointmentDiv = obj;
 }
 
-function appointmentClicked(obj,evt,columnIndex) {
-	var appointmentId = parseInt(obj.getAttribute("appointmentId"));
-	if (isNaN(appointmentId) || !gridObjects[columnIndex]) return;
-
-	var grid = gridObjects[columnIndex];
-	//grid.appointmentDiv = obj;
-
-	var target;
+function appointmentMouseDown(obj,evt,columnIndex) {
 	if (!evt) evt = window.event;
 
 	// cancel bubbles
 	if (evt.stopPropagation) evt.stopPropagation();
 	else evt.cancelBubble = true;
 
+	if (!gridObjects[columnIndex]) return;
+	gridObjects[columnIndex].appointmentDiv = obj;
+}
+
+function appointmentClicked(obj,evt,columnIndex) {
+	if (!evt) evt = window.event;
+
+	// cancel bubbles
+	if (evt.stopPropagation) evt.stopPropagation();
+	else evt.cancelBubble = true;
+
+	var appointmentId = parseInt(obj.getAttribute("appointmentId"));
+	if (isNaN(appointmentId) || !gridObjects[columnIndex]) return;
+
+	var grid = gridObjects[columnIndex];
+	grid.appointmentDiv = obj;
+
+	var target;
 	if (evt.target) target = evt.target;
 	else if (evt.srcElement) target = evt.srcElement;
 	if (target.nodeType == 3) target = target.parentNode; // defeat Safari bug
 
 	var rightclick = false;
-	if (!evt) evt = window.event;
 	if (evt.which) rightclick = (evt.which == 3);
 	else if (evt.button) rightclick = (evt.button == 2);
 
@@ -985,13 +965,62 @@ function appointmentClicked(obj,evt,columnIndex) {
 	menu.showContextMenu(posx,posy);
 }
 
-function appointmentDoubleClicked(obj,evt,columnIndex) {
+function appointmentDoubleClicked(evt,appointmentId) {
 	if (!evt) evt = window.event;
 	// cancel bubbles
 	if (evt.stopPropagation) evt.stopPropagation();
 	else evt.cancelBubble = true;
 
-	openAppointmentWindow({"appointmentId":obj.getAttribute("appointmentId")});
+	openAppointmentWindow({"appointmentId":appointmentId});
 	winAddAppointment.setText("<?=__('Edit Appointment')?>");
+}
+
+function appointmentMouseOver(appointmentId,obj,height) {
+	obj.style.height = "auto";
+	if (parseInt(obj.offsetHeight) < parseInt(height)) {
+		obj.style.height = height+"px";
+		var bodyHeight = parseInt(height) - parseInt(obj.childNodes[0].offsetHeight);
+		obj.childNodes[1].style.height = bodyHeight+"px";
+	}
+	obj.style.zIndex = 9999;
+}
+
+function appointmentMouseOut(appointmentId,obj,height,zIndex) {
+	obj.style.height = height+"px";
+	obj.style.zIndex = zIndex;
+}
+
+function appointmentUpdate(idFrom,idTo,columnIdFrom,columnIdTo,timeTo,isCopy,forced,callback) {
+	if (typeof forced == "undefined") forced = 0;
+	forced = (forced)?"1":"0";
+	var url = "<?=$this->baseUrl?>/calendar.raw/ajax-update-appointment";
+	dojo.xhrPost({
+		url: url,
+		handleAs: "json",
+		content: {
+			"idFrom": idFrom,
+			"idTo": idTo,
+			"columnIdFrom": columnIdFrom,
+			"columnIdTo": columnIdTo,
+			"timeTo": timeTo,
+			"isCopy": isCopy,
+			"forced": forced,
+		},
+		load: function (data) {
+			if (data.error) {
+				alert(data.error);
+				return;
+			}
+			if (data.confirmation) {
+				if (confirm(data.confirmation  + "\n\nContinue?")) appointmentUpdate(idFrom,idTo,columnIdFrom,columnIdTo,timeTo,isCopy,true,callback);
+				return;
+			}
+			if (typeof callback == "function") callback();
+		},
+		error: function (error) {
+			alert(error);
+			console.error ('Error: ', error);
+		}
+	});
 }
 </script>

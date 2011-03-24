@@ -274,7 +274,7 @@ class Menu {
 	 * Get the currently selected activity group.
 	 */
 	public static function getCurrentlySelectedActivityGroup() {
-		return $_SESSION['currentlySelectedActivityGroup'];
+		return isset($_SESSION['currentlySelectedActivityGroup'])?$_SESSION['currentlySelectedActivityGroup']:'Provider';
 	}
 
     /**

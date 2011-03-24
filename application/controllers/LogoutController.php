@@ -38,6 +38,7 @@ class LogoutController extends WebVista_Controller_Action {
 		}
 		$noRedirect = (int)$this->_getParam('noRedirection',0);
 		Zend_Auth::getInstance()->clearIdentity();
+		$_SESSION = array(); // clear all sessions
 		// comment-out session destroy to give way the session expiration in WebVista_Session_SaveHandler hook
 		//Zend_Session::destroy(true);
 		if ($noRedirect === 0) {

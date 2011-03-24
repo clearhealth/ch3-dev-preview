@@ -92,9 +92,9 @@ class Room extends WebVista_Model_ORM {
 		$provider = new Provider();
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
-			 	->from(array('r'=>'rooms'))
-			 	->join(array('b'=>'buildings'),'b.id = r.building_id')
-			 	->join(array('p'=>'practices'),'p.id = b.practice_id')
+			 	->from(array('r'=>'rooms'),null)
+			 	->join(array('b'=>'buildings'),'b.id = r.building_id',null)
+			 	->join(array('p'=>'practices'),'p.id = b.practice_id',null)
 				->columns(array('r.id AS id',"CONCAT(p.name,'->',b.name,'->',r.name) AS name"));
 		$data = $db->fetchAll($dbSelect);
 		foreach ($data as $row) {

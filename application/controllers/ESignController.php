@@ -32,7 +32,7 @@ class ESignController extends WebVista_Controller_Action {
 
 	public function indexAction() {
 		$this->_form = new WebVista_Form(array('name' => 'es-batch-sign-form'));
-                $this->_form->setAction(Zend_Registry::get('baseUrl') . "esign.raw/process-batch");
+		$this->_form->setAttrib('onsubmit','return preSubmitesbatchsignform()');
 		$element = $this->_form->createElement("password","signature", array('label' => "Signature"));
                 $this->_form->addElement($element);
 		$this->view->form = $this->_form;
@@ -283,12 +283,15 @@ class ESignController extends WebVista_Controller_Action {
 
 	function editSignItemsAction() {
 		$eSigIds = Zend_Json::decode(($this->_getParam('electronicSignatureIds')));
-		if (strlen($eSigIds) <= 0) {
-			$msg = __('No selected signature.');
-			throw new Exception($msg);
-		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
                	$json->suppressExit = true;
+		if (strlen($eSigIds) <= 0) {
+			$msg = __('No selected items to sign.');
+			WebVista::log($msg);
+			$this->getResponse()->setHttpResponseCode(500);
+			$json->direct(array('error'=>$msg));
+			return;
+		}
 		$eSigIds = explode(',',$eSigIds);
 		$signature = $this->_getParam('signature');
 		foreach ($eSigIds as $eSigId) {

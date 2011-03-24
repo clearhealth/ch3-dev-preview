@@ -141,8 +141,9 @@ class Appointment extends WebVista_Model_ORM {
 			$ret = __('Double booking');
 		}
 		// check outside of schedule time
-		else if ($this->isOutsideScheduleTime()) {
-			$ret = __('Outside of schedule time');
+		if ($this->isOutsideScheduleTime()) {
+			if ($ret !== false) $ret .= ' AND ';
+			$ret .= __('Outside of schedule time');
 		}
 		return $ret;
 	}
@@ -150,15 +151,18 @@ class Appointment extends WebVista_Model_ORM {
 	public function isDoubleBook() {
 		$ret = false;
 		$db = Zend_Registry::get('dbAdapter');
+		$start = $db->quote(date('Y-m-d H:i:s',strtotime($this->start)));
+		$end = $db->quote(date('Y-m-d H:i:s',strtotime($this->end)));
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('appointmentId != ?',(int)$this->appointmentId)
-				->where('providerId = ?',$this->providerId)
-				->where('`start` >= ?',date('Y-m-d H:i:s',strtotime($this->start)))
-				->where('`end` <= ?',date('Y-m-d H:i:s',strtotime($this->end)))
+				->where('providerId = ?',(int)$this->providerId)
+				->where('roomId = ?',(int)$this->roomId)
+				->where('(('.$start.' >= `start` AND '.$start.' < `end`) OR ('.$end.' > `start` AND '.$end.' < `end`)) OR ((`start` >= '.$start.' AND `start` < '.$end.') OR (`end` > '.$start.' AND `end` < '.$end.'))')
 				->where('appointmentCode != ?','CAN')
 				->where('start <= end')
 				->limit(1);
+		//trigger_error($sqlSelect->__toString());
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$ret = true;
 		}
@@ -173,7 +177,7 @@ class Appointment extends WebVista_Model_ORM {
 		$end = $db->quote(date('Y-m-d H:i:s',strtotime($this->end)));
 		$sqlSelect = $db->select()
 				->from($scheduleEvent->_table)
-				->where('providerId = ?',$this->providerId)
+				->where('providerId = ?',(int)$this->providerId)
 				->where($start.' >= `start`')
 				->where($start.' <= `end`')
 				->where($end.' >= `start`')
@@ -181,6 +185,12 @@ class Appointment extends WebVista_Model_ORM {
 				->where('start <= end')
 				->limit(1);
 		//trigger_error($sqlSelect->__toString(),E_USER_NOTICE);
+		$roomId = (int)$this->roomId;
+		if ($roomId > 0) {
+			$sqlSelect->join('buildings','buildings.id = '.$scheduleEvent->_table.'.buildingId')
+				->join('rooms','rooms.building_id = buildings.id')
+				->where('rooms.id = ?',$roomId);
+		}
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$ret = false;
 		}
