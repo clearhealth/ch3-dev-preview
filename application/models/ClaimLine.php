@@ -698,7 +698,8 @@ class ClaimLine extends WebVista_Model_ORM {
 				$visits[$visitId] = $visit;
 			}
 			$visit = $visits[$visitId];
-			$payerId = (int)$visit->activePayerId;
+			$payerId = (int)$row['insuranceProgramId'];
+			if (!$payerId > 0) $payerId = (int)$visit->activePayerId;
 			if (!isset($payers[$payerId])) $payers[$payerId] = InsuranceProgram::getInsuranceProgram($payerId);
 			$patientId = (int)$visit->patientId;
 			if (!isset($patients[$patientId])) {

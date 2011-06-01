@@ -199,7 +199,7 @@ class ImmunizationsController extends WebVista_Controller_Action {
 			$tmp['id'] = $enum->key;
 			$tmp['data'][] = '';
 			$tmp['data'][] = $enum->name;
-			$tmp['data'][] = '';//$enum->key;
+			$tmp['data'][] = $enum->key;
 			$rows[] = $tmp;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');

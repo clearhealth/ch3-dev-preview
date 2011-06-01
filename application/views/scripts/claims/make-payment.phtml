@@ -654,7 +654,7 @@ function adjustmentSave(rowId,cellIndex) {
 				adjustmentGrid.setRowId(adjustmentGrid.getRowIndex("trailingId"),data.id);
 				adjustmentGrid.addRow("trailingId","");
 			}
-			if (data.data[cellIndex]) adjustmentGrid.cells(data.id,cellIndex).setValue(data.data[cellIndex]);
+			adjustmentGrid.renderRowData(data);
 			return data;
 		},
 		error: function(response) {

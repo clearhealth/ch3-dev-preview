@@ -56,7 +56,7 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 				$tmp['data'][] = $patient->person->getDisplayName(); // patient
 				$tmp['data'][] = ''; // location
 				$tmp['data'][] = date('m/d/Y H:i',strtotime($alert->dateTime));
-				$tmp['data'][] = $alert->message;
+				$tmp['data'][] = str_replace("\n",', ',$alert->message);
 				$forwardedBy = '';
 				if ($alert->forwardedBy > 0) {
 					$person = new Person();
@@ -214,7 +214,8 @@ class GeneralAlertsController extends WebVista_Controller_Action {
 		$this->_form->setWindow('windowForwardAlertId');
 		$this->view->form = $this->_form;
 
-		$providerIterator = new ProviderIterator();
+		$provider = new Provider();
+		$providerIterator = $provider->getIter();
 		$this->view->providers = $providerIterator->toArray('personId','displayName');
 
 		$this->view->jsCallback = $this->_getParam('jsCallback');

@@ -140,6 +140,7 @@ formularyGrid.setHeader("<?=__('Drug')?>,<?=__('Directions')?>,<?=__('Comments')
 formularyGrid.setColTypes("ro,ed,ed,co,ed,ed,ed,ed,co,ed,co,ch,ed,co,co,ch,ed,ed,ch");
 formularyGrid.setSkin("xp");
 formularyGrid.setInitWidths("*,*,*,50,50,*,50,30,50,*,50,30,*,50,50,30,50,50,30");
+formularyGrid.enableDynamicLoading(true);
 formularyGrid.init();
 
 var indexDrug = 0;
@@ -227,18 +228,20 @@ formularyGrid.attachEvent("onRowSelect",onFormularyRowSelected);
 function onFormularyRowSelected(rowId,cellIndex) {
 }
 
-function formularySingleUpdate(rowId,cellIndex,value) {
+function formularySingleUpdate(field,id,value,callback) {
 	dojo.xhrPost({
 		url: "<?=$this->baseUrl?>/formulary-manager.raw/process-single-update",
 		handleAs: "json",
 		content: {
 			name: '<?=$this->tableName?>',
-			field: fieldNameLookup[cellIndex],
-			id: rowId,
+			field: field,
+			id: id,
 			value: value,
 		},
 		load: function (data) {
-			formularyGrid.cells(rowId,cellIndex).setValue(data);
+			if (typeof callback == 'function') {
+				callback(data);
+			}
 		},
 		error: function (error) {
 			alert(error);
@@ -247,12 +250,16 @@ function formularySingleUpdate(rowId,cellIndex,value) {
 	});
 }
 
+function formularyOnUpdated(data) {
+	formularyGridReload();
+}
+
 formularyGrid.attachEvent("onEditCell",formularyOnEditCell);
 function formularyOnEditCell(stage,rowId,cellIndex,newValue,oldValue) {
 	switch (stage) {
 		case 2:
 			if (cellIndex > 0 && newValue != oldValue) {
-				formularySingleUpdate(rowId,cellIndex,newValue);
+				formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
 			}
 			break;
 	}
@@ -264,7 +271,7 @@ function formularyGridOnChecked(rowId,cellIndex,value) {
 	if (value) {
 		newValue = 1;
 	}
-	formularySingleUpdate(rowId,cellIndex,newValue);
+	formularySingleUpdate(fieldNameLookup[cellIndex],rowId,newValue,formularyOnUpdated);
 }
 
 var formularyMenu = new dhtmlXMenuObject(null,'standard');

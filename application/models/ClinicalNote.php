@@ -326,44 +326,129 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 		$template = $this->clinicalNoteDefinition->clinicalNoteTemplate->template;
 		$xml = new SimpleXMLElement($template);
 
+		$options = array();
+		$types = array();
 		$elements = array();
 		foreach ($xml as $question) {
-			$elements[] = (string)$question->attributes()->label;
+			$elements[] = "\n---".(string)$question->attributes()->label."---\n";
 			foreach($question as $key=>$item) {
 				if ($key == 'dataPoint') $dataPoint = $item;
 				else if ($key == 'heading') {
-					$elements[] = "\t".(string)$item;
+					$elements[] = '  '.(string)$item;
 					continue;
 				}
 				else continue;
 				$namespace = (string)$dataPoint->attributes()->namespace;
 
+				$value = '';
+				$val = (string)$dataPoint->attributes()->value;
+				$label = '    '.(string)$dataPoint->attributes()->label;
 				$type = (string)$dataPoint->attributes()->type;
-				if ($type == 'img') {
-					$elements[] = $namespace.': Source note includes annotated diagram';
+				switch ($type) {
+					case 'img':
+					case 'drawing':
+						$value = $namespace.': Source note includes annotated diagram';
+						break;
+					case 'radio':
+					case 'select':
+						if ((string)$dataPoint->attributes()->default == true) $value = $val;
+						if (!isset($options[$namespace])) $options[$namespace] = array();
+						$options[$namespace][$val] = $label;
+						break;
+					case 'codeLookup':
+					case 'currencyText':
+					case 'dateText':
+					case 'checkbox':
+					case 'div':
+					case 'grid':
+					case 'numberSpinner':
+					case 'pre':
+					case 'readOnly':
+					case 'richEdit':
+					default:
+						break;
 				}
-				else {
-					$label = "\t\t".(string)$dataPoint->attributes()->label;
-					if (substr($label,-1) != ':') $label .= ':';
-					$elements[$namespace] = $label.' ';
+				$templateText = (string)$dataPoint->attributes()->templateText;
+				if (strlen($templateText) > 0) {
+					$view = Zend_Layout::getMvcInstance()->getView();
+					$value = $view->action('templated-text','template-text',null,array('personId'=>$this->personId,'templateName'=>$templateText));
 				}
+				$elements[$namespace] = array('label'=>$label,'value'=>$value);
+				$types[$namespace] = $type;
 			}
+		}
+		if ((int)$this->eSignatureId > 0) {
+			$esig = new ESignature();
+			$esig->eSignatureId = $this->eSignatureId;
+			$esig->populate();
+			$signPerson = new Person();
+			$signPerson->personId = $esig->signingUserId;
+			$signPerson->populate();
+			$person = new Person();
+			$person->personId = $esig->signingUserId;
+			$person->populate();
+			$elements[] = "\n\n\n=== Signed on: ".$esig->signedDateTime.' by: '.$person->firstName.' '.$person->lastName.' '.$person->suffix.' === ';
 		}
 
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from('genericData',array('name','value'))
 				->where("objectClass = 'ClinicalNote'")
-				->where('objectId = ?',(int)$this->clinicalNoteId)
-				->where('revisionId = ?',(int)$revisionId);
+				->where('objectId = ?',(int)$this->clinicalNoteId);
+		if ($revisionId > 0) $sqlSelect->where('revisionId = ?',(int)$revisionId);
+
 		$stmt = $db->query($sqlSelect);
 		while ($row = $stmt->fetch()) {
 			$namespace = $row['name'];
 			if (!isset($elements[$namespace])) continue;
-			$elements[$namespace] .= $row['value'];
-		}
 
-		return implode("\n",$elements);
+			$value = $row['value'];
+			switch ($types[$namespace]) {
+				case 'img':
+				case 'drawing':
+					$elements[$namespace] = $namespace.': Source note includes annotated diagram';
+					continue 2;
+				case 'radio':
+				case 'select':
+					if (isset($options[$namespace]) && isset($options[$namespace][$value])) {
+						$elements[$namespace] = $options[$namespace][$value];
+						continue 2;
+					}
+					break;
+				case 'codeLookup':
+					$tmp = '';
+					foreach (explode('^|^',$value) as $val) {
+						if ($tmp != '') $tmp .= "\n";
+						$tmp .= '    '.substr($val,2).': '.substr($val,0,1);
+					}
+					$elements[$namespace] = $tmp;
+					continue 2;
+				case 'currencyText':
+				case 'dateText':
+				case 'checkbox':
+				case 'div':
+				case 'grid':
+				case 'numberSpinner':
+				case 'pre':
+				case 'readOnly':
+				case 'richEdit':
+				default:
+					break;
+			}
+			$elements[$namespace]['value'] = $value;
+		}
+		$ret = '';
+		foreach ($elements as $element) {
+			if ($ret != '') $ret .= "\n";
+			if (is_array($element)) {
+				$label = $element['label'];
+				if (substr($label,-1) != ':') $label .= ':';
+				$value = str_replace("\n","\n ".str_repeat(' ',strlen($label)),$element['value']);
+				$ret .= $label.' '.$value;
+			}
+			else $ret .= $element;
+		}
+		return $ret;
 	}
 
 	public static function mostRecent($personId,$clinicalNoteDefinitionId=0) {

@@ -111,6 +111,16 @@ class MiscCharge extends WebVista_Model_ORM {
 				);
 			}
 		}
+
+		// misc charges
+		foreach ($this->getIteratorByVisitId($visitId) as $row) {
+			$ret[$row->miscChargeId] = array(
+				'date'=>date('Y-m-d',strtotime($row->chargeDate)),
+				'type'=>$row->chargeType,
+				'amount'=>(float)$row->amount,
+				'note'=>$row->note,
+			);
+		}
 		return $ret;
 	}
 

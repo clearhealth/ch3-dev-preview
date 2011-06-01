@@ -125,12 +125,15 @@ class MedicationRefillResponse extends WebVista_Model_ORM {
 		$data['type'] = 'refill';
 		$ret = ePrescribe::sendResponse($data,$messaging);
 		if ($ret === true) {
+			$this->dateTime = date('Y-m-d H:i:s');
 			$this->persist();
 
 			$refillRequest->action = $this->_validResponses[$response];
 			$refillRequest->status = 'RESPONDED';
-			$refillRequest->dateTime = date('Y-m-d H:i:s');
 			$refillRequest->persist();
+
+			$this->dateTime = date('Y-m-d H:i:s');
+			$this->persist();
 		}
 
 		return $ret;

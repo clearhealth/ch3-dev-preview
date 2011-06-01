@@ -63,9 +63,21 @@ class InsuredRelationship extends WebVista_Model_ORM {
 		$this->subscriber = new Person();
 	}
 
+	public function populate() {
+		$ret = parent::populate();
+		// cascade populate fix
+		$this->subscriber->personId = (int)$this->subscriberId;
+		$this->subscriber->populate();
+		return $ret;
+	}
+
 	public function persist() {
 		if ((int)$this->program_order === 0) $this->program_order = self::maxProgramOrder($this) + 1;
 		return parent::persist();
+	}
+
+	public function setSubscriber_id($id) {
+		$this->setSubscriberId($id);
 	}
 
 	public function setSubscriberId($id) {

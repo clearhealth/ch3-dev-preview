@@ -61,16 +61,12 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 				$dateStart = $weekDates['start'].' 00:00:00';
 				$dateEnd = $weekDates['end'].' 23:59:59';
 
-				$filters = array();
-				$filters['providerId'] = $providerId;
-				$filters['roomId'] = $roomId;
-				$filters['start'] = $dateStart;
-				$filters['end'] = $dateEnd;
-				$scheduleEventIterator = new ScheduleEventIterator(null,false);
-				$scheduleEventIterator->setFilters($filters);
+				$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$dateStart,$dateEnd);
 				$data = array();
 				$weekdays = array();
-				foreach ($scheduleEventIterator as $row) {
+				while ($event = $stmt->fetch()) {
+					$row = new ScheduleEvent();
+					$row->populateWithArray($event);
 					$startToTime = strtotime($row->start);
 					$weekday = date('N',$startToTime);
 					$data[$weekday][] = array('id'=>$row->scheduleEventId,'date'=>date('Y-m-d',$startToTime),'time'=>date('h:iA',$startToTime).'-'.date('h:iA',strtotime($row->end)),'buildingId'=>$row->buildingId,'ORM'=>$row);
@@ -230,16 +226,10 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$end = $date.' 23:59:59';
 		$this->_processClear($providerId,$roomId,$start,$end);
 
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $start;
-		$filters['end'] = $end;
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
 		$data = array();
-		foreach ($scheduleEventIterator as $row) {
-			$data[] = $this->_getEvent($row->scheduleEventId);
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
+		while ($row = $stmt->fetch()) {
+			$data[] = $this->_getEvent($row['scheduleEventId']);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -300,31 +290,25 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$scheduleEvent->end = $dateTo.' 23:59:59';
 		$scheduleEvent->deleteByDateRange(); // remove any existing data
 
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $dateFrom.' 00:00:00';
-		$filters['end'] = $dateFrom.' 23:59:59';
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
+		$start = $dateFrom.' 00:00:00';
+		$end = $dateFrom.' 23:59:59';
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
 		$strDateTo = strtotime($dateTo);
-		foreach ($scheduleEventIterator as $row) {
+		while ($event = $stmt->fetch()) {
+			$row = new ScheduleEvent();
+			$row->populateWithArray($event);
 			$row->scheduleEventId = 0;
 			$row->start = $dateTo.' '.date('H:i',strtotime($row->start));
 			$row->end = $dateTo.' '.date('H:i',strtotime($row->end));
 			$row->persist();
 		}
 
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $dateTo.' 00:00:00';
-		$filters['end'] = $dateTo.' 23:59:59';
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
+		$start = $dateTo.' 00:00:00';
+		$end = $dateTo.' 23:59:59';
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
 		$data = array();
-		foreach ($scheduleEventIterator as $row) {
-			$data[] = $this->_getEvent($row->scheduleEventId);
+		while ($row = $stmt->fetch()) {
+			$data[] = $this->_getEvent($row['scheduleEventId']);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -341,19 +325,17 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$dateStart = date('Y-m-d',strtotime($weekDates['start']));
 		$dateEnd = date('Y-m-d',strtotime($weekDates['end']));
 
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $dateStart.' 00:00:00';
-		$filters['end'] = $dateEnd.' 23:59:59';
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
+		$start = $dateStart.' 00:00:00';
+		$end = $dateEnd.' 23:59:59';
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
 
 		$strXML = '<'.ScheduleTemplate::XML_ROOT_TAG.'/>';
 		$xml = new SimpleXMLElement($strXML);
 
 		$parents = array();
-		foreach ($scheduleEventIterator as $row) {
+		while ($event = $stmt->fetch()) {
+			$row = new ScheduleEvent();
+			$row->populateWithArray($event);
 			$startToTime = strtotime($row->start);
 			$weekday = date('l',$startToTime);
 			if (!isset($parents[$weekday])) {
@@ -587,20 +569,27 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$roomId = (int)$this->_getParam('roomId');
 
 		$scheduleEvents = array();
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $dateStartFrom.' 00:00:00';
-		$filters['end'] = $dateEndFrom.' 23:59:59';
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
-		foreach ($scheduleEventIterator as $row) {
+		$start = $dateStartFrom.' 00:00:00';
+		$end = $dateEndFrom.' 23:59:59';
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
+		while ($event = $stmt->fetch()) {
+			$row = new ScheduleEvent();
+			$row->populateWithArray($event);
 			$key = date('Y-m-d',strtotime($row->start));
 			if (!isset($scheduleEvents[$key])) {
 				$scheduleEvents[$key] = array();
 			}
 			$scheduleEvents[$key][] = $row;
 		}
+
+		$start = $dateStartTo.' 00:00:00';
+		$end = $dateEndTo.' 23:59:59';
+		$scheduleEvent = new ScheduleEvent();
+		$scheduleEvent->providerId = $providerId;
+		$scheduleEvent->roomId = $roomId;
+		$scheduleEvent->start = $start;
+		$scheduleEvent->end = $end;
+		$scheduleEvent->deleteByDateRange(); // remove any existing data
 
 		if (count($scheduleEvents) > 0) {
 			// get the difference
@@ -729,6 +718,20 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$json->direct($data);
 	}
 
+	protected function _stmtScheduleEvents($providerId,$roomId,$start,$end) {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('scheduleEvents')
+				->where('providerId = ?',$providerId)
+				->where('roomId = ?',$roomId)
+				->where('start >= ?',$start)
+				->where('end <= ?',$end)
+				->order('start ASC');
+		$stmt = $db->query($sqlSelect);
+		$stmt->setFetchMode(Zend_Db::FETCH_ASSOC);
+		return $stmt;
+	}
+
 	public function processCopyToUserAddAction() {
 		$dateStart = date('Y-m-d',strtotime($this->_getParam('dateStart')));
 		$dateEnd = date('Y-m-d',strtotime($this->_getParam('dateEnd')));
@@ -747,14 +750,14 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$scheduleEvent->deleteByDateRange(); // remove any existing data
 
 		$data = 0;
-		$filters = array();
-		$filters['providerId'] = $providerIdFrom;
-		$filters['roomId'] = $roomIdFrom;
-		$filters['start'] = $dateStart.' 00:00:00';
-		$filters['end'] = $dateEnd.' 23:59:59';
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
-		foreach ($scheduleEventIterator as $row) {
+		$providerId = $providerIdFrom;
+		$roomId = $roomIdFrom;
+		$start = $dateStart.' 00:00:00';
+		$end = $dateEnd.' 23:59:59';
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
+		while ($event = $stmt->fetch()) {
+			$row = new ScheduleEvent();
+			$row->populateWithArray($event);
 			$row->scheduleEventId = 0;
 			$row->providerId = $providerIdTo;
 			$row->roomId = $roomIdTo;
@@ -854,16 +857,10 @@ class ScheduleManagerController extends WebVista_Controller_Action {
 		$start = $date.' 00:00:00';
 		$end = $date.' 23:59:59';
 
-		$filters = array();
-		$filters['providerId'] = $providerId;
-		$filters['roomId'] = $roomId;
-		$filters['start'] = $start;
-		$filters['end'] = $end;
-		$scheduleEventIterator = new ScheduleEventIterator(null,false);
-		$scheduleEventIterator->setFilters($filters);
+		$stmt = $this->_stmtScheduleEvents($providerId,$roomId,$start,$end);
 		$data = array();
-		foreach ($scheduleEventIterator as $row) {
-			$data[] = $this->_getEvent($row->scheduleEventId);
+		while ($row = $stmt->fetch()) {
+			$data[] = $this->_getEvent($row['scheduleEventId']);
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

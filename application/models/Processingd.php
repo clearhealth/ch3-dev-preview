@@ -88,11 +88,7 @@ class Processingd {
 			       ->from($audit->_table)
 			       ->where("startProcessing = '0000-00-00 00:00:00'")
 			       ->orWhere("endProcessing = '0000-00-00 00:00:00'");
-		$auditIterator = $audit->getIterator($dbSelect);
-		$this->_audits = array();
-		foreach ($auditIterator as $item) {
-			$this->_audits[] = $item;
-		}
+		$this->_audits = $audit->getIterator($dbSelect);
 	}
 
 

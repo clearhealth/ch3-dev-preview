@@ -330,19 +330,16 @@ class PatientController extends WebVista_Controller_Action {
 		$id = (int)$this->_getParam('id');
 		$insurer = new InsuredRelationship();
 		$insurer->personId = $patientId;
+		$time = time();
+		$insurer->effectiveStart = date('Y-m-d',$time);
+		$insurer->effectiveEnd = date('Y-m-d',strtotime('+1 year',$time));
 		if ($id > 0) {
 			$insurer->insuredRelationshipId = $id;
 			$insurer->populate();
 		}
-		$subscriber = new Person();
-		$q = '';
-		if ($insurer->subscriberId > 0) {
-			$subscriber->personId = (int)$insurer->subscriberId;
-			$subscriber->populate();
-			$q = $subscriber->lastName.', '.$subscriber->firstName.' '.substr($subscriber->middleName,0,1);
-		}
-		$this->view->q = $q;
-		$insurer->subscriber = new Person(); // temporarily set to empty
+		$this->view->subscriber = $insurer->subscriber;
+		$this->view->subscriberPhone = $insurer->subscriber->phoneNumber;
+		$this->view->subscriberAddress = $insurer->subscriber->address;
 		$this->_form = new WebVista_Form(array('name'=>'edit-insurer'));
 		$this->_form->setAction(Zend_Registry::get('baseUrl').'patient.raw/process-edit-insurer');
 		$this->_form->loadORM($insurer,'Insurer');
@@ -457,6 +454,7 @@ class PatientController extends WebVista_Controller_Action {
 	}
 
 	public function listStatsAction() {
+		$statisticsStoreKeyAsValue = ((string)Zend_Registry::get('config')->statisticsStoreKeyAsValue== 'true')?true:false;
 		$personId = (int)$this->_getParam('personId');
 		$psd = new PatientStatisticsDefinition();
 		$stats = PatientStatisticsDefinition::getPatientStatistics($personId);
@@ -467,15 +465,18 @@ class PatientController extends WebVista_Controller_Action {
 			$tmp['id'] = $row->name;
 			$tmp['data'] = array();
 			$tmp['data'][] = GrowthChartBase::prettyName($row->name);
-			$tmp['data'][] = isset($stats[$row->name])?$stats[$row->name]:'';
+			$val = isset($stats[$row->name])?$stats[$row->name]:'';
+			$tmp['userdata']['value'] = $val;
 			$options = array();
 			if ($row->type == PatientStatisticsDefinition::TYPE_ENUM) {
 				$enumerationClosure = new EnumerationClosure();
 				$paths = $enumerationClosure->generatePathsKeyName($row->value);
 				foreach ($paths as $id=>$name) {
+					if ($statisticsStoreKeyAsValue && $val == $id) $val = $name;
 					$options[] = array('key'=>$id,'value'=>$name);
 				}
 			}
+			$tmp['data'][] = $val;
 			$tmp['userdata']['type'] = $row->type;
 			$tmp['userdata']['options'] = $options;
 			$rows[] = $tmp;
@@ -551,6 +552,7 @@ class PatientController extends WebVista_Controller_Action {
 				->joinUsing('patient','person_id')
 				->where('person.last_name LIKE '.$match)
 				->orWhere('person.first_name LIKE '.$match)
+				->orWhere('person.date_of_birth LIKE '.$match)
 				->order('person.last_name DESC')
 				->order('person.first_name DESC');
 				//->limit(50);
@@ -656,6 +658,22 @@ class PatientController extends WebVista_Controller_Action {
 	protected function _processEditNote(Array $params) {
 		$obj = new PatientNote();
 		$this->_processEdit($obj,'patientNoteId',array('priority','note_date','username','reason','note','active'),$params);
+	}
+
+	public function getDetailsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$data = false;
+		if ($personId > 0) {
+			$patient = new Patient();
+			$patient->personId = $personId;
+			$patient->populate();
+			$data = $patient->toArray();
+			$data['phoneNumber'] = $patient->person->phoneNumber->toArray();
+			$data['address'] = $patient->person->address->toArray();
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

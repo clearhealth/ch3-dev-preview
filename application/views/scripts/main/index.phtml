@@ -367,10 +367,14 @@ function processAlertNext() {
 
 function markAlertDone() {
 	var processAlertItemsSelect = dojo.byId("processAlertItems");
+	var selectedIndex = processAlertItemsSelect.selectedIndex;
+	if (selectedIndex < 0) return;
 	dojo.xhrGet({
-		url: globalBaseUrl + "/general-alerts.raw/mark-alert-done?generalAlertId=" + processAlertItemsSelect.options[processAlertItemsSelect.selectedIndex].value,
+		url: globalBaseUrl + "/general-alerts.raw/mark-alert-done?generalAlertId=" + processAlertItemsSelect.options[selectedIndex].value,
 		handleAs: "json",
 		load: function(data,ioArgs) {
+			processAlertItemsSelect.remove(selectedIndex);
+			if (processAlertItemsSelect.options.length <= 0) processStop();
 			return data;
 		},
 		error: function(response, ioArgs) {

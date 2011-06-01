@@ -97,11 +97,13 @@ class EnumerationClosure extends ClosureBase {
 		$ret = array();
 		$rows = $db->fetchAll($sqlSelect);
 		if ($rows) {
+			$statisticsStoreKeyAsValue = ((string)Zend_Registry::get('config')->statisticsStoreKeyAsValue== 'true')?true:false;
 			foreach ($rows as $row) {
 				$enumeration = new Enumeration();
 				$enumeration->enumerationId = (int)$row['node'];
 				$enumeration->populate();
-				$ret[$enumeration->name] = $row['path'];
+				if ($statisticsStoreKeyAsValue) $ret[$enumeration->key] = $row['path'];
+				else $ret[$enumeration->name] = $row['path'];
 			}
 		}
 		return $ret;

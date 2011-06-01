@@ -287,9 +287,11 @@ class NSDR2 extends NSDR {
 		$methods = array();
 		$attributes = array();
 		$arrData = preg_split('/\)\ {0,},/',$data);
-		foreach ($arrData as $v) {
-			$val = trim($v);
+		$ctr = count($arrData) - 1;
+		for ($i = 0; $i <= $ctr; $i++) {
+			$val = trim($arrData[$i]);
 			if (!strlen($val) > 0) continue;
+			if ($i == $ctr && substr($val,-1) == ')') $val = substr($val,0,-1);
 			if (substr($val,0,1) == '@') { // considered as attributes
 				$attribs = $val;
 				$attributes = self::_extractAttributes($attribs);

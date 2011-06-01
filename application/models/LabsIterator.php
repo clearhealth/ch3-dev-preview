@@ -82,6 +82,9 @@ class LabsIterator extends WebVista_Model_ORMIterator implements Iterator {
 					$end = isset($dateRange[1])?date('Y-m-d 23:59:59',strtotime($dateRange[1])):date('Y-m-d 23:59:59',strtotime($start));
 					$dbSelect->where("lab_result.observation_time BETWEEN '{$start}' AND '{$end}'");
 					break;
+				case 'orders':
+					foreach ($val as $order) $dbSelect->order("{$order[0]} {$order[1]}");
+					break;
 			}
 		}
 		//echo $dbSelect->__toString();exit;

@@ -260,7 +260,7 @@ function reportsGetResults(baseId) {
 						var opts = [];
 						for (var j in filter.queries) {
 							var query = filter.queries[j];
-							opts.push(["filter_"+filter.id+"_"+query.id,"obj",query.name,"blank.gif"]);
+							opts.push(["filter_"+filter.id+"_"+query.id,"obj",query.name.replace(/\&/,"&amp;"),"blank.gif"]);
 						}
 						reportsResultsToolbar.addButtonSelect(filter.id,ctr++,prettyName,opts,"filter.png","filter.png");
 						reportsResultsToolbar.setItemToolTip(filter.id,prettyName);
@@ -411,6 +411,12 @@ reportsLayoutLeftGrid.setSkin("xp");
 reportsLayoutLeftGrid.attachEvent("onRowSelect",reportsLayoutLeftGridOnRowSelected);
 reportsLayoutLeftGrid.init();
 function reportsLayoutLeftGridOnLoaded() {
+	if (typeof globalReportsGridCallbacks == "undefined") globalReportsGridCallbacks = [];
+	for (var i in globalReportsGridCallbacks) {
+		var func = globalReportsGridCallbacks[i];
+		if (typeof func != "function") continue;
+		func(reportsLayoutLeftGrid);
+	}
 }
 function reportsLayoutLeftGridReload() {
 	reportsLayoutLeftGrid.clearAll();

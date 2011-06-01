@@ -720,8 +720,8 @@ class ClaimsController extends WebVista_Controller_Action {
 			switch ($type) {
 				case 'healthcloud':
 					break;
-				case 'download4010A':
-					$data = $this->_download4010A($claimIds);
+				case 'download4010A1':
+					$data = $this->_download4010A1($claimFile,$claimIds);
 					break;
 				case 'download5010':
 					break;
@@ -745,10 +745,10 @@ class ClaimsController extends WebVista_Controller_Action {
 		$this->render('download');
 	}
 
-	protected function _download4010A($claimIds) {
+	protected function _download4010A1(ClaimFile $claimFile,Array $claimIds) {
 		$this->getResponse()->setHeader('Content-Type','text/plain');
-		$this->getResponse()->setHeader('Content-Disposition','attachment; filename="4010A.txt"');
-		$data = Claim::render4010A($claimIds);
+		$this->getResponse()->setHeader('Content-Disposition','attachment; filename="4010A1.txt"');
+		$data = Claim::render4010A1($claimFile,$claimIds);
 		return $data;
 	}
 
@@ -762,16 +762,22 @@ class ClaimsController extends WebVista_Controller_Action {
 		$xmlFile = tempnam('/tmp','cms_');
 		file_put_contents($inputFile,$attachment->rawData);
 		$xmlFile = $this->_generateCMSXML($claimIds,$type);
-		$output = `pdfset -i $inputFile -X $xmlFile -o $outputFile`;
+		$pdfset = exec('which pdfset');
+		if (!strlen($pdfset) > 0) $pdfset = '/usr/local/bin/pdfset';
+		$output = `$pdfset -i $inputFile -X $xmlFile -o $outputFile`;
 		$ret = file_get_contents($outputFile);
 		// cleanup mess
 		unlink($inputFile);
 		unlink($outputFile);
 		unlink($xmlFile);
+		//trigger_error(print_r($claimIds,true));
+		//$cmd = "pdfset -i $inputFile -X $xmlFile -o $outputFile";
+		//trigger_error($cmd);
 		return $ret;
 	}
 
 	protected function _generateCMSXML(Array $claimIds,$type,$retFile=true) {
+		//$xml = new SimpleXMLElement('<cmspage/>');
 		$xml = new SimpleXMLElement('<cms/>');
 		foreach ($claimIds as $claimId) {
 			$claimLine = new ClaimLine();
@@ -1533,7 +1539,8 @@ class ClaimsController extends WebVista_Controller_Action {
 			$row['id'] = $claimLine->claimLineId;
 			$row['data'] = array();
 			$row['data'][] = $claimLine->procedureCode.' : '.$claimLine->procedure; // Code
-			$billed = (float)$claimLine->amountBilled;
+			//$billed = (float)$claimLine->amountBilled;
+			$billed = (float)$claimLine->baseFee;
 			$paid = (float)$claimLine->paid;
 			$writeOff = (float)$claimLine->writeOff;
 			$balance = $billed - ($paid + $writeOff);

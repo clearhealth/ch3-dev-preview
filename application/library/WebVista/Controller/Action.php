@@ -81,6 +81,10 @@ if (typeof mainTabbar != "undefined") {
 	var tab = mainTabbar._getTabById(tabId);
 	// set active patientId
 	mainController.setActivePatient(patientId);
+	if (tab == mainTabbar._lastActive) {
+		mainTabbar.forceLoad(tabId); // force reload if tabId is the same as active tab
+		return;
+	}
 	mainTabbar.setTabActive(tabId); // tabName should be dynamic
 }
 

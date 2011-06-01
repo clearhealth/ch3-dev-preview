@@ -151,7 +151,7 @@ class DiscountTable extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('guid != '.$db->quote($this->guid))
-				->where('(dateStart BETWEEN '.$dateStart.' AND '.$dateEnd.') OR (dateEnd BETWEEN '.$dateStart.' AND '.$dateEnd.')');
+				->where('('.$dateStart.' >= dateStart AND '.$dateStart.' <= dateEnd) OR ('.$dateEnd.' >= dateStart AND '.$dateEnd.' <= dateEnd)');
 		$orWhere = array();
 		foreach (explode(',',$this->insuranceProgramIds) as $ip) {
 			$ip = (int)$ip;

@@ -74,6 +74,18 @@ class LabResultsController extends WebVista_Controller_Action {
 	}
 
 	protected function _getLabResults($filters) {
+		$order = $this->_getParam('order');
+		if (strlen($order) > 0) {
+			$orders = explode(';',$order);
+			$values = array();
+			foreach ($orders as $val) {
+				$x = explode(':',$val);
+				if (!isset($x[1])) $x[1] = 'ASC';
+				$values[] = $x;
+			}
+			$filters['orders'] = $values;
+		}
+
 		$labs = array();
 		$showCalcLabs = (boolean)$this->_getParam('showCalcLabs',false);
 		$calcLabsArray = array();
@@ -356,5 +368,26 @@ mainTabbar.setOnTabContentLoaded(function(tabId){
 EOL;
 		return $js;
 	}
+
+	public function commentsForResultAction() {
+                $labResultId = (int)$this->_getParam('labResultId');
+                $noteText = "No comments for this result";
+                $labNote = new LabNote();
+                $db = Zend_Registry::get('dbAdapter');
+                $labSelect = $db->select()
+                                ->from ('lab_note')
+                                ->join('lab_test','lab_test.lab_test_id = lab_note.lab_test_id')
+                                ->join('lab_result','lab_result.lab_test_id = lab_test.lab_test_id')
+                                ->where('lab_result_id = ?',$labResultId);
+                foreach($db->query($labSelect)->fetchAll() as $row) {
+                        $labNote->labNoteId = $row['lab_note_id'];
+                        $labNote->populate();
+                        if (strlen($labNote->note) > 0) $noteText = $labNote->note;
+                }
+                //trigger_error($labSelect->__toString(), E_USER_NOTICE);
+                $json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+                $json->suppressExit = true;
+                $json->direct(array($noteText));
+        }
 
 }

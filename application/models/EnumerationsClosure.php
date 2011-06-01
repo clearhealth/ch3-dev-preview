@@ -52,6 +52,7 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 			       ->join(array("ec"=>"enumerationsClosure"),"e.enumerationId = ec.descendant")
 			       ->where("ec.ancestor = ?",(int)$enumerationId)
 			       ->where("ec.ancestor != ec.descendant")
+			       ->where('ec.depth = 1')
 			       ->order("ec.depth ASC")
 			       ->order("ec.weight ASC")
 			       ->order("e.name ASC");

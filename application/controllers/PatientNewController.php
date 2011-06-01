@@ -82,7 +82,7 @@ class PatientNewController extends WebVista_Controller_Action {
 		$patient = new Patient();
 		$patient->populateWithArray($params);
 		if (!strlen($patient->recordNumber) > 0) {
-			$patient->recordNumber = WebVista_Model_ORM::nextSequenceId();
+			$patient->recordNumber = WebVista_Model_ORM::nextSequenceId('record_sequence');
 		}
 		$patient->persist();
 		$personId = (int)$patient->personId;

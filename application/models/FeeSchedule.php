@@ -53,7 +53,7 @@ class FeeSchedule extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('guid != '.$db->quote($this->guid))
-				->where('(dateOfServiceStart BETWEEN '.$dateOfServiceStart.' AND '.$dateOfServiceEnd.') OR (dateOfServiceEnd BETWEEN '.$dateOfServiceStart.' AND '.$dateOfServiceEnd.')');
+				->where('('.$dateOfServiceStart.' >= dateOfServiceStart AND '.$dateOfServiceStart.' <= dateOfServiceEnd) OR ('.$dateOfServiceEnd.' >= dateOfServiceStart AND '.$dateOfServiceEnd.' <= dateOfServiceEnd)');
 		$orWhere = array();
 		foreach (explode(',',$this->insuranceProgramIds) as $ip) {
 			$ip = (int)$ip;

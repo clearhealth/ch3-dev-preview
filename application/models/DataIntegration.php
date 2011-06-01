@@ -66,7 +66,7 @@ class DataIntegration extends WebVista_Model_ORM {
 
 		WebVista::log('generating source data');
 		$data['_audit'] = $audit;
-		$uuid = uuid_create();
+		$uuid = NSDR::create_guid();
 		$data['messageId'] = str_replace('-','',$uuid);
 		$data['prescriberOrderNumber'] = $medication->medicationId.'_'.$audit->auditId;
 		$data['rxReferenceNumber'] = $medication->rxReferenceNumber;

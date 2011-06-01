@@ -456,6 +456,11 @@ function scheduleGridOnRowDblClicked(rowId,cellIndex) {
 	var pos = win.getPosition();
 	offsetLeft -= (pos[0] + 6); // left
 	offsetTop -= (pos[1] + 12); // top
+	var dime = win.getDimension();
+	var offsetHeight = scheduleTimePicker.offsetHeight;
+	if (offsetHeight <= 0) offsetHeight = 160;
+	offsetHeight += 40;
+	if ((offsetTop + offsetHeight) > dime[1]) offsetTop = dime[1] - offsetHeight;
 
 	scheduleTimePicker.style.left = offsetLeft + "px";
 	scheduleTimePicker.style.top = offsetTop + "px";

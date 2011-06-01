@@ -42,13 +42,22 @@ class Room extends WebVista_Model_ORM {
 
 	public function __construct() {
 		parent::__construct();
+		$this->_init();
+	}
+
+	protected function _init() {
 		$this->building = new Building();
 		$this->building->_cascadePersist = false;
 	}
 
 	public function populate() {
 		$ret = parent::populate();
-		$this->building->populate();
+		if ($this->building->buildingId > 0) {
+			$this->building->populate();
+		}
+		else {
+			$this->_init();
+		}
 		return $ret;
 	}
 

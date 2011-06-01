@@ -637,8 +637,9 @@ class ReportBase extends WebVista_Model_ORM {
 		}
 		$outputFile = tempnam('/tmp','tmp_');
 		$cmd = "$pdfset -i $inputFile -X $xmlFile -o $outputFile";
-		$output = system($cmd,$ret);
-		if ($ret != 1) $error = $output;
+		$output = array();
+		$lastLine = exec($cmd,$output,$ret);
+		if ($ret != 0) $error = implode("\n",$output);
 		$content = file_get_contents($outputFile);
 		// cleanup mess
 		unlink($inputFile);

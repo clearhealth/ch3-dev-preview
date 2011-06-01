@@ -105,7 +105,6 @@ function inventoryProcessAdd() {
 			dojo.byId("<?=$this->form->expiration->getId()?>").value = "<?=$this->form->expiration->getValue()?>";
 			dojo.byId("quantity").value = "1";
 		}
-		inventoryGridReload();
 	});
 }
 
@@ -151,9 +150,7 @@ inventoryGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,o
 			"inventory[immunizationInventoryId]": rowId,
 		};
 		content["inventory["+inventoryColumnNames[cellIndex]+"]"] = newValue;
-		inventoryProcess("process-edit",content,function(data){
-			if (data.data[cellIndex]) inventoryGrid.cells(rowId,cellIndex).setValue(data.data[cellIndex]);
-		});
+		inventoryProcess("process-edit",content);
 	}
 	return true;
 });
@@ -217,10 +214,7 @@ function inventoryProcess(action,content,callback) {
 		handleAs: "json",
 		content: content,
 		load: function (data) {
-			if (typeof callback == "function") {
-				callback(data);
-				return;
-			}
+			if (typeof callback == "function") callback(data);
 			inventoryGridReload();
 		},
 		error: function (error) {

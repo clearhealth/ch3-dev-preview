@@ -26,10 +26,24 @@ input,select,#markDuplicateId {
 			</div>
 			<div style="float:left;margin-left:10px;">
 				<div style="float:left;">
-					<div>
-						<?=$this->form->formPerson->lastName->renderLabel()?>
-						<?=$this->form->formPerson->lastNameInput('FormText',array('style'=>'width:90px;'))?>
-					</div>
+					<?=$this->form->formPerson->lastName->renderLabel()?>
+					<?=$this->form->formPerson->lastNameInput('FormText',array('style'=>'width:80px;'))?>
+				</div>
+				<div style="float:left;margin-left:5px;">
+					<?=$this->form->formPerson->suffix->renderLabel()?>
+					<?=$this->form->formPerson->suffixInput('FormText',array('style'=>'width:25px;'))?>
+				</div>
+				<div style="float:left;margin-left:5px;">
+					<?=$this->form->formPerson->firstName->renderLabel()?>
+					<?=$this->form->formPerson->firstNameInput('FormText',array('style'=>'width:80px;'))?>
+				</div>
+				<div style="float:left;margin-left:5px;">
+					<?=$this->form->formPerson->middleName->renderLabel()?>
+					<?=$this->form->formPerson->middleNameInput('FormText',array('style'=>'width:80px;'))?>
+				</div>
+			</div>
+			<div style="float:left;margin-left:10px;">
+				<div style="float:left;">
 					<div>
 						<?=$this->form->recordNumber->renderLabel()?>
 						<?=$this->form->recordNumberInput('FormText',array('style'=>'width:90px;'))?>
@@ -41,10 +55,6 @@ input,select,#markDuplicateId {
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<div>
-						<?=$this->form->formPerson->firstName->renderLabel()?>
-						<?=$this->form->formPerson->firstNameInput('FormText',array('style'=>'width:90px;'))?>
-					</div>
-					<div>
 						<?=$this->form->formPerson->dateOfBirth->renderLabel()?>
 						<?=$this->form->formPerson->dateOfBirthInput('FormDateText',array('style'=>'width:90px;'))?>
 					</div>
@@ -54,10 +64,6 @@ input,select,#markDuplicateId {
 					</div>
 				</div>
 				<div style="float:left;margin-left:10px;">
-					<div>
-						<?=$this->form->formPerson->middleName->renderLabel()?>
-						<?=$this->form->formPerson->middleNameInput('FormText',array('style'=>'width:90px;'))?>
-					</div>
 					<div>
 						<?=$this->form->formPerson->gender->renderLabel()?>
 						<?=$this->form->formPerson->genderInput('FormSelect',array('options'=>Enumeration::getEnumArray('Gender','key'),'style'=>'width:90px;'))?>
@@ -739,7 +745,7 @@ pdStatsGrid.attachEvent("onRowDblClicked",function(rowId,cellIndex){
 	pdStatsContainer.style.left = offsetLeft + "px";
 	pdStatsContainer.style.top = offsetTop + "px";
 
-	var statsValue = pdStatsGrid.cells(rowId,1).getValue();
+	var statsValue = pdStatsGrid.getUserData(rowId,"value");
 	var pdStatsOK = dojo.byId("pdStatsOK");
 	pdStatsOK.disabled = false;
 	var pdStatsPanel = dojo.byId("pdStatsPanelId");

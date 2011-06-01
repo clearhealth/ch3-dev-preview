@@ -294,7 +294,37 @@ function visitProcessSaveAndClose() {
 		action = "reopen";
 	}
 	if (!confirm("Are you sure you want to "+action+" visit?")) return;
-	visitProcess("save-and-"+action+"-visit");
+
+	if (action != "close") {
+		visitProcess("save-and-"+action+"-visit");
+		return;
+	}
+
+	var visitId = dojo.byId("visit-visitId").value;
+	dojo.xhrPost({
+		url: globalBaseUrl + "/claims.raw/check-rules",
+		handleAs: "json",
+		content: {
+			"visitId": visitId,
+		},
+		load: function(data) {
+			if (data.event) {
+				var msg = data.displayEvent + ": " + data.message;
+				if (data.event == "<?=ClaimRule::EVENT_WARNING?>" && !confirm(msg+"\nContinue?")) {
+					return;
+				}
+				else if (data.event == "<?=ClaimRule::EVENT_BLOCK?>") {
+					alert(msg);
+					return;
+				}
+			}
+			visitProcess("save-and-"+action+"-visit");
+		},
+		error: function(response) {
+			console.error("ERROR: ",response.responseText);
+			return response;
+		}
+	});
 }
 
 function visitProcessVoid() {

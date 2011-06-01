@@ -910,17 +910,18 @@ function showPatientDetails(personId) {
 	windowPatientDetails();
 }
 
-function appointmentHeaderMouseDown(obj,columnIndex) {
-	if (!gridObjects[columnIndex]) return;
-	gridObjects[columnIndex].appointmentDiv = obj;
-}
-
 function appointmentMouseDown(obj,evt,columnIndex) {
 	if (!evt) evt = window.event;
 
-	// cancel bubbles
-	if (evt.stopPropagation) evt.stopPropagation();
-	else evt.cancelBubble = true;
+	var rightclick = false;
+	if (evt.which) rightclick = (evt.which == 3);
+	else if (evt.button) rightclick = (evt.button == 2);
+
+	if (rightclick) {
+		// cancel bubbles
+		if (evt.stopPropagation) evt.stopPropagation();
+		else evt.cancelBubble = true;
+	}
 
 	if (!gridObjects[columnIndex]) return;
 	gridObjects[columnIndex].appointmentDiv = obj;
@@ -977,11 +978,7 @@ function appointmentDoubleClicked(evt,appointmentId) {
 
 function appointmentMouseOver(appointmentId,obj,height) {
 	obj.style.height = "auto";
-	if (parseInt(obj.offsetHeight) < parseInt(height)) {
-		obj.style.height = height+"px";
-		var bodyHeight = parseInt(height) - parseInt(obj.childNodes[0].offsetHeight);
-		obj.childNodes[1].style.height = bodyHeight+"px";
-	}
+	if (parseInt(obj.offsetHeight) < parseInt(height)) obj.style.height = height+"px";
 	obj.style.zIndex = 9999;
 }
 

@@ -32,6 +32,7 @@ accountsGrid.setInitWidths("80,80,*,*,100,100,100,100,150,150");
 accountsGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
 accountsGrid.enableMultiselect(true);
 accountsGrid.setSkin("xp");
+accountsGrid.enableDynamicLoading(true);
 accountsGrid.init();
 dhtmlxEvent(accountsGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
@@ -59,44 +60,37 @@ agingGrid.cells("ageing",0).setValue("<?=__('Ageing (%)')?>");
 function accountsGridReload() {
 	accountsGrid.clearAll();
 	accountsGrid.load("<?=$this->baseUrl?>/accounts.raw/list",function(){
-		var today = new Date(<?=date('Y')?>,<?=date('m')-1?>,<?=date('d')?>);
-		var dateBilled = null;
-		var aging = 0;
 		var billed = 0;
 		var paid = 0;
 		var writeOff = 0;
 		var balance = 0;
-		var oneDay = 1000 * 60 * 60 * 24;
 		var aging_0_30 = 0;
 		var aging_31_60 = 0;
 		var aging_61_90 = 0;
 		var aging_91_120 = 0;
 		var aging_120_plus = 0;
-		var bal = 0;
-		accountsGrid.forEachRow(function(rowId){
-			var amount = parseFloat((this.cells(rowId,4).getValue() + "").substr(1));
-			if (!isNaN(amount)) billed += amount;
-			amount = parseFloat((this.cells(rowId,5).getValue() + "").substr(1));
-			if (!isNaN(amount)) paid += amount;
-			amount = parseFloat((this.cells(rowId,6).getValue() + "").substr(1));
-			if (!isNaN(amount)) writeOff += amount;
-			amount = parseFloat((this.cells(rowId,7).getValue() + "").substr(1));
-			bal = 0;
-			if (!isNaN(amount)) {
-				bal = amount;
-				balance += amount;
-			}
-			var dt = (this.cells(rowId,1).getValue() + "").split("-");
-			dateBilled = today;
-			if (dt.length >= 3) dateBilled = new Date(dt[0],(dt[1]-1),dt[2]);
-			// calculate aging
-			aging = (today.getTime() - dateBilled.getTime()) / oneDay;
-			if (aging <= 30) aging_0_30 += bal;
-			else if (aging <= 60) aging_31_60 += bal;
-			else if (aging <= 90) aging_61_90 += bal;
-			else if (aging <= 120) aging_91_120 += bal;
-			else aging_120_plus += bal;
-		});
+		if (accountsGrid.getRowsNum() > 0) {
+			var rowId = accountsGrid.getRowId(0);
+			var amount = parseFloat(accountsGrid.getUserData(rowId,"totalBilled"));
+			if (!isNaN(amount)) billed = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"totalPaid"));
+			if (!isNaN(amount)) paid = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"totalWriteoff"));
+			if (!isNaN(amount)) writeOff = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"totalBalance"));
+			if (!isNaN(amount)) balance = amount;
+
+			amount = parseFloat(accountsGrid.getUserData(rowId,"aging_0_30"));
+			if (!isNaN(amount)) aging_0_30 = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"aging_31_60"));
+			if (!isNaN(amount)) aging_31_60 = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"aging_61_90"));
+			if (!isNaN(amount)) aging_61_90 = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"aging_91_120"));
+			if (!isNaN(amount)) aging_91_120 = amount;
+			amount = parseFloat(accountsGrid.getUserData(rowId,"aging_120_plus"));
+			if (!isNaN(amount)) aging_120_plus = amount;
+		}
 		var displayBalance = "$" + balance.toFixed(2);
 		dojo.byId("billedIdRO").value = "$" + billed.toFixed(2);
 		dojo.byId("paidIdRO").value = "$" + paid.toFixed(2);
@@ -104,37 +98,31 @@ function accountsGridReload() {
 		dojo.byId("balanceIdRO").value = displayBalance;
 		agingGrid.cells("total",1).setValue(displayBalance);
 		agingGrid.cells("ageing",1).setValue("%100.00");
-		var percentage = 0;
 		// 0 - 30
-		if (aging_0_30 > 0) {
-			percentage = (aging_0_30 / balance) * 100;
-			agingGrid.cells("total",2).setValue("$" + aging_0_30.toFixed(2));
-			agingGrid.cells("ageing",2).setValue("%" + percentage.toFixed(2));
-		}
+		var percentage = (aging_0_30 / balance) * 100;
+		if (isNaN(percentage)) percentage = 0;
+		agingGrid.cells("total",2).setValue("$" + aging_0_30.toFixed(2));
+		agingGrid.cells("ageing",2).setValue("%" + percentage.toFixed(2));
 		// 31 - 60
-		if (aging_31_60 > 0) {
-			percentage = (aging_31_60 / balance) * 100;
-			agingGrid.cells("total",3).setValue("$" + aging_31_60.toFixed(2));
-			agingGrid.cells("ageing",3).setValue("%" + percentage.toFixed(2));
-		}
+		percentage = (aging_31_60 / balance) * 100;
+		if (isNaN(percentage)) percentage = 0;
+		agingGrid.cells("total",3).setValue("$" + aging_31_60.toFixed(2));
+		agingGrid.cells("ageing",3).setValue("%" + percentage.toFixed(2));
 		// 61 - 90
-		if (aging_61_90 > 0) {
-			percentage = (aging_61_90 / balance) * 100;
-			agingGrid.cells("total",4).setValue("$" + aging_61_90.toFixed(2));
-			agingGrid.cells("ageing",4).setValue("%" + percentage.toFixed(2));
-		}
+		percentage = (aging_61_90 / balance) * 100;
+		if (isNaN(percentage)) percentage = 0;
+		agingGrid.cells("total",4).setValue("$" + aging_61_90.toFixed(2));
+		agingGrid.cells("ageing",4).setValue("%" + percentage.toFixed(2));
 		// 91 - 120
-		if (aging_91_120 > 0) {
-			percentage = (aging_91_120 / balance) * 100;
-			agingGrid.cells("total",5).setValue("$" + aging_91_120.toFixed(2));
-			agingGrid.cells("ageing",5).setValue("%" + percentage.toFixed(2));
-		}
+		percentage = (aging_91_120 / balance) * 100;
+		if (isNaN(percentage)) percentage = 0;
+		agingGrid.cells("total",5).setValue("$" + aging_91_120.toFixed(2));
+		agingGrid.cells("ageing",5).setValue("%" + percentage.toFixed(2));
 		// 120+
-		if (aging_120_plus > 0) {
-			percentage = (aging_120_plus / balance) * 100;
-			agingGrid.cells("total",6).setValue("$" + aging_120_plus.toFixed(2));
-			agingGrid.cells("ageing",6).setValue("%" + percentage.toFixed(2));
-		}
+		percentage = (aging_120_plus / balance) * 100;
+		if (isNaN(percentage)) percentage = 0;
+		agingGrid.cells("total",6).setValue("$" + aging_120_plus.toFixed(2));
+		agingGrid.cells("ageing",6).setValue("%" + percentage.toFixed(2));
 	},"json");
 }
 accountsGridReload();

@@ -140,7 +140,7 @@ dhtmlXGridObject.prototype._renderPivot=function(){
 	this._pgrid=new dhtmlXGridObject(this._pgridCont);
 	this._pgrid.attachEvent("onBeforeSelect",function(){return false;});
 	if (this._pivotS.x){
-		var l=this._getUniList(this._pivotS.x);
+		var l=this._getUniList(this._pivotS.x,true);
 		l.reverse();
 		var s=[160];
 		for (var i=0; i < l.length; i++) 
@@ -236,7 +236,7 @@ dhtmlXGridObject.prototype._renderPivot2=function(){
 	if (!(this._pivotS.x && this._pivotS.y && this._pivotS.value && this._pivotS.action)) return;
 
 	var action=this["_pivot_action_"+this._pivotS.action];
-	var x=this._getUniList(this._pivotS.x);
+	var x=this._getUniList(this._pivotS.x,true);
 	var y=this._getUniList(this._pivotS.y);
 	var val="";
 	var color = (this._pivotS.ab && typeof this._pivotS.ab.color != "undefined")? (this._pivotS.ab.color||"yellow") : "yellow";
@@ -272,17 +272,26 @@ dhtmlXGridObject.prototype._renderPivot2=function(){
 }
 
 
-dhtmlXGridObject.prototype._getUniList=function(col){ 
+dhtmlXGridObject.prototype._getUniList=function(col,isXAxis){ 
+	if (typeof isXAxis == "undefined") isXAxis = false;
     if (!this._pUNI[col]){
     	var t={};
     	var a=[];
-    	for (var i = this._pData[col].length - 1; i >= 0; i--){
-    		t[this._pData[col][i]]=true;
-    	}
+	if (isXAxis)
+		for (var i = this._pData[col].length - 1; i >= 0; i--){
+			t[this._pData[col][i]]=true;
+		}
+	else
+		for (var i = 0; i < this._pData[col].length; i++){
+			t[this._pData[col][i]]=true;
+		}
+	for (var i = this._pData[col].length - 1; i >= 0; i--){
+		t[this._pData[col][i]]=true;
+	}
     	for (var n in t) 
       		if (t[n]===true) a.push(n);
-      	this._pUNI[col]=a.sort();
-      	//this._pUNI[col]=a;
+      	//this._pUNI[col]=a.sort();
+      	this._pUNI[col]=a;
    	}
    	
    	return this._pUNI[col];

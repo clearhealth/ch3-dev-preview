@@ -46,6 +46,16 @@ class EPrescriber extends WebVista_Model_ORM {
 		$this->provider->_cascadePersist = false;
 	}
 
+	public function populateBySPI($spi=null) {
+		if ($spi === null) $spi = $this->SSID;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table)
+				->where('SSID = ?',(string)$spi)
+				->limit(1);
+		$this->populateWithSql($sqlSelect->__toString());
+	}
+
 	public function setBuildingId($buildingId) {
 		$this->buildingId = (int)$buildingId;
 		$this->building->buildingId = $this->buildingId;

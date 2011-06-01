@@ -127,7 +127,9 @@ function cnAttachmentsGridReload(clinicalNoteId) {
 		clinicalNoteId = cnGrid.cells(rowId,indexCNNoteId).getValue();
 	}
 	cnAttachmentsGrid.clearAll();
-	cnAttachmentsGrid.load("<?=$this->baseUrl?>/attachments.raw/list-attachments?attachmentReferenceId="+clinicalNoteId,null,"json");
+	cnAttachmentsGrid.load("<?=$this->baseUrl?>/attachments.raw/list-attachments?attachmentReferenceId="+clinicalNoteId,function(){
+		if (cnAttachmentsGrid.getRowsNum() > 0 && rightLayout.cells("b").isCollapsed()) rightLayout.cells("b").expand();
+	},"json");
 }
 cnAttachmentLayout.cells("a").hideHeader();
 cnAttachmentLayout.cells("b").hideHeader();

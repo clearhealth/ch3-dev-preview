@@ -264,4 +264,45 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 		return $address->getIteratorByPersonId();
 	}
 
+	public function getAgeTitle() {
+		$dateOfBirth = $this->date_of_birth;
+		if ($dateOfBirth == '' || $dateOfBirth == '0000-00-00') return '';
+
+		list($bYear,$bMonth,$bDay) = explode('-',date('Y-m-d',strtotime($dateOfBirth)));
+		list($cYear,$cMonth,$cDay) = explode('-',date('Y-m-d'));
+		$numOfDays = cal_days_in_month(CAL_GREGORIAN,$bMonth,$bYear);
+
+		$y = $cYear - $bYear;
+		$m = $cMonth - $bMonth;
+		$d = $cDay - $bDay;
+		if ($y > 0 || ($y == 0 && ($m > 0 || ($m == 0 && $d > 0)))) {
+			if ($m < 0) {
+				$y--;
+				$m += 12;
+			}
+			if ($d < 0) {
+				$m--;
+				$d += $numOfDays;
+			}
+		}
+		$m += $y * 12;
+
+		$ret = $d.' day';
+		if ($d > 1) $ret .= 's';
+		$ret .= ', '.$m.' month';
+		if ($m > 1) $ret .= 's';
+		return $ret;
+	}
+
+	public function getPhoto() {
+		$picture = '';
+		if ($this->activePhoto > 0) {
+			$attachment = new Attachment();
+			$attachment->attachmentId = (int)$this->activePhoto;
+			$attachment->populate();
+			$picture = base64_encode($attachment->rawData);
+		}
+		return $picture;
+	}
+
 }

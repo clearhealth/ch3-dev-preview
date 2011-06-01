@@ -428,7 +428,7 @@ if (mscb != undefined) {
 }
 var msac = new custom.MedicationSelectAutoComplete({url:chBaseMed24Url,requestMethod:"post",doClientPaging:true},'medicationSelectAutoComplete');
 //var msac = new custom.MedicationSelectAutoComplete({url:'<?=$this->baseUrl?>/medications.raw/auto-complete',requestMethod:"post"},'medicationSelectAutoComplete');
-var mscb = new custom.MedicationSelectComboBox({name:"medication[tradename]",value:'<?=(isset($this->medication))?$this->medication->description:''?>',autocomplete:false,store:msac,hasDownArrow:false},"medicationSelectAutoCompleteDiv");
+var mscb = new custom.MedicationSelectComboBox({name:"medication[tradename]",value:'<?=(isset($this->medication))?$this->medication->description:''?>',autocomplete:false,store:msac,hasDownArrow:false,searchDelay:500},"medicationSelectAutoCompleteDiv");
 // change combobox width
 mscb.domNode.style.width = "470px";
 
@@ -485,7 +485,7 @@ function selectPharmacyPopup() {
 	winSelectPharmacy = globalCreateWindow("windowSelectPharmacy",[],url,"<?=__('Select Pharmacy')?>",810,410);
 }
 function setPRLabels() {
-	if  (dojo.byId('medication-patientReported').value == 1 && dojo.byId('prescribeButton').value == 'Prescribe') {
+	if  (dojo.byId('medication-patientReported').checked == true && dojo.byId('prescribeButton').value == 'Prescribe') {
 		dojo.byId('prescribeButton').value = 'Save';
 		dojo.byId('signPrescribeButton').disabled = 'disabled';
 	}
@@ -499,6 +499,7 @@ function medicationChangeDirections() {
 	medicationSetDirections();
 //	medicationComputeDaysSupply();
 }
+setPRLabels();
 </script>
 <div class="formRow" style="padding-top:4px;">
         <dt style="line-height:20px;"><label><?=__("Dose")?></label></dt>

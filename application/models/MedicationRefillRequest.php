@@ -91,6 +91,45 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 		return $this->getIterator($sqlSelect);
 	}
 
+	public function persistAlert($providerId,$personId,$eachTeam) {
+		$providerId = (int)$providerId;
+		$personId = (int)$personId;
+		if (!$providerId > 0) $providerId = (int)$this->medication->prescriberPersonId;
+		if (!$personId > 0) $personId = (int)$this->medication->personId;
+
+		$teamId = '';
+		if ($personId > 0) {
+			$patient = new Patient();
+			$patient->personId = $personId;
+			$patient->populate();
+			$teamId = (string)$patient->teamId;
+		}
+		if (!strlen($teamId) > 0) $teamId = (string)$this->medication->patient->teamId;
+		$objectClass = get_class($this);
+		$alert = new GeneralAlert();
+		$filters = array();
+		$filters['objectClass'] = $objectClass;
+		$filters['userId'] = (int)$providerId;
+		if ($eachTeam) $filters['teamId'] = $teamId;
+		$alert->populateOpenedAlertByFilters($filters);
+		$messages = array();
+		if (strlen($alert->message) > 0) { // existing general alert
+			$messages[] = $alert->message;
+		}
+		else { // new general alert
+			$alert->urgency = 'High';
+			$alert->status = 'new';
+			$alert->dateTime = date('Y-m-d H:i:s');
+			$alert->objectClass = $objectClass;
+			$alert->objectId = $this->messageId;
+			$alert->userId = (int)$providerId;
+			if ($eachTeam) $alert->teamId = $teamId;
+		}
+		$messages[] = 'Refill request pending. '.$this->details;
+		$alert->message = implode("\n",$messages);
+		$alert->persist();
+	}
+
 	public static function refillRequestDatasourceHandler(Audit $auditOrm,$eachTeam=true) {
 		$ret = array();
 		if ($auditOrm->objectClass != 'MedicationRefillRequest') {
@@ -104,30 +143,49 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 			WebVista::debug('Failed to populate');
 			return $ret;
 		}
-		$personId = (int)$orm->medication->personId;
-		$providerId = (int)$orm->medication->prescriberPersonId;
-		if ($personId <= 0 || $providerId <= 0) return $ret;
-		$teamId = $orm->medication->patient->teamId;
+		$objectClass = get_class($orm);
+		$messaging = new Messaging();
+		$messaging->messagingId = $orm->messageId;
+		$messaging->populate();
+		$medicationId = (int)$orm->medicationId;
+		$providerId = (int)$messaging->providerId;
+		$personId = (int)$messaging->personId;
+		//if (!$personId > 0 || !$medicationId > 0) {
+		if (!$personId > 0) {
+			WebVista::debug('Refill request needs manual matching');
+			return $ret;
+		}
+		$patient = new Patient();
+		$patient->personId = $personId;
+		$patient->populate();
+		$teamId = (string)$patient->teamId;
+
 		$alert = new GeneralAlert();
-		$filters = array();
-		$filters['objectClass'] = $auditOrm->objectClass;
-		//$filters['objectId'] = $personId;
-		if ($eachTeam) {
-			$filters['teamId'] = $teamId;
-		}
-		else {
-			$filters['userId'] = (int)$providerId;
-		}
-		$alert->populateOpenedAlertByFilters($filters);
+		$alertTable = $alert->_table;
+		$msgTable = $messaging->_table;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($msgTable,null)
+				->join($alertTable,$alertTable.'.objectId = '.$msgTable.'.messagingId')
+				->where($msgTable.'.objectType = ?',Messaging::TYPE_EPRESCRIBE)
+				->where($msgTable.'.messageType = ?','RefillRequest')
+				->where("{$alertTable}.status = 'new'")
+				->where($alertTable.'.objectClass = ?',$objectClass)
+				->where($alertTable.'.userId = ?',$providerId)
+				->where($msgTable.'.personId = ?',$personId)
+				->limit(1);
+		if ($eachTeam) $sqlSelect->where($alertTable.'.teamId = ?',$teamId);
+		$alert->populateWithSql($sqlSelect->__toString());
+
 		$messages = array();
-		if (strlen($alert->message) > 0) { // existing general alert
+		if ($alert->generalAlertId > 0) { // existing general alert
 			$messages[] = $alert->message;
 		}
 		else { // new general alert
 			$alert->urgency = 'High';
 			$alert->status = 'new';
 			$alert->dateTime = date('Y-m-d H:i:s');
-			$alert->objectClass = $auditOrm->objectClass;
+			$alert->objectClass = $objectClass;
 			$alert->objectId = $auditOrm->objectId;
 			$alert->userId = (int)$providerId;
 			if ($eachTeam) $alert->teamId = $teamId;
@@ -154,7 +212,26 @@ class MedicationRefillRequest extends WebVista_Model_ORM {
 	}
 
 	public function getPersonId() {
-		return $this->medication->personId;
+		$personId = (int)$this->medication->personId;
+		if (!$personId > 0) {
+			$messaging = new Messaging();
+			$messaging->messagingId = $this->messageId;
+			$messaging->populate();
+			$personId = (int)$messaging->personId;
+		}
+		return $personId;
+	}
+
+	public function getUnrespondedRefills($personId) {
+		$db = Zend_Registry::get("dbAdapter");
+		$sqlSelect = $db->select()
+				->from(array('r'=>$this->_table))
+				->join(array('m'=>'messaging'),'m.messagingId = r.messageId',null)
+				->where('r.status = ?','')
+				->where('m.personId = ?',(int)$personId)
+				->order('r.dateTime DESC');
+		//trigger_error($sqlSelect->__toString());
+		return $this->getIterator($sqlSelect);
 	}
 
 }

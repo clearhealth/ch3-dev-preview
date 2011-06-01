@@ -13,7 +13,7 @@ ul {
 		<div style="margin-left:10px;width:350px;">
 			<div class="formRow">
 				<?=$this->form->reason->renderLabel()?>
-				<?$appointmentReasons = array(); foreach($this->appointmentReasons as $enumerationId=>$reason) $appointmentReasons[$enumerationId] = $reason['name'];?>
+				<?$appointmentReasons = array(); foreach($this->appointmentReasons as $enumerationId=>$reason) $appointmentReasons[$reason['key']] = $reason['name'];?>
 				<?=$this->form->reasonInput('FormSelect',array('onChange'=>'appointmentReasonOnChanged()','style'=>'width:325px;','options'=>$appointmentReasons))?>
 			</div>
 			<br />
@@ -160,7 +160,7 @@ var template<?=$data['ormId']?>Slots = [];
 	<?foreach($data['breakdown'] as $slot):?>
 template<?=$data['ormId']?>Slots.push({n:"<?=$slot['n']?>",l:<?=(int)$slot['l']?>,t:"<?=$slot['t']?>"});
 	<?endforeach;?>
-appointmentReasons.push({reasonId:<?=(int)$enumerationId?>,id:<?=(int)$data['ormId']?>,name:"<?=$data['appointmentTemplateName']?>",slots:template<?=$data['ormId']?>Slots});
+appointmentReasons.push({reasonId:"<?=$data['key']?>",id:<?=(int)$data['ormId']?>,name:"<?=$data['appointmentTemplateName']?>",slots:template<?=$data['ormId']?>Slots});
 <?endforeach;?>
 
 function adjustAppointmentTime(minutes) {
@@ -338,39 +338,27 @@ function getDetails(args) {
 	dojo.byId("<?=$this->form->patientId->getId()?>").value = pscb.selectedKey;
 }
 
-function pNotesProcessEdit(action,params,callback) {
+
+function pNotesProcessEdit(id,field,value,type,callback) {
 	dojo.xhrPost({
-		url: "<?=$this->baseUrl?>/patient.raw/"+action,
+		url: "<?=$this->baseUrl?>/patient.raw/process-edit-by-field",
 		handleAs: "json",
-		content: params,
+		content: {
+			personId: "<?=$this->form->patientId->getValue()?>",
+			type: type,
+			id: id,
+			field: field,
+			value: value,
+		},
 		load: function (data) {
-			if (data.error) {
-				alert(data.error);
-				return;
+			if (typeof callback == "function") {
+				callback(data);
 			}
-			if (typeof callback == "function") callback(data);
 		},
 		error: function (error) {
 			alert(error);
-			console.error ('Error: ', error);
+			console.error("Error: ", error);
 		}
-	});
-}
-
-// NOTES GRID
-function pNotesEdit(rowId,cellIndex,value) {
-	var params = {};
-	params["patientNote[patientNoteId]"] = rowId;
-	params["patientNote[patientId]"] = "<?=$this->form->patientId->getValue()?>";
-	params["patientNote["+pNotesColFields[cellIndex]+"]"] = value;
-	var action = (rowId > 0)?"process-edit-note":"process-add-note";
-	pNotesProcessEdit(action,params,function(data){
-		if (action == "process-add-note") {
-			pNotesGrid.renderRowData(data);
-			return;
-		}
-		if (data.id && !pNotesGrid.doesRowExist(data.id)) pNotesGrid.addRow(data.id,",,,,,");
-		if (data.data[cellIndex]) pNotesGrid.cells(data.id,cellIndex).setValue(data.data[cellIndex]);
 	});
 }
 var pNotesGrid = new dhtmlXGridObject("pNotesGridId");
@@ -396,7 +384,9 @@ pNotesColFields.push("reason");
 pNotesColFields.push("note");
 pNotesColFields.push("active");
 pNotesGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,oldValue){
-	if (stage == 2 && newValue != oldValue) pNotesEdit(rowId,cellIndex,newValue);
+	if (stage == 2 && newValue != oldValue) {
+		pNotesProcessEdit(rowId,pNotesColFields[cellIndex],newValue,"note",pNotesGridReload);
+	}
 	return true;
 });
 for (var i = 1; i <= 5; i++) {

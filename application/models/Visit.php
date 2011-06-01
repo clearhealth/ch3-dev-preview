@@ -340,16 +340,16 @@ class Visit extends WebVista_Model_ORM {
 						switch ($patientProcedure->$modifier) {
 							case $retFee['modifier1']:
 								$tmpFee += (float)$retFee['modifier1fee'];
-								break;
+								break 2;
 							case $retFee['modifier2']:
 								$tmpFee += (float)$retFee['modifier2fee'];
-								break;
+								break 2;
 							case $retFee['modifier3']:
 								$tmpFee += (float)$retFee['modifier3fee'];
-								break;
+								break 2;
 							case $retFee['modifier4']:
 								$tmpFee += (float)$retFee['modifier4fee'];
-								break;
+								break 2;
 						}
 					}
 					if ($tmpFee > 0) $fee = $tmpFee;

@@ -311,6 +311,7 @@ function psEnableItemList(enable) {
 function populatePatientList(/*Object*/ results, /*Object*/ dataObject) {
 	pscb._hideResultList();
 	var selectList = dojo.byId('patientSelectMultiSelect');
+	if (!selectList) return;
 	selectList.options.length = 0;
 	for (i=0;i<results.length;i++) {
 		var newOption = document.createElement('option');
@@ -475,6 +476,9 @@ function showProcessAlertBar(rowId) {
 }
 function processAllAlerts() {
 	showProcessAlertBar();
+	var objSelect = dojo.byId("processAlertItems");
+	if (objSelect.options.length <= 0) return;
+	executeJumpLinkAlert(objSelect.options[0].value);
 	closeWindowSelectPatient();
 }
 function forwardSelectedAlert() {

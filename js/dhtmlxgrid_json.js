@@ -65,14 +65,17 @@ dhtmlXGridObject.prototype._initDynamicLoading = function(){
 	if (this._ch_debug) console.error("rowsBuffer: "+this.rowsBuffer.length);
 	if (this._ch_debug) console.error("max: "+max);
 	var end = parseInt(max - 1);
-	this._ch_data = (this._ch_data || {
+	//this._ch_data = (this._ch_data || {
+	this._ch_data = {
 		"max": max,
 		"displayRows": displayRows,
 		"rowHeight": rowHeight, // default grid's row height, depending on grid style. xp skin is 22px
 		"extraRows": extraRows,
 		"start": 0,
 		"end": end,
-	});
+		"lastRowIndex": (this.rowsBuffer.length - 1),
+		"renderedLastRow": false,
+	};
 	this._ch_debug = (this._ch_debug||false);
 	if (this._ch_debug) console.error("render dataset from 0 to "+max);
 	this.render_dataset(0,max);
@@ -207,25 +210,16 @@ dhtmlXGridObject.prototype._doUpdateView = function(scrollTop){
 	if (end > max) {
 		this._ch_data["max"] = end;
 	}
-	var min = null;
 	for (var i = start; i < end; i++) {
-		if (!this.rowsBuffer[i].style) {
-			if (min == null) min = i;
+		if (i == this._ch_data["lastRowIndex"] && !this._ch_data["renderedLastRow"]) {
+			this._ch_data["renderedLastRow"] = true;
 		}
-		else if (min != null) {
-			var max = parseInt(i + 1);
-			max = i;
-			if (this._ch_debug) console.error("infor render dataset from "+min+" to "+max);
-			this.render_dataset(min,max);
-			min = null;
+		else if (this.rowsBuffer[i].style) {
+			continue;
 		}
-	}
-	if (min != null) {
-		var max = parseInt(end + 1);
-		max = end;
-		if (this._ch_debug) console.error("inif render dataset from "+min+" to "+max);
-		this.render_dataset(min,max);
-		min = null;
+		var max = parseInt(i + 1);
+		if (this._ch_debug) console.error("infor render dataset from "+i+" to "+max);
+		this.render_dataset(i,max);
 	}
 	this._mergeRows(start,(end-1),oldStart,oldEnd);
 	if (this._ch_debug) console.error("START: "+start+"; END: "+end);

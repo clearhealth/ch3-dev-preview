@@ -91,6 +91,20 @@ class AccountsController extends WebVista_Controller_Action {
 		// claim lines, misc charges and payments
 		$appointmentId = 0;
 		$list = array_merge($claimLines,$miscCharges);
+		$totalBilled = 0.00;
+		$totalPaid = 0.00;
+		$totalWriteoff = 0.00;
+		$totalBalance = 0.00;
+
+		$oneDay = 60 * 60 * 24;
+		$today = time();
+
+		$aging_0_30 = 0;
+		$aging_31_60 = 0;
+		$aging_61_90 = 0;
+		$aging_91_120 = 0;
+		$aging_120_plus = 0;
+
 		foreach ($list as $account) {
 			$billed = (float)$account['billed'];
 			$paid = (float)$account['paid'];
@@ -112,22 +126,59 @@ class AccountsController extends WebVista_Controller_Action {
 					continue 2;
 				}
 			}
+			$balance = abs($balance);
+			$totalBilled += $billed;
+			$totalPaid += $paid;
+			$totalWriteoff += $writeoff;
+			$totalBalance += $balance;
+			$dateBilled = substr($account['dateBilled'],0,10);
+
+			$db = strtotime($dateBilled);
+			// calculate aging
+			$aging = ($today - $db) / $oneDay;
+			if ($aging <= 30) $aging_0_30 += $balance;
+			else if ($aging <= 60) $aging_31_60 += $balance;
+			else if ($aging <= 90) $aging_61_90 += $balance;
+			else if ($aging <= 120) $aging_91_120 += $balance;
+			else $aging_120_plus += $balance;
+
 
 			$rows[] = array(
 				'id'=>$account['id'],
 				'data'=>array(
 					substr($account['dateOfTreatment'],0,10), // Date
-					substr($account['dateBilled'],0,10), // Date Billed
+					$dateBilled, // Date Billed
 					$account['patientName'], // Patient
 					$account['payer'], // Payer
 					'$'.$billed, // Billed
 					'$'.$paid, // Paid
 					'$'.$writeoff, // Write Off
-					'$'.abs($balance), // Balance
+					'$'.$balance, // Balance
 					$account['facility'], // Facility
 					$account['providerName'], // Provider
 				),
 			);
+		}
+		if (isset($rows[0])) {
+			$rows[0]['userdata']['totalBilled'] = $totalBilled;
+			trigger_error('total billed: '.$totalBilled);
+			$rows[0]['userdata']['totalPaid'] = $totalPaid;
+			trigger_error('total paid: '.$totalPaid);
+			$rows[0]['userdata']['totalWriteoff'] = $totalWriteoff;
+			trigger_error('total writeof: '.$totalWriteoff);
+			$rows[0]['userdata']['totalBalance'] = $totalBalance;
+			trigger_error('total balance: '.$totalBalance);
+
+			$rows[0]['userdata']['aging_0_30'] = $aging_0_30;
+			trigger_error('total aging 0-30: '.$aging_0_30);
+			$rows[0]['userdata']['aging_31_60'] = $aging_31_60;
+			trigger_error('total aging 31-60: '.$aging_31_60);
+			$rows[0]['userdata']['aging_61_90'] = $aging_61_90;
+			trigger_error('total aging 61-90: '.$aging_61_90);
+			$rows[0]['userdata']['aging_91_120'] = $aging_91_120;
+			trigger_error('total aging 91-120: '.$aging_91_120);
+			$rows[0]['userdata']['aging_120_plus'] = $aging_120_plus;
+			trigger_error('total aging 120+: '.$aging_120_plus);
 		}
 		$data = array('rows'=>$rows);
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');

@@ -65,22 +65,23 @@ class ePrescribe {
 							$medication = new Medication();
 							$medication->medicationId = $medicationId;
 							$medication->populate();
-							$patientId = 0;
+							$patientId = (int)$medication->personId;
 							$unresolved = 0;
-							if (!$medication->personId > 0) { // PON not set or invalid PON, try to automatch based on name, dob, medication and dates in the refreq, if only one match automatically link with correct PON
-								// retrieve providerId using SPI
-								$SPI = (string)$xmlMessage->Body->RefillRequest->Prescriber->Identification->SPI;
-								$provider = new Provider();
-								$provider->sureScriptsSPI = $SPI;
-								$provider->populateProviderIdWithSPI();
-								$providerId = $provider->personId;
+
+							// retrieve providerId using SPI
+							$SPI = (string)$xmlMessage->Body->RefillRequest->Prescriber->Identification->SPI;
+							$eprescriber = new EPrescriber();
+							$eprescriber->populateBySPI($SPI);
+							$providerId = (int)$eprescriber->providerId;
+
+							if (!$patientId > 0) { // PON not set or invalid PON, try to automatch based on name, dob, medication and dates in the refreq, if only one match automatically link with correct PON
 
 								// retrieve pharmacyId using NCPDPID
 								$NCPDPID = (string)$xmlMessage->Body->RefillRequest->Pharmacy->Identification->NCPDPID;
 								$pharmacy = new Pharmacy();
 								$pharmacy->NCPDPID = $NCPDPID;
 								$pharmacy->populatePharmacyIdWithNCPDPID();
-								$pharmacyId = $pharmacy->pharmacyId;
+								$pharmacyId = (string)$pharmacy->pharmacyId;
 
 								$gender = (string)$xmlMessage->Body->RefillRequest->Patient->Gender;
 								$dob = (string)$xmlMessage->Body->RefillRequest->Patient->DateOfBirth;
@@ -150,7 +151,11 @@ class ePrescribe {
 							$refillRequest->dateStart = '';
 							$refillRequest->details = 'Re: '.$rxReferenceNumber;
 							$refillRequest->dateTime = date('Y-m-d H:i:s');
+							// disable audits autoprocess, this was set at CHProcessingDaemon
+							$processedAudits = Audit::$_processedAudits;
+							Audit::$_processedAudits = false;
 							$refillRequest->persist();
+							Audit::$_processedAudits = $processedAudits;
 
 							$messaging = new Messaging();
 							$messaging->messagingId = $messageId;
@@ -163,7 +168,7 @@ class ePrescribe {
 							$messaging->refills = (string)$message->refills;
 
 							$messaging->personId = $patientId;
-							$messaging->providerId = $medication->prescriberPersonId;
+							$messaging->providerId = $providerId;
 							$messaging->unresolved = $unresolved;
 						}
 						else if ($key == 'status') {
@@ -182,7 +187,7 @@ class ePrescribe {
 								$tmpMsg->status = 'Sent and Verified';
 								$x = explode('(',$tmpMsg->note);
 								$tmpMsg->note = 'newRx';
-								if ($tmpMsg == 'MedicationRefillResponse') {
+								if ($tmpMsg->objectClass == 'MedicationRefillResponse') {
 									$tmpMsg->note = 'Refill response';
 								}
 								$tmpMsg->note .= ' sent and verified';
@@ -201,9 +206,9 @@ class ePrescribe {
 								$lastName = (string)$xmlTmpMessage->Body->NewRx->Patient->Name->LastName;
 								$firstName = (string)$xmlTmpMessage->Body->NewRx->Patient->Name->FirstName;
 								$messageInfo = $lastName.', '.$firstName;
-								$description = (string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->DrugDescription;
+								$drugDescription = (string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->DrugDescription;
 								$datePrescribed = date('m/d/Y',strtotime((string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->WrittenDate));
-								$messageInfo .= ' - '.$description.' #'.$datePrescribed;
+								$messageInfo .= ' - '.$drugDescription.' #'.$datePrescribed;
 								$messaging->note = 'Status received for '.$messageInfo;
 							}
 							$messaging->note .= "\n".$code.':'.$description;
@@ -224,7 +229,7 @@ class ePrescribe {
 								$tmpMsg->status = 'Sent and Verified';
 								$x = explode('(',$tmpMsg->note);
 								$tmpMsg->note = 'newRx';
-								if ($tmpMsg == 'MedicationRefillResponse') {
+								if ($tmpMsg->objectClass == 'MedicationRefillResponse') {
 									$tmpMsg->note = 'Refill response';
 								}
 								$tmpMsg->note .= ' sent and verified';
@@ -243,9 +248,9 @@ class ePrescribe {
 								$lastName = (string)$xmlTmpMessage->Body->NewRx->Patient->Name->LastName;
 								$firstName = (string)$xmlTmpMessage->Body->NewRx->Patient->Name->FirstName;
 								$messageInfo = $lastName.', '.$firstName;
-								$description = (string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->DrugDescription;
+								$drugDescription = (string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->DrugDescription;
 								$datePrescribed = date('m/d/Y',strtotime((string)$xmlTmpMessage->Body->NewRx->MedicationPrescribed->WrittenDate));
-								$messageInfo .= ' - '.$description.' #'.$datePrescribed;
+								$messageInfo .= ' - '.$drugDescription.' #'.$datePrescribed;
 								$messaging->note = 'Error received for '.$messageInfo;
 							}
 							$messaging->note .= "\n".$code.':'.$description;

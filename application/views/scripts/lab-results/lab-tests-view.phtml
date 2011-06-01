@@ -81,8 +81,9 @@ var indexLRUnit = 3;
 var indexLRRefRange = 4;
 var indexLRAbnormal = 5;
 var indexLRStatus = 6;
-var indexLRHidden = 7;
-var indexLRSign = 8;
+var indexLRI = 7;
+var indexLRHidden = 8;
+var indexLRSign = 9;
 
 function onPostLoad() {
 	numRows = resultsGrid.getRowsNum();
@@ -116,6 +117,18 @@ function onRowSelected(rowId,cellIndex) {
 	if (x[0] == "1") {
 		resultsMenu.showItem("sign");
 	}
+	dojo.xhrGet( {
+                                url: "<?=$this->baseUrl?>/lab-results.raw/comments-for-result?labResultId=" + rowId,
+                                handleAs: "json",
+                                load: function(data, ioArgs) {
+                                       dojo.byId('commentsTree').innerHTML = '<p>' + data + '</p>';
+                                        return data;
+                                },
+                                error: function(response, ioArgs) {
+                                        console.error("HTTP status code: ", ioArgs.xhr.status);
+                                        return response;
+                                }
+                        });
 }
 
 var resultsMenu = new dhtmlXMenuObject('resultsColumnMenu','standard');
@@ -505,11 +518,4 @@ dhtmlxEvent(resultsGrid.entBox,"contextmenu",function(e){
 	return false;
 });
 resultsGrid.enableMultiselect(true);
-
-comTree = new dhtmlXTreeObject("commentsTree","100%","100%",0);
-comTree.setImagePath("<?=$this->baseUrl?>/img/");
-comTree.insertNewChild(0,1,'Comments');
-comTree.insertNewChild(1,11,'Latest');
-comTree.closeAllItems();
-
 </script>

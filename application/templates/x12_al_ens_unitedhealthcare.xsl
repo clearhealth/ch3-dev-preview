@@ -207,9 +207,12 @@
   <!--<N406></N406>--> <!-- Location Identifier - AN N/U1-30 -->
 
   <!-- REF - BILLING PROVIDER SECONDARY IDENTIFICATION - 2010AA optional -->
-  <!--<HL2010AA.14>REF*</HL2010AA.14>
-  <HL2010AA.15>1C*</HL2010AA.15>
-  <HL2010AA.16><xsl:value-of select="translate(treating_facility/identifier, $lowercase, $uppercase)"/>~</HL2010AA.16>-->
+  <REF>REF*</REF>
+  <!--<REF01>G2*</REF01>--> <!-- Reference Identification Qualifier - ID R2-3 options: 0B, 1A, 1B, 1C, 1D, 1G, 1H, 1J, B3, BQ, EI, FH, G2, G5, LU, SY, U3, X5 -->
+  <REF01>EI*</REF01>
+  <REF02><xsl:value-of select="translate(treating_facility/identifier, $lowercase, $uppercase)"/>~</REF02> <!-- Pay-to Provider Identifier - AN R1-30 -->
+  <!--<REF03></REF03>--> <!-- Description - AN N/U1-80 -->
+  <!--<REF04></REF04>--> <!-- REFERENCE IDENTIFIER - N/U -->
 
   <!-- NOTES:
   REF - CREDIT/DEBIT CARD BILLING INFORMATION - 2010AA optional
@@ -260,7 +263,8 @@
 
   <!-- PAY-TO PROVIDER SECONDARY IDENTIFICATION - 2010AB -->
   <REF>REF*</REF>
-  <REF01>G2*</REF01> <!-- Reference Identification Qualifier - ID R2-3 options: 0B, 1A, 1B, 1C, 1D, 1G, 1H, 1J, B3, BQ, EI, FH, G2, G5, LU, SY, U3, X5 -->
+  <!--<REF01>G2*</REF01>--> <!-- Reference Identification Qualifier - ID R2-3 options: 0B, 1A, 1B, 1C, 1D, 1G, 1H, 1J, B3, BQ, EI, FH, G2, G5, LU, SY, U3, X5 -->
+  <REF01>EI*</REF01>
   <REF02><xsl:value-of select="translate(treating_facility/identifier, $lowercase, $uppercase)"/>~</REF02> <!-- Pay-to Provider Identifier - AN R1-30 -->
   <!--<REF03></REF03>--> <!-- Description - AN N/U1-80 -->
   <!--<REF04></REF04>--> <!-- REFERENCE IDENTIFIER - N/U -->
@@ -310,7 +314,7 @@
     <NM106>*</NM106> <!-- Name Prefix - AN N/U1-10 -->
     <NM107>*</NM107> <!-- Subscriber Name Suffix - AN S1-10 -->
     <NM108>MI*</NM108> <!-- Identification Code Qualifier - ID S1-2 options: MI, ZZ -->
-    <NM109><xsl:value-of select="subscriber/group_number"/>~</NM109> <!-- Subscriber Primary Identifier - AN S2-80 -->
+    <NM109><xsl:value-of select="subscriber/id"/>~</NM109> <!-- Subscriber Primary Identifier - AN S2-80 -->
     <!--<NM110></NM110>--> <!-- Entity Relationship Code - ID N/U2 -->
     <!--<NM111></NM111>--> <!-- Entity Identifier Code - ID N/U2-3 -->
 

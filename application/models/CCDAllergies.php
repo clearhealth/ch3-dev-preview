@@ -66,37 +66,47 @@ class CCDAllergies {
 			$reactionType = $allergy['reactionType'];
 			if (!strlen($reactionType) > 0) $reactionType = 'Unknown';
 			$active = ((int)$allergy['active'])?'Active':'Inactive';
-			$tr = '<tr>
-					<td>Drug Allergy</td>
-					<td>416098002</td>
-					<td>'.html_convert_entities($allergy['causativeAgent']).'</td>
-					<td>'.html_convert_entities($allergy['rxnorm_cuid']).'</td>
-					<td ID="ReactionID-'.$key.'">'.html_convert_entities(implode(', ',$symptoms)).'</td>
-					<td>'.date('M d, Y',strtotime($allergy['dateTimeReaction'])).'</td>
-					<td>'.html_convert_entities($active).'</td>
-				</tr>';
-			$rows[] = $tr;
+			$snomed = '';
+			$row = array();
+			$row['type'] = $reactionType;//'Drug Allergy';
+			if ($reactionType == 'Specific Drug Allergy') $snomed = '416098002';
+			$row['snomed'] = $snomed;
+			$row['substance'] = html_convert_entities($allergy['causativeAgent']);
+			$row['rxnorm'] = html_convert_entities($allergy['rxnorm_cuid']);
+			$row['reaction'] = array('id'=>'ReactionID-'.$key,'value'=>html_convert_entities(implode(', ',$symptoms)));
+			$row['date'] = date('M d, Y',strtotime($allergy['dateTimeReaction']));
+			$row['status'] = html_convert_entities($active);
+			$rows[] = $row;
 		}
 		/*
 		-**SNOMED Allergy Type Code** (note from NIST: "The SNOMED Allergy Type Code is required by HITSP/C83, which is a component of the HITSP/C32 implementation guide specified by ONC in the Final Rule")
 		-**Medication/Agent Allergy** (including medication/agent allergy and associated RxNorm code)
 		*/
-		$text = '';
-		if ($rows) $text = '<table border="1" width="100%">
-							<thead>
-								<tr>
-									<th>Type</th>
-									<th>Drug allergy SNOMED code</th>
-									<th>Substance</th>
-									<th>Substance RxNorm code</th>
-									<th>Reaction</th>
-									<th>Date Identified</th>
-									<th>Status</th>
-								</tr>
-							</thead>
-							<tbody>'.implode("\n",$rows).'</tbody>
-						</table>';
-		$section->addChild('text',$text);
+		$text = $section->addChild('text');
+		if ($rows) {
+			$table = $text->addChild('table');
+			$thead = $table->addChild('thead');
+			$tr = $thead->addChild('tr');
+			$tr->addChild('th','Type');
+			$tr->addChild('th','Drug allergy SNOMED code');
+			$tr->addChild('th','Substance');
+			$tr->addChild('th','Substance RxNorm code');
+			$tr->addChild('th','Reaction');
+			$tr->addChild('th','Date Identified');
+			$tr->addChild('th','Status');
+			$tbody = $table->addChild('tbody');
+			foreach ($rows as $row) {
+				$tr = $tbody->addChild('tr');
+				$tr->addChild('td',$row['type']);
+				$tr->addChild('td',$row['snomed']);
+				$tr->addChild('td',$row['substance']);
+				$tr->addChild('td',$row['rxnorm']);
+				$td = $tr->addChild('td',$row['reaction']['value']);
+				$td->addAttribute('ID',$row['reaction']['id']);
+				$tr->addChild('td',$row['date']);
+				$tr->addChild('td',$row['status']);
+			}
+		}
 
 		foreach ($allergies as $allergy) {
 			$type = $allergy['reactionType'];

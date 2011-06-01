@@ -93,8 +93,8 @@ class PatientAllergy extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from('patientAllergies',array('symptoms','reactionType','active','causativeAgent','dateTimeReaction'))
-				->joinInner('chmed.basemed24','chmed.basemed24.md5 = patientAllergies.drugAllergy',array('rxnorm_cuid'))
-				->where("patientAllergies.reactionType = 'Specific Drug Allergy'")
+				->joinLeft('chmed.basemed24','chmed.basemed24.md5 = patientAllergies.drugAllergy',array('rxnorm_cuid'))
+				->where('patientAllergies.active = 1')
 				->where('patientAllergies.noKnownAllergies = 0')
 				->group('patientAllergies.patientAllergyId');
 		foreach ($filters as $key=>$value) {
@@ -111,7 +111,7 @@ class PatientAllergy extends WebVista_Model_ORM {
 					break;
 			}
 		}
-trigger_error($sqlSelect->__toString());
+		trigger_error($sqlSelect->__toString());
 		$rows = array();
 		$stmt = $db->query($sqlSelect);
 		while ($row = $stmt->fetch()) {

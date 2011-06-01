@@ -127,14 +127,7 @@ class HandleLDB {
 		$pid[2] = $patient['person_id'].'^1'; // Patient ID^Company Number
 		$pid[5] = $patient['last_name'].'^'.$patient['first_name'].'^'.substr($patient['middle_name'],0,1); // Patient Name, <lst name> ^ <first name> ^ <middle initial>
 		$pid[7] = date('Ymd',strtotime($patient['date_of_birth'])); // Date of Birth, yyyymmdd
-		$gender = 'O';
-		$sqlSelect = $db->select()
-				->from('enumerations','name')
-				->where('enumerationId = ?',(int)$patient['gender']);
-		if ($row = $db->fetchRow($sqlSelect)) {
-			$gender = strtoupper(substr($row['name'],0,1));
-		}
-		$pid[8] = $gender; // Sex, M=Male / F=Female 
+		$pid[8] = $patient['gender']; // Sex, M=Male / F=Female 
 		$addressHomeType = 7;
 		if ($row = $this->_getAddress($patient['person_id'],$addressHomeType)) {
 			$pid[11] = $row['line1'].'^'.$row['line2'].'^'.$row['city'].'^'.$row['state'].'^'.$row['postal_code']; // Patient Address, <street address> ^ <other designation> ^ <city> ^ <state> ^ <zip> - <4 digit zip extension>
@@ -271,14 +264,7 @@ class HandleLDB {
 					if ($tmpRow = $this->_getAddress($personRow['person_id'],$addressHomeType)) {
 						$tmp[19] = $tmpRow['line1'].'^'.$tmpRow['line2'].'^'.$tmpRow['city'].'^'.$tmpRow['state'].'^'.$tmpRow['postal_code']; // Insured’s Address, <street address> ^ <other designation> ^ <city> ^ <state> ^ <zip> - <4 digit zip extension.
 					}
-					$gender = 'O';
-					$sqlSelect = $db->select()
-							->from('enumerations','name')
-							->where('enumerationId = ?',(int)$personRow['gender']);
-					if ($genderRow = $db->fetchRow($sqlSelect)) {
-						$gender = strtoupper(substr($genderRow['name'],0,1));
-					}
-					$tmp[43] = $gender; // Insured’s Sex, “M”=Male “F”=Female
+					$tmp[43] = $personRow['gender']; // Insured’s Sex, “M”=Male “F”=Female
 					$tmp[44] = ''; // Insured’s Employer Address, <street address> ^ <other designation> ^ <city> ^ <state> ^ <zip>.
 
 					$homePhone = '';

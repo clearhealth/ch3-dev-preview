@@ -405,12 +405,13 @@ class CalendarController extends WebVista_Controller_Action {
 			$filter = $this->getCurrentDisplayFilter($columnId);
 			$appointment->appointmentId = (int)$appointmentId;
 			$appointment->populate();
+			$date = date('Y-m-d', strtotime($appointment->start));
 			$appointment->start = date('H:i', strtotime($appointment->start));
 			$appointment->end = date('H:i', strtotime($appointment->end));
+			$providerId = (int)$appointment->providerId;
+			$roomId = (int)$appointment->roomId;
 			foreach ($filter->columns as $index=>$col) {
-				if (($col['providerId'] > 0 && $col['roomId'] > 0 && $col['providerId'] == $appointment->providerId && $col['roomId'] == $appointment->roomId) ||
-				    ($col['providerId'] > 0 && $col['providerId'] == $appointment->providerId) ||
-				    ($col['roomId'] > 0 && $col['roomId'] == $appointment->roomId)) {
+				if ($col['dateFilter'] == $date && (int)$col['providerId'] == $providerId && (int)$col['roomId'] == $roomId) {
 					$this->view->columnId = $index;
 					break;
 				}
@@ -486,18 +487,6 @@ class CalendarController extends WebVista_Controller_Action {
 		$forced = (int)$this->_getParam('forced');
 		$filter = $this->getCurrentDisplayFilter($columnId);
 
-		if (strlen($columnId) <= 0) {
-			// look for the column of the input provider
-			if (strlen($appointment['providerId']) > 0) {
-				foreach ($filter->columns as $index=>$column) {
-					if ($column['providerId'] == $appointment['providerId']) {
-						$columnId = $index;
-						break;
-					}
-				}
-			}
-			// in the meantime, no room checked, how are we going to check for the room?
-		}
 		if (!isset($filter->columns[$columnId])) {
 			throw new Exception(__("Cannot generate column with that index, there is no filter defined for that column Index: ") . $columnId);
 		}
@@ -821,7 +810,6 @@ class CalendarController extends WebVista_Controller_Action {
 
     protected function generateEventColumnData($columnIndex,$includeHeader=false) {
 	$columnIndex = (int) $columnIndex;
-        $scheduleEventIterator = new ScheduleEventIterator();
         $appointmentIterator = new AppointmentIterator();
 
 	if (!isset($this->getCurrentDisplayFilter($columnIndex)->columns[$columnIndex])) {
@@ -839,7 +827,6 @@ class CalendarController extends WebVista_Controller_Action {
 	}
 	$paramFilters['start'] = $filter->date . ' ' . self::FILTER_TIME_START;
 	$paramFilters['end'] = $filter->date . ' ' . self::FILTER_TIME_END;
-	$scheduleEventIterator->setFilter($paramFilters);
 
 	$columnData = array();
 	// we need to get the length of time to create number of rows in the grid
@@ -916,12 +903,8 @@ class CalendarController extends WebVista_Controller_Action {
 		$patient->setPersonId($row->patientId);
 		$patient->populate();
 		$person = $patient->person;
-		$room = new Room();
-		$room->setRoomId($row->roomId);
-		$room->populate();
 		$this->_session->currentAppointments[$columnIndex][$row->appointmentId] = $row;
 		$zIndex++;
-		// where to use room?
 		$columnData[$tmpIndex]['id'] = $row->appointmentId . 'i' . $columnData[$tmpIndex]['id'];
 		$appointmentId = $row->appointmentId;
 
@@ -961,25 +944,10 @@ class CalendarController extends WebVista_Controller_Action {
 		$divContent .= ' onmouseout="appointmentMouseOut('.$appointmentId.',this,'.$height.','.$zIndex.');"';
 		$divContent .= ' ondblclick="appointmentDoubleClicked(event,'.$appointmentId.')"';
 		$divContent .= ' oncontextmenu="appointmentClicked(this,event,'.$columnIndex.');return false;"';
-
+		$divContent .= ' onmousedown="appointmentMouseDown(this,event,'.$columnIndex.')"';
 		$divContent .= '>';
+		$divContent .= $tmpStart.'-'.$tmpEnd.' '.$nameLink.' '.$visitIcon.' <br />'.$routingStatus.'<div class="bottomInner" id="bottomInnerId'.$appointmentId.'" style="white-space:normal;">'.$row->title.'</div>';
 
-		// Header
-		$divHeader = '<div id="eventHeader'.$appointmentId.'"';
-		$divHeader .= ' style="margin-left:-2px;border-bottom:thin dotted black;cursor:move;text-shadow:0px1px0px#e5e5ee;"';
-		$divHeader .= ' onmousedown="appointmentHeaderMouseDown(this.parentNode,'.$columnIndex.')"';
-		$divHeader .= '>';
-		$divHeader .= $tmpStart.'-'.$tmpEnd;
-		$divHeader .= '</div>';
-
-		// Body
-		$divBody = '<div id="eventBody'.$appointmentId.'"';
-		$divBody .= ' style="width:230px;overflow:hidden;z-index:'.$zIndex.';"';
-		$divBody .= ' onmousedown="appointmentMouseDown(this.parentNode,event,'.$columnIndex.')"';
-		$divBody .= '>'.$nameLink.' '.$visitIcon.' <br />'.$routingStatus.'<div class="bottomInner" id="bottomInnerId'.$appointmentId.'" style="white-space:normal;">'.$row->title.'</div></div>';
-
-		$divContent .= $divHeader;
-		$divContent .= $divBody;
 		$divContent .= '</div>';
 
 		$columnData[$tmpIndex]['data'][0] .= $divContent;
@@ -1026,36 +994,58 @@ class CalendarController extends WebVista_Controller_Action {
 	}
 
 	$buildings = array();
-	foreach($scheduleEventIterator as $event) {
-		$x = explode(' ', $event->start);
-		$eventTimeStart = strtotime($x[1]);
-		$x = explode(' ', $event->end);
-		$eventTimeEnd = strtotime($x[1]);
-		// get the starting index
-		$index = (($eventTimeStart - $filterTimeStart) / 60) / $filter->increment;
-		$tmpIndex = $index;
-		$color = $event->provider->color;
-		if ($event->roomId > 0 && strlen($event->room->color) > 0) {
-			$color = $event->room->color;
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('scheduleEvents',array('start','end','roomId','buildingId','title'))
+				->joinLeft('provider','scheduleEvents.providerId=provider.person_id',array('providerColor'=>'color'))
+				->joinLeft('person','person.person_id=provider.person_id',array('providerName'=>'CONCAT(person.last_name,\', \',person.first_name,\' \',person.middle_name)'))
+				->order('start ASC');
+		if ((int)$paramFilters['roomId'] > 0 && (int)$paramFilters['providerId'] > 0) {
+			$sqlSelect->joinLeft('buildings','scheduleEvents.buildingId=buildings.id',null)
+				->joinLeft('rooms','rooms.building_id=buildings.id',array('roomColor'=>'color'))
+				->where('rooms.id = ?',(int)$paramFilters['roomId'])
+				->where('providerId = ?',(int)$paramFilters['providerId']);
 		}
-		if (substr($color,0,1) != '#') {
-			$color = '#'.$color;
+		else {
+			$sqlSelect->joinLeft('rooms','scheduleEvents.roomId=rooms.id',array('roomColor'=>'color'))
+				->where('roomId = ?',(int)$paramFilters['roomId'])
+				->where('providerId = ?',(int)$paramFilters['providerId']);
 		}
-		if (!isset($buildings[$event->buildingId])) {
-			$building = new Building();
-			$building->buildingId = $event->buildingId;
-			$building->populate();
-			$buildings[$building->buildingId] = $building;
+		if (isset($paramFilters['start'])) $sqlSelect->where('start >= ?',$paramFilters['start']);
+		if (isset($paramFilters['end'])) $sqlSelect->where('end <= ?',$paramFilters['end']);
+		$stmt = $db->query($sqlSelect);
+
+		while ($event = $stmt->fetch()) {
+			$x = explode(' ', $event['start']);
+			$eventTimeStart = strtotime($x[1]);
+			$x = explode(' ', $event['end']);
+			$eventTimeEnd = strtotime($x[1]);
+			// get the starting index
+			$index = (($eventTimeStart - $filterTimeStart) / 60) / $filter->increment;
+			$tmpIndex = $index;
+			$color = $event['providerColor'];
+			if ($event['roomId'] > 0 && strlen($event['roomColor']) > 0) {
+				$color = $event['roomColor'];
+			}
+			if (substr($color,0,1) != '#') {
+				$color = '#'.$color;
+			}
+			if (!isset($buildings[$event['buildingId']])) {
+				$building = new Building();
+				$building->buildingId = $event['buildingId'];
+				$building->populate();
+				$buildings[$building->buildingId] = $building;
+			}
+			$columnData[$tmpIndex]['data'][0] = '<div style="overflow:hidden;white-space:nowrap;margin-top:-6px;">'.$event['title'].' - '.$buildings[$event['buildingId']]->displayName.'</div>'.$columnData[$tmpIndex]['data'][0];
+			while ($eventTimeStart < $eventTimeEnd) {
+				$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
+				$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
+				$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
+				$columnData[$tmpIndex]['userdata']['title'] = $event['title'].' of '.$event['providerName'].' ('.$buildings[$event['buildingId']]->displayName.')';
+				$tmpIndex++;
+			}
 		}
-		$columnData[$tmpIndex]['data'][0] = '<div style="position:absolute;margin-top:-6px;">'.$event->title.' - '.$buildings[$event->buildingId]->displayName.'</div>'.$columnData[$tmpIndex]['data'][0];
-		while ($eventTimeStart < $eventTimeEnd) {
-			$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
-			$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
-			$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
-			$columnData[$tmpIndex]['userdata']['title'] = $event->title.' of '.$event->provider->optionName.' ('.$buildings[$event->buildingId]->displayName.')';
-			$tmpIndex++;
-		}
-        }
+
 		$ret = array('rows'=>$columnData);
 		if ($includeHeader) {
 			$tmp = array();
@@ -1357,10 +1347,6 @@ class CalendarController extends WebVista_Controller_Action {
 		$patient = new Patient();
 		$patient->personId = $patientId;
 		$patient->populate();
-		$room = new Room();
-		$room->roomId = $roomId;
-		$room->populate();
-		// where to use room?
 		$id = isset($columnData[$colIndex]['id'])?$columnData[$colIndex]['id']:'';
 		$columnData[$colIndex]['id'] = $appointmentId;
 		if (strlen($id) > 0) $columnData[$colIndex]['id'] .= 'i'.$id;

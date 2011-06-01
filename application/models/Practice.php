@@ -39,6 +39,10 @@ class Practice extends WebVista_Model_ORM {
 
 	public function __construct() {
 		parent::__construct();
+		$this->_init();
+	}
+
+	protected function _init() {
 		$this->primaryAddress = new Address();
 		$this->primaryAddress->type = Address::TYPE_MAIN;
 		$this->secondaryAddress = new Address();
@@ -61,6 +65,10 @@ class Practice extends WebVista_Model_ORM {
 
 	public function setPracticeId($id) {
 		$this->id = (int)$id;
+		if (!$this->id > 0) {
+			$this->_init();
+			return;
+		}
 		$this->primaryAddress->practiceId = $this->id;
 		if (!$this->primaryAddress->addressId > 0) {
 			$address = clone $this->primaryAddress;

@@ -437,7 +437,6 @@ class FormularyManagerController extends WebVista_Controller_Action {
 		$field = $this->_getParam("field");
 		$value = preg_replace('/[^a-z_0-9-, :\/\?\&=\.;]/i','',html_entity_decode($this->_getParam("value","")));
 
-		$data = '';
 		if (in_array($field,$formulary->ormFields())) {
 			$formulary->fullNDC = $fullNDC;
 			$formulary->populate();
@@ -446,8 +445,9 @@ class FormularyManagerController extends WebVista_Controller_Action {
 				$formulary->print = 1;
 			}
 			$formulary->persist();
-			$data = $value;
 		}
+		$data = array();
+		$data['msg'] = __('Updated successfully');
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);

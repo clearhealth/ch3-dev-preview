@@ -202,7 +202,7 @@ class MedicationsController extends WebVista_Controller_Action {
 			$this->_medication->medicationId = 0;
 			//$this->_medication->datePrescribed = date('Y-m-d H:i:s');
 		}
-		$this->_medication->datePrescribed = date('Y-m-d H:i:s');
+		if (!strlen($this->_medication->datePrescribed) > 0 || $this->_medication->datePrescribed == '0000-00-00 00:00:00') $this->_medication->datePrescribed = date('Y-m-d H:i:s');
 		$baseMed24 = new BaseMed24();
 		if (strlen($refillRequestId) > 0) {
 			$this->_medication->refillRequestId = $refillRequestId;
@@ -572,18 +572,30 @@ class MedicationsController extends WebVista_Controller_Action {
 	}
 
 	public static function buildJSJumpLink($objectId,$signingUserId,$objectClass) {
+		if ($objectClass == 'MedicationRefillRequest') {
+			$orm = new MedicationRefillRequest();
+			$orm->messageId = $objectId;
+			$orm->populate();
+			$messaging = new Messaging();
+			$messaging->messagingId = $objectId;
+			$messaging->populate();
+			$medicationId = (int)$orm->medicationId;
+			if ($medicationId > 0) $objectId = $medicationId;
+			$patientId = (int)$messaging->personId;
+		}
+		else {
+			$medication = new Medication();
+			$medication->medicationId = $objectId;
+			$medication->populate();
+			$patientId = $medication->personId;
+		}
 		$objectClass = 'Medications'; // temporarily hard code objectClass based on MainController::getMainTabs() definitions
-		$medication = new Medication();
-		$medication->medicationId = $objectId;
-		$medication->populate();
-		$patientId = $medication->personId;
-
 		$js = parent::buildJSJumpLink($objectId,$patientId,$objectClass);
 		$js .= <<<EOL
 
 mainTabbar.setOnTabContentLoaded(function(tabId){
-	loadMedication(objectId);
-	openNewMedicationWindow(objectId);
+	loadMedication("{$objectId}");
+	/*openNewMedicationWindow("{$objectId}");*/
 });
 
 EOL;
@@ -612,12 +624,9 @@ EOL;
 			$provider = $refillDetails['prescriber'];
 			$patient = $refillDetails['patient'];
 			$medication = $refillDetails['medication'];
-			$responseInfo = $refill->refillResponse->respondedBy;
-			if ($responseInfo != '') {
-				$responseInfo .= '<br />Req. '.$refillDetails['dateRequested'];
-				if ($refill->refillResponse->dateTime == '' || $refill->refillResponse->dateTime == '0000-00-00 00:00:00') {
-					$refill->refillResponse->dateTime = date('Y-m-d H:i:s');
-				}
+			$responseInfo = '';
+			if ($refill->refillResponse->dateTime != '' && $refill->refillResponse->dateTime != '0000-00-00 00:00:00') {
+				$responseInfo .= 'Req. '.$refillDetails['dateRequested'];
 				$responseInfo .= '<br />Res. '.date('m/d/Y h:iA',strtotime($refill->refillResponse->dateTime));
 			}
 			$medicationDescription = $refill->medication->description;
@@ -900,6 +909,39 @@ EOL;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(true);
+	}
+
+	public function listMedicationUnrespondedRefillsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$rows = array();
+
+		$responded = array();
+		$refillRequestIterator = array();
+		if ($personId > 0) {
+			$refillRequest = new MedicationRefillRequest();
+			$refillRequestIterator = $refillRequest->getUnrespondedRefills($personId);
+		}
+		foreach ($refillRequestIterator as $refill) {
+			$row = array();
+			$row['id'] = $refill->messageId;
+			$refillDetails = $this->_generateRefillDetails($refill->messageId);
+			if ($refillDetails === false) continue;
+			$row['data'][] = $refillDetails['medicationDescription'].' (Req. '.date('m/d/Y',strtotime($refillDetails['dateRequested'])).')';
+			$row['data'][] = $refill->details;
+
+			$objectClass = 'MedicationRefillRequest';
+			$objectId = $row['id'];
+			$userId = '';
+			$controllerName = call_user_func($objectClass.'::getControllerName');
+			$jumpLink = call_user_func_array($controllerName.'::buildJSJumpLink',array($objectId,$userId,$objectClass));
+			$js = "function jumpLink{$objectClass}(objectId,patientId) {\n{$jumpLink}\n}";
+			$row['userdata']['jumpLink'] = $js;
+			$row['userdata']['others'] = $objectClass.':'.$objectId.':'.$personId;
+			$rows[] = $row;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
 	}
 
 }

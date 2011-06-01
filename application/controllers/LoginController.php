@@ -55,7 +55,7 @@ class LoginController extends WebVista_Controller_Action
 			$data['code'] = 200;
 		} else {
 			//$this->_redirect('login');
-			$data['err'] = $result->getMessage();
+			//$data['err'] = $result->getMessages();
 			$data['code'] = 404;
 		}
 

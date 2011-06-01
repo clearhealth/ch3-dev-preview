@@ -47,7 +47,7 @@ class GeneralAlert extends WebVista_Model_ORM {
 				->from($this->_table)
 				->where("status = 'new' AND (userId = ".(int)Zend_Auth::getInstance()->getIdentity()->personId.")")
 				->order('dateTime DESC');
-		if ($teamId > 0) {
+		if (strlen($teamId) > 0) {
 			$dbSelect->orWhere("teamId = ?",$teamId);
 		}
 		//trigger_error($dbSelect->__toString(),E_USER_NOTICE);

@@ -187,6 +187,7 @@ class PatientSelectController extends WebVista_Controller_Action
 					->from('patient')
 					->joinUsing('person','person_id')
 					->orWhere('identifier = ? ', $match)
+					->orWhere('date_of_birth = ?',$match)
 					->order('person.last_name ASC')
 					->order('person.first_name ASC')
 					->limit(50);
