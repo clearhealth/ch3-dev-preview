@@ -45,10 +45,23 @@ function proceduresSectionListOnRowSelected(rowId,cellIndex) {
 function proceduresOnSectionNameLoaded() {
 	proceduresListGrid.forEachRow(function(id){
 		var rowId = this.cells(id,indexProcCode).getValue();
-		if (proceduresSectionNameListGrid.doesRowExist(rowId)) {
-			proceduresSectionNameListGrid.cells(rowId,0).setChecked(true);
-		}
+		var data = this.cells(id,indexProcProcedure).getValue();
+		var id = getRowId(proceduresSectionNameListGrid,rowId,2,data,1);
+		if (id != null) proceduresSectionNameListGrid.cells(id,0).setChecked(true);
 	});
+}
+
+function getRowId(grid,rowId,rowIdIndex,data,dataIndex) {
+	for (var i in grid.rowsAr) {
+		if (grid.rowsAr[i] && grid.rowsAr[i].idd) {
+			var id = grid.rowsAr[i].idd;
+			if (grid.cells(id,rowIdIndex).getValue() == rowId) {
+				if (typeof data != "undefined" && grid.cells(id,dataIndex).getValue() != data) return null;
+				return id;
+			}
+		}
+	}
+	return null;
 }
 
 var proceduresSectionNameListGrid = new dhtmlXGridObject("proceduresSectionNameListContainer");
@@ -66,7 +79,7 @@ function proceduresAddToList(code,data) {
 	// check if code already exists
 	var rowId = null;
 	proceduresListGrid.forEachRow(function(id){
-		if (this.cells(id,indexProcCode).getValue() == code) {
+		if (this.cells(id,indexProcCode).getValue() == code && this.cells(id,indexProcProcedure).getValue() == data) {
 			rowId = id;
 		}
 	});
@@ -89,13 +102,14 @@ function proceduresAddToList(code,data) {
 
 function proceduresSectionNameOnChecked(rowId,cellIndex,state) {
 	if (state) { // add to procedure list
-		if (rowId == "99213" && proceduresListGrid.doesRowExist("99214")) {
+		var id = proceduresSectionNameListGrid.cells(rowId,2).getValue();
+		if (id == "99213" && getRowId(proceduresListGrid,"99214",indexProcCode) != null) {
 			alert("NCCI Edit: code 99213 is mutually exclusive with code 99214");
 		}
-		else if (rowId == "99214" && proceduresListGrid.doesRowExist("99213")) {
+		else if (id == "99214" && getRowId(proceduresListGrid,"99213",indexProcCode) != null) {
 			alert("NCCI Edit: code 99214 is mutually exclusive with code 99213");
 		}
-		proceduresAddToList(rowId,proceduresSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
+		proceduresAddToList(proceduresSectionNameListGrid.cells(rowId,2).getValue(),proceduresSectionNameListGrid.cells(rowId,1).getValue().replace(/,/g, "&#44;"));
 	}
 	else { // remove from procedure list
 		var procRowId = null;
@@ -248,7 +262,9 @@ function procedureRemove(rowId) {
 		},
 		load: function (data) {
 			var id = proceduresListGrid.cells(rowId,indexProcCode).getValue();
-			if (proceduresSectionNameListGrid.doesRowExist(id)) {
+			var data = proceduresListGrid.cells(rowId,indexProcProcedure).getValue();
+			var id = getRowId(proceduresSectionNameListGrid,id,2,data,1);
+			if (id != null) {
 				proceduresSectionNameListGrid.cells(id,0).setChecked(false);
 			}
 			proceduresListGridReload();

@@ -73,15 +73,15 @@ class ScriptService extends WebVista {
 	}
 
 	public function NSDRStart() {
-		return NSDR::systemStart();
+		return NSDR2::systemStart();
 	}
 
 	public function NSDRReload() {
-		return NSDR::systemReload();
+		return NSDR2::systemReload();
 	}
 
 	public function NSDRUnload() {
-		return NSDR::systemUnload();
+		return NSDR2::systemUnload();
 	}
 
 	public function permissionStart() {

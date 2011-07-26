@@ -68,8 +68,8 @@ function redrawTabGrid(params,clinicalNoteId) {
 </div>
 
 <div id="templateNote">
-	<div id="clinicalNotesViewToolbarId" style="width:100%;border:1px solid Silver;"></div>
-	<div style="padding-left:5px;height:600px;" id="templatePaneId">
+	<div id="clinicalNotesViewToolbarId" style="height:33px;width:100%;border:1px solid Silver;"></div>
+	<div style="clear:both;padding-left:5px;height:auto;overflow:scroll;background-color:whiteSmoke;" id="templatePaneId">
 		&nbsp;
 		<textarea style="width:97%;height:600px;"></textarea>
 	</div>
@@ -112,10 +112,7 @@ rightLayout.cells("b").setHeight('180');
 rightLayout.cells("b").setText("Attachments &nbsp;&nbsp;<a onclick='windowAddAttachments();' href='javascript:void(0);' style='margin-top:-7px;'>attach</a>");
 
 
-var cnAttachmentLayout = new dhtmlXLayoutObject(rightLayout.cells("b"), "2E");
-cnAttachmentLayout.setImagePath("<?=$this->baseUrl?>/img/");
-cnAttachmentLayout.setEffect('collapse',true);
-cnAttachmentsGrid = cnAttachmentLayout.cells('a').attachGrid();
+cnAttachmentsGrid = rightLayout.cells("b").attachGrid();
 cnAttachmentsGrid.setImagePath("<?=$this->baseUrl?>/img/");
 cnAttachmentsGrid.setHeader('Type,Filename,Date/Time');
 cnAttachmentsGrid.setInitWidths("75,400,*");
@@ -131,10 +128,23 @@ function cnAttachmentsGridReload(clinicalNoteId) {
 		if (cnAttachmentsGrid.getRowsNum() > 0 && rightLayout.cells("b").isCollapsed()) rightLayout.cells("b").expand();
 	},"json");
 }
-cnAttachmentLayout.cells("a").hideHeader();
-cnAttachmentLayout.cells("b").hideHeader();
-cnAttachmentLayout.cells("b").collapse();
 rightLayout.cells("b").collapse();
+
+function resizedRightLayout(itemId,action) {
+	var height = rightLayout.cells("a").getHeight();
+	if (!isNaN(height)) height -= 37; // deducts with the height of the toolbar + 4px allowance
+	dojo.byId("templatePaneId").style.height = height + "px";
+}
+
+rightLayout.attachEvent("onPanelResizeFinish",function(){
+	resizedRightLayout(null,null);
+});
+rightLayout.attachEvent("onCollapse",function(itemId){
+	resizedRightLayout(itemId,"collapse");
+});
+rightLayout.attachEvent("onExpand",function(itemId){
+	resizedRightLayout(itemId,"expand");
+});
 
 
 
@@ -474,4 +484,6 @@ function cnvClearRightPane() {
 	transcriptionNotesFormSubmit = null; // just unset the transcriptionNotesFormSubmit() function
 	dojo.setInnerHTML(dojo.byId("templatePaneId"),"");
 }
+
+resizedRightLayout(null,null);
 </script>

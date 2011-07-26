@@ -356,8 +356,8 @@ class ReportsController extends WebVista_Controller_Action {
 			else break;
 		}
 
-		if ($primary !== null) $this->_addChild($xmlPatient,'medicareNumber',$primary->insuranceProgram->payerIdentifier);
-		if ($secondary !== null) $this->_addChild($xmlPatient,'medicaidNumber',$secondary->insuranceProgram->payerIdentifier);
+		if ($primary !== null) $this->_addChild($xmlPatient,'medicareNumber',$primary->insuranceProgram->name);
+		if ($secondary !== null) $this->_addChild($xmlPatient,'medicaidNumber',$secondary->insuranceProgram->name);
 
 		try {
 			$content = ReportBase::mergepdfset($xml,$data);
@@ -401,7 +401,7 @@ class ReportsController extends WebVista_Controller_Action {
 		if (isset($statistics['Race'])) $race = $statistics['Race'];
 		else if (isset($statistics['race'])) $race = $statistics['race'];
 		$this->_addChild($xmlPatient,'race',$race);
-		$this->_addChild($xmlPatient,'maritalStatus',$person->maritalStatus);
+		$this->_addChild($xmlPatient,'maritalStatus',$person->displayMaritalStatus);
 		$addresses = Address::listAddresses($personId);
 		$phoneNumbers = PhoneNumber::listPhoneNumbers($personId);
 
@@ -454,14 +454,37 @@ class ReportsController extends WebVista_Controller_Action {
 		}
 
 		$xmlPayer = $xml->addChild('payer');
-		if ($primary !== null) $this->_addChild($xmlPayer,'primary',$primary->insuranceProgram->payerIdentifier);
-		if ($secondary !== null) $this->_addChild($xmlPayer,'secondary',$secondary->insuranceProgram->payerIdentifier);
+		if ($primary !== null) $this->_addChild($xmlPayer,'primary',$primary->insuranceProgram->name);
+		if ($secondary !== null) $this->_addChild($xmlPayer,'secondary',$secondary->insuranceProgram->name);
 
-		$xmlGuarantor = $xml->addChild('guarantor');
+		/*$xmlGuarantor = $xml->addChild('guarantor');
 		$this->_addChild($xmlGuarantor,'lastName','');
 		$this->_addChild($xmlGuarantor,'firstName','');
 		$this->_addChild($xmlGuarantor,'dateOfBirth','');
-		$this->_addChild($xmlGuarantor,'phone','');
+		$this->_addChild($xmlGuarantor,'phone','');*/
+
+		// get the current visit
+		$xmlProvider = $xml->addChild('provider');
+		$lastName = '';
+		$firstName = '';
+		$dateOfBirth = '';
+		$phone = '';
+		$visit = new Visit();
+		$visit->populateLatestVisit($personId);
+		if ($visit->visitId > 0) {
+			$provider = new Provider();
+			$provider->personId = $visit->providerId;
+			$provider->populate();
+			$person = $provider->person;
+			$lastName = $person->lastName;
+			$firstName = $person->firstName;
+			$dateOfBirth = $person->dateOfBirth;
+			$phone = $person->phoneNumber->number;
+		}
+		$this->_addChild($xmlProvider,'lastName',$lastName);
+		$this->_addChild($xmlProvider,'firstName',$firstName);
+		$this->_addChild($xmlProvider,'dateOfBirth',$dateOfBirth);
+		$this->_addChild($xmlProvider,'phone',$phone);
 
 		try {
 			$content = ReportBase::mergepdfset($xml,$data);
@@ -564,6 +587,158 @@ class ReportsController extends WebVista_Controller_Action {
 			$data = $attachment->rawData;
 		}
 		return $data;
+	}
+  
+	public function paymentReceiptAction() {
+		// d96de46c-be90-45b0-b5f9-0b4abee76483
+		$referenceId = $this->_getParam('referenceId');
+		$personId = (int)$this->_getParam('personId');
+		$visitId = (int)$this->_getParam('visitId');
+		$data = $this->_getAttachmentData($referenceId);
+
+		$patient = new Patient();
+		$patient->personId = $personId;
+		if ($personId > 0) $patient->populate();
+		$person = $patient->person;
+
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		if ($visitId > 0) $visit->populate();
+
+		$practiceId = (int)$visit->practiceId;
+		if (!$practiceId > 0) {
+			$buildingId = (int)$visit->buildingId;
+			if ($buildingId > 0) {
+				$building = new Building();
+				$building->buildingId = $buildingId;
+				$building->populate();
+				$practiceId = (int)$building->practiceId;
+			}
+			else {
+				$roomId = (int)$visit->roomId;
+				if ($roomId > 0) {
+					$room = new Room();
+					$room->roomId = $roomId;
+					$room->populate();
+					$practiceId = (int)$room->building->practiceId;
+				}
+			}
+		}
+		$practice = new Practice();
+		$practice->practiceId = $practiceId;
+		if ($practiceId > 0) $practice->populate();
+		$primaryAddress = $practice->primaryAddress;
+
+		$xml = new SimpleXMLElement('<data/>');
+		$xmlPractice = $xml->addChild('practice');
+		$this->_addChild($xmlPractice,'name',$practice->name);
+		$this->_addChild($xmlPractice,'primaryLine1',$primaryAddress->line1);
+		$primaryCityStateZip = $primaryAddress->city.' '.$primaryAddress->state.' '.$primaryAddress->postalCode;
+		$this->_addChild($xmlPractice,'primaryCityStateZip',$primaryCityStateZip);
+		$this->_addChild($xmlPractice,'mainPhone',$practice->mainPhone->number);
+
+		$xmlPatient = $xml->addChild('patient');
+		$name = $person->firstName.' '.$person->middleName.' '.$person->lastName;
+		$this->_addChild($xmlPatient,'name',$name);
+
+		$addresses = Address::listAddresses($personId);
+		if (isset($addresses[Address::TYPE_BILLING])) $address = $addresses[Address::TYPE_BILLING];
+		else if (isset($addresses[Address::TYPE_HOME])) $address = $addresses[Address::TYPE_HOME];
+		else if (isset($addresses[Address::TYPE_MAIN])) $address = $addresses[Address::TYPE_MAIN];
+		else if (isset($addresses[Address::TYPE_SEC])) $address = $addresses[Address::TYPE_SEC];
+		else if (isset($addresses[Address::TYPE_OTHER])) $address = $addresses[Address::TYPE_OTHER];
+		else $address = array_pop($addresses);
+
+		$billingCityStateZip = $address->city.' '.$address->state.' '.$address->postalCode;
+		$this->_addChild($xmlPatient,'billingLine1',$address->line1);
+		$this->_addChild($xmlPatient,'billingCityStateZip',$billingCityStateZip);
+
+		$iterator = new PatientProcedureIterator();
+		$iterator->setFilters(array('visitId'=>$visitId));
+		$procedures = array();
+		foreach ($iterator as $row) {
+			$procedures[] = $row->code;
+		}
+
+		$iterator = new PatientDiagnosisIterator();
+		$iterator->setFilters(array('visitId'=>$visitId));
+		$diagnoses = array();
+		foreach ($iterator as $row) {
+			$diagnoses[] = $row->code;
+		}
+
+		$xmlNotes = $xmlPatient->addChild('notes');
+		$note = implode(',',$procedures)." \t ".implode(',',$diagnoses)." \t ".date('m/d/y',strtotime($visit->dateOfTreatment));
+		$this->_addChild($xmlNotes,'note',$note);
+
+		$today = date('Y-m-d');
+		$todaysTotal = 0;
+		$iterator = new PaymentIterator();
+		$iterator->setFilters(array('visitId'=>$visitId,'company'=>'System','paymentDate'=>$today));
+		$payments = array();
+		foreach ($iterator as $row) {
+			$payments[] = $row;
+		}
+		$iterator->setFilters(array('personId'=>$personId,'unallocated'=>true,'paymentDate'=>$today));
+		foreach ($iterator as $row) {
+			$payments[] = $row;
+		}
+		foreach ($payments as $row) {
+			$xmlPayment = $xmlPatient->addChild('payments');
+			$paymentDate = date('m/d/y',strtotime($row->paymentDate));
+			$this->_addChild($xmlPayment,'date',$paymentDate);
+			$this->_addChild($xmlPayment,'description',$row->title.' .... Thank You');
+			$this->_addChild($xmlPayment,'method',$row->paymentType);
+			$amount = (float)$row->amount;
+			$todaysTotal += $amount;
+			$this->_addChild($xmlPayment,'amount','-'.number_format($amount,2));
+			$this->_addChild($xmlPayment,'insurance',$row->insuranceDisplay);
+		}
+
+		$fees = $visit->calculateFees();
+		$previousBalance = $fees['total'];
+
+		$this->_addChild($xmlPatient,'previousBalance',number_format($previousBalance,2));
+		$this->_addChild($xmlPatient,'todaysTotal','-'.number_format($todaysTotal,2));
+		$totalDue = $previousBalance - $todaysTotal;
+		$this->_addChild($xmlPatient,'totalDue',number_format($totalDue,2));
+		$totalDueFromPatient = $previousBalance;
+		$this->_addChild($xmlPatient,'totalDueFromPatient',number_format($totalDueFromPatient,2));
+
+		try {
+			$content = ReportBase::mergepdfset($xml,$data);
+			$this->getResponse()->setHeader('Content-Type','application/pdf');
+		}
+		catch (Exception $e) {
+			$content = '<script>alert("'.$e->getMessage().'")</script>';
+		}
+		$this->view->content = $content;
+		$this->render('binary-template');
+	}
+
+	public function popupAction() {
+		$this->view->viewId = (int)$this->_getParam('viewId');
+		$this->view->queryId = (int)$this->_getParam('queryId');
+	}
+
+	public function processQueryAction() {
+		$viewId = (int)$this->_getParam('viewId');
+		$queryId = (int)$this->_getParam('queryId');
+		$result = ReportBase::generateResults($viewId,array());
+		file_put_contents('/tmp/results.txt',print_r($result,true));
+		$data = array(
+			'error'=>'Query ID '.$queryId.' does not exists',
+		);
+		foreach ($result['data'] as $query) {
+			if ($query['reportQuery']['reportQueryId'] == $queryId) {
+				$data = $query;
+				break;
+			}
+		}
+		//trigger_error(print_r($data,true),E_USER_NOTICE);
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
 	}
 
 }

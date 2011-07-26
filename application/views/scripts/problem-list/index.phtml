@@ -187,6 +187,7 @@ function viewProblem(id) {
 		plMenu.setItemDisabled('remove');
 		plMenu.setItemDisabled('restore');
 		plMenu.setItemDisabled("resolve");
+		plMenu.setItemDisabled("flags");
 
 		// remove: New Problem, Restore, View Details, Comments
 		switch (plStatus.toLowerCase()) {
@@ -196,12 +197,14 @@ function viewProblem(id) {
 				plMenu.setItemEnabled('annotate');
 				plMenu.setItemEnabled('remove');
 				plMenu.setItemEnabled("resolve");
+				plMenu.setItemEnabled('flags');
 				break;
 			case 'inactive':
 				plMenu.setItemEnabled('edit');
 				plMenu.setItemEnabled('activate');
 				plMenu.setItemEnabled('annotate');
 				plMenu.setItemEnabled('remove');
+				plMenu.setItemEnabled('flags');
 				break;
 			case 'removed':
 				plMenu.setItemEnabled('restore');
@@ -243,10 +246,32 @@ function viewProblem(id) {
 	plGrid.init();
 	plGrid.load("<?=$this->baseUrl?>/problem-list.raw/list.json?personId=" + mainController.getActivePatient(),function (){ setProblemListLabel('<?=__('Active Problems')?>') },"json");
 
+function plSetFlags(rowId,flags) {
+	dojo.xhrPost({
+		url: "<?=$this->baseUrl?>/problem-list.raw/process-set-flags",
+		content: {
+			"problemListId": rowId,
+			"flags": flags,
+		},
+		load: function (data) {
+			filterRowSelectHandler(previousFilterRowId,previousFilterCellIndex);
+			return;
+		},
+		error: function (er) {
+			alert('err: ' + er)
+		}
+	});
+}
+
 	function listMenuEvent(menuItemId,type) {
 		var rowId = plGrid.getSelectedRowId();
 		if (rowId == null) {
 			alert('<?=__('No problem selected')?>');
+			return;
+		}
+		if (menuItemId.substr(0,6) == "flags_") {
+			var flags = menuItemId.substr(6);
+			plSetFlags(rowId,flags);
 			return;
 		}
 

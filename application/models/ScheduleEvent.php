@@ -224,12 +224,14 @@ class ScheduleEvent extends WebVista_Model_ORM {
 		$sql = str_replace('SELECT','SELECT SQL_NO_CACHE',$sql);
 		$sqlSchedule = $sql;*/
 		$stmtSchedule = $db->query($sqlSelect);
+		$stmtSchedule->setFetchMode(Zend_Db::FETCH_ASSOC);
 
 		$stmtAppointment = $db->query($appSelect);
+		$stmtAppointment->setFetchMode(Zend_Db::FETCH_ASSOC);
 
 		$currentDate = null;
 		$appStack = array();
-		while ($row = $stmtAppointment->fetch(PDO::FETCH_ASSOC)) {
+		while ($row = $stmtAppointment->fetch()) {
 			$date = substr($row['start'],0,10);
 			if ($currentDate === null) $currentDate = $date;
 			if ($date == $currentDate) {
@@ -248,6 +250,11 @@ class ScheduleEvent extends WebVista_Model_ORM {
 			$hasUnbooked = $this->_checkUnbooked($ret,$currentDate,$appStack,$stmtSchedule,$minutesInterval);
 			if ($hasUnbooked !== null) $ret[$currentDate] = $hasUnbooked;
 		}
+		while ($rowSchedule = $stmtSchedule->fetch()) {
+			$dateSchedule = substr($rowSchedule['start'],0,10);
+			$ret[$dateSchedule] = true; // default: has free time unless proven that all time schedules have appointments
+		}
+
 		$stmtAppointment->closeCursor();
 		$stmtSchedule->closeCursor();
 
@@ -263,7 +270,7 @@ class ScheduleEvent extends WebVista_Model_ORM {
 		// plot schedule of the day
 		$ranges = array();
 		$currentRowSchedule = null;
-		while ($rowSchedule = $stmtSchedule->fetch(PDO::FETCH_ASSOC)) {
+		while ($rowSchedule = $stmtSchedule->fetch()) {
 			$dateSchedule = substr($rowSchedule['start'],0,10);
 			$data[$dateSchedule] = true; // default: has free time unless proven that all time schedules have appointments
 			if ($dateSchedule == $currentDate) {

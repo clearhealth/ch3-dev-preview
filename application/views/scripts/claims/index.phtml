@@ -36,9 +36,7 @@ div.gridbox table.obj tr.rowselected td, div.gridbox table.obj tr.rowselected td
 	<?=$this->formTextarea('inquiryReportId','',array('id'=>'inquiryReportId','readonly'=>'readonly','style'=>'width:785px;height:350px;'))?>
 </div>
 <script>
-if (typeof globalClaimsQueue == "undefined") {
-	globalClaimsQueue = {};
-}
+var globalClaimsQueue = {};
 var closeVisitIds = [];
 var winCloseVisit = null;
 var dialog = null;
@@ -100,10 +98,20 @@ claimsGrid.setInitWidths("20,80,*,80,80,80,80,*,*,60");
 claimsGrid.setColTypes("sub_row_grid,ro,ro,ro,ro,ro,ro,ro,ro,ro");
 claimsGrid.enableMultiselect(true);
 claimsGrid.setSkin("xp");
+claimsGrid.enableDynamicLoading(true);
 claimsGrid.init();
 dhtmlxEvent(claimsGrid.entBox,"contextmenu",function(e){
 	(e||event).cancelBubble=true;
 	return false;
+});
+claimsGrid.attachEvent("onRowsLoaded",function(min,max,ids){
+	var color = "";
+	var rowId = null;
+	for (var i = 0; i <= ids.length; i++) {
+		rowId = claimsGrid.getRowId(ids[i]);
+		color = this.getUserData(rowId,"color");
+		if (color.length > 0) this.setRowColor(rowId,color);
+	}
 });
 claimsGrid.attachEvent("onRowSelect",function(rowId,cellIndex){
 	claimsToolbar.enableItem("makePayment");
@@ -258,7 +266,10 @@ function claimsCancelCloseVisit() {
 }
 
 function claimsCloseVisit(offset,callback) {
-	if (tref) clearTimeout(tref);
+	if (tref) {
+		clearTimeout(tref);
+		tref = null;
+	}
 	if (!offset) offset = 1;
 	var offsetIndex = offset - 1;
 	if (offset > closeVisitIds.length || !closeVisitIds[offsetIndex]) {
@@ -278,6 +289,10 @@ function claimsCloseVisit(offset,callback) {
 			var msg = rule.displayEvent + ": " + rule.message;
 			if (rule.event == "<?=ClaimRule::EVENT_WARNING?>") {
 				confirmDialog("Confirm Close Visit",msg,function(ok){
+					if (tref) {
+						clearTimeout(tref);
+						tref = null;
+					}
 					if (ok) {
 						claimsProcessCloseVisit(visitId,offset,callback);
 					}
@@ -438,6 +453,10 @@ function claimsInquiry() {
 			if (!winInquiry) {
 				winInquiry = globalCreateWindow("windowInquiryId",[],"","<?=__('Claim Inquiry')?>",800,400,{"attachURL":false});
 				winInquiry.attachObject("inquiryDivId");
+				winInquiry.attachEvent("onClose",function(){
+					winInquiry.hide();
+					return false;
+				});
 			}
 			winInquiry.show();
 			return data;
@@ -454,7 +473,7 @@ function claimsCalculate() {
 	var claimsTotal = 0;
 	for (var i in globalClaimsQueue) {
 		claimsCtr++;
-		claimsTotal += parseFloat(globalClaimsQueue[i]["total"]);
+		claimsTotal += parseFloat(globalClaimsQueue[i]["billed"]);
 	}
 	dojo.byId("claimsCtrId").innerHTML = claimsCtr;
 	var value = boxDOSStart.getValue();
@@ -467,23 +486,22 @@ function claimsCalculate() {
 
 function claimsGridReload() {
 	claimsGrid.forEachRow(function(rowId){
-		var cell = claimsGrid.cells(rowId,0).cell.firstChild;
-		if (cell.parentNode._state != "minus") return;
-		claimsGrid.toggleSubRow(cell);
+		claimsGrid.collapseSubRow(claimsGrid.cells(rowId,0).cell);
 	});
 	claimsGrid.clearAll();
-	claimsGrid.load("<?=$this->baseUrl?>/claims.raw/list",function(){
-		claimsToolbar.disableItem("makePayment");
-		var color = "";
-		claimsGrid.forEachRow(function(rowId){
-			color = this.getUserData(rowId,"color");
-			if (color.length <= 0) return;
-			claimsGrid.setRowColor(rowId,color);
-		});
-		//claimsCalculate();
-	},"json");
+	claimsGrid.load("<?=$this->baseUrl?>/claims.raw/list",claimsGridOnLoaded,"json");
 }
 claimsGridReload();
+
+function claimsGridOnLoaded() {
+	claimsToolbar.disableItem("makePayment");
+	var color = "";
+	claimsGrid.forEachRow(function(rowId){
+		color = this.getUserData(rowId,"color");
+		if (color.length > 0) this.setRowColor(rowId,color);
+	});
+	//claimsCalculate();
+}
 
 var claimsToolbar = new dhtmlXToolbarObject("claimsToolbarId","ClearSilver");
 claimsToolbar.setIconsPath("<?=$this->baseUrl?>/img/");
@@ -532,6 +550,16 @@ function claimsMakePayment() {
 	});
 }
 
+function claimsBuildQuery(params) {
+	var query = [];
+	if (params) {
+		for (var i in params) {
+			query.push(i+"="+params[i]);
+		}
+	}
+	return query;
+}
+
 function openMakePaymentWindow() {
 	var url = "<?=$this->baseUrl?>/claims.raw/make-payment";
 	winMakePayment = globalCreateWindow("windowClaimsMakePaymentId",[],url,"<?=__('Record Payment')?>",800,800,{attachURL:false,setModal:false});
@@ -544,7 +572,7 @@ function openMakePaymentWindow() {
 		return true;
 	});
 	paymentAccordion.attachEvent("onActive",function(itemId){
-		var query = calendarBuildQuery(params);
+		var query = claimsBuildQuery(params);
 		switch (itemId) {
 			case "paymentInfo":
 				openAccordion(itemId+"ContainerId",paymentAccordion,itemId,url);
@@ -635,7 +663,7 @@ function openAdvancedFiltersWindow() {
 		return true;
 	});
 	advanceFiltersAccordion.attachEvent("onActive",function(itemId){
-		var query = calendarBuildQuery(params);
+		var query = claimsBuildQuery(params);
 		switch (itemId) {
 			case "filters":
 				openAccordion(itemId+"ContainerId",advanceFiltersAccordion,itemId,url);

@@ -440,7 +440,7 @@ class CalendarController extends WebVista_Controller_Action {
 			}
 			if (strlen($start) > 0) {
 				$appointment->start = $start;
-				$appointment->end = date('H:i', strtotime('+1 hour', strtotime($start)));
+				$appointment->end = date('H:i', strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes', strtotime($start)));
 			}
 		}
 
@@ -454,7 +454,8 @@ class CalendarController extends WebVista_Controller_Action {
 
 		$phones = array();
 		$phone = new PhoneNumber();
-		$phoneIterator = $phone->getIteratorByPersonId($appointment->patientId);
+		$phoneIterator = array();
+		if ($appointment->patientId > 0) $phoneIterator = $phone->getIteratorByPersonId($appointment->patientId);
 		foreach ($phoneIterator as $row) {
 			$phones[] = $row->number;
 		}
@@ -710,7 +711,11 @@ class CalendarController extends WebVista_Controller_Action {
 	}
 
 	public function processAddPaymentAction() {
-		$this->_processEditPaymentCharge(new Payment());
+		$params = $this->_getParam('app');
+		if (!isset($params['paymentDate'])) $params['paymentDate'] = date('Y-m-d');
+		$payment = new Payment();
+		$payment->timestamp = date('Y-m-d H:i:s');
+		$this->_processEditPaymentCharge($payment,$params);
 	}
 
 	public function processEditPaymentAction() {
@@ -729,7 +734,9 @@ class CalendarController extends WebVista_Controller_Action {
 	}
 
 	public function processAddChargeAction() {
-		$this->_processEditPaymentCharge(new MiscCharge());
+		$params = $this->_getParam('app');
+		if (!isset($params['chargeDate'])) $params['chargeDate'] = date('Y-m-d');
+		$this->_processEditPaymentCharge(new MiscCharge(),$params);
 	}
 
 	public function processEditChargeAction() {
@@ -787,7 +794,6 @@ class CalendarController extends WebVista_Controller_Action {
 		}
 		$filter = new StdClass();
 		$filter->date = $date;
-		$filter->increment = self::FILTER_MINUTES_INTERVAL;
 		$filter->start = self::FILTER_TIME_START;
 		$filter->end = self::FILTER_TIME_END;
 		$filter->columns = array();
@@ -830,7 +836,7 @@ class CalendarController extends WebVista_Controller_Action {
 
 	$columnData = array();
 	// we need to get the length of time to create number of rows in the grid
-	$timeLen = (($filterTimeEnd - $filterTimeStart) / 60) / $filter->increment;
+	$timeLen = (($filterTimeEnd - $filterTimeStart) / 60) / self::FILTER_MINUTES_INTERVAL;
 	for ($i=0;$i<=$timeLen;$i++) {
 		$row = array();
 		// assign row id as rowNumber and columnIndex
@@ -851,9 +857,9 @@ class CalendarController extends WebVista_Controller_Action {
 		$endToTime = strtotime($row->end);
 		$tmpStart = date('H:i', $startToTime);
 		$tmpEnd = date('H:i', $endToTime);
-		$tmpLen = (($endToTime - $startToTime) / 60) / $filter->increment;
+		$tmpLen = (($endToTime - $startToTime) / 60) / self::FILTER_MINUTES_INTERVAL;
 		$timeLen = ceil($tmpLen);
-		$tmpIdx = (($startToTime - $filterToTimeStart) / 60) / $filter->increment;
+		$tmpIdx = (($startToTime - $filterToTimeStart) / 60) / self::FILTER_MINUTES_INTERVAL;
 		$tmpIndex = ceil($tmpIdx);
 
 		if (!isset($columnData[$tmpIndex])) break;
@@ -999,6 +1005,7 @@ class CalendarController extends WebVista_Controller_Action {
 				->from('scheduleEvents',array('start','end','roomId','buildingId','title'))
 				->joinLeft('provider','scheduleEvents.providerId=provider.person_id',array('providerColor'=>'color'))
 				->joinLeft('person','person.person_id=provider.person_id',array('providerName'=>'CONCAT(person.last_name,\', \',person.first_name,\' \',person.middle_name)'))
+				->where('start <= end')
 				->order('start ASC');
 		if ((int)$paramFilters['roomId'] > 0 && (int)$paramFilters['providerId'] > 0) {
 			$sqlSelect->joinLeft('buildings','scheduleEvents.buildingId=buildings.id',null)
@@ -1014,14 +1021,14 @@ class CalendarController extends WebVista_Controller_Action {
 		if (isset($paramFilters['start'])) $sqlSelect->where('start >= ?',$paramFilters['start']);
 		if (isset($paramFilters['end'])) $sqlSelect->where('end <= ?',$paramFilters['end']);
 		$stmt = $db->query($sqlSelect);
-
+		$stmt->setFetchMode(Zend_Db::FETCH_ASSOC);
 		while ($event = $stmt->fetch()) {
 			$x = explode(' ', $event['start']);
 			$eventTimeStart = strtotime($x[1]);
 			$x = explode(' ', $event['end']);
 			$eventTimeEnd = strtotime($x[1]);
 			// get the starting index
-			$index = (($eventTimeStart - $filterTimeStart) / 60) / $filter->increment;
+			$index = (($eventTimeStart - $filterTimeStart) / 60) / self::FILTER_MINUTES_INTERVAL;
 			$tmpIndex = $index;
 			$color = $event['providerColor'];
 			if ($event['roomId'] > 0 && strlen($event['roomColor']) > 0) {
@@ -1039,7 +1046,7 @@ class CalendarController extends WebVista_Controller_Action {
 			$columnData[$tmpIndex]['data'][0] = '<div style="overflow:hidden;white-space:nowrap;margin-top:-6px;">'.$event['title'].' - '.$buildings[$event['buildingId']]->displayName.'</div>'.$columnData[$tmpIndex]['data'][0];
 			while ($eventTimeStart < $eventTimeEnd) {
 				$eventDateTimeStart = date('Y-m-d H:i:s',$eventTimeStart);
-				$eventTimeStart = strtotime("+{$filter->increment} minutes",$eventTimeStart);
+				$eventTimeStart = strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes',$eventTimeStart);
 				$columnData[$tmpIndex]['style'] = 'background-color:'.$color.';border-color:lightgrey;';
 				$columnData[$tmpIndex]['userdata']['title'] = $event['title'].' of '.$event['providerName'].' ('.$buildings[$event['buildingId']]->displayName.')';
 				$tmpIndex++;
@@ -1075,7 +1082,7 @@ class CalendarController extends WebVista_Controller_Action {
             $tmp['id'] = $timeStart;
             $tmp['data'][] = date('H:i',$timeStart);
             $data[] = $tmp;
-            $timeStart = strtotime("+{$filter->increment} minutes",$timeStart);
+            $timeStart = strtotime('+'.self::FILTER_MINUTES_INTERVAL.' minutes',$timeStart);
         }
 	$data[0]['userdata']['numberOfRows'] = count($data);
         $ret = array();
@@ -1105,7 +1112,7 @@ class CalendarController extends WebVista_Controller_Action {
 		}
 		$this->view->providers = $providers;
 		$rooms = array(0=>'');
-		foreach (Room::getArray() as $key=>$value) {
+		foreach (Room::getRoomArray() as $key=>$value) {
 			$rooms[$key] = $value;
 		}
 		$this->view->rooms = $rooms;
@@ -1116,7 +1123,7 @@ class CalendarController extends WebVista_Controller_Action {
 		for ($i=0;$i<4;$i++) {
 			$months[] = array(
 				'month'=>date('Y-m',$startToTime),
-				'jsmonth'=>date('Y',$startToTime).(int)date('m',$startToTime)-1,
+				'jsmonth'=>date('Y',$startToTime).((int)date('m',$startToTime)-1),
 				'lastDay'=>date('t',$startToTime),
 			);
 			$startToTime = strtotime('+1 month',$startToTime);
@@ -1191,12 +1198,6 @@ class CalendarController extends WebVista_Controller_Action {
 		$appointment->start = $filters['dateFilter'].' '.self::FILTER_TIME_START;
 		$appointment->end = $filters['dateFilter'].' '.self::FILTER_TIME_END;
 
-		$scheduleEvent = new ScheduleEvent();
-		$scheduleEvent->providerId = $filters['providerId'];
-		$scheduleEvent->roomId = $filters['roomId'];
-		$scheduleEvent->start = $filters['dateFilter'].' '.self::FILTER_TIME_START;
-		$scheduleEvent->end = $filters['dateFilter'].' '.self::FILTER_TIME_END;
-
 		$startTime = strtotime($appointment->start);
 		$endTime = strtotime($appointment->end);
 		// we need to get the length of time to create number of rows in the grid
@@ -1249,10 +1250,25 @@ class CalendarController extends WebVista_Controller_Action {
 		$mapIndex = 0;
 		$events = array();
 		trigger_error('looping schedule event started');
-		foreach($scheduleEvent->getIter() as $event) {
+
+		$scheduleEvent = new ScheduleEvent();
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('scheduleEvents')
+				->where('providerId = ?',$appointment->providerId)
+				->where('roomId = ?',$appointment->roomId)
+				->where('start >= ?', $appointment->start)
+				->where('end <= ?',$appointment->end)
+				->where('start <= end')
+				->order('start ASC');
+		$stmt = $db->query($sqlSelect);
+		$stmt->setFetchMode(Zend_Db::FETCH_ASSOC);
+		while ($row = $stmt->fetch()) {
+			$event = new ScheduleEvent();
+			$event->populateWithArray($row);
 			$start = strtotime($event->start);
 			for ($i=$mapIndex;$i<$columnDataCtr;$i++) {
-				$map = $columnData[$mapIndex]['map'];
+				$map = $columnData[$i]['map'];
 				$mapIndex = $i;
 				if ($start >= $map['start'] && $start <= $map['end']) {
 					if (!isset($data['events'][$i])) $data['events'][$i] = array();

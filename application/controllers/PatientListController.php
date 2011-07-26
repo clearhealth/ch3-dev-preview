@@ -212,6 +212,7 @@ class PatientListController extends WebVista_Controller_Action {
 				$options = $enumerationClosure->generatePathsKeyName($row->value);
 			}
 			$tmp['type'] = $row->type;
+			asort($options);
 			$tmp['options'] = $options;
 			$demographics[$row->name] = $tmp;
 		}

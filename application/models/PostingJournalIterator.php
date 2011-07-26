@@ -45,7 +45,14 @@ class PostingJournalIterator extends WebVista_Model_ORMIterator implements Itera
 				case 'visitId':
 				case 'claimLineId':
 				case 'claimFileId':
-					$sqlSelect->where($key.' = ?',(int)$value);
+					if (is_array($value)) {
+						$tmp = array();
+						foreach ($value as $val) $tmp[] = $db->quote($val);
+						if (isset($tmp[0])) $sqlSelect->where($key.' IN ('.implode(',',$tmp).')');
+					}
+					else {
+						$sqlSelect->where($key.' = ?',(int)$value);
+					}
 					break;
 			}
 		}

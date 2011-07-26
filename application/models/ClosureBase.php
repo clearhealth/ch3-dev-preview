@@ -149,7 +149,7 @@ abstract class ClosureBase extends WebVista_Model_ORM {
 		$db->query($sql);
 	}
 
-	protected function _getAll($type,$id,$depth=null,$active=null) {
+	protected function _getAll($type,$id,$depth=null,$active=true) {
 		$db = Zend_Registry::get('dbAdapter');
 		$className = $this->_ormClass;
 		$ormClass = new $className();
@@ -161,18 +161,16 @@ abstract class ClosureBase extends WebVista_Model_ORM {
 		if ($depth !== null) {
 			$sqlSelect->where('c.depth = ?',(int)$depth);
 		}
-		if ($active !== null) {
-			$sqlSelect->where('p.active = ?',(int)$active);
-		}
+		$sqlSelect->where('p.active = ?',(int)$active);
 		//trigger_error($sqlSelect,E_USER_NOTICE);
 		return $ormClass->getIterator($sqlSelect);
 	}
 
-	public function getAllDescendants($id,$depth=null,$active=null) {
+	public function getAllDescendants($id,$depth=null,$active=true) {
 		return $this->_getAll('ancestor',$id,$depth,$active);
 	}
 
-	public function getAllAncestors($id,$depth=null,$active=null) {
+	public function getAllAncestors($id,$depth=null,$active=true) {
 		return $this->_getAll('descendant',$id,$depth,$active);
 	}
 

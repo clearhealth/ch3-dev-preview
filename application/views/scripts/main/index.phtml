@@ -121,6 +121,9 @@
 				}
 				globalCreateWindow("windowUnallocPayment",["personId="+patientId],"<?=$this->baseUrl?>/accounts.raw/payment","<?=__('Patient Unallocated Payment')?>",600,400);
 				break;
+			case "All_manual_journal":
+				globalCreateWindow("windowManualJournal",[],"<?=$this->baseUrl?>/accounts.raw/manual-journal","<?=__('Manual Journal')?>",500,500);
+				break;
 			case "All_patient_intake":
 			case "All_default_patient_header":
 				var patientId = parseInt(mainController.getActivePatient());
@@ -143,11 +146,38 @@
 				}
 				window.open("<?=$this->baseUrl?>/reports.raw/default-patient-most-recent-note?referenceId=ab3d26a7-49c5-4091-b496-23169f5ed41a&clinicalNoteDefinitionId=86815&personId="+mainController.getActivePatient(),"pdfTemplate");
 				break;
+			case "All_payment_receipt":
+				var patientId = parseInt(mainController.getActivePatient());
+				if (patientId == 0) {
+					alert("No patient selected.");
+					break;
+				}
+				var visitId = parseInt(mainController.getActiveVisit());
+				if (visitId == 0) {
+					alert("No visit selected.");
+					break;
+				}
+				window.open("<?=$this->baseUrl?>/reports.raw/payment-receipt?referenceId=d96de46c-be90-45b0-b5f9-0b4abee76483&personId="+patientId+"&visitId="+visitId,"pdfTemplate");
+				break;
                         default:
                                 alert("Button "+itemId+" was pressed "+itemValue);
                                 break;
                 }
         };
+
+function attachReportsCallback(reportId) {
+	globalReportsGridCallbacks = [function(grid){
+		for (var a in grid.rowsAr) {
+			if (!(grid.rowsAr[a] && grid.rowsAr[a].idd)) continue;
+			var rowId = grid.rowsAr[a].idd;
+			if (rowId == reportId) {
+				grid.selectRow(grid.getRowIndex(rowId),true);
+				break;
+			}
+		}
+	}];
+	mainTabbar.setTabActive("tab_Reports");
+}
 
 function windowExport(itemId) {
 	var patientId = parseInt(mainController.getActivePatient());

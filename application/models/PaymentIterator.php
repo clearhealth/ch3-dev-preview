@@ -49,6 +49,27 @@ class PaymentIterator extends WebVista_Model_ORMIterator implements Iterator {
 				case 'claimFileId':
 					$sqlSelect->where($key.' = ?',(int)$value);
 					break;
+				case 'personId':
+					$sqlSelect->where('personId = ?',(int)$value);
+					break;
+				case 'unallocated':
+				case '100%unallocated':
+					if ($key == 'unallocated') $sqlSelect->where('(amount - allocated) > 0');
+					else $sqlSelect->where('allocated = 0');
+					$sqlSelect->where('encounter_id = 0')
+						->where('appointmentId = 0');
+					break;
+				case 'unposted':
+					$sqlSelect->where('(amount - allocated) > 0');
+					break;
+				case 'company':
+					$sqlSelect->join('insurance_program','insurance_program.insurance_program_id = '.$orm->_table.'.payer_id',null)
+						->join('company','company.company_id = insurance_program.company_id',null)
+						->where('company.name = ?',$value);
+					break;
+				case 'paymentDate':
+					$sqlSelect->where('payment_date = ?',$value);
+					break;
 			}
 		}
 		$this->_dbSelect = $sqlSelect;

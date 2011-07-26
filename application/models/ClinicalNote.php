@@ -443,7 +443,7 @@ class ClinicalNote extends WebVista_Model_ORM implements Document, NSDRMethods {
 			if (is_array($element)) {
 				$label = $element['label'];
 				if (substr($label,-1) != ':') $label .= ':';
-				$value = str_replace("\n","\n ".str_repeat(' ',strlen($label)),$element['value']);
+				$value = htmlentities(str_replace("\n","\n ".str_repeat(' ',strlen($label)),$element['value']));
 				$ret .= $label.' '.$value;
 			}
 			else $ret .= $element;

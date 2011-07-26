@@ -330,12 +330,14 @@
 		<field Field="status" Type="char(16)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="dateTime" Type="dateTime" Null="NO" Key="" Default="" Extra="" />
 		<field Field="userId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
+		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<key Table="claimFiles" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimFileId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="claimFiles" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-13 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
 	<table_structure name="claimFileBlobs">
 		<field Field="claimFileId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
 		<field Field="data" Type="mediumblob" Null="NO" Key="" Default="" Extra="" />
+		<field Field="statementData" Type="mediumblob" Null="NO" Key="" Default="" Extra="" />
 		<key Table="claimFileBlobs" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="claimFileId" Collation="A" Cardinality="0" Null="" Index_type="BTREE" Comment="" />
 		<options Name="claimFileBlobs" Engine="InnoDB" Version="10" Row_format="Compact" Rows="0" Avg_row_length="0" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2011-01-13 01:16:51" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 11264 kB" />
 	</table_structure>
@@ -2856,6 +2858,7 @@
 	</table_structure>
 	<table_structure name="postingJournals">
 		<field Field="postingJournalId" Type="int(11)" Null="NO" Key="PRI" Default="" Extra="" />
+		<field Field="paymentId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="patientId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="payerId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
 		<field Field="visitId" Type="int(11)" Null="NO" Key="" Default="" Extra="" />
@@ -3647,7 +3650,6 @@
 		<field Field="license" Type="text" Null="NO" Key="" Extra="" />
 		<field Field="status" Type="varchar(255)" Null="NO" Key="" Extra="" />
 		<field Field="queue" Type="tinyint(1)" Null="NO" Key="" Extra="" />
-		<field Field="notes" Type="text" Null="NO" Key="" Extra="" />
 		<key Table="updateFiles" Non_unique="0" Key_name="PRIMARY" Seq_in_index="1" Column_name="updateFileId" Collation="A" Cardinality="7" Null="" Index_type="BTREE" Comment="" />
 		<options Name="updateFiles" Engine="InnoDB" Version="10" Row_format="Compact" Rows="7" Avg_row_length="2340" Data_length="16384" Max_data_length="0" Index_length="0" Data_free="0" Create_time="2009-11-23 13:18:19" Collation="utf8_general_ci" Create_options="" Comment="InnoDB free: 527360 kB" />
 	</table_structure>

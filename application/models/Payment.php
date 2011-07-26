@@ -124,28 +124,46 @@ class Payment extends WebVista_Model_ORM {
 
 	public static function total(Array $filters) {
 		$db = Zend_Registry::get('dbAdapter');
-		$orm = new self();
+		$journal = new PostingJournal();
 		$sqlSelect = $db->select()
-				->from($orm->_table,array('SUM(amount) AS total'));
+				->from($journal->_table,array('SUM(amount) AS total'));
 		foreach ($filters as $key=>$value) {
 			switch ($key) {
+				case 'paymentId':
+				case 'patientId':
+				case 'payerId':
 				case 'visitId':
-					$sqlSelect->where('encounter_id = ?',(int)$value);
-					break;
-				case 'personId':
 				case 'claimLineId':
 				case 'claimFileId':
-				case 'appointmentId':
-					$sqlSelect->where($key.' = ?',(int)$value);
-					break;
-				case 'payerId':
-					$sqlSelect->where('payer_id = ?',(int)$value);
-					break;
 				case 'userId':
-					$sqlSelect->where('user_id = ?',(int)$value);
+					if (is_array($value)) {
+						$tmp = array();
+						foreach ($value as $val) {
+							$tmp[] = $db->quote($val);
+						}
+						$sqlSelect->where($key.' IN ('.implode(',',$tmp).')');
+					}
+					else {
+						$sqlSelect->where($key.' = ?',(int)$value);
+					}
 					break;
 			}
 		}
+		$total = 0;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$total = (float)$row['total'];
+		}
+		return $total;
+	}
+
+	public static function unpostedTotal($visitId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$payment = new self();
+		$sqlSelect = $db->select()
+				->from($payment->_table,array('SUM(amount) AS total'))
+				->where('encounter_id = ?',(int)$visitId)
+				->where('allocated = 0')
+				->where('claimLineId = 0');
 		$total = 0;
 		if ($row = $db->fetchRow($sqlSelect)) {
 			$total = (float)$row['total'];
@@ -291,6 +309,23 @@ class Payment extends WebVista_Model_ORM {
 			'total'=>$total,
 			'details'=>$details,
 		);
+	}
+
+	// can be used to get all payments if visit is open
+	public static function getIteratorByIds(Visit $visit) {
+		$orm = new self();
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('(encounter_id = '.(int)$visit->visitId.') OR (encounter_id = 0 AND appointmentId = '.(int)$visit->appointmentId.' AND personId = '.(int)$visit->patientId.')');
+		return $orm->getIterator($sqlSelect);
+	}
+
+	public function getInsuranceDisplay() {
+		$payerId = (int)$this->payer_id;
+		$ret = '';
+		if ($payerId > 0) $ret = InsuranceProgram::getInsuranceProgram($payerId);
+		return $ret;
 	}
 
 }

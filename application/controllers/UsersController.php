@@ -93,6 +93,7 @@ class UsersController extends WebVista_Controller_Action {
 			$xml->addChild('currentLocation',$params['currentLocation']);
 		}
 		$this->user->preferences = $xml->asXML();
+		$this->user->_cascadePersist = false;
 		$this->user->persist();
 
 		$data = true;

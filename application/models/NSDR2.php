@@ -360,10 +360,10 @@ class NSDR2 extends NSDR {
 									$iter = $obj->$iterMethod();
 									foreach ($setFilterMethods as $filterMethod) {
 										if (!method_exists($iter,$filterMethod)) continue;
-										if (!is_array($context)) {
-											$context = array($context);
-										}
-										$iter->$filterMethod($context);
+										$filters = $nsdrBase->_attributes;
+										if (!$filters) $filters = array();
+										$filters['context'] = $context;
+										$iter->$filterMethod($filters);
 										break;
 									}
 									return $iter;

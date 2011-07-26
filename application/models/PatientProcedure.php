@@ -115,15 +115,6 @@ class PatientProcedure extends WebVista_Model_ORM {
 		return $ret;
 	}
 
-	public function checkVisitStatus() {
-		$visit = new Visit();
-		$visit->visitId = (int)$this->visitId;
-		$visit->populate();
-		if ($visit->closed) { // recompute claims for closed visit
-			Visit::recalculateClaims($visit);
-		}
-	}
-
 	public function getBaseFee() {
 		$claimLine = $this->getClaimLine();
 		$baseFee = (float)$claimLine->baseFee;
@@ -147,7 +138,7 @@ class PatientProcedure extends WebVista_Model_ORM {
 
 	public function getClaimLine() {
 		$claimLine = new ClaimLine();
-		$claimLine->populateWithPatientProcedure($this,null,true);
+		$claimLine->populateWithPatientProcedure($this,null);
 		return $claimLine;
 	}
 

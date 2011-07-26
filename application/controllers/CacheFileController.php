@@ -508,6 +508,7 @@ class CacheFileController extends WebVista_Controller_Action {
 		$files['dhtmlxjs'][] = 'dhtmlxgrid';
 		$files['dhtmlxjs'][] = 'dhtmlxgridcell';
 		$files['dhtmlxjs'][] = 'ch3grid_excell_sub_row';
+		$files['dhtmlxjs'][] = 'ch3grid_dynamic_loading';
 		$files['dhtmlxjs'][] = 'dhtmlxcalendar';
 		$files['dhtmlxjs'][] = 'excells-dhtmlxgrid_excell_dhxcalendar';
 		$files['dhtmlxjs'][] = 'excells-dhtmlxgrid_excell_grid';

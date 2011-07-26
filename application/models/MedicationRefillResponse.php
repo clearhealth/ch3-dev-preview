@@ -131,9 +131,6 @@ class MedicationRefillResponse extends WebVista_Model_ORM {
 			$refillRequest->action = $this->_validResponses[$response];
 			$refillRequest->status = 'RESPONDED';
 			$refillRequest->persist();
-
-			$this->dateTime = date('Y-m-d H:i:s');
-			$this->persist();
 		}
 
 		return $ret;

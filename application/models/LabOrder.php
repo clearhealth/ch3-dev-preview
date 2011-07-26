@@ -101,4 +101,14 @@ class LabOrder extends WebVista_Model_ORM implements Document {
 		return $ret;
 	}
 
+	public function getPerson_id() {
+		return $this->getPersonId();
+	}
+
+	public function getPersonId() {
+		$personId = $this->person_id;
+		if (!$personId > 0) $personId = $this->patient_id;
+		return $personId;
+	}
+
 }

@@ -43,7 +43,7 @@ class Claim extends WebVista_Model_ORM {
 		return array(
 			'healthcloud'=>'Send to HealthCloud',
 			'download4010A1'=>'Download 4010A1',
-			'download5010'=>'Download 5010',
+			//'download5010'=>'Download 5010',
 			'CMS1500PDF'=>'CMS1500 PDF',
 			'CMS1450PDF'=>'CMS1450 PDF',
 			'previewStatements'=>'Preview Statements',
@@ -178,6 +178,17 @@ class Claim extends WebVista_Model_ORM {
 			$providers[$providerId] = $provider;
 		}
 		$provider = $providers[$providerId];
+		$billAs = (int)$provider->billAs;
+		if ($billAs > 0) {
+			$providerId = $billAs;
+			if (!isset($providers[$providerId])) {
+				$provider = new Provider();
+				$provider->personId = $providerId;
+				$provider->populate();
+				$providers[$providerId] = $provider;
+			}
+			$provider = $providers[$providerId];
+		}
 
 		$subscribers = array();
 		$enumeration = new Enumeration();
@@ -206,16 +217,19 @@ class Claim extends WebVista_Model_ORM {
 
 		$subs = $insuredRelationship->subscriber;
 		$subscriberAddr = $subs->address;
-		$relationship = 'self';
-		if (isset($subscribers[$insuredRelationship->subscriberToPatientRelationship])) $relationship = $subscribers[$insuredRelationship->subscriberToPatientRelationship];
-		if ($relationship == 'self') {
+		$relationship = null;
+		$relationshipCode = $insuredRelationship->subscriberToPatientRelationship;
+		if (isset($subscribers[$relationshipCode])) $relationship = $subscribers[$relationshipCode];
+		if ($relationship === null) {
+			$relationship = 'Self';
+			$relationshipCode = 18;
 			$subs = new Person();
 			$subs->personId = $insuredRelationship->personId;
 			$subs->populate();
 		}
 		$subscriber = array(
 			'id'=>(int)$subs->personId,
-			'relationship_code'=>'18',
+			'relationship_code'=>$relationshipCode,
 			'group_number'=>$insuredRelationship->groupNumber,
 			'group_name'=>$insuredRelationship->groupName,
 			'relationship'=>$relationship,

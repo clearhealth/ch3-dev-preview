@@ -68,6 +68,7 @@ class ReportBase extends WebVista_Model_ORM {
 		'currentPracticeId'=>'My Prefs->Current Practice Id',
 		'currentBuildingId'=>'My Prefs->Current Building Id',
 		'currentRoomId'=>'My Prefs->Current Room Id',
+		'currentUserId'=>'Current User Id',
 	);
 
 	public function populate() {
@@ -232,6 +233,19 @@ class ReportBase extends WebVista_Model_ORM {
 				case ReportQuery::TYPE_SQL:
 					//file_put_contents('/tmp/query.sql',$queryValue);
 					trigger_error($queryValue,E_USER_NOTICE);
+					// extract and execute defined SQL variables
+					$tmp = explode(';',$queryValue);
+					if (count($tmp) > 0) {
+						foreach ($tmp as $key=>$line) {
+							$line = trim($line);
+							if (substr($line,0,5) == 'SET @') {
+								unset($tmp[$key]);
+								trigger_error('EXECUTING SQL: '.$line);
+								$db->query($line);
+							}
+						}
+						$queryValue = implode(';',$tmp);
+					}
 					try {
 						$results = array();
 						$headers = array();
@@ -297,13 +311,52 @@ class ReportBase extends WebVista_Model_ORM {
 				case ReportQuery::TYPE_NSDR:
 					$nsdr = explode("\n",$queryValue);
 					$nsdrResults = array();
+					$allDefaults = true;
 					foreach ($nsdr as $key=>$value) {
 						$value = $this->_applyFilters($filters,$value);
 						$resultSetName = ReportView::extractNamespace($value);
 						//$displayName = ReportView::metaDataPrettyName($resultSetName);
 						$nsdrResult = NSDR2::populate($value);
-						$nsdrResults[$resultSetName][] = array('id'=>$key,'data'=>array($resultSetName,$nsdrResult));
+						// NOTE: return of NSDR2::populate() can be either of the following: string, associative array (all keys are treated as column names and values as row/ cell values), and multidimensional array (contains multiple associative arrays)
+						$data = array($resultSetName,$nsdrResult);
+						if (is_array($nsdrResult)) {
+							if (array_key_exists(0,$nsdrResult)) {
+								if (!is_array($nsdrResult[0])) {
+									$data[1] = implode("\n",$nsdrResult);
+								}
+								else { // multi dimensional array
+									$allDefaults = false;
+									foreach ($nsdrResult as $index=>$results) {
+										$data = array();
+										$row['headers'] = array();
+										foreach ($results as $k=>$v) {
+											$row['headers'][] = ReportView::metaDataPrettyName($k);
+											$data[] = $v;
+										}
+										$nsdrResults[$resultSetName][] = array('id'=>$key.$index,'data'=>$data);
+									}
+									continue;
+								}
+							}
+							else {
+								$allDefaults = false;
+								$row['headers'] = array();
+								$data = array();
+								foreach ($nsdrResult as $k=>$v) {
+									$row['headers'][] = ReportView::metaDataPrettyName($k);
+									$data[] = $v;
+								}
+							}
+						}
+						$nsdrResults[$resultSetName][] = array('id'=>$key,'data'=>$data);
 					}
+					if ($allDefaults) {
+						$row['headers'] = array('Name','Value');
+					}
+					/*else {
+						if (isset($row['headers'][0]) && $row['headers'][0] != 'Name') $row['headers'][0] .= ' / Name';
+						if (isset($row['headers'][1]) && $row['headers'][1] != 'Value') $row['headers'][1] .= ' / Value';
+					}*/
 
 					if ($view->customizeColumnNames && $columnDefinitionLen > 0) {
 						foreach ($columnDefinitions as $id=>$mapping) { // id, queryId, queryName, resultSetName, displayName, transform
@@ -313,8 +366,18 @@ class ReportBase extends WebVista_Model_ORM {
 							    $mapping->queryName != $query->displayName) continue;
 							//$displayName = ReportView::metaDataPrettyName($mapping->resultSetName);
 							foreach ($nsdrResults[$displayName] as $key=>$value) {
-								$nsdrResults[$displayName][$key]['data'][0] = $mapping->displayName;
-								$nsdrResults[$displayName][$key]['data'][1] = $this->_applyTransforms($mapping->transforms,$nsdrResults[$displayName][$key]['data'][1]);
+								$data = $nsdrResults[$displayName][$key]['data'];
+								if (!array_key_exists(0,$data)) continue;
+								foreach ($data as $k=>$v) {
+									if ($k == 0 && $v == $displayName) {
+										$v = $mapping->displayName;
+									}
+									else {
+										$v = $this->_applyTransforms($mapping->transforms,$v);
+									}
+									$nsdrResults[$displayName][$key]['data'][$k] = $v;
+								}
+								$data = $nsdrResults[$displayName][$key]['data'][1];
 							}
 						}
 					}
@@ -324,7 +387,6 @@ class ReportBase extends WebVista_Model_ORM {
 							$results[] = $value;
 						}
 					}
-					$row['headers'] = array('Name','Value');
 					$row['rows'] = $results;
 					$ret[] = $row;
 					break;
@@ -376,6 +438,9 @@ class ReportBase extends WebVista_Model_ORM {
 						}
 						else if ($filter->special == 'currentRoomId') {
 							$content = (int)$room->roomId;
+						}
+						else if ($filter->special == 'currentUserId') {
+							$content = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 						}
 						break;
 				}

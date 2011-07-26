@@ -102,13 +102,13 @@ class Practice extends WebVista_Model_ORM {
 	}
 
 	public function populate() {
-		parent::populate();
+		$ret = parent::populate();
 		$this->primaryAddress->populateWithPracticeIdType();
 		$this->secondaryAddress->populateWithPracticeIdType();
 		$this->mainPhone->populateWithPracticeIdType();
 		$this->secondaryPhone->populateWithPracticeIdType();
 		$this->fax->populateWithPracticeIdType();
-		return true;
+		return $ret;
 	}
 
 	public function ormEditMethod($ormId,$isAdd) {

@@ -63,6 +63,7 @@ class PhoneNumber extends WebVista_Model_ORM {
 		if ($personId === null) {
 			$personId = $this->person_id;
 		}
+		$personId = (int)$personId;
 		$config = Zend_Registry::get('config');
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
@@ -73,7 +74,6 @@ class PhoneNumber extends WebVista_Model_ORM {
 			$sqlSelect->joinLeft(array('pn'=>'person_number'),'pn.number_id=n.number_id',null);
 			$orWhere = ' OR pn.person_id = '.$personId;
 		}
-		$personId = (int)$personId;
 		$sqlSelect->where('n.person_id = '.$personId.$orWhere);
 		return new PhoneNumberIterator($sqlSelect);
 	}
@@ -290,12 +290,13 @@ class PhoneNumber extends WebVista_Model_ORM {
 		if ($type === null) {
 			$type = $this->getType();
 		}
+		if (!$practiceId > 0) return false;
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('practiceId = ?',(int)$practiceId)
 				->where('type = ?',$type);
-		$this->populateWithSql($sqlSelect->__toString());
+		return $this->populateWithSql($sqlSelect->__toString());
 	}
 
 	public function getType() { // 2.x to 3.x conversion

@@ -39,6 +39,13 @@
 		<div style="float:left;"><input type="radio" name="openClosed" id="openClosed" value="1" <?=($this->filters['openClosed'] == '1')?'checked="checked"':''?> /> <?=__('Closed')?> </div>
 		<div style="float:left;"><input type="radio" name="openClosed" id="openClosed" value="2" <?=($this->filters['openClosed'] == '2')?'checked="checked"':''?> /> <?=__('Open & Closed')?> </div>
 	</div>
+	<br style="clear:left;" />
+	<div class="formRow" style="padding-top:5px;">
+		<div style="float:left;">
+			<?=__('MRN')?>
+			<?=$this->formText('mrnId',$this->filters['mrn'],array('id'=>'mrnId','style'=>'width:100px;margin-left:2px;'))?>
+		</div>
+	</div>
 </fieldset>
 <div class="formRow" style="padding-top:8px;">
 	<?=$this->formButton('ok',__('OK'),array('onClick'=>'claimsAdvancedFiltersSet()'))?>
@@ -120,6 +127,7 @@ function claimsAdvancedFiltersSet() {
 	}
 	var filters = {
 		"filters[openClosed]": openClosed,
+		"filters[mrn]": dojo.byId("mrnId").value,
 	};
 	facilitiesGrid.forEachRow(function(rowId){
 		filters["filters[facilities]["+rowId+"]"] = this.cells(rowId,0).getValue();

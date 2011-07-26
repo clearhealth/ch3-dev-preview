@@ -82,6 +82,7 @@ class ProblemListController extends WebVista_Controller_Action {
 
 	function listMenuXmlAction() {
 		header('Content-Type: application/xml;');
+		$this->view->flags = Enumeration::getEnumArray('Problem List Flags');
 		$this->render('list-menu-xml');
 	}
 
@@ -283,4 +284,24 @@ class ProblemListController extends WebVista_Controller_Action {
 		//$services[] ='';
 		return $services;
 	}
+
+	public function processSetFlagsAction() {
+		$problemListId = (int)$this->_getParam('problemListId');
+		$flags = $this->_getParam('flags');
+
+		$data = false;
+		if ($problemListId > 0 && strlen($flags) > 0) {
+			$problemList = new ProblemList();
+			$problemList->problemListId = $problemListId;
+			if ($problemList->populate()) {
+				$problemList->flags = $flags;
+				$problemList->persist();
+				$data = true;
+			}
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
 }

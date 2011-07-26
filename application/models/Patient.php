@@ -127,6 +127,7 @@ class Patient extends WebVista_Model_ORM {
 
 	private function _loadAddresses() {
                 $addressIterator = $this->homeAddress->getIterator();
+		if (!($addressIterator instanceof WebVista_Model_ORMIterator) || !method_exists($addressIterator,'setFilters')) return;
                 $addressIterator->setFilters(array('personId' => $this->personId,'class'=>'person'));
                 foreach($addressIterator as $address) {
 			switch ($address->type) {
@@ -201,7 +202,7 @@ class Patient extends WebVista_Model_ORM {
 
 		$gender = $person->gender;
 		// Gender options = M, F, U
-		$genderList = array('M'=>'Male','F'=>'Female','U'=>'Unknown');
+		$genderList = array('M'=>'Male','F'=>'Female','U'=>'Unknown',1=>'Male',2=>'Female',3=>'Unknown');
 		if (!isset($genderList[$gender])) {
 			$ret[] = 'Gender is invalid';
 		}
@@ -374,7 +375,7 @@ class Patient extends WebVista_Model_ORM {
 					$sqlSelect->having("age {$where}");
 					break;
 				default: // patient statistics
-					$sqlSelect->where('patientStatistics.'.$key.' '.$where);
+					$sqlSelect->where('patientStatistics.`'.$key.'` '.$where);
 					break;
 			}
 		}
@@ -665,6 +666,19 @@ class Patient extends WebVista_Model_ORM {
 		if ($secondary !== null) $this->_addChild($xmlPayer,'medicaidNumber',$secondary->insuranceProgram->payerIdentifier,$checked);
 
 		return $xml;
+	}
+
+	public function hasMRNDuplicates() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from($this->_table,'person_id')
+				->where('record_number = ?',$this->record_number)
+				->where('person_id != ?',(int)$this->person_id);
+		$ret = false;
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		return $ret;
 	}
 
 }

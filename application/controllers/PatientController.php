@@ -85,9 +85,9 @@ class PatientController extends WebVista_Controller_Action {
 	}
 
 	public function processDetailsAction() {
-		$retval = false;
 		$params = $this->_getParam('patient');
 		$patientId = (int)$params['personId'];
+		$data = __('There was an error attempting to update patient details.');
 		if ($patientId > 0) {
 			if (!(int)$params['person']['personId'] > 0) {
 				$params['person']['personId'] = $patientId;
@@ -102,18 +102,19 @@ class PatientController extends WebVista_Controller_Action {
 			$patient->person_id = $patientId;
 			$patient->populate();
 			$patient->populateWithArray($params);
-			$patient->person->person_id = $patientId;
-			$patient->person->populate();
-			$patient->person->populateWithArray($params['person']);
-			$patient->persist();
-			$retval = true;
+			if (strlen($patient->recordNumber) > 0 && $patient->hasMRNDuplicates()) {
+				$data = __('ERROR: MRN number already exists');
+			}
+			else {
+				$patient->person->person_id = $patientId;
+				$patient->person->populate();
+				$patient->person->populateWithArray($params['person']);
+				$patient->persist();
+				$data = __('Record updated successfully.');
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$data = __('Record updated successfully.');
-		if ($retval == false) {
-			$data = __('There was an error attempting to update patient details.');
-		}
 		$json->direct($data);
 	}
 
@@ -196,6 +197,9 @@ class PatientController extends WebVista_Controller_Action {
 				break;
 			case 'note':
 				$obj = new PatientNote();
+				break;
+			case 'insurer':
+				$obj = new InsuredRelationship();
 				break;
 			default:
 				break;
@@ -670,6 +674,13 @@ class PatientController extends WebVista_Controller_Action {
 			$data = $patient->toArray();
 			$data['phoneNumber'] = $patient->person->phoneNumber->toArray();
 			$data['address'] = $patient->person->address->toArray();
+
+			$phones = array();
+			foreach ($patient->person->getPhoneNumbers() as $phone) {
+				$phones[] = $phone->number;
+			}
+			$data['phones'] = implode(',',$phones);
+			$data['age'] = $patient->person->age;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

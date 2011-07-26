@@ -329,18 +329,18 @@ function reportsResultsPrint(rowId) {
 		if (rowsNum <= 0) continue;
 		var colsNum = grid.getColumnsNum();
 
-		tableHtml = grid.displayName+"<table border=\"1\" cellpadding=\"0\" cellspacing=\"0\" width=\"100%\">";
+		tableHtml = grid.displayName+"<table border=\"1\" cellpadding=\"2\" cellspacing=\"0\" width=\"100%\">";
 		tableHtml += "<tr>";
 		for (var col = 0; col < colsNum; col++) {
 			var val = grid.getColumnLabel(col);
 			if (val.length < 1) val = "&nbsp;";
-			tableHtml += "<td style=\"font-size:9px;\"><strong>"+val+"</strong></td>";
+			tableHtml += "<td style=\"font-size:12px;\"><strong>"+val+"</strong></td>";
 		}
 		tableHtml += "</tr>";
 		for (var row = 0; row < rowsNum; row++) {
 			tableHtml += "<tr>";
 			for (col = 0; col < colsNum; col++) {
-				tableHtml += "<td style=\"font-size:9px;\">";
+				tableHtml += "<td style=\"font-size:12px;\">";
 				var val = grid.cells2(row,col).getValue();
 				if (val.length < 1) val = "&nbsp;";
 				tableHtml += val;
@@ -349,7 +349,7 @@ function reportsResultsPrint(rowId) {
 			tableHtml += "</tr>";
 		}
 		tableHtml += "</table>";
-		printHtml += "<tr><td><div style=\"margin-bottom:10px;font-size:10px;\">"+tableHtml+"</div></td></tr>";
+		printHtml += "<tr><td><div style=\"margin-bottom:10px;font-size:18px;\">"+tableHtml+"</div></td></tr>";
 	}
 	if (tableHtml == "") {
 		alert("No results found");

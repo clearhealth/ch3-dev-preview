@@ -106,21 +106,14 @@ class PatientRemindersController extends WebVista_Controller_Action {
 
 		$tmpArray = array('demographics'=>$demographics); // holds a list of rows that needs to get the intersections
 		foreach ($this->_session->filters as $key=>$filters) {
-			if (!$filters || !isset($$key)) continue;
+			if (!isset($$key) || !is_array($$key)) continue;
 			$tmpArray[$key] = $$key;
 		}
 
-		$patientList = null;
+		$patientList = array();
 		foreach ($tmpArray as $key=>$value) {
-			if ($patientList === null) {
-				$patientList = $value;
-				continue;
-			}
-			$tmp = $patientList;
-			$patientList = array();
-			foreach ($tmp as $id=>$val) {
-				if (!isset($value[$id])) continue;
-				$val[$key] = $value[$id][$key];
+			foreach ($value as $id=>$val) {
+				if (isset($patientList[$id])) continue;
 				$patientList[$id] = $val;
 			}
 		}

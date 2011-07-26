@@ -146,7 +146,7 @@ function dhtmlXGridCellObject(obj){this.destructor=function(){this.cell.obj=null
  
  if (cell.tagName == "OPTION")cell=cell.parentNode;editor_obj.setValue(cell.value);editor_obj.editable=false;editor_obj.grid.editStop()};var comboKeys = this.combo.getKeys();var fl = false
  var selOptId = 0;for (var i = 0;i < comboKeys.length;i++){var val = this.combo.get(comboKeys[i])
- this.list.options[this.list.options.length]=new Option(val, comboKeys[i]);if (comboKeys[i] == this.val){selOptId=this.list.options.length-1;fl=true}};if (fl == false){this.list.options[this.list.options.length]=new Option(this.text, this.val === null ? "" : this.val);selOptId=this.list.options.length-1};document.body.appendChild(this.list) 
+ this.list.options[this.list.options.length]=new Option(val, comboKeys[i]);this.list.options[(this.list.options.length-1)].title=val;if (comboKeys[i] == this.val){selOptId=this.list.options.length-1;fl=true}};if (fl == false){this.list.options[this.list.options.length]=new Option(this.text, this.val === null ? "" : this.val);this.list.options[(this.list.options.length-1)].title=this.val === null ? "" : this.val;selOptId=this.list.options.length-1};document.body.appendChild(this.list) 
  this.list.size="6";this.cstate=1;if (this.editable){this.cell.innerHTML=""}else {this.obj.style.width="1px";this.obj.style.height="1px"};this.cell.appendChild(this.obj);this.list.options[selOptId].selected=true;if ((!_isFF)||(this.editable)){this.obj.focus();this.obj.focus()};if (!this.editable){this.obj.style.visibility="hidden";this.list.focus();this.list.onkeydown=function(e){e=e||window.event;editor_obj.grid.setActive(true)
 
  if (e.keyCode < 30)return editor_obj.grid.doKey({target: editor_obj.cell,

@@ -51,6 +51,12 @@ class AccountsController extends WebVista_Controller_Action {
 	}
 
 	public function listAction() {
+		$posStart = $this->_getParam('posStart');
+		if ($posStart < 0) {
+			$msg = 'Invalid request';
+			trigger_error($msg);
+			throw new Exception($msg);
+		}
 		$sessions = $this->_session->filters;
 		$filters = array();
 		$filters['dateRange'] = array('start'=>$sessions['DateStart'],'end'=>$sessions['DateEnd']);
@@ -85,12 +91,7 @@ class AccountsController extends WebVista_Controller_Action {
 		$filters['balance'] = isset($sessions['balance'])?$sessions['balance']:0;
 
 		$rows = array();
-		$claimLines = ClaimLine::listAccounts($filters);
-		$miscCharges = MiscCharge::listAccounts($filters);
-		$payments = Payment::listAccounts($filters);
-		// claim lines, misc charges and payments
 		$appointmentId = 0;
-		$list = array_merge($claimLines,$miscCharges);
 		$totalBilled = 0.00;
 		$totalPaid = 0.00;
 		$totalWriteoff = 0.00;
@@ -105,11 +106,12 @@ class AccountsController extends WebVista_Controller_Action {
 		$aging_91_120 = 0;
 		$aging_120_plus = 0;
 
-		foreach ($list as $account) {
+		$filters['closed'] = 1;
+		foreach (ClaimLine::listCharges($filters) as $account) {
 			$billed = (float)$account['billed'];
 			$paid = (float)$account['paid'];
 			$writeoff = (float)$account['writeOff'];
-			$balance = $billed - ($paid + $writeoff);
+			$balance = (float)$account['balance'];
 
 			$names = array('billed','paid','writeoff','balance');
 			foreach ($names as $name) {
@@ -276,30 +278,64 @@ class AccountsController extends WebVista_Controller_Action {
 			'payerId'=>$filters['payerId'],
 			'providerId'=>$filters['providerId'],
 			'userId'=>$filters['userId'],
+			'openClosed'=>1,
+			'void'=>0,
 		));
 		foreach ($iterator as $item) {
 			$visitId = (int)$item->visitId;
+			//$acct = $item->accountSummary;
+			//$total = $acct['total'];
+			//$payment = $acct['payment'];
+			//$writeOff = $acct['writeoff'];
+			//$balance = $acct['balance'];
 
+			$billed = 0;
 			$total = 0;
-			$pendingInsurance = 0;
+			$pendingInsurance = 0; // TODO: connect to claimFiles?
 			$paidInsurance = 0;
-			$paidPatient = 0;
-			foreach (ClaimLine::claimsList(array('visitId'=>$visitId)) as $claim) {
-				$total = $claim['claims']['total'] + $claim['miscCharges']['total'];
-				$paidInsurance = $claim['payments']['total'] + $claim['writeoffs']['total'];
+			$paidPatient = 0; // $payment + $writeOff;
+
+			$summary = $item->accountDetails;
+			// charges
+			foreach ($summary['charges']['details'] as $row) {
+				$billed += (float)$row->adjustedFee;
+				$total += (float)$row->baseFee;
 			}
-			$balance = $total - $paidInsurance - $paidPatient;
+			// misc charges
+			foreach ($summary['miscCharges']['details'] as $row) {
+				$billed += (float)$row->amount;
+				$total += (float)$row->amount;
+			}
+			// payments
+			foreach ($summary['payments']['details'] as $row) {
+				if ($row instanceof Payment) $amount = (float)$row->unallocated;
+				else $amount = (float)$row->amount;
+				$payer = InsuranceProgram::getInsuranceProgram($row->payerId);
+				if ((!strlen($payer) > 0) || strtolower(substr($payer,0,8)) == 'system->') $paidPatient += $amount;
+				else $paidInsurance += $amount;
+			}
+			// writeoffs
+			foreach ($summary['writeOffs']['details'] as $row) {
+				$payer = InsuranceProgram::getInsuranceProgram($row->payerId);
+				if (!strlen($payer) > 0) continue; // exclude/void writeoff if no payer specified
+				$amount = (float)$row->amount;
+				if (strtolower(substr($payer,0,8)) == 'system->') $paidPatient += $amount;
+				else $paidInsurance += $amount;
+			}
+			$balance = $total - ($paidPatient + $paidInsurance + $pendingInsurance);
+			if (!$billed > 0 && $total > 0) $billed = $total;
+
 			$row = array();
 			$row['id'] = $visitId;
 			$row['data'] = array();
 			$row['data'][] = $this->view->baseUrl.'/accounts.raw/list-patient-account-details?visitId='.$visitId;
 			$row['data'][] = substr($item->dateOfTreatment,0,10);
 			$row['data'][] = $item->insuranceProgram;
-			$row['data'][] = '$'.abs($total);
-			$row['data'][] = '$'.abs($pendingInsurance);
-			$row['data'][] = '$'.abs($paidInsurance);
-			$row['data'][] = '$'.abs($paidPatient);
-			$row['data'][] = '$'.abs($balance);
+			$row['data'][] = '$'.number_format(abs($billed),2);
+			$row['data'][] = '$'.number_format(abs($pendingInsurance),2);
+			$row['data'][] = '$'.number_format(abs($paidInsurance),2);
+			$row['data'][] = '$'.number_format(abs($paidPatient),2);
+			$row['data'][] = '$'.number_format(abs($balance),2);
 			$rows[] = $row;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -312,7 +348,10 @@ class AccountsController extends WebVista_Controller_Action {
 		$visit = new Visit();
 		$visit->visitId = $visitId;
 		$visit->populate();
-		$summary = $visit->accountSummary;
+		$facility = $visit->facility; // Facility
+		$providerDisplayName = $visit->providerDisplayName; // Provider
+
+		$summary = $visit->accountDetails;
 		$rows = array();
 		foreach ($summary['claimFiles']['details'] as $data) {
 			$claimFile = $data['claimFile'];
@@ -330,77 +369,139 @@ class AccountsController extends WebVista_Controller_Action {
 			$row['data'][] = '$'.$claimFile->writeOff; // Write Off
 			$row['data'][] = '$'.$claimFile->balance; // Balance
 			$row['data'][] = ''; // Chk #
-			$row['data'][] = $visit->facility; // Facility
-			$row['data'][] = $visit->providerDisplayName; // Provider
+			$row['data'][] = $facility; // Facility
+			$row['data'][] = $providerDisplayName; // Provider
 			$row['data'][] = $claimFile->enteredBy; // Entered By
 
-			$rows[] = $row;
+			if (!isset($rows[$id])) $rows[$id] = array();
+			$rows[$id][] = $row;
 		}
 
+		$ctr = 0;
+		// charges
+		foreach ($summary['charges']['details'] as $row) {
+			$amount = (float)$row->baseFee;
+			$id = $row->visitId;
+			if (!isset($rows[$id])) $rows[$id] = array();
+			$rows[$id]['info'][] = array('amount'=>$amount,'type'=>'debit');
+			$rows[$id][] = array(
+				'id'=>$id.'-'.$ctr++,
+				'data'=>array(
+					'Charge', // Id
+					InsuranceProgram::getInsuranceProgram($row->insuranceProgramId), // Payer Name
+					substr($row->dateTime,0,10), // Date Billed
+					'', // Date
+					'$'.$amount, // Billed
+					'', // Paid
+					'', // Write Off
+					'', // Balance
+					'', // Chk #
+					$facility, // Facility
+					$providerDisplayName, // Provider
+					$row->enteredBy, // Entered By
+				),
+			);
+		}
 		// misc charges
 		foreach ($summary['miscCharges']['details'] as $row) {
-			$rows[] = array(
-				'id'=>$row->miscChargeId,
+			$amount = (float)$row->amount;
+			$id = $row->miscChargeId;
+			if (!isset($rows[$id])) $rows[$id] = array();
+			$rows[$id]['info'][] = array('amount'=>$amount,'type'=>'debit');
+			$rows[$id][] = array(
+				'id'=>$id,
 				'data'=>array(
 					'Misc Charge', // Id
 					'', // Payer Name
 					substr($row->chargeDate,0,10), // Date Billed
 					'', // Date
-					'$'.$row->amount, // Billed
+					'$'.$amount, // Billed
 					'', // Paid
 					'', // Write Off
 					'', // Balance
 					'', // Chk #
-					'', // Facility
-					'', // Provider
-					'', // Entered By
+					$facility, // Facility
+					$providerDisplayName, // Provider
+					$row->enteredBy, // Entered By
 				),
 			);
 		}
 		// payments
 		foreach ($summary['payments']['details'] as $row) {
-			$rows[] = array(
-				'id'=>$row->paymentId,
+			if ($row instanceOf PostingJournal) {
+				$amount = (float)$row->amount;
+				$id = $row->postingJournalId;
+				$datePosted = $row->datePosted;
+				$refNum = $row->payment->refNum;
+			}
+			else {
+				$amount = (float)$row->unallocated;
+				$id = $row->paymentId;
+				$datePosted = $row->paymentDate;
+				$refNum = $row->refNum;
+			}
+			if (!isset($rows[$id])) $rows[$id] = array();
+			$rows[$id]['info'][] = array('amount'=>$amount,'type'=>'credit');
+			$rows[$id][] = array(
+				'id'=>$id,
 				'data'=>array(
 					'Payment', // Id
 					InsuranceProgram::getInsuranceProgram($row->payerId), // Payer
 					'', // Date Billed
-					substr($row->paymentDate,0,10), // Date
+					substr($datePosted,0,10), // Date
 					'', // Billed
-					'$'.$row->amount, // Paid
+					'$'.$amount, // Paid
 					'', // Write Off
 					'', // Balance
-					$row->refNum, // Chk #
-					'', // Facility
-					'', // Provider
+					$refNum, // Chk #
+					$facility, // Facility
+					$providerDisplayName, // Provider
 					$row->enteredBy, // Entered By
 				),
 			);
 		}
 		// writeoffs
 		foreach ($summary['writeOffs']['details'] as $row) {
-			$rows[] = array(
-				'id'=>$row->writeOffId,
+			$amount = (float)$row->amount;
+			$id = $row->writeOffId;
+			if (!isset($rows[$id])) $rows[$id] = array();
+			$rows[$id]['info'][] = array('amount'=>$amount,'type'=>'credit');
+			$rows[$id][] = array(
+				'id'=>$id,
 				'data'=>array(
 					'Write Off', // Id
 					InsuranceProgram::getInsuranceProgram($row->payerId), // Payer
 					'', // Date Billed
 					substr($row->timestamp,0,10), // Date
 					'', // Billed
-					'$'.$row->amount, // Paid
-					'', // Write Off
+					'', // Paid
+					'$'.$amount, // Write Off
 					'', // Balance
 					'', // Chk #
-					'', // Facility
-					'', // Provider
+					$facility, // Facility
+					$providerDisplayName, // Provider
 					$row->enteredBy, // Entered By
 				),
 			);
 		}
+		ksort($rows);
+		$data = array('rows'=>array());
+		$balance = 0;
+		foreach ($rows as $values) {
+			$info = $values['info'];
+			unset($values['info']);
+			foreach ($values as $key=>$value) {
+				$amount = $info[$key]['amount'];
+				if ($info[$key]['type'] == 'debit') $balance += $amount;
+				else $balance -= $amount;
+				$value['data'][7] = '$'.abs($balance);
+				$data['rows'][] = $value;
+			}
+		}
 
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
-		$json->direct(array('rows'=>$rows));
+		$json->direct($data);
 	}
 
 	public function setPatientFiltersAction() {
@@ -442,8 +543,56 @@ class AccountsController extends WebVista_Controller_Action {
 		if (is_array($params)) {
 			$payment = new Payment();
 			$payment->populateWithArray($params);
+			if (!strlen($payment->userId) > 0) $payment->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			if (!strlen($payment->timestamp) > 0) $payment->timestamp = date('Y-m-d H:i:s');
 			$payment->persist();
 			$data = true;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function manualJournalAction() {
+		$postingJournal = new PostingJournal();
+		$form = new WebVista_Form(array('name'=>'journalId'));
+		$form->setAction(Zend_Registry::get('baseUrl').'accounts.raw/process-manual-journal');
+		$form->loadORM($postingJournal,'Journal');
+		$form->setWindow('windowManualJournal');
+		$this->view->form = $form;
+		$this->render();
+	}
+
+	public function processManualJournalAction() {
+		$params = $this->_getParam('journal');
+		$data = array('error'=>'Invalid parameters');
+		if (is_array($params)) {
+			$postingJournal = new PostingJournal();
+			$postingJournal->populateWithArray($params);
+			$postingJournal->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+			$postingJournal->dateTime = date('Y-m-d H:i:s');
+			$postingJournal->persist();
+			$msg = 'Posting journal was successfully saved';
+			$data = array('msg'=>$msg);
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($data);
+	}
+
+	public function listClaimLinesAction() {
+		$visitId = (int)$this->_getParam('visitId');
+		$payerId = (int)$this->_getParam('payerId');
+		$data = array();
+		if ($visitId > 0 || $payerId > 0) {
+			$iterator = new ClaimLineIterator();
+			$filters = array();
+			if ($visitId > 0) $filters['visitId'] = $visitId;
+			if ($payerId > 0) $filters['insuranceProgramId'] = $payerId;
+			$iterator->setFilters($filters);
+			foreach ($iterator as $claimLine) {
+				$data[$claimLine->claimLineId] = $claimLine->procedureCode.' : '.$claimLine->procedure; // Code
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

@@ -130,7 +130,7 @@ function inventoryGridReload() {
 		inventoryGrid.forEachRow(function(rowId){
 			setParLevel.disabled = false;
 			if (this.cells(rowId,3).getValue > 0) return;
-			var expiration = dojo.date.stamp.fromISOString(this.cells(rowId,2).getValue());
+			var expiration = dojo.date.stamp.fromISOString(this.cells(rowId,3).getValue());
 			var comparison = dojo.date.compare(expiration,today);
 			if (comparison >= 0) { // expiration > today
 				totalInStock++;

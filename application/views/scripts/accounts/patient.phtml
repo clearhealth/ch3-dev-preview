@@ -16,8 +16,9 @@ div.gridbox table.obj td {
 	<div id="patientAcctGridId" style="width:auto;height:445px;position:relative;"></div>
 	<div id="totalDivId">
 		<div style="float:left;margin-left:200px;"><b>Totals:</b></div>
-		<div style="float:left;margin-left:20px;"><?=$this->formText('amountBilledId','0.00',array('id'=>'amountBilledId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
-		<div style="float:left;margin-left:20px;"><?=$this->formText('pendingInsuranceId','0.00',array('id'=>'pendingInsuranceId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
+		<div style="float:left;margin-left:130px;"><?=$this->formText('amountBilledId','0.00',array('id'=>'amountBilledId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
+		<!--<div style="float:left;margin-left:20px;"><?=$this->formText('pendingInsuranceId','0.00',array('id'=>'pendingInsuranceId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>-->
+		<?=$this->formHidden('pendingInsuranceId','0.00',array('id'=>'pendingInsuranceId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?>
 		<div style="float:left;margin-left:20px;"><?=$this->formText('paidInsuranceId','0.00',array('id'=>'paidInsuranceId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
 		<div style="float:left;margin-left:20px;"><?=$this->formText('paidPatientId','0.00',array('id'=>'paidPatientId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
 		<div style="float:left;margin-left:20px;"><?=$this->formText('balanceId','0.00',array('id'=>'balanceId','style'=>'width:100px;border:0;','readonly'=>'readonly'))?></div>
@@ -27,7 +28,7 @@ div.gridbox table.obj td {
 var patientAcctGrid = new dhtmlXGridObject("patientAcctGridId");
 patientAcctGrid.setImagePath("<?=$this->baseUrl?>/img/");
 patientAcctGrid.setHeader(",<?=__('Date of Service')?>,<?=__('Current Payer')?>,<?=__('Amount Billed')?>,<?=__('Pending Insurance')?>,<?=__('Paid Insurance')?>,<?=__('Paid Patient')?>,<?=__('Balance')?>");
-patientAcctGrid.setInitWidths("20,90,*,120,120,120,120,120");
+patientAcctGrid.setInitWidths("20,90,*,120,0,120,120,120");
 patientAcctGrid.setColTypes("sub_row_grid,ro,ro,ro,ro,ro,ro,ro");
 patientAcctGrid.enableMultiselect(true);
 patientAcctGrid.setSkin("xp");
@@ -58,6 +59,9 @@ patientAcctGrid.attachEvent("onSubGridCreated",function(subgrid,rowId,rowIndex,c
 });
 
 function patientAcctGridReload() {
+	patientAcctGrid.forEachRow(function(rowId){
+		patientAcctGrid.collapseSubRow(patientAcctGrid.cells(rowId,0).cell);
+	});
 	patientAcctGrid.clearAll();
 	patientAcctGrid.load("<?=$this->baseUrl?>/accounts.raw/list-patient-accounts?personId=<?=$this->personId?>",function(){
 		var amountBilled = 0;

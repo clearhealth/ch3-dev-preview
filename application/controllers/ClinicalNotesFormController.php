@@ -178,6 +178,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 	protected function _buildForm($xml) {
 		static $_namespaceElements = array();
 		$headingCounter = 1;
+		$counter = 1;
 		foreach ($xml as $question) {
 			$elements = array();
 			foreach($question as $key => $item) {
@@ -190,7 +191,16 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 					$elements[] = $headingName;
 					continue;
 				}
+				elseif ($key == 'break') {
+					$breakName = 'break'.$counter++;
+					$element = $this->_form->createElement('hidden',$breakName,array('disabled'=>'disabled'));
+					$element->addDecorator('HtmlTag',array('placement'=>'APPEND','tag'=>'<br />'));
+					$this->_form->addElement($element);
+					$elements[] = $breakName;
+					continue;
+				}
 				else { continue; } 
+				$scripts = array();
 				$type = (string)$dataPoint->attributes()->type;
 				if ($this->_cn->eSignatureId > 0 && $type == 'div') {
 					$type = 'pre';
@@ -253,7 +263,7 @@ class ClinicalNotesFormController extends WebVista_Controller_Action {
 					$element->addDecorator('Label', array('placement' => 'APPEND'));
 					$element->addDecorator('HtmlTag', array('placement' => 'PREPEND', 'tag' => '<br />'));
 					if ((string)$dataPoint->attributes()->radioGroup) {
-						$radioGroup = preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
+						$radioGroup = '_'.preg_replace('/\./','_',(string)$dataPoint->attributes()->radioGroup);
 						$innerHTML = '';
 						$elName = 'namespaceData['.$element->getName().']';
 						if (!isset($_namespaceElements[$radioGroup])) {
@@ -287,7 +297,7 @@ function '.$radioGroup.'(name) {
 ';
 						}
 						$innerHTML .= $radioGroup.'Members.push("'.$elName.'");';
-                                       		$element->addDecorator('ScriptTag',array('placement' => 'APPEND','tag' => 'script','innerHTML' => $innerHTML,'noAttribs' => true));
+                                       		$scripts[] = $innerHTML;
 						$element->setAttrib('onchange',$radioGroup.'("'.$elName.'")');
 					}
 					if ((string)$dataPoint->attributes()->radioGroupDefault && (string)$dataPoint->attributes()->radioGroupDefault == '1') {
@@ -300,9 +310,9 @@ function '.$radioGroup.'(name) {
 					$element->setValue($this->view->action('templated-text','template-text',null,array('personId' => $this->_cn->personId,'templateName'=>$templateName)));
                                 }
 
-				if ((string)$dataPoint->script) {
-                                        $element->addDecorator("ScriptTag",array('placement' => 'APPEND','tag' => 'script','innerHTML' => (string)$dataPoint->script,'noAttribs' => true));
-                                }
+				if ((string)$dataPoint->script) $scripts[] = (string)$dataPoint->script;
+
+				if (isset($scripts[0])) $element->addDecorator("ScriptTag",array('placement' => 'APPEND','tag' => 'script','innerHTML' => implode("\n",$scripts),'noAttribs' => true));
 
 				$element->setBelongsTo('namespaceData');
 				//var_dump($element);

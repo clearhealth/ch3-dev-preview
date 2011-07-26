@@ -58,43 +58,9 @@ function addProvider() {
 				</div>
 				<div style="float:left;margin-left:10px;">
 					<?=$this->form->color->renderLabel()?>
-					<?$colors = array(
-						''=>'',
-						'#FFF8DC'=>'Cornsilk',
-						'#FAEBD7'=>'Antiquewhite',
-						'#FFF5EE'=>'Seashell',
-						'#FAF0E6'=>'Linen',
-						'#FFFFF0'=>'Ivory',
-						'#FFFAF0'=>'Floralwhite',
-						'#FFFAFA'=>'Snow',
-						'#F0FFFF'=>'Azure',
-						'#F5FFFA'=>'Mintcream',
-						'#F8F8FF'=>'Ghostwhite',
-						'#F0FFF0'=>'Honeydew',
-						'#F0F8FF'=>'Aliceblue',
-						'#F5F5DC'=>'Beige',
-						'#FDF5E6'=>'Oldlace',
-						'#FFE4C4'=>'Bisque',
-						'#FFE4B5'=>'Moccasin',
-						'#F5DEB3'=>'Wheat',
-						'#FFDEAD'=>'Navajowhite',
-						'#FFEBCD'=>'Blanchedalmond',
-						'#D2B48C'=>'Tan',
-						'#FFE4E1'=>'Mistyrose',
-						'#FFF0F5'=>'Lavenderblush',
-						'#E6E6FA'=>'Lavender',
-						'#87CEFA'=>'Lightskyblue',
-						'#87CEEB'=>'Skyblue',
-						'#00BFFF'=>'Deepskyblue',
-						'#7FFFD4'=>'Aquamarine',
-						'#6495ED'=>'Cornflowerblue',
-						'#E9967A'=>'Darksalmon',
-						'#FFA07A'=>'Lightsalmon',
-						'#B0E0E6'=>'Powderblue',
-					);?>
 					<select id="colorPicker" name="provider[color]" onchange="this.style.backgroundColor=this.value;"<?=($this->form->color->getValue())?' style="background-color:'.$this->form->color->getValue().'"':''?>>
 						<option value=""></option>
-					<?foreach ($colors as $key=>$value):?>
+					<?foreach ($this->colors as $key=>$value):?>
 						<option value="<?=$key?>" style="background-color:<?=$key?>"<?=($key == $this->form->color->getValue())?' selected="selected"':''?>><?=$value?></option>
 					<?endforeach;?>
 					</select>

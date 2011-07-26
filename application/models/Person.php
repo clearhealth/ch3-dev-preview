@@ -222,6 +222,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 				break;
 			case '3':
 			case 'O':
+			default:
 				$gender = 'U';
 				break;
 		}
@@ -229,6 +230,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	}
 
 	public function getPhoneNumber($autoFix=true) {
+		if ($this->person_id > 0)
 		foreach ($this->getPhoneNumbers($autoFix) as $phoneNumber) {
 			break;
 		}
@@ -247,6 +249,7 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 	}
 
 	public function getAddress() {
+		if ($this->person_id > 0)
 		foreach ($this->getAddresses() as $address) {
 			break; // retrieves the top address
 		}
@@ -303,6 +306,14 @@ class Person extends WebVista_Model_ORM implements NSDRMethods {
 			$picture = base64_encode($attachment->rawData);
 		}
 		return $picture;
+	}
+ 
+	public function getDisplayMaritalStatus() {
+		static $maritalStatuses = null;
+		if ($maritalStatuses === null) $maritalStatuses = Enumeration::getEnumArray('Marital Status','key');
+		$maritalStatus = $this->marital_status;
+		if (isset($maritalStatuses[$maritalStatus])) $maritalStatus = $maritalStatuses[$maritalStatus];
+		return $maritalStatus;
 	}
 
 }

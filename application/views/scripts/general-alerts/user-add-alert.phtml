@@ -49,7 +49,7 @@ function userAddAlertSubmit() {
 		}
 
 		var patsac = new dojox.data.QueryReadStore({url:"<?=$this->baseUrl?>/users.raw/auto-complete",requestMethod:"get"},'personpatSelectAutoComplete');
-		patscb = new dijit.form.FilteringSelect({name:"personpatSelectAutoCompleteId",autocomplete:true,store:patsac},"personpatSelectAutoCompleteDiv");
+		patscb = new dijit.form.FilteringSelect({name:"personpatSelectAutoCompleteId",searchDelay:500,autocomplete:true,store:patsac},"personpatSelectAutoCompleteDiv");
 		patscb.validate = function () {return true;};
 		dojo.connect(patscb,"onChange",'getPatDetails');
 		function getPatDetails(args) {
@@ -70,7 +70,7 @@ function userAddAlertSubmit() {
 			apscb = null;
 		}
 		var apsac = new custom.PatientSelectAutoComplete({url:"<?=$this->baseUrl?>/patient-select/auto-complete",requestMethod:"get"},'patientSelectAutoComplete');
-		apscb = new custom.SelectComboBox({name:"alertPatientSelector",value:'',autocomplete:false,store:apsac,hasDownArrow:false},"alertPatientSelectAutoCompleteDiv");
+		apscb = new custom.SelectComboBox({name:"alertPatientSelector",value:'',searchDelay:500,autocomplete:false,store:apsac,hasDownArrow:false},"alertPatientSelectAutoCompleteDiv");
 		dojo.connect(apscb,"onChange",'getDetails');
 		function getDetails(args) {
 			// don't need args coz it holds the selected value

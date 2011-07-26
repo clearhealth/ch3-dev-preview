@@ -160,7 +160,7 @@ class Building extends WebVista_Model_ORM {
 	}
 
 	public function getDisplayName() {
-		if (!strlen($this->practice->name) > 0) $this->practice->populate();
+		if (!strlen($this->practice->name) > 0 && $this->practice_id > 0) $this->practice->populate();
 		return $this->practice->name.'->'.$this->name;
 	}
 

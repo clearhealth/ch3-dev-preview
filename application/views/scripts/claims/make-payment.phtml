@@ -2,17 +2,17 @@
 	<fieldset><legend><?=__('Transactions')?></legend>
 		<label><b><?=__('# in Queue')?></b></label>: <label id="queueId"></label>
 		<br /><br />
-		<input type="radio" name="sourceOfFundsId" id="sourceOfFundsId1" value="checkFundsId" checked="checked" onClick="sourceOfFundsOnChanged(this.id);" />
+		<div id="checkDivId"><input type="radio" name="sourceOfFundsId" id="sourceOfFundsId1" value="checkFundsId" checked="checked" onClick="sourceOfFundsOnChanged(this.id);" />
 		$<?=$this->formText('checkFundsId',0,array('id'=>'checkFundsId','style'=>'width:60px;','onChange'=>'dojo.byId("sourceOfFundsId1").checked = true;'))?>
 		<?=$this->formHidden('checkFundsIdHidden',0)?>
 		Chk#: <?=$this->formText('checkNoId','',array('id'=>'checkNoId','style'=>'width:60px;','onChange'=>'dojo.byId("sourceOfFundsId1").checked = true;'))?>
 		<?=$this->formHidden('checkSelectedIndexId',0)?>
 		<?=$this->formButton('checkSaveId',__('Save'),array('id'=>'checkSaveId','style'=>'width:50px;','onClick'=>'prcessSaveCheck()'))?>
 		<br />
-		<?=$this->formSelect('checkNosId','',array('id'=>'checkNosId','style'=>'margin-left:20px;width:150px;','onChange'=>'checkNosOnChanged(this)'))?>
-		<br /><br />
-		<label><input type="radio" name="sourceOfFundsId" id="sourceOfFundsId2" value="unallocatedFundsId" onClick="sourceOfFundsOnChanged(this.id);" /> <b><?=__('Unallocated Funds')?></b></label>: $<input type="text" name="unallocatedFundsId" id="unallocatedFundsId" value="0.00" readonly="readonly" style="width:100px;border:0;" />
-		<br /><br />
+		<?=$this->formSelect('checkNosId','',array('id'=>'checkNosId','style'=>'margin-left:20px;width:150px;','onChange'=>'checkNosOnChanged(this)'))?></div>
+		<br />
+		<div id="unallocatedDivId"><label><input type="radio" name="sourceOfFundsId" id="sourceOfFundsId2" value="unallocatedFundsId" onClick="sourceOfFundsOnChanged(this.id);" /> <b><?=__('Unallocated Funds')?></b></label>: $<input type="text" name="unallocatedFundsId" id="unallocatedFundsId" value="0.00" readonly="readonly" style="width:100px;border:0;" /></div>
+		<br />
 		<label><b><?=__('Current Transaction')?></b></label>: <label id="transId"></label>
 		<br />
 		<label><b><?=__('ID')?></b></label>: <label id="idId"></label>
@@ -83,6 +83,24 @@
 </fieldset>
 <?=$this->form->renderClose()?>
 <script>
+var unallocatedMenu = new dhtmlXMenuObject(null,"standard");
+unallocatedMenu.setImagePath("<?=$this->baseUrl?>/img/");
+unallocatedMenu.renderAsContextMenu();
+unallocatedMenu.setOpenMode("web");
+unallocatedMenu.loadXMLString("<menu id=\"0\"><item text=\"Delete\" img=\"\" id=\"delete\"/></menu>",function(){})
+unallocatedMenu.attachEvent("onClick",function(id){
+	if (id == "delete") {
+		var visit = listVisits[currTransIndex];
+		globalCreateWindow("winUnallocatedId",["personId="+visit.personId],"<?=$this->baseUrl?>/claims.raw/unallocated-funds","<?=__('Unallocated Funds')?>",400,250);
+	}
+});
+unallocatedMenu.attachEvent("onContextMenu",function(id){
+	var unallocatedFunds = parseFloat(dojo.byId("unallocatedFundsId").value);
+	if (isNaN(unallocatedFunds) || unallocatedFunds <= 0) unallocatedMenu.hideItem("delete");
+	else unallocatedMenu.showItem("delete");
+});
+unallocatedMenu.addContextZone("unallocatedFundsId");
+
 var currTransIndex = 0;
 var currClaimId = 0;
 var listVisits = [];
@@ -179,12 +197,25 @@ function sourceOfFundsOnChanged(id) {
 			break;
 		}
 	}
+
 	var sourceOfFunds = dojo.byId("sourceOfFundsId1");
-	if (id == "sourceOfFundsId1") sourceOfFunds = dojo.byId("sourceOfFundsId2");
+	var payerId = <?=$this->payerSelf?>;
+	if (id == "sourceOfFundsId1") {
+		sourceOfFunds = dojo.byId("sourceOfFundsId2");
+		var visit = listVisits[currTransIndex];
+		payerId = (visit.payerIds[currClaimId])?visit.payerIds[currClaimId]:0;
+	}
 
 	if (hasChanges && !confirm("Switching between source of funds will reset all the changes on paid and writeoffs, continue?")) {
 		sourceOfFunds.checked = true;
 		return;
+	}
+	var payerSelect = dojo.byId("<?=$this->form->payerId->getId()?>");
+	for (var i = 0; i < payerSelect.length; i++) {
+		if (payerSelect.options[i].value == payerId) {
+			payerSelect.selectedIndex = i;
+			break;
+		}
 	}
 
 	var objFund = dojo.byId(sourceOfFunds.value);
@@ -214,7 +245,7 @@ function claimPaymentNext() {
 		currClaimId++;
 		var claimId = (visit.claimIds[currClaimId])?visit.claimIds[currClaimId]:0;
 		claimPaymentLoadClaims(claimId);
-		historyGridReload(visit.visitId);
+		historyGridReload(visit.visitId,claimId);
 	}
 }
 
@@ -250,7 +281,8 @@ function claimPaymentLoadVisit(visitId) {
 	dojo.byId("unallocatedFundsId").value = parseFloat(visit.unallocatedFunds).toFixed(2);
 	historyGrid.clearAll();
 	paymentGrid.clearAll();
-	historyGridReload(visitId);
+	var claimId = (visit.claimIds[currClaimId])?visit.claimIds[currClaimId]:0;
+	historyGridReload(visitId,claimId);
 
 	if (visit.claimIds.length > 0) {
 		dojo.byId("paymentNoCodesId").style.display = "none";
@@ -348,6 +380,7 @@ function paymentRecordPayment(callback,params) {
 	}
 
 	var contents = {
+		"visitId": visit.visitId,
 		"payment[claimId]": visit.claimIds[currClaimId],
 		"payment[visitId]": visit.visitId,
 		"payment[personId]": visit.personId,
@@ -362,21 +395,33 @@ function paymentRecordPayment(callback,params) {
 	var currentAmount = 0;
 	var diff = 0;
 	var valid = false;
-	paymentGrid.forEachRow(function(rowId){
-		amount = parseFloat(this.cells(rowId,indexPaid).getValue());
-		if (isNaN(amount) || amount <= 0) return;
-		valid = true;
-		currentAmount = parseFloat(this.getUserData(rowId,"paid"));
+	for (var a in paymentGrid.rowsAr) {
+		if (!(paymentGrid.rowsAr[a] && paymentGrid.rowsAr[a].idd)) {
+			continue;
+		}
+		var rowId = paymentGrid.rowsAr[a].idd;
+
+		var paid = parseFloat(paymentGrid.cells(rowId,indexPaid).getValue());
+		if (isNaN(paid) || paid < 0) break;
+		var writeoff = parseFloat(paymentGrid.cells(rowId,indexWriteOff).getValue());
+		if (isNaN(writeoff) || writeoff < 0) break;
+
+		currentAmount = parseFloat(paymentGrid.getUserData(rowId,"paid"));
 		if (isNaN(currentAmount)) currentAmount = 0;
-		diff = parseFloat(amount - currentAmount);
-		if (diff > 0) contents["paid["+rowId+"]"] = diff;
-		amount = parseFloat(this.cells(rowId,indexWriteOff).getValue());
-		if (isNaN(amount) || amount <= 0) return;
-		currentAmount = parseFloat(this.getUserData(rowId,"writeOff"));
+		diff = parseFloat(paid - currentAmount);
+		if (diff > 0) {
+			contents["paid["+rowId+"]"] = diff;
+			valid = true;
+		}
+
+		currentAmount = parseFloat(paymentGrid.getUserData(rowId,"writeOff"));
 		if (isNaN(currentAmount)) currentAmount = 0;
-		diff = parseFloat(amount - currentAmount);
-		if (diff > 0) contents["writeOff["+rowId+"]"] = diff;
-	});
+		diff = parseFloat(writeoff - currentAmount);
+		if (diff > 0) {
+			contents["writeOff["+rowId+"]"] = diff;
+			valid = true;
+		}
+	}
 	if (!valid) {
 		if (typeof callback == "function") {
 			callback(params);
@@ -392,6 +437,7 @@ function paymentRecordPayment(callback,params) {
 		content: contents,
 		load: function(data) {
 			dojo.byId("unallocatedFundsId").value = data;
+			visit.unallocatedFunds = data;
 			if (typeof callback == "function") {
 				callback(params);
 				claimPaymentNext();
@@ -399,7 +445,7 @@ function paymentRecordPayment(callback,params) {
 			else {
 				var claimId = (visit.claimIds[currClaimId])?visit.claimIds[currClaimId]:0;
 				claimPaymentLoadClaims(claimId);
-				historyGridReload(visit.visitId);
+				historyGridReload(visit.visitId,claimId);
 			}
 			return data;
 		},
@@ -475,9 +521,9 @@ historyGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro");
 historyGrid.setInitWidths("75,80,60,60,*,*,20");
 historyGrid.setSkin("xp");
 historyGrid.init();
-function historyGridReload(visitId) {
+function historyGridReload(visitId,claimId) {
 	historyGrid.clearAll(); 
-	historyGrid.load("<?=$this->baseUrl?>/claims.raw/list-payment-history?visitId="+visitId,function(){
+	historyGrid.load("<?=$this->baseUrl?>/claims.raw/list-payment-history?visitId="+visitId+"&claimId="+claimId,function(){
 	},"json"); 
 }
 
@@ -548,7 +594,7 @@ paymentGrid.attachEvent("onEditCell",function(stage,rowId,cellIndex,newValue,old
 	if (isNaN(funds)) funds = 0;
 	var balance = parseFloat(paymentGrid.cells(rowId,indexBalance).getValue());
 	if (isNaN(balance)) balance = 0;
-	if (cellIndex == indexPaid && (funds <= 0 || balance <= 0)) {
+	if (cellIndex == indexPaid && (funds <= 0)) {
 		return false;
 	}
 	if (stage == 2 && newValue != oldValue) {

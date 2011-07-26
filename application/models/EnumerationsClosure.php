@@ -138,11 +138,11 @@ class EnumerationsClosure extends WebVista_Model_ORM {
 		$db = Zend_Registry::get("dbAdapter");
 		// descendant must only 1 row
 		$sql = "SELECT e.* FROM enumerations e
-			JOIN enumerationsClosure ec ON (e.enumerationId = ec.descendant)
+			INNER JOIN enumerationsClosure ec ON (e.enumerationId = ec.descendant)
 			WHERE (ec.depth = 0) AND 
-			  ((SELECT COUNT(ec.descendant) FROM enumerationsClosure ecl
-			  WHERE ec.descendant = ecl.descendant) = 1) AND
-			  e.category = '$category' ORDER BY e.name ASC";
+				(ec.descendant = ec.ancestor AND ec.ancestor = e.enumerationId) AND
+				e.category = '$category'
+			ORDER BY e.name ASC";
 		return $db->query($sql)->fetchAll();
 	}
 

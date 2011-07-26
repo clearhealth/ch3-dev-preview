@@ -69,6 +69,7 @@ class ImmunizationsController extends WebVista_Controller_Action {
 					$immunization['patientId'] = $patientId;
 					trigger_error(print_r($immunization,true),E_USER_NOTICE);
 					$patientImmunization->populateWithArray($immunization);
+					$patientImmunization->administeredDate = date('Y-m-d H:i:s');
 					$patientImmunization->persist();
 				}
 			}

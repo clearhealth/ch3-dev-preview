@@ -55,7 +55,8 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$facilityIterator->setFilter(array('Practice'));
 		$this->view->practices = $facilityIterator->toArray('practiceId','name');
 
-		$providerIterator = new ProviderIterator();
+		$provider = new Provider();
+		$providerIterator = $provider->getIter();
 		$this->view->providers = $providerIterator->toArray('personId','displayName');
 		$this->render();
 	}
@@ -65,14 +66,23 @@ class VisitSelectController extends WebVista_Controller_Action {
 	}
 
 	public function diagnosesAction() {
-		$this->view->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$visitId = (int)$this->_getParam('visitId');
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		if ($visitId > 0) $visit->populate();
+		$this->view->providerId = (int)$visit->providerId;
 		$this->render();
 	}
 
 	public function proceduresAction() {
-		$providerIterator = new ProviderIterator();
+		$visitId = (int)$this->_getParam('visitId');
+		$visit = new Visit();
+		$visit->visitId = $visitId;
+		if ($visitId > 0) $visit->populate();
+		$provider = new Provider();
+		$providerIterator = $provider->getIter();
 		$this->view->listProviders = $providerIterator->toArray('personId','displayName');
-		$this->view->providerId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
+		$this->view->providerId = (int)$visit->providerId;
 		$this->render();
 	}
 
@@ -80,47 +90,16 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$visitId = (int)$this->_getParam('visitId');
 		$insurancePrograms = array();
 		$insuranceProgramId = 0;
-		$listPayments = array();
-		$listCharges = array();
 		if ($visitId > 0) {
 			$visit = new Visit();
 			$visit->visitId = $visitId;
 			$visit->populate();
-
-			$appointment = new Appointment();
-			$appointment->appointmentId = $visit->appointmentId;
-			$appointment->populate();
-			$personId = (int)$visit->patientId;
-
-			$payment = new Payment();
-			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
-			foreach ($paymentIterator as $pay) {
-				$listPayments[$pay->paymentId] = array(
-					date('Y-m-d',strtotime($pay->paymentDate)), // date
-					$pay->paymentType, // type
-					$pay->amount, // amount
-					$pay->title, // note
-				);
-			}
-
-			$miscCharge = new MiscCharge();
-			$results = $miscCharge->getUnpaidCharges();
-			foreach ($results as $id=>$row) {
-				$listCharges[$id] = array(
-					$row['date'], // date
-					$row['type'], // type
-					$row['amount'], // amount
-					$row['note'], // note
-				);
-			}
 
 			$insuredRelationship = new InsuredRelationship();
 			$insuredRelationship->personId = (int)$visit->patientId;
 			$insurancePrograms = $insuredRelationship->getProgramList();
 			$insuranceProgramId = (int)$visit->activePayerId;
 		}
-		$this->view->listPayments = $listPayments;
-		$this->view->listCharges = $listCharges;
 		$this->view->visitId = $visitId;
 		$this->view->insurancePrograms = $insurancePrograms;
 		$this->view->insuranceProgramId = $insuranceProgramId;
@@ -269,6 +248,7 @@ class VisitSelectController extends WebVista_Controller_Action {
 		$row['data'][] = (int)$visit->activePayerId;
 		$row['data'][] = (int)$visit->closed;
 		$row['data'][] = (int)$visit->void;
+		$row['data'][] = ucwords($visit->displayStatus);
 		return $row;
 	}
 
@@ -317,12 +297,20 @@ class VisitSelectController extends WebVista_Controller_Action {
 		if ($visit->populate()) {
 			if ($void !== null) {
 				$visit->void = (int)$void;
+				if ($visit->void && $visit->hasPayments()) {
+					$error = 'Cannot void visit with payments';
+				}
 			}
 			else {
 				$visit->populateWithArray($visitParams);
 			}
-			$visit->persist();
-			$data = $this->_generateVisitRowData($visit);
+			if (isset($error)) {
+				$data = $error;
+			}
+			else {
+				$visit->persist();
+				$data = $this->_generateVisitRowData($visit);
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;

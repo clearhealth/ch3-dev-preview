@@ -102,6 +102,7 @@ class Room extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			 	->from(array('r'=>'rooms'),null)
+			 	->join(array('e'=>'enumerations'),"(e.ormId = r.id AND e.ormClass = 'Room' AND e.active = 1)",null)
 			 	->join(array('b'=>'buildings'),'b.id = r.building_id',null)
 			 	->join(array('p'=>'practices'),'p.id = b.practice_id',null)
 				->columns(array('r.id AS id',"CONCAT(p.name,'->',b.name,'->',r.name) AS name"));
@@ -173,7 +174,7 @@ class Room extends WebVista_Model_ORM {
 	}
 
 	public function getDisplayName() {
-		if (!strlen($this->building->name) > 0) $this->building->populate();
+		if (!strlen($this->building->name) > 0 && $this->building_id > 0) $this->building->populate();
 		return $this->building->displayName.'->'.$this->name;
 	}
 

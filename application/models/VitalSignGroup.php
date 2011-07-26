@@ -162,6 +162,9 @@ class VitalSignGroup extends WebVista_Model_ORM implements NSDRMethods {
 		else if (isset($data['personId'])) {
 			$dbSelect->where("personId = ?",(int)$data['personId']);
 		}
+		else if (isset($tthis->_attributes['personId'])) {
+			$dbSelect->where("personId = ?",(int)$tthis->_attributes['personId']);
+		}
 		else {
 			if (is_array($context) && isset($context['*']['filters'])) {
 				list($k,$v) = each($context['*']['filters']);

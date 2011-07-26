@@ -148,6 +148,9 @@ EOS;
 		$dojoHeader = <<<EOS
 <script language="javascript">
 function submit{$this->getId()}Form() {
+	if ('function' == typeof dojo.byId('{$this->getId()}').onFormSubmit) {
+		dojo.byId('{$this->getId()}').onFormSubmit();
+	}
 	if (window.preSubmit{$this->getId()}) {
 		var retval = preSubmit{$this->getId()}();
 		if (retval === false) return false;

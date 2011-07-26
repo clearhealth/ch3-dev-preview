@@ -36,6 +36,9 @@ class ClaimFile extends WebVista_Model_ORM {
 	protected $_primaryKeys = array('claimFileId');
 	protected $_cascadePersist = false;
 
+	protected $_data = '';
+	protected $_statementData = '';
+
 	public function __construct() {
 		$this->user = new User();
 	}
@@ -44,6 +47,28 @@ class ClaimFile extends WebVista_Model_ORM {
 		$claimFileId = (int)$this->claimFileId;
 		if (!$claimFileId > 0) $this->claimFileId = $this->nextSequenceId('claimSequences');
 		return parent::persist();
+	}
+
+	public function getData() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('claimFileBlobs')
+				->where('claimFileId = ?',(int)$claimFile->claimFileId);
+		$data = '';
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$data = $row['data'];
+		}
+		return $data;
+	}
+
+	public static function getClaimFile($claimId) {
+		$db = Zend_Registry::get('dbAdapter');
+		$claimFile = new self();
+		$sqlSelect = $db->select()
+				->from($claimFile->_table)
+				->where('claimIds LIKE ?','%'.$claimId.'%');
+		$claimFile->populateWithSql($sqlSelect->__toString());
+		return $claimFile;
 	}
 
 	public static function countVisitClaims($visitId) {
@@ -184,7 +209,100 @@ class ClaimFile extends WebVista_Model_ORM {
 	}
 
 	public static function inquire($visitId) {
-		return 'Approved';
+		$claimIds = ClaimLine::listAllMostRecentClaimIds(array($visitId));
+		$claimId = isset($claimIds[0])?$claimIds[0]:0;
+		$claimFile = self::getClaimFile($claimId);
+
+		$query = array();
+		$query['apiKey'] = Zend_Registry::get('config')->healthcloud->apiKey;
+		$query['uid'] = $claimFile->claimFileId;
+
+		$ch = curl_init();
+		$url = Zend_Registry::get('config')->healthcloud->claimsServerUrl.'/check-status';
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_POST,true);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,json_encode($query));
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		$output = curl_exec($ch);
+		if (!curl_errno($ch)) {
+			$data = json_decode($output,true);
+			if ($data === null) {
+				$response = 'Invalid HC response';
+			}
+			else if (array_key_exists('response',$data)) {
+				$response = $data['response'];
+			}
+			else if (array_key_exists('error',$data)) {
+				$response = $data['error'];
+			}
+			else {
+				$response = 'Unknown HC response: '.print_r($data,true);
+			}
+		}
+		else {
+			$response = __('There was an error connecting to HealthCloud to check claim status. Please try again or contact the system administrator.');
+		}
+		curl_close($ch);
+		trigger_error($response);
+		return $response.'';
+	}
+
+	public function persistData($data=null,$statementData=null) {
+		if ($data === null) $data = $this->_data;
+		if ($statementData === null) $statementData = $this->_statementData;
+		$db = Zend_Registry::get('dbAdapter');
+		$ret = $db->insert('claimFileBlobs',array(
+			'claimFileId'=>$this->claimFileId,
+			'data'=>$data,
+			'statementData'=>$statementData,
+		));
+		return $this;
+	}
+
+	public function transmit($data=null,$statementData=null) {
+		if ($data === null) $data = $this->_data;
+		if ($statementData === null) $statementData = $this->_statementData;
+
+		$query = array();
+		$query['apiKey'] = Zend_Registry::get('config')->healthcloud->apiKey;
+		$query['uid'] = $this->claimFileId;
+		$query['data'] = base64_encode($data);
+		$query['statementData'] = base64_encode($statementData);
+
+		$ch = curl_init();
+		$url = Zend_Registry::get('config')->healthcloud->claimsServerUrl.'/receive-push';
+		curl_setopt($ch,CURLOPT_URL,$url);
+		curl_setopt($ch,CURLOPT_POST,true);
+		curl_setopt($ch,CURLOPT_POSTFIELDS,json_encode($query));
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYHOST,false);
+		curl_setopt($ch,CURLOPT_RETURNTRANSFER,true);
+		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,false);
+		$output = curl_exec($ch);
+		if (!curl_errno($ch)) {
+			$data = json_decode($output,true);
+			if ($data === null) {
+				$response = 'Invalid HC response';
+			}
+			else if (array_key_exists('response',$data)) {
+				$response = $data['response'];
+			}
+			else if (array_key_exists('error',$data)) {
+				$response = $data['error'];
+			}
+			else {
+				$response = 'Unknown HC response: '.print_r($data,true);
+			}
+		}
+		else {
+			$response = __('There was an error connecting to HealthCloud to check claim status. Please try again or contact the system administrator.');
+		}
+		curl_close($ch);
+		trigger_error($response);
+		return $response.'';
 	}
 
 }

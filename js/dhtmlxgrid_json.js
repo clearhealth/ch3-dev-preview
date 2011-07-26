@@ -100,7 +100,7 @@ dhtmlXGridObject.prototype._initDynamicLoading = function(){
 	}
 };
 
-dhtmlXGridObject.prototype.enableDynamicLoading = function(mode){
+dhtmlXGridObject.prototype.enableDynamicLoad = function(mode){
 	this.dynLoad = mode;
 };
 

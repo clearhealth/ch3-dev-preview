@@ -134,7 +134,7 @@ setBuildingRooms();
 var selectedVisitId = "<?=$this->visit->visitId?>";
 visitListGrid = new dhtmlXGridObject('visitListGridId');
 visitListGrid.setImagePath("<?=$this->baseUrl?>/img/");
-visitListGrid.setHeader("<?=__('Date of Service')?>,<?=__('Location')?>,<?=__('Provider')?>,<?=__('Insurance Program')?>,,,,,,,");
+visitListGrid.setHeader("<?=__('Date of Service')?>,<?=__('Location')?>,<?=__('Provider')?>,<?=__('Insurance Program')?>,,,,,,,,<?=__('Status')?>");
 var indexVisitDOS = 0;
 var indexVisitLocation = 1;
 var indexVisitProvider = 2;
@@ -146,8 +146,9 @@ var indexVisitProviderId = 7;
 var indexVisitPayerId = 8;
 var indexVisitClosed = 9;
 var indexVisitVoid = 10;
-visitListGrid.setInitWidths("120,*,*,*,0,0,0,0,0,0,0");
-visitListGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
+var indexVisitStatus = 11;
+visitListGrid.setInitWidths("120,*,*,*,0,0,0,0,0,0,0,50");
+visitListGrid.setColTypes("ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro,ro");
 visitListGrid.setSkin("xp");
 visitListGrid.init();
 visitListGrid.load("<?=$this->baseUrl?>/visit-select.raw/list-visits?personId="+mainController.getActivePatient(),function(){
@@ -156,6 +157,14 @@ visitListGrid.load("<?=$this->baseUrl?>/visit-select.raw/list-visits?personId="+
 	}
 },"json");
 visitListGrid.attachEvent("onRowSelect",function (rowId,cellIndex){
+	if (this.cells(rowId,indexVisitVoid).getValue() != "0" && !confirm("Visit is marked VOID, are you sure you want to continue?")) {
+		this.clearSelection();
+		var activeVisit = mainController.getActiveVisit();
+		if (visitListGrid.doesRowExist(activeVisit)) {
+			visitListGrid.selectRow(visitListGrid.getRowIndex(activeVisit));
+		}
+		return;
+	}
 	dojo.byId("visit-visitId").value = rowId;
 	var practiceSelect = dojo.byId("visit-practiceId");
 	var practiceId = this.cells(rowId,indexVisitPracticeId).getValue();
@@ -246,6 +255,7 @@ function visitSelect() {
 		alert("<?=__('Please select visit.')?>");
 		return;
 	}
+	if (visitListGrid.cells(rowId,indexVisitVoid).getValue() != "0" && !confirm("Visit is marked VOID, are you sure you want to continue?")) return;
 	visitSelectSetMostRecentVisit(rowId);
 }
 

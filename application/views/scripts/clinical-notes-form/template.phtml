@@ -109,6 +109,14 @@ function base64_encode (data) {
    return enc;
 }
 
+function encodeNamespace(name) {
+	var ret = base64_encode(name);
+	ret = ret.replace(/\+/g,"_");
+	ret = ret.replace(/\//g,"_");
+	ret = ret.replace(/\=/g,"_");
+	return "namespaceData-"+ret;
+}
+
 var globalNoteTemplateCallbacks = [];
 function preSubmit<?=$this->form->getId()?>() {
 	var retval = true;
@@ -145,9 +153,7 @@ fieldset {
 }
 </style>
 
-<div style="background-color: whiteSmoke;padding:10px;height:400px;overflow:scroll;">
 <?='';//$this->signatureInfo?>
 <?=$this->form?>
 <?=$this->form->renderClose(false)?>
-</div>
 <iframe id="iframeprint" style="width:0px;height:0px;margin:0;padding:0;position:relative;float:top;border:none;" />

@@ -146,11 +146,13 @@ function claimFeeRecalculate() {
 		if (id == "totals") return;
 		fee = parseFloat(this.cells(id,2).getValue().replace(/,/g,""));
 		if (!isNaN(fee)) {
-			totalFee += fee;
+			if (id == "misc-payments") totalFee -= fee;
+			else totalFee += fee;
 		}
 		discount = parseFloat(this.cells(id,3).getValue().replace(/,/g,""));
 		if (!isNaN(discount)) {
-			totalDiscount += discount;
+			if (id == "misc-payments") totalDiscount -= fee;
+			else totalDiscount += discount;
 		}
 	});
 	var rowId = "totals";

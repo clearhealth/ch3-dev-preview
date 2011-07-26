@@ -51,17 +51,26 @@ class Visit extends WebVista_Model_ORM {
 	protected $_primaryKeys = array("encounter_id");
 
 	public function persist() {
+		$visit = new self();
+		$visit->visitId = $this->encounter_id;
+		$visit->populate();
+		$oldClosed = $visit->closed;
 		$ret = parent::persist();
-		if ($this->closed) { // recalculate claim lines
-			$ret = self::recalculateClaims($this);
+		$newClosed = $this->closed;
+		if ($newClosed) {
+			$newClaim = false;
+			if ($newClosed && $oldClosed !== $newClosed && !ClaimLine::mostRecentClaim($this->encounter_id,true) > 0) { // recalculate claim lines if closed visit is new/reopened
+				$newClaim = true;
+			}
+			$ret = self::recalculateClaims($this,$newClaim);
 		}
 		return $ret;
 	}
 
-	public static function recalculateClaims(self $visit) {
+	public static function recalculateClaims(self $visit,$newClaim=false) {
 		$fees = $visit->calculateFees(true);
 		$hasProcedure = false;
-		$claimId = WebVista_Model_ORM::nextSequenceId('claimSequences');
+		if ($newClaim) $claimId = WebVista_Model_ORM::nextSequenceId('claimSequences');
 		$copay = $visit->getCopay();
 
 		$totalPaid = 0;
@@ -70,37 +79,44 @@ class Visit extends WebVista_Model_ORM {
 		$visitId = (int)$visit->visitId;
 		$discountPayerId = InsuranceProgram::lookupSystemId('Discounts'); // ID of System->Discounts
 		$creditPayerId = InsuranceProgram::lookupSystemId('Credit'); // ID of System->Credit
-		$payerId = $visit->activePayerId;
+		$payerId = InsuranceProgram::lookupSystemId('Self Pay'); // ID of System->Self Pay
 		foreach ($fees['details'] as $id=>$values) {
 			// update claim or create if not exists
 			$fee = (float)$values['fee'];
 			$feeDiscounted = (float)$values['feeDiscounted'];
 			$claimLine = new ClaimLine();
 			$claimLine->populateWithPatientProcedure($values['orm'],$visit);
-			$claimLine->claimId = $claimId;
+			if ($newClaim) {
+				$claimLine->claimLineId = 0;
+				$claimLine->claimId = $claimId;
+			}
 			$claimLine->baseFee = $fee;
 			$claimLine->adjustedFee = $feeDiscounted;
 			$claimLine->persist();
 
 			$claimLineId = (int)$claimLine->claimLineId;
 
-			$billable = $fee;
-			if ($feeDiscounted > 0) {
+			$billable = $feeDiscounted;
+			/*$discount = 0;
+			if ($feeDiscounted > 0) $discount = $fee - $feeDiscounted;
+			if ($discount < 0) $discount = 0;*/
+			$discount = (float)$values['writeoff'];
+			if ($newClaim && $discount > 0) {
 				// add writeoffs
 				$writeOff = new WriteOff();
 				$writeOff->personId = $personId;
 				$writeOff->claimLineId = $claimLineId;
 				$writeOff->visitId = $visitId;
 				$writeOff->appointmentId = $visit->appointmentId;
-				$writeOff->amount = $feeDiscounted;
+				$writeOff->amount = $discount;
 				$writeOff->userId = $userId;
 				$writeOff->timestamp = date('Y-m-d H:i:s');
 				$writeOff->title = 'discount';
 				$writeOff->payerId = $discountPayerId;
 				$writeOff->persist();
-				$billable -= $feeDiscounted;
+				$billable -= $discount;
 			}
-			if ($billable > 0) {
+			if ($newClaim && $billable > 0) {
 				foreach ($copay['details'] as $paymentId=>$payment) {
 					$amount = (float)$payment->unallocated;
 					if (!$amount > 0) {
@@ -109,11 +125,13 @@ class Visit extends WebVista_Model_ORM {
 					}
 					if ($amount > $billable) $amount = $billable;
 					$payment->allocated += $amount;
+					$payment->payerId = $payerId;
 					$payment->persist();
 					$copay['details'][$paymentId] = $payment;
 					$totalPaid += $amount;
 
 					$postingJournal = new PostingJournal();
+					$postingJournal->paymentId = (int)$payment->paymentId;
 					$postingJournal->patientId = $personId;
 					$postingJournal->payerId = $payerId;
 					$postingJournal->claimLineId = $claimLineId;
@@ -132,13 +150,14 @@ class Visit extends WebVista_Model_ORM {
 
 			$hasProcedure = true;
 		}
-		if ($copay['total'] > $totalPaid) { // if copay is greater than all claimlines reamining dollars are posted to credit program
+		if ($newClaim && $copay['total'] > $totalPaid) { // if copay is greater than all claimlines reamining dollars are posted to credit program
 			foreach ($copay['details'] as $paymentId=>$payment) {
 				$amount = (float)$payment->unallocated;
 				$payment->allocated += $amount;
 				$payment->persist();
 
 				$postingJournal = new PostingJournal();
+				$postingJournal->paymentId = (int)$payment->paymentId;
 				$postingJournal->patientId = $personId;
 				$postingJournal->payerId = $creditPayerId;
 				$postingJournal->visitId = $visitId;
@@ -256,11 +275,11 @@ class Visit extends WebVista_Model_ORM {
 	}
 
 	public function getDisplayStatus() {
-		if ($this->closed) {
-			return 'closed';
-		}
-		else if ($this->void) {
+		if ($this->void) {
 			return 'void';
+		}
+		else if ($this->closed) {
+			return 'closed';
 		}
 		else {
 			return 'open';
@@ -280,6 +299,7 @@ class Visit extends WebVista_Model_ORM {
 
 	public function calculateFees($recompute=null) { // pass true or false to override visit.closed checking
 		if ($recompute === null) $recompute = ($this->closed)?false:true;
+		$visitId = (int)$this->encounter_id;
 		$total = 0;
 		$discounted = 0;
 		$visitFlat = 0;
@@ -318,15 +338,28 @@ class Visit extends WebVista_Model_ORM {
 				}
 			}
 		}
+		else {
+			$claimLineFees = array();
+			$iterator = ClaimLine::mostRecentClaims($visitId);
+			foreach ($iterator as $claimLine) {
+				$code = $claimLine->procedureCode;
+				if (!isset($claimLineFees[$code])) $claimLineFees[$code] = array('baseFee'=>0,'adjustedFee'=>0);
+				$claimLineFees[$code]['baseFee'] += (float)$claimLine->baseFee;
+				$claimLineFees[$code]['adjustedFee'] += (float)$claimLine->adjustedFee;
+			}
+		}
 
 		$details = array();
 		$iterator = new PatientProcedureIterator();
-		$iterator->setFilters(array('visitId'=>(int)$this->encounter_id));
+		$iterator->setFilters(array('visitId'=>$visitId));
 		$firstProcedureId = null;
+
 		foreach ($iterator as $patientProcedure) {
 			$patientProcedureId = (int)$patientProcedure->patientProcedureId;
+			$code = $patientProcedure->code;
+			$quantity = (int)$patientProcedure->quantity;
+			$writeoff = 0;
 			if ($recompute) {
-				$code = $patientProcedure->code;
 				$fee = '-.--';
 				$feeDiscounted = '-.--';
 				$discountedRate = '';
@@ -353,42 +386,76 @@ class Visit extends WebVista_Model_ORM {
 						}
 					}
 					if ($tmpFee > 0) $fee = $tmpFee;
+
+					if ($quantity > 0) {
+						$fee *= $quantity;
+						$feeDiscounted *= $quantity;
+					}
+
 					// calculate discounts
 					if ($codeFlat > 0) {
-						$feeDiscounted += $codeFlat;
+						$tmpDiscount = ($fee - $codeFlat);
+						if ($tmpDiscount < 0) $tmpDiscount = 0;
+						$feeDiscounted += $tmpDiscount;
+						$writeoff = $tmpDiscount;
+					}
+					if ($firstProcedureId !== null && $visitFlat > 0) {
+						$writeoff = $fee;
+						trigger_error('VISIT FLAT: '.$visitFlat);
+						trigger_error('WRITEOFF: '.$writeoff);
 					}
 					if ($codePercentage > 0) {
-						$feeDiscounted += ($feeDiscounted * $codePercentage);
+						$tmpDiscount = ($feeDiscounted * $codePercentage);
+						if ($tmpDiscount < 0) $tmpDiscount = 0;
+						$feeDiscounted += $tmpDiscount;
+						$writeoff = $tmpDiscount;
 					}
 				}
 				if ($firstProcedureId === null) $firstProcedureId = $patientProcedureId;
 			}
 			else {
-				$fee = $patientProcedure->baseFee;
-				$feeDiscounted = $patientProcedure->adjustedFee;
+				if (isset($claimLineFees[$code])) {
+					$fee = $claimLineFees[$code]['baseFee'];
+					$feeDiscounted = $claimLineFees[$code]['adjustedFee'];
+				}
+				else {
+					$fee = $patientProcedure->baseFee;
+					$feeDiscounted = $patientProcedure->adjustedFee;
+				}
+				if ($quantity > 0) {
+					$fee *= $quantity;
+					$feeDiscounted *= $quantity;
+				}
 			}
-			$quantity = (int)$patientProcedure->quantity;
+			/*$quantity = (int)$patientProcedure->quantity;
 			if ($quantity > 0) {
 				$fee *= $quantity;
 				$feeDiscounted *= $quantity;
-			}
+			}*/
 			$total += $fee;
 			$discounted += (float)$feeDiscounted;
 			$details[$patientProcedureId] = array();
 			$details[$patientProcedureId]['orm'] = $patientProcedure;
 			$details[$patientProcedureId]['fee'] = $fee;
 			$details[$patientProcedureId]['feeDiscounted'] = $feeDiscounted;
+			$details[$patientProcedureId]['writeoff'] = $writeoff;
 		}
 		if ($visitFlat > 0) {
 			$discounted += $visitFlat;
 			// update the first procedure
-			if ($firstProcedureId !== null) $details[$firstProcedureId]['feeDiscounted'] += $visitFlat;
+			if ($firstProcedureId !== null) {
+				$details[$firstProcedureId]['feeDiscounted'] += $visitFlat;
+				$writeoff = $details[$firstProcedureId]['fee'] - $details[$firstProcedureId]['feeDiscounted'];
+				if ($writeoff < 0) $writeoff = 0;
+				$details[$firstProcedureId]['writeoff'] = $writeoff;
+			}
 		}
 		if ($visitPercentage > 0) {
 			$discounted += ($discounted * $visitPercentage);
 			// update the first procedure
 			if ($firstProcedureId !== null) $details[$firstProcedureId]['feeDiscounted'] += ($details[$firstProcedureId]['feeDiscounted'] * $visitFlat);
 		}
+		$row = array();
 		$row['discountApplied'] = $discountApplied;
 		$row['details'] = $details;
 		$row['total'] = $total;
@@ -415,10 +482,14 @@ class Visit extends WebVista_Model_ORM {
 		return $this->getIterator($sqlSelect);
 	}
 
-	public function getAccountSummary() {
+	public function getAccountDetails() {
 		$visitId = (int)$this->encounter_id;
 		$ret = array(
 			'claimFiles'=>array(
+				'details'=>array(),
+				'totals'=>array(),
+			),
+			'charges'=>array(
 				'details'=>array(),
 				'totals'=>array(),
 			),
@@ -454,6 +525,47 @@ class Visit extends WebVista_Model_ORM {
 			'balance'=>$totalBalance,
 		);
 
+		$totalBilled = 0;
+		if ($this->closed) {
+			$iterator = ClaimLine::mostRecentClaims($visitId);
+			foreach ($iterator as $claimLine) {
+				$totalBilled += (float)$claimLine->baseFee;
+				$ret['charges']['details'][] = $claimLine;
+			}
+		}
+		else {
+			$fees = $this->calculateFees();
+			$totalBilled += $fees['total'];
+			$totalWO += $fees['discounted'];
+			$discount = $fees['total'] - $fees['discounted'];
+			if ($discount < 0) $discount = 0;
+
+			$claimLine = new ClaimLine();
+			$claimLine->baseFee = $fees['total'];
+			$claimLine->adjustedFee = $fees['discounted'];
+			$claimLine->visitId = $visitId;
+			$claimLine->dateTime = $this->date_of_treatment;
+			$claimLine->insuranceProgramId = $this->activePayerId;
+			$claimLine->enteredBy = $this->getEnteredBy();
+			$ret['charges']['details'][] = $claimLine;
+
+			if ($discount > 0) {
+				$writeOff = new WriteOff();
+				$writeOff->amount = $discount;
+				$writeOff->writeOffId = time();
+				$writeOff->payerId = InsuranceProgram::lookupSystemId('Discounts'); // ID of System->Discounts
+				$writeOff->timestamp = $this->date_of_treatment;
+				$writeOff->userId = ($this->last_change_user_id > 0)?$this->last_change_user_id:$this->created_by_user_id;
+				$ret['writeOffs']['details'][] = $writeOff;
+			}
+		}
+		$ret['charges']['totals'] = array(
+			'billed'=>$totalBilled,
+			'paid'=>0,
+			'writeOff'=>0,
+			'balance'=>0,
+		);
+
 		// misc charges
 		$miscCharge = new MiscCharge();
 		$totalBilled = 0;
@@ -467,13 +579,27 @@ class Visit extends WebVista_Model_ORM {
 			'writeOff'=>0,
 			'balance'=>0,
 		);
-		// payments
-		$payment = new Payment();
+
+		$iterators = ClaimLine::getPaymentHistory(array('visitId'=>$visitId,'unposted'=>true));
 		$totalPaid = 0;
-		foreach ($payment->getIteratorByVisitId($visitId) as $row) {
-			$totalPaid += (float)$row->amount;
-			$ret['payments']['details'][] = $row;
+		$totalWO = 0;
+		foreach ($iterators as $iterator) {
+			foreach ($iterator as $item) {
+				if ($item instanceof PostingJournal) {
+					$totalPaid += (float)$item->amount;
+					$ret['payments']['details'][] = $item;
+				}
+				else if ($item instanceof Payment) {
+					$totalPaid += (float)$item->unallocated;
+					$ret['payments']['details'][] = $item;
+				}
+				else {
+					$totalWO += (float)$item->amount;
+					$ret['writeOffs']['details'][] = $item;
+				}
+			}
 		}
+		// payments
 		$ret['payments']['totals'] = array(
 			'billed'=>0,
 			'paid'=>$totalPaid,
@@ -481,12 +607,6 @@ class Visit extends WebVista_Model_ORM {
 			'balance'=>0,
 		);
 		// writeoffs
-		$writeOff = new WriteOff();
-		$totalWO = 0;
-		foreach ($writeOff->getIteratorByVisitId($visitId) as $row) {
-			$totalWO += (float)$row->amount;
-			$ret['writeOffs']['details'][] = $row;
-		}
 		$ret['writeOffs']['totals'] = array(
 			'billed'=>0,
 			'paid'=>0,
@@ -503,7 +623,7 @@ class Visit extends WebVista_Model_ORM {
 			$room = new Room();
 			$room->roomId = $roomId;
 			$room->populate();
-			$facility = $room->building->name.'->'.$room->name;
+			$ret = $room->building->name.'->'.$room->name;
 		}
 		return $ret;
 	}
@@ -519,13 +639,13 @@ class Visit extends WebVista_Model_ORM {
 				->where('appointmentId != 0');
 		$total = 0;
 		$details = array();
-		if ($rows = $db->fetchAll($sqlSelect)) {
-			foreach ($rows as $row) {
-				$payment = new Payment();
-				$payment->populateWithArray($row);
-				$total += $payment->unallocated;
-				$details[$row['payment_id']] = $payment;
-			}
+		$stmt = $db->query($sqlSelect);
+		$stmt->setFetchMode(Zend_Db::FETCH_ASSOC);
+		while ($row = $stmt->fetch()) {
+			$payment = new Payment();
+			$payment->populateWithArray($row);
+			$total += $payment->unallocated;
+			$details[$row['payment_id']] = $payment;
 		}
 		return array(
 			'total'=>$total,
@@ -543,6 +663,7 @@ class Visit extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from($orm->_table,array('claimId'))
 				->where('visitId = ?',$this->encounter_id)
+				->order('claimId DESC')
 				->group('claimId');
 		$ret = array();
 		if ($rows = $db->fetchAll($sqlSelect)) {
@@ -559,11 +680,95 @@ class Visit extends WebVista_Model_ORM {
 		$sqlSelect = $db->select()
 				->from($orm->_table,array('claimId','insuranceProgramId AS payerId'))
 				->where('visitId = ?',$this->encounter_id)
+				->order('claimId DESC')
 				->group('claimId');
 		$ret = array();
 		if ($rows = $db->fetchAll($sqlSelect)) {
 			foreach ($rows as $row) {
 				foreach ($row as $key=>$value) $ret[$key][] = $value;
+			}
+		}
+		return $ret;
+	}
+
+	public function getAccountSummary() {
+		$visitId = (int)$this->visitId;
+		$total = 0;
+		$billed = 0;
+		$writeoff = 0;
+		$balance = 0;
+		$baseFee = 0;
+		$adjustedFee = 0;
+		$miscCharge = MiscCharge::total(array('visitId'=>$visitId));
+		$payment = Payment::total(array('visitId'=>$visitId));
+		$payment += Payment::unpostedTotal($visitId);
+		$writeoff += WriteOff::total(array('visitId'=>$visitId));
+		if ($this->closed) {
+			$iterator = ClaimLine::mostRecentClaims($visitId);
+			foreach ($iterator as $claimLine) {
+				$baseFee += (float)$claimLine->baseFee;
+				$adjustedFee += (float)$claimLine->adjustedFee;
+			}
+		}
+		else {
+			$fees = $this->calculateFees();
+			$baseFee += $fees['total'];
+			$adjustedFee = $fees['discounted'];
+			if (!$writeoff > 0 && $adjustedFee > 0) $writeoff += ($baseFee - $adjustedFee);
+		}
+
+		$total = $baseFee + $miscCharge;
+		$billed = $miscCharge;
+		if ($adjustedFee > 0) $billed += $adjustedFee;
+		if (!$billed > 0) $billed = $total;
+		$balance = abs($total) - ($payment + $writeoff);
+		if ($balance == $total) $balance = $billed; // use total billed if balance equals to total
+
+		$ret = array();
+		$ret['total'] = $total;
+		$ret['billed'] = $billed;
+		$ret['payment'] = $payment;
+		$ret['balance'] = $balance;
+		$ret['writeoff'] = $writeoff;
+		$ret['baseFee'] = $baseFee;
+		$ret['adjustedFee'] = $adjustedFee;
+		$ret['miscCharge'] = $miscCharge;
+		if (isset($claimLine)) $ret['claimLine'] = $claimLine;
+		return $ret;
+	}
+
+	public function getEnteredBy() {
+		$userId = ($this->last_change_user_id > 0)?$this->last_change_user_id:$this->created_by_user_id;
+		$ret = '';
+		if ($userId > 0) {
+			$user = new User();
+			$user->userId = $userId;
+			$user->populate();
+			$ret = $user->username;
+		}
+		return $ret;
+	}
+
+	public function hasPayments() {
+		$ret = false;
+		$visitId = (int)$this->encounter_id;
+		$db = Zend_Registry::get('dbAdapter');
+		$orm = new Payment();
+		$sqlSelect = $db->select()
+				->from($orm->_table)
+				->where('encounter_id = ?',$visitId)
+				->limit(1);
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$ret = true;
+		}
+		else {
+			$orm = new PostingJournal();
+			$sqlSelect = $db->select()
+					->from($orm->_table)
+					->where('visitId = ?',$visitId)
+					->limit(1);
+			if ($row = $db->fetchRow($sqlSelect)) {
+				$ret = true;
 			}
 		}
 		return $ret;

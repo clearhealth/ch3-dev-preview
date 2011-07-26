@@ -72,7 +72,7 @@ class InsuredRelationship extends WebVista_Model_ORM {
 	}
 
 	public function persist() {
-		if ((int)$this->program_order === 0) $this->program_order = self::maxProgramOrder($this) + 1;
+		if ($this->_persistMode != WebVista_Model_ORM::DELETE && (int)$this->program_order === 0) $this->program_order = self::maxProgramOrder($this) + 1;
 		return parent::persist();
 	}
 
@@ -222,7 +222,7 @@ class InsuredRelationship extends WebVista_Model_ORM {
 		$db = Zend_Registry::get('dbAdapter');
 		$table = $payer->_table;
 
-		$sql = 'SELECT MAX(program_order) AS programOrder FROM '.$table.' WHERE person_id = '.$payer->personId;
+		$sql = 'SELECT MAX(program_order) AS programOrder FROM '.$table.' WHERE person_id = '.(int)$payer->personId;
 		$ret = 0;
 		if ($row = $db->fetchRow($sql)) {
 			$ret = (int)$row['programOrder'];

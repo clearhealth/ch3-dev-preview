@@ -43,9 +43,10 @@ class ImmunizationInventory extends WebVista_Model_ORM {
 
 		$view = Zend_Layout::getMvcInstance()->getView();
 		$params = array();
-		if ($isAdd) {
+		$config = Zend_Registry::get('config');
+		if ($isAdd || $config->useImmunizationInventory == 'false') {
 			$params['parentId'] = $enumerationId;
-			unset($_GET['enumerationId']); // remove enumerationId from params list
+			if ($isAdd) unset($_GET['enumerationId']); // remove enumerationId from params list
 			$params['grid'] = 'enumItemsGrid';
 			return $view->action('edit','enumerations-manager',null,$params);
 		}

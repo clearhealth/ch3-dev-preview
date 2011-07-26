@@ -25,6 +25,8 @@
 class PostingJournal extends WebVista_Model_ORM {
 
 	protected $postingJournalId;
+	protected $paymentId;
+	protected $payment;
 	protected $patientId;
 	protected $payerId;
 	protected $visitId;
@@ -38,5 +40,28 @@ class PostingJournal extends WebVista_Model_ORM {
 
 	protected $_table = 'postingJournals';
 	protected $_primaryKeys = array('postingJournalId');
+	protected $_cascadePersist = false;
+
+	public function __construct() {
+		$this->payment = new Payment();
+		$this->payment->_cascadePersist = false;
+	}
+
+	public function setPaymentId($id) {
+		$this->paymentId = (int)$id;
+		$this->payment->paymentId = $this->paymentId;
+	}
+
+	public function getEnteredBy() {
+		$ret = '';
+		$userId = (int)$this->userId;
+		if ($userId > 0) {
+			$user = new User();
+			$user->userId = $userId;
+			$user->populate();
+			$ret = $user->username;
+		}
+		return $ret;
+	}
 
 }

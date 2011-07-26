@@ -36,27 +36,44 @@ class NSDRBase {
 
 	public function aggregateDisplayByLine($tthis,$context,$data) {
 		$ret = '';
-		$values = $this->_display($data);
+		$values = $this->_display($data,1);
 		$ret = implode("\n",$values);
 		return $ret;
 	}
 
-	private function _display($data) {
+	private function _display($data,$level=0) {
 		$values = array();
 		foreach ($data as $key=>$val) {
-			if ($val instanceof ORM) {
-				$val = $val->toArray();
-				$tmpVal = '';
-				foreach ($val as $k=>$v) {
-					$tmpVal .= "$k: ".@ucwords($v) . ' ';
+			if (preg_match('/([a-z])Id$/',$key) || preg_match('/([a-z])_id$/',$key)) continue;
+			$value = str_repeat(' ',$level);
+			if ($val instanceof ORM) $val = $val->toArray();
+			if (is_array($val)) {
+				$nextLevel = $level;
+				if (!is_numeric($key)) {
+					$pads = str_repeat('*',$level);
+					$value .= $pads.self::prettyName($key).$pads;
+					$nextLevel = $level + 1;
 				}
-				$values[] = $tmpVal;
+				$value .= "\n".implode("\n",$this->_display($val,$nextLevel));
+				if (strlen(trim($value)) > 0) $values[] = $value;
 			}
 			else {
-				$values[] = ucwords($val);
+				if (!is_numeric($key)) $value .= self::prettyName($key).': ';
+				$value .= ucwords($val);
+				if (strlen(trim($value)) > 0) $values[] = $value;
 			}
 		}
 		return $values;
+	}
+
+	public static function prettyName($name) {
+		$name = trim($name);
+		$name = preg_replace('/([a-z])Id$/','$1',$name);
+		$name = preg_replace('/([a-z])_id$/','$1',$name);
+		$name = preg_replace('/([A-Z])(?![A-Z])/',' $1',$name);
+		$name = preg_replace('/_/',' ',$name);
+		$name = ucwords($name);
+		return trim($name);
 	}
 
 }

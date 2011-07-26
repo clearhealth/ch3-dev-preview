@@ -63,6 +63,7 @@ class AdminProvidersController extends WebVista_Controller_Action
 			$specialties[$specialty['code']] = $specialty['description'];
 		}
 		$this->view->specialties = $specialties;
+		$this->view->colors = Room::getColorList();
 
 		$this->render('edit');
 	}

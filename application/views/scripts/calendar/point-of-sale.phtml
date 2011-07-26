@@ -112,8 +112,11 @@ dhtmlxEvent(chargeGrid.entBox,"contextmenu",function(e){
 });
 
 <?foreach (Enumeration::getEnumArray('Payment Types','key') as $key=>$value):?>
-payGrid.getCombo(1).put("<?=$key?>","<?=$value?>");
-chargeGrid.getCombo(1).put("<?=$key?>","<?=$value?>");
+payGrid.getCombo(1).put("<?=htmlspecialchars($key)?>","<?=htmlspecialchars($value)?>");
+<?endforeach;?>
+
+<?foreach (Enumeration::getEnumArray('Charge Types','key') as $key=>$value):?>
+chargeGrid.getCombo(1).put("<?=htmlspecialchars($key)?>","<?=htmlspecialchars($value)?>");
 <?endforeach;?>
 
 /* ELIGIBILITY */

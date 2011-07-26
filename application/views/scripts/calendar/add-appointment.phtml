@@ -66,15 +66,13 @@ ul {
 	<div style="text-align:left;float:left;">
 		<fieldset><legend><?=__('Patient Details')?></legend>
 			<div class="formRow" style="margin-left:5px;">
-				<?if($this->appointment->patientId > 0):?>
 				<ul>
-					<li><?=__('Phones')?>: <?=implode(',',$this->phones)?></li>
-					<li><?=__('Name')?>: <?=$this->appointment->patient->displayName?></li>
-					<li><?=__('MRN')?>: <?=$this->appointment->patient->recordNumber?></li>
-					<li><?=__('Age/Sex')?>: <?=$this->appointment->patient->age?> (<?=$this->appointment->patient->displayGender?>)</li>
-					<li><?=__('DOB')?>: <?=$this->form->formPatient->formPerson->dateOfBirth->getValue()?></li>
+					<li><?=__('Phones')?>: <label id="pdPhonesId" style="display:inline;"><?=implode(',',$this->phones)?></label></li>
+					<li><?=__('Name')?>: <label id="pdNameId" style="display:inline;"><?=($this->appointment->patientId > 0)?$this->appointment->patient->displayName:''?></label></li>
+					<li><?=__('MRN')?>: <label id="pdMRNId" style="display:inline;"><?=($this->appointment->patientId > 0)?$this->appointment->patient->recordNumber:''?></label></li>
+					<li><?=__('Age/Sex')?>: <label id="pdAgeSexId" style="display:inline;"><?=($this->appointment->patientId > 0)?$this->appointment->patient->age.'('.$this->appointment->patient->displayGender.')':''?></label></li>
+					<li><?=__('DOB')?>: <label id="pdDOB" style="display:inline;"><?=($this->appointment->patientId > 0)?$this->form->formPatient->formPerson->dateOfBirth->getValue():''?></label></li>
 				</ul>
-				<?endif;?>
 			</div>
 		</fieldset>
 		<fieldset><legend><?=__('Patient Notes')?><?if($this->form->patientId->getValue() > 0):?> (<a href="javascript:appointmentNotesAdd()" title="<?=__('Add New')?>"><?=__('Add New')?></a>)<?endif;?></legend>
@@ -320,7 +318,32 @@ function pscbCheckStore() {
 dojo.connect(pscb,"onChange",'getDetails');
 function getDetails(args) {
 	// don't need args coz it holds the selected value
-	dojo.byId("<?=$this->form->patientId->getId()?>").value = pscb.selectedKey;
+
+	var personId = pscb.selectedKey;
+	dojo.byId("<?=$this->form->patientId->getId()?>").value = personId;
+
+	dojo.xhrGet({
+		url: "<?=$this->baseUrl?>/patient.raw/get-details",
+		handleAs: "json",
+		content: {
+			"personId": personId,
+		},
+		load: function(data) {
+			if (!data) return;
+			dojo.byId("pdPhonesId").innerHTML = data.phones;
+			dojo.byId("pdNameId").innerHTML = data.person.last_name+", "+data.person.first_name+" "+data.person.middle_name;
+			dojo.byId("pdMRNId").innerHTML = data.record_number;
+			dojo.byId("pdAgeSexId").innerHTML = data.age+"("+data.person.gender+")";
+			dojo.byId("pdDOB").innerHTML = data.person.date_of_birth;
+			return data;
+		},
+		error: function(response,ioArgs) {
+			console.error("HTTP status code: ", ioArgs.xhr.status);
+			return response;
+		}
+	});
+
+	pNotesGridReload();
 }
 
 
@@ -384,7 +407,7 @@ pNotesGrid.getCombo(indexPNReason).put("<?=$id?>","<?=$reason?>");
 <?endforeach;?>
 function pNotesGridReload() {
 	pNotesGrid.clearAll();
-	pNotesGrid.load("<?=$this->baseUrl?>/patient.raw/list-notes?patientId=<?=$this->form->patientId->getValue()?>","json");
+	pNotesGrid.load("<?=$this->baseUrl?>/patient.raw/list-notes?patientId="+dojo.byId("<?=$this->form->patientId->getId()?>").value,"json");
 }
 pNotesGridReload();
 

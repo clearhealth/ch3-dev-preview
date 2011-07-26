@@ -43,6 +43,7 @@ class ClaimsController extends WebVista_Controller_Action {
 			$filters['paid'] = $tmp;
 			$filters['writeoff'] = $tmp;
 			$filters['balance'] = $tmp;
+			$filters['mrn'] = '';
 			$this->_session->filters = $filters;
 		}
 		$this->view->filters = $this->_session->filters;
@@ -61,6 +62,7 @@ class ClaimsController extends WebVista_Controller_Action {
 		if (!isset($filters['paid'])) $filters['paid'] = '';
 		if (!isset($filters['writeoff'])) $filters['writeoff'] = '';
 		if (!isset($filters['openClosed'])) $filters['openClosed'] = 2;
+		if (!isset($filters['mrn'])) $filters['mrn'] = '';
 		$this->view->filters = $filters;
 		$facilityIterator = new FacilityIterator();
 		$facilityIterator->setFilter(array('Practice','Building','Room'));
@@ -124,6 +126,12 @@ class ClaimsController extends WebVista_Controller_Action {
 	}
 
 	public function listAction() {
+		$posStart = $this->_getParam('posStart');
+		if ($posStart < 0) {
+			$msg = 'Invalid request';
+			trigger_error($msg);
+			throw new Exception($msg);
+		}
 		$claimList = isset($this->_session->claimList)?$this->_session->claimList:array();
 		$sessions = $this->_session->filters;
 		if (!isset($sessions['DOSStart'])) {
@@ -166,54 +174,23 @@ class ClaimsController extends WebVista_Controller_Action {
 			$filters['balance'] = isset($sessions['balance'])?$sessions['balance']:0;
 			$filters['openClosed'] = isset($sessions['openClosed'])?(int)$sessions['openClosed']:2;
 		}
+		if (isset($sessions['mrn']) && strlen($sessions['mrn']) > 0) $filters['mrn'] = $sessions['mrn'];
 
 		$rows = array();
 		$claimIterator = array();
 		$visitIterator = new VisitIterator();
+		//$filters['void'] = 0; // exclude void from list
 		$visitIterator->setFilters($filters);
 		foreach ($visitIterator as $visit) {
-			$closed = (int)$visit->closed;
 			$visitId = (int)$visit->visitId;
 			$appointmentId = (int)$visit->appointmentId;
-			$total = 0;
-			$billed = 0;
-			$paid = 0;
-			$writeoff = 0;
-			$balance = 0;
-			$claimLineId = 0;
-			$baseFee = 0;
-			$miscCharge = 0;
-			if ($closed) {
-				$miscCharge = null;
-				$baseFee = 0;
-				$adjustedFee = 0;
-				$paid = 0;
-				$writeoff = 0;
-				$iterator = ClaimLine::mostRecentClaims($visitId);
-				foreach ($iterator as $claimLine) {
-					if ($miscCharge === null) $miscCharge = $claimLine->totalMiscCharge;
-					$baseFee += (float)$claimLine->baseFee;
-					$adjustedFee += (float)$claimLine->adjustedFee;
-					$paid += (float)$claimLine->paid;
-					$writeoff += (float)$claimLine->writeOff;
-				}
-				$miscCharge = (float)$miscCharge;
-			}
-			else {
-				$fees = $visit->calculateFees();
-				$baseFee = $fees['total'];
-				$adjustedFee = $fees['discounted'];
-				$tmp = array('visitId'=>$visitId,'appointmentId'=>$appointmentId);
-				$miscCharge = MiscCharge::total($tmp);
-				$writeoff = WriteOff::total($tmp);
-				$paid = Payment::total($tmp);
-				$paid += $writeoff;
-			}
-
-			$total = $baseFee + $miscCharge;
-			$billed = $miscCharge;
-			if ($baseFee > 0) $billed += $baseFee - $adjustedFee;
-			$balance = abs($billed) - $paid;
+			$acct = $visit->accountSummary;
+			$total = $acct['total'];
+			$billed = $acct['billed'];
+			$writeoff = $acct['writeoff'];
+			$paid = $acct['payment'];
+			$balance = $acct['balance'];
+			$payerId = isset($acct['claimLine'])?$acct['claimLine']->insuranceProgramId:$visit->activePayerId;
 
 			$names = array('total','billed','paid','writeoff','balance');
 			foreach ($names as $name) {
@@ -230,6 +207,7 @@ class ClaimsController extends WebVista_Controller_Action {
 					continue 2;
 				}
 			}
+ 			$paid += $writeoff;
 
 			$dateOfService = substr($visit->dateOfTreatment,0,10);
 			$personId = (int)$visit->patientId;
@@ -239,7 +217,7 @@ class ClaimsController extends WebVista_Controller_Action {
 			$person->populate();
 
 			$color = '';
-			if ($closed) {
+			if ($visit->closed) {
 				if ($total > 0 && $balance <= 0) {
 					$color = '#82CA9D'; // pastel green for fully zeroed claims
 				}
@@ -247,22 +225,20 @@ class ClaimsController extends WebVista_Controller_Action {
 					$color = '#F7977A'; // pastel red for claims partly paid or with a denial status
 				}
 			}
-			if ($color == '' && $claimLineId > 0) {
+			if ($color == '') {
 				$color = '#FFF79A'; // pastel yellow for rows transmitted
-			}
-			$payerId = (int)$visit->activePayerId;
-			if (isset($claimLine)) {
-				$payerId = (int)$claimLine->insuranceProgramId;
 			}
 			$facility = $visit->facility;
 			$total = number_format(abs($total),2,'.',',');
 			$billed = number_format(abs($billed),2,'.',',');
 			$paid = number_format(abs($paid),2,'.',',');
 			$balance = number_format(abs($balance),2,'.',',');
+			$url = $this->view->baseUrl.'/claims.raw/list-claim-files?visitId='.$visitId;
+			if (isset($acct['claimLine'])) $url .= '&claimId='.$acct['claimLine']->claimId;
 			$row = array();
 			$row['id'] = $visitId;
 			$row['data'] = array();
-			$row['data'][] = $this->view->baseUrl.'/claims.raw/list-claim-files?visitId='.$visitId;
+			$row['data'][] = $url;
 			$row['data'][] = $dateOfService;
 			$row['data'][] = $person->displayName;
 			$row['data'][] = '$'.$total;
@@ -460,15 +436,16 @@ class ClaimsController extends WebVista_Controller_Action {
 			$visit->populate();
 
 			$ctr = 1;
-			$miscCharge = new MiscCharge();
-			$results = $miscCharge->getUnpaidCharges();
-			foreach ($results as $result) {
+			$iterator = MiscCharge::getIteratorByIds($visit);
+			foreach ($iterator as $result) {
 				$row = array();
 				$row['id'] = $ctr++;
 				$row['data'] = array();
 				$row['data'][] = '';
-				$row['data'][] = $result['note'];
-				$row['data'][] = number_format($result['amount'],2,'.',',');
+				$row['data'][] = $result->note;
+				$amount = number_format((float)$result->amount,2,'.',',');
+				$row['data'][] = $amount;
+				$row['data'][] = $amount;
 				$rows[] = $row;
 			}
 		}
@@ -488,15 +465,17 @@ class ClaimsController extends WebVista_Controller_Action {
 			$visit->populate();
 
 			$ctr = 1;
-			$payment = new Payment();
-			$paymentIterator = $payment->getIteratorByVisitId($visit->visitId);
+			$paymentIterator = Payment::getIteratorByIds($visit);
 			foreach ($paymentIterator as $pay) {
+				if (!$pay->visitId > 0 && !$pay->unallocated > 0) continue;
 				$row = array();
 				$row['id'] = $ctr++;
 				$row['data'] = array();
 				$row['data'][] = '';
 				$row['data'][] = $pay->title;
-				$row['data'][] = number_format($pay->amount,2,'.',',');
+				$amount = number_format((float)$pay->amount,2,'.',',');
+				$row['data'][] = $amount;
+				$row['data'][] = $amount;
 				$rows[] = $row;
 			}
 		}
@@ -659,7 +638,6 @@ class ClaimsController extends WebVista_Controller_Action {
 			$method = 'setUnset'.$type;
 			if ($patientProcedure->$method($code,$state)) {
 				$patientProcedure->persist();
-				$patientProcedure->checkVisitStatus();
 				$ret = true;
 			}
 		}
@@ -706,7 +684,7 @@ class ClaimsController extends WebVista_Controller_Action {
 		$claimList = isset($this->_session->claimList)?$this->_session->claimList:array();
 		$visitIds = isset($this->_session->visitIds)?$this->_session->visitIds:array();
 
-		$claimIds = ClaimLine::listAllClaimIds($visitIds,true);
+		$claimIds = ClaimLine::listAllMostRecentClaimIds($visitIds);
 		$destinations = Claim::listOptions();
 		$claimFile = new ClaimFile();
 		$claimFile->destination = $type;
@@ -718,10 +696,17 @@ class ClaimsController extends WebVista_Controller_Action {
 
 		if (isset($claimIds[0])) {
 			switch ($type) {
-				case 'healthcloud':
+				case 'healthcloud': // takes 4010A files and send to healthcloud
+					$this->getResponse()->setHeader('Content-Type','text/plain');
+					$this->getResponse()->setHeader('Content-Disposition','attachment; filename="4010A1.txt"');
+					$data = Claim::render4010A1($claimFile,$claimIds);
+					$claimFile->persistData($data);
+					$claimFile->transmit($data);
 					break;
 				case 'download4010A1':
-					$data = $this->_download4010A1($claimFile,$claimIds);
+					$this->getResponse()->setHeader('Content-Type','text/plain');
+					$this->getResponse()->setHeader('Content-Disposition','attachment; filename="4010A1.txt"');
+					$data = Claim::render4010A1($claimFile,$claimIds);
 					break;
 				case 'download5010':
 					break;
@@ -731,25 +716,230 @@ class ClaimsController extends WebVista_Controller_Action {
 				case 'CMS1450PDF':
 					$data = $this->_downloadCMSPDF($claimIds,1450);
 					break;
+				case 'previewStatements':
+					$data = $this->_previewStatements($claimIds);
+					break;
+				case 'publishStatements':
+					$data = $this->_download4010A1($claimFile,$claimIds);
+					$xml = new SimpleXMLElement('<data/>');
+					$result = $this->_previewStatements($claimIds,$xml);
+					$statementData = $xml->asXML();
+					$claimFile->persistData($data,$statementData);
+					$claimFile->transmit($data,$statementData);
+					$data = $result;
+					break;
 				default:
 					break;
 			}
-			$db = Zend_Registry::get('dbAdapter');
-			/*$ret = $db->insert('claimFileBlobs',array(
-				'claimFileId'=>$claimFile->claimFileId,
-				'data'=>$data,
-			));*/
 		}
 		$this->_session->visitIds = array();
 		$this->view->content = $data;
 		$this->render('download');
 	}
 
-	protected function _download4010A1(ClaimFile $claimFile,Array $claimIds) {
-		$this->getResponse()->setHeader('Content-Type','text/plain');
-		$this->getResponse()->setHeader('Content-Disposition','attachment; filename="4010A1.txt"');
-		$data = Claim::render4010A1($claimFile,$claimIds);
-		return $data;
+	protected function _previewStatements(Array $claimIds,SimpleXMLElement $xml = null) {
+		$refId = 'a2f8d4b3-73cf-4637-9e2e-2904ab55d64d';
+		$attachment = new Attachment();
+		$attachment->attachmentReferenceId = $refId;
+		$attachment->populateWithAttachmentReferenceId();
+		if ($xml === null) $xml = new SimpleXMLElement('<data/>');
+
+		foreach ($claimIds as $claimId) {
+			$this->_generateXMLStatements($xml->addChild('statements'),$claimId);
+		}
+
+		try {
+			$content = ReportBase::mergepdfset($xml,$attachment->rawData);
+			$this->getResponse()->setHeader('Content-Type','application/pdf');
+		}
+		catch (Exception $e) {
+			$content = '<script>alert("'.$e->getMessage().'")</script>';
+		}
+		return $content;
+	}
+
+	protected function _generateXMLStatements(SimpleXMLElement $xml,$claimId) {
+		$iterator = new ClaimLineIterator();
+		$iterator->setFilters(array('claimId'=>$claimId));
+		$visitId = null;
+		$totalPayments = 0;
+		$totalCharges = 0;
+		$claims = array();
+		foreach ($iterator as $claimLine) {
+			$claimLineId = (int)$claimLine->claimLineId;
+			$visitId = (int)$claimLine->visitId;
+			$payerId = (int)$claimLine->insuranceProgramId;
+			$procedureCode = $claimLine->procedureCode;
+			$charges = (float)$claimLine->baseFee;
+			$totalCharges += $charges;
+			if (!isset($visit)) {
+				$visit = new Visit();
+				$visit->visitId = $visitId;
+				$visit->populate();
+			}
+			if (!isset($patientName)) {
+				$patientId = (int)$visit->patientId;
+				$patient = new Patient();
+				$patient->personId = $patientId;
+				$patient->populate();
+				$patientName = $patient->person->firstName.' '.$patient->person->middleName.' '.$patient->person->lastName;
+			}
+			if (!isset($providerName)) {
+				$providerId = (int)$visit->providerId;
+				$provider = new Provider();
+				$provider->personId = $providerId;
+				$provider->populate();
+				$providerName = $provider->person->firstName.' '.$provider->person->middleName.' '.$provider->person->lastName;
+			}
+
+			$claim = array();
+			$claim['date'] = date('m/d/Y',strtotime($claimLine->dateTime));
+			$claim['patient'] = $patientName;
+			$claim['provider'] = $providerName;
+			$claim['description'] = $claimLine->procedure;
+			$claim['charges'] = number_format($charges,2);
+			$claim['credits'] = '';
+			if (!isset($claims[$visitId])) $claims[$visitId] = array();
+			$claims[$visitId][] = $claim;
+		}
+
+		if ($visitId === null) return;
+
+		$miscCharge = new MiscCharge();
+		$iterator = $miscCharge->getIteratorByVisitId($visitId);
+		foreach ($iterator as $charge) {
+			$amount = (float)$charge->amount;
+			$totalCharges += $amount;
+			$claim = array();
+			$claim['date'] = date('m/d/Y',strtotime($charge->chargeDate));
+			$claim['patient'] = $patientName;
+			$claim['provider'] = $providerName;
+			$description = $charge->chargeType;
+			$title = $charge->title;
+			if (strlen($title) > 0) $description .= ': '.$title;
+			$claim['description'] = $description;
+			$claim['charges'] = number_format($amount,2);
+			$claim['credits'] = '';
+			$id = (int)$charge->miscChargeId;
+			if (!isset($claims[$id])) $claims[$id] = array();
+			$claims[$id][] = $claim;
+		}
+
+		$iterator = new PostingJournalIterator();
+		$iterator->setFilters(array('visitId'=>$visitId));
+		foreach ($iterator as $journal) {
+			$amount = (float)$journal->amount;
+			$totalPayments += $amount;
+			$claim = array();
+			$claim['date'] = date('m/d/Y',strtotime($journal->datePosted));
+			$claim['patient'] = $patientName;
+			$claim['provider'] = $providerName;
+			$claim['description'] = $journal->note;
+			$claim['charges'] = '';
+			$claim['credits'] = number_format($amount,2);
+			$id = (int)$journal->postingJournalId;
+			if (!isset($claims[$id])) $claims[$id] = array();
+			$claims[$id][] = $claim;
+		}
+
+		$iterator = new WriteOffIterator();
+		$iterator->setFilters(array('visitId'=>$visitId));
+		foreach ($iterator as $writeoff) {
+			$amount = (float)$writeoff->amount;
+			$totalPayments += $amount;
+			$claim = array();
+			$claim['date'] = date('m/d/Y',strtotime($writeoff->timestamp));
+			$claim['patient'] = $patientName;
+			$claim['provider'] = $providerName;
+			$claim['description'] = $writeoff->title;
+			$claim['charges'] = '';
+			$claim['credits'] = number_format($amount,2);
+			$id = (int)$writeoff->writeOffId;
+			if (!isset($claims[$id])) $claims[$id] = array();
+			$claims[$id][] = $claim;
+		}
+
+		$practiceId = (int)$visit->practiceId;
+		if (!$practiceId > 0) $practiceId = (int)$provider->person->primaryPracticeId;
+		$practice = new Practice();
+		$practice->practiceId = $practiceId;
+		$practice->populate();
+
+		$practiceName = $practice->name;
+		$practicePrimaryLine1 = $practice->primaryAddress->line1;
+		$practicePrimaryCityStateZip = $practice->primaryAddress->city.', '.$practice->primaryAddress->state.' '.$practice->primaryAddress->postalCode;
+		$practiceMainPhone = $practice->mainPhone->number;
+
+		$xmlPractice = $xml->addChild('practice');
+		$this->_addChild($xmlPractice,'name',$practiceName);
+		$this->_addChild($xmlPractice,'primaryLine1',$practicePrimaryLine1);
+		$this->_addChild($xmlPractice,'primaryCityStateZip',$practicePrimaryCityStateZip);
+		$this->_addChild($xmlPractice,'mainPhone',$practiceMainPhone);
+
+		$insuredRelationship = InsuredRelationship::filterByPayerPersonIds($payerId,$patientId);
+		$subscriberId = (int)$insuredRelationship->subscriberId;
+		if ($subscriberId > 0) $subscriber = $insuredRelationship->subscriber;
+		else $subscriber = $insuredRelationship->person;
+
+		$xmlSubscriber = $xml->addChild('subscriber');
+		$subscriberName = $subscriber->firstName.' '.$subscriber->middleName.' '.$subscriber->lastName;
+		$this->_addChild($xmlSubscriber,'name',$subscriberName);
+		$address = $subscriber->address;
+		$this->_addChild($xmlSubscriber,'line1',$address->line1);
+		$subscriberCityStateZip = $address->city.', '.$address->state.' '.$address->postalCode;
+		$this->_addChild($xmlSubscriber,'cityStateZip',$subscriberCityStateZip);
+
+		$xmlBiller = $xml->addChild('biller');
+		$this->_addChild($xmlBiller,'name',$practiceName);
+		$this->_addChild($xmlBiller,'line1',$practicePrimaryLine1);
+		$this->_addChild($xmlBiller,'cityStateZip',$practicePrimaryCityStateZip);
+
+		$xmlClaims = $xml->addChild('claims');
+
+		$claim = array();
+		$claim['date'] = ' ';
+		$claim['patient'] = ' ';
+		$claim['provider'] = ' ';
+		$claim['description'] = ' ';
+		$claim['charges'] = ' ';
+		$claim['credits'] = ' ';
+		ksort($claims);
+		$claims = array_pad($claims,12,array($claim));
+		foreach ($claims as $key=>$values) {
+			foreach ($values as $claim) {
+				$xmlClaimsDetails = $xmlClaims->addChild('details');
+				$this->_addChild($xmlClaimsDetails,'date',$claim['date']);
+				$this->_addChild($xmlClaimsDetails,'patientName',$claim['patient']);
+				$this->_addChild($xmlClaimsDetails,'providerName',$claim['provider']);
+				$this->_addChild($xmlClaimsDetails,'description',$claim['description']);
+				$this->_addChild($xmlClaimsDetails,'charges',$claim['charges']);
+				$this->_addChild($xmlClaimsDetails,'credits',$claim['credits']);
+			}
+		}
+		$date = date('m/d/Y');
+		$accountNumber = $patient->recordNumber;;
+		$totalOutstanding = $totalCharges - $totalPayments;
+		$pendingInsurance = 0;
+		$amount = $totalOutstanding - $pendingInsurance;
+		$patientResponsibility = $amount;
+		$current = $amount;
+		$pastDue = 0;
+		$amountDue = $amount;
+
+		$xmlClaimsInfo = $xmlClaims->addChild('info');
+		$this->_addChild($xmlClaimsInfo,'statement',$date);
+		$this->_addChild($xmlClaimsInfo,'accountNo',$accountNumber);
+		$this->_addChild($xmlClaimsInfo,'amount',number_format($amountDue,2));
+
+		$xmlClaimsSummary = $xmlClaims->addChild('summary');
+		$this->_addChild($xmlClaimsSummary,'accountNumber',$accountNumber);
+		$this->_addChild($xmlClaimsSummary,'totalOutstanding',number_format($totalOutstanding,2));
+		$this->_addChild($xmlClaimsSummary,'patientResponsibility',number_format($patientResponsibility,2));
+		$this->_addChild($xmlClaimsSummary,'pendingInsurance',number_format($pendingInsurance,2));
+		$this->_addChild($xmlClaimsSummary,'current',number_format($current,2));
+		$this->_addChild($xmlClaimsSummary,'pastDue',number_format($pastDue,2));
+		$this->_addChild($xmlClaimsSummary,'amountDue',number_format($amountDue,2));
+		file_put_contents('/tmp/claims.xml',$xml->asXML());
 	}
 
 	protected function _downloadCMSPDF(Array $claimIds,$type) {
@@ -1080,8 +1270,9 @@ class ClaimsController extends WebVista_Controller_Action {
 		//file_put_contents('/tmp/claims.xml',$doc->saveXML());
 	}
 
-	protected function _addChild(SimpleXMLElement $xml,$key,$value) {
-		if ($key && $value) $xml->addChild($key,htmlentities($value));
+	protected function _addChild(SimpleXMLElement $xml,$key,$value,$checked=true) {
+		if (is_object($value)) trigger_error($key.'='.get_class($value));
+		if (!$checked || (strlen($key) > 0 && strlen($value) > 0)) $xml->addChild($key,htmlentities($value));
 	}
 
 	public function setSessionBatchIdsAction() {
@@ -1120,10 +1311,11 @@ class ClaimsController extends WebVista_Controller_Action {
 				$baseFee = $fees['baseFee'];
 				$adjustedFee = $fees['adjustedFee'];
 				$total = $baseFee + $miscCharge;
-				$billed = $miscCharge;
-				if ($baseFee > 0) $billed += $baseFee - $adjustedFee;
-				$writeoff = $claimLine->totalWriteOff;
-				$paid = $claimLine->totalPaid + $writeoff;
+				//$billed = $miscCharge;
+				$billed += (float)$claimLine->baseFee;
+				//if ($baseFee > 0) $billed += $baseFee - $adjustedFee;
+				$writeoff = $claimLine->overallWriteOff;
+				$paid = $claimLine->overallPayment + $writeoff;
 				$balance = abs($billed) - $paid;
 			}
 
@@ -1155,13 +1347,11 @@ class ClaimsController extends WebVista_Controller_Action {
 
 	public function setSessionIdsAction() {
 		$ids = $this->_getParam('ids','');
-		$unallocatedFunds = (float)$this->_getParam('unallocatedFunds',0.00);
 		$data = false;
 		if (strlen($ids) > 0) {
 			$data = true;
 		}
 		$this->_session->ids = $ids;
-		$this->_session->unallocatedFunds = $unallocatedFunds;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct($data);
@@ -1207,11 +1397,13 @@ class ClaimsController extends WebVista_Controller_Action {
 		}
 		$this->view->payers = $payers;
 		$this->view->visitIds = $ids;
+		$this->view->payerSelf = InsuranceProgram::lookupSystemId('Self Pay'); // ID of System->Self Pay
 
 		$this->render();
 	}
 
 	public function processPaymentsAction() {
+		$visitId = (int)$this->_getParam('visitId');
 		$params = $this->_getParam('payment');
 		$paidAmounts = $this->_getParam('paid');
 		$writeOffAmounts = $this->_getParam('writeOff');
@@ -1221,20 +1413,19 @@ class ClaimsController extends WebVista_Controller_Action {
 		$userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 
 		// TODO: need to record payment as a postingJournal entry against the new payment row that represents the new check # or other source of unallocated funds
-		$unallocatedFunds = $this->_session->unallocatedFunds;
 		if (is_array($params)) {
+			$visit = new Visit();
+			$visit->visitId = $visitId;
+			$visit->populate();
+			$payment = new Payment();
+			$payment->populateWithArray($params);
+			$payerId = (int)$payment->payerId;
+			$personId = (int)$payment->personId;
+			$visitId = (int)$payment->visitId;
+			$paymentDate = $payment->paymentDate;
+
+			$otm = new WebVista_Model_ORMTransactionManager();
 			if (is_array($paidAmounts)) {
-				$payment = new Payment();
-				$payment->populateWithArray($params);
-				$payerId = (int)$payment->payerId;
-				$personId = (int)$payment->personId;
-				$visitId = (int)$payment->visitId;
-				$paymentDate = $payment->paymentDate;
-
-				$visit = new Visit();
-				$visit->visitId = $visitId;
-				$visit->populate();
-
 				$payments = array();
 				if ($sourceOfFunds == 'checkFundsId') { // check funds
 					// uniqueCheckNumbers
@@ -1260,9 +1451,11 @@ class ClaimsController extends WebVista_Controller_Action {
 						if ($amount > $billable) $amount = $billable;
 						$payment->allocated += $amount;
 						$payment->persist();
+						$otm->addORM($payment);
 						$payments[$paymentId] = $payment;
 
 						$postingJournal = new PostingJournal();
+						$postingJournal->paymentId = (int)$payment->paymentId;
 						$postingJournal->patientId = $personId;
 						$postingJournal->payerId = $payerId;
 						$postingJournal->claimLineId = $claimLineId;
@@ -1274,6 +1467,7 @@ class ClaimsController extends WebVista_Controller_Action {
 						$postingJournal->datePosted = $paymentDate;
 						$postingJournal->dateTime = $dateTime;
 						$postingJournal->persist();
+						$otm->addORM($postingJournal);
 						$billable -= $amount;
 						if ($billable <= 0) break;
 					}
@@ -1283,6 +1477,7 @@ class ClaimsController extends WebVista_Controller_Action {
 						if ($claimLine->populate()) {
 							$claimLine->note = $note;
 							$claimLine->persist();
+							$otm->addORM($claimLine);
 							$firstRow = true;
 						}
 					}
@@ -1293,18 +1488,27 @@ class ClaimsController extends WebVista_Controller_Action {
 				$writeOff->populateWithArray($params);
 				$writeOff->userId = (int)Zend_Auth::getInstance()->getIdentity()->personId;
 				$writeOff->timestamp = date('Y-m-d H:i:s');
+				$writeOff->payerId = $payerId;
 				foreach ($writeOffAmounts as $claimLineId=>$amount) {
 					if (!$amount > 0) continue;
 					$writeOff->writeOffId = 0;
 					$writeOff->claimLineId = (int)$claimLineId;
 					$writeOff->amount = $amount;
 					$writeOff->persist();
+					$otm->addORM($writeOff);
 				}
+			}
+			if (count($otm->getQueries()) > 0 && !$otm->persist()) {
+				trigger_error(__('Failed to save.'));
 			}
 		}
 
+		$unallocatedFunds = 0;
+		if (isset($visit)) {
+			$funds = $visit->unallocatedFunds;
+			$unallocatedFunds = (float)$funds['total'];
+		}
 		if ($unallocatedFunds < 0) $unallocatedFunds = 0;
-		$this->_session->unallocatedFunds = $unallocatedFunds;
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(sprintf('%.2f',$unallocatedFunds));
@@ -1312,45 +1516,46 @@ class ClaimsController extends WebVista_Controller_Action {
 
 	public function listPaymentHistoryAction() {
 		$visitId = (int)$this->_getParam('visitId');
+		$filters = array('visitId'=>$visitId,'unposted'=>true);
+		$iterators = ClaimLine::getPaymentHistory($filters);
 		$rows = array();
-		$iterator = new PostingJournalIterator();
-		$iterator->setFilters(array('visitId'=>$visitId));
-		foreach ($iterator as $postingJournal) {
-			$row['data'] = array();
-			$row['data'][] = $postingJournal->datePosted;
-			$row['data'][] = '';
-			$row['data'][] = $postingJournal->amount;
-			$row['data'][] = '';
-			$row['data'][] = InsuranceProgram::getInsuranceProgram($postingJournal->payerId);
-			$row['data'][] = $postingJournal->note;
-			$row['data'][] = 'P';
-			$rows[] = $row;
-		}
-		$iterator = new PaymentIterator();
-		$iterator->setFilters(array('visitId'=>$visitId));
-		foreach ($iterator as $payment) {
-			$row['data'] = array();
-			$row['data'][] = substr($payment->paymentDate,0,10);
-			$row['data'][] = $payment->paymentType;
-			$row['data'][] = $payment->amount;
-			$row['data'][] = '';
-			$row['data'][] = InsuranceProgram::getInsuranceProgram($payment->payerId);
-			$row['data'][] = $payment->title;
-			$row['data'][] = ($payment->isPosted)?'P':'U';
-			$rows[] = $row;
-		}
-		$iterator = new WriteOffIterator();
-		$iterator->setFilters(array('visitId'=>$visitId));
-		foreach ($iterator as $writeOff) {
-			$row['data'] = array();
-			$row['data'][] = substr($writeOff->timestamp,0,10);
-			$row['data'][] = '';
-			$row['data'][] = '';
-			$row['data'][] = $writeOff->amount;
-			$row['data'][] = '';
-			$row['data'][] = $writeOff->title;
-			$row['data'][] = 'U';
-			$rows[] = $row;
+
+		foreach ($iterators as $iterator) {
+			foreach ($iterator as $item) {
+				$row = array();
+				$row['data'] = array();
+				if ($item instanceof PostingJournal) {
+					$row['id'] = $item->postingJournalId;
+					$row['data'][] = $item->datePosted;
+					$row['data'][] = '';
+					$row['data'][] = $item->amount;
+					$row['data'][] = '';
+					$row['data'][] = InsuranceProgram::getInsuranceProgram($item->payerId);
+					$row['data'][] = $item->note;
+					$row['data'][] = 'P';
+				}
+				else if ($item instanceof Payment) {
+					$row['id'] = $item->paymentId;
+					$row['data'][] = $item->paymentDate;
+					$row['data'][] = '';
+					$row['data'][] = $item->unallocated;
+					$row['data'][] = '';
+					$row['data'][] = InsuranceProgram::getInsuranceProgram($item->payerId);
+					$row['data'][] = $item->title;
+					$row['data'][] = 'U';
+				}
+				else {
+					$row['id'] = $item->writeOffId;
+					$row['data'][] = substr($item->timestamp,0,10);
+					$row['data'][] = '';
+					$row['data'][] = '';
+					$row['data'][] = $item->amount;
+					$row['data'][] = InsuranceProgram::getInsuranceProgram($item->payerId);
+					$row['data'][] = $item->title;
+					$row['data'][] = 'U';
+				}
+				$rows[] = $row;
+			}
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
@@ -1430,8 +1635,9 @@ class ClaimsController extends WebVista_Controller_Action {
 		$iterator = new ClaimLineIterator();
 		$iterator->setFilters(array('claimId'=>(int)$claimId));
 		$visits = array();
-		$discountPayerId = InsuranceProgram::lookupSystemId('Discounts'); // ID of System->Discounts
+		//$discountPayerId = InsuranceProgram::lookupSystemId('Discounts'); // ID of System->Discounts
 		foreach ($iterator as $claimLine) {
+			$oldPayerId = (int)$claimLine->insuranceProgramId;
 			$claimLine->claimLineId = 0;
 			$claimLine->claimId = $id;
 			$claimLine->insuranceProgramId = (int)$payerId;
@@ -1449,6 +1655,7 @@ class ClaimsController extends WebVista_Controller_Action {
 			$claimLine->recalculateBaseFee($visit);
 			$newBaseFee = (float)$claimLine->baseFee;
 			$claimLine->persist();
+
 			// if new amount billed is less than than last amount billed then a writeoff is added to account for the difference
 			if ($newBaseFee < $oldBaseFee) {
 				$diff = $oldBaseFee - $newBaseFee;
@@ -1461,8 +1668,8 @@ class ClaimsController extends WebVista_Controller_Action {
 				$writeOff->amount = $diff;
 				$writeOff->userId = $userId;
 				$writeOff->timestamp = date('Y-m-d H:i:s');
-				$writeOff->title = 'discount';
-				$writeOff->payerId = $discountPayerId;
+				$writeOff->title = '';
+				$writeOff->payerId = $oldPayerId;
 				$writeOff->persist();
 			}
 		}
@@ -1541,14 +1748,14 @@ class ClaimsController extends WebVista_Controller_Action {
 			$row['data'][] = $claimLine->procedureCode.' : '.$claimLine->procedure; // Code
 			//$billed = (float)$claimLine->amountBilled;
 			$billed = (float)$claimLine->baseFee;
-			$paid = (float)$claimLine->paid;
-			$writeOff = (float)$claimLine->writeOff;
+			$paid = (float)$claimLine->overallPayment;
+			$writeOff = (float)$claimLine->overallWriteOff;
 			$balance = $billed - ($paid + $writeOff);
 			if ($balance < 0) $balance = 0; // in the case of rebill
-			$row['data'][] = $billed; // Amount Billed
-			$row['data'][] = $paid; // Paid
-			$row['data'][] = $writeOff; // WriteOff
-			$row['data'][] = $balance; // Balance
+			$row['data'][] = number_format($billed,2); // Amount Billed
+			$row['data'][] = number_format($paid,2); // Paid
+			$row['data'][] = number_format($writeOff,2); // WriteOff
+			$row['data'][] = number_format($balance,2); // Balance
 			$rows[] = $row;
 		}
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
@@ -1698,6 +1905,64 @@ class ClaimsController extends WebVista_Controller_Action {
 		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
 		$json->suppressExit = true;
 		$json->direct(array('rows'=>$rows));
+	}
+
+	public function unallocatedFundsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$person = new Person();
+		$person->personId = $personId;
+		$person->populate();
+		$this->view->person = $person;
+		$this->render();
+	}
+
+	public function listUnallocatedFundsAction() {
+		$personId = (int)$this->_getParam('personId');
+		$full = (int)$this->_getParam('full');
+		$rows = array();
+		$filters = array();
+		$filters['personId'] = $personId;
+		$iterator = new PaymentIterator();
+		if ($full) { // ONLY payments that are 100% unallocated
+			$filters['100%unallocated'] = true;
+		}
+		$iterator->setFilters($filters);
+		foreach ($iterator as $payment) {
+			$row = array();
+			$row['id'] = $payment->paymentId;
+			$row['data'][] = $payment->paymentDate;
+			$row['data'][] = $payment->paymentType;
+			$row['data'][] = number_format($payment->amount,2);
+			$row['data'][] = $payment->title;
+			$rows[] = $row;
+		}
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct(array('rows'=>$rows));
+	}
+
+	public function processDeleteUnallocatedFundsAction() {
+		$paymentId = (int)$this->_getParam('paymentId');
+		$payment = new Payment();
+		$payment->paymentId = $paymentId;
+		$payment->populate();
+		// double check if paymentId is really an unallocated fund
+		$result = false;
+		if ($payment->allocated == 0
+		    && $payment->visitId == 0
+		    && $payment->appointmentId == 0) {
+			$payment->setPersistMode(WebVista_Model_ORM::DELETE);
+			$payment->persist();
+
+			$funds = Payment::listUnallocatedFunds($payment->personId);
+			$unallocatedFunds = (float)$funds['total'];
+			if ($unallocatedFunds < 0) $unallocatedFunds = 0;
+			$result = sprintf('%.2f',$unallocatedFunds);
+		}
+
+		$json = Zend_Controller_Action_HelperBroker::getStaticHelper('json');
+		$json->suppressExit = true;
+		$json->direct($result);
 	}
 
 }

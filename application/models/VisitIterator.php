@@ -94,6 +94,13 @@ class VisitIterator extends WebVista_Model_ORMIterator implements Iterator {
 					$dbSelect->join('claimLines','claimLines.visitId = encounter.encounter_id')
 						->where('claimLines.claimId IN ('.implode(',',$value).')');
 					break;
+				case 'void':
+					$dbSelect->where('encounter.void = ?',(int)$value);
+					break;
+				case 'mrn':
+					$dbSelect->join('patient','patient.person_id = encounter.patient_id')
+						->where('patient.record_number = ?',$value);
+					break;
 			}
 		}
 		$dbSelect->order('date_of_treatment DESC');

@@ -6,6 +6,11 @@
 	<item id="activate" text="<?=__('Mark Active')?>" enabled="false" />
 	<item id="inactivate" text="<?=__('Mark Inactive')?>" enabled="false" />
 	<item id="verify" text="<?=__('Mark Verify')?>" enabled="false" />
+	<item id="flags" text="<?=__('Flags')?>" enabled="false">
+		<?foreach ($this->flags as $key=>$value):?>
+		<item id="flags_<?=$key?>" text="<?=$value?>" />
+		<?endforeach;?>
+	</item>
 	<item id="sep2" type="separator"/>
 	<item id="annotate" text="<?=__('Annotate')?>" enabled="false" />
 	<item id="sep3" type="separator"/>

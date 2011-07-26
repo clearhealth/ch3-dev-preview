@@ -61,6 +61,7 @@ class ProblemListIterator extends WebVista_Model_ORMIterator implements Iterator
 	}
 
 	public function setFilters(Array $filters) {
+		if (isset($filters['context'])) unset($filters['context']);
 		$db = Zend_Registry::get('dbAdapter');
 		$dbSelect = $db->select()
 			       ->from(array('pl'=>'problemLists'))

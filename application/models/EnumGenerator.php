@@ -53,6 +53,7 @@ class EnumGenerator {
 		self::generateGenericNoteTemplateEnum($force);
 		self::generateTextOnlyTypesEnum($force);
 		self::generateEobAdjustmentTypesEnum($force);
+		self::generateChargeTypesEnum($force);
 	}
 
 	public static function generateDemographicsPreferencesEnum($force = false) {
@@ -905,6 +906,7 @@ class EnumGenerator {
 					'appointmentHistory' => array('key' => 'APPHISTORY', 'name' => 'Appointment History', 'active' => 1, 'guid' => 'ad390c48-e73b-4834-aa14-f54a72a5dc95'),
 					'patientAccount' => array('key' => 'PATIENTACC', 'name' => 'Patient Account', 'active' => 1, 'guid' => '8c13cad0-ff49-442b-94d3-f9169a0d4e85'),
 					'unallocatedPayment' => array('key' => 'UNALLOCPAY', 'name' => 'Unallocated Payment', 'active' => 1, 'guid' => 'c6e2259b-b659-44c2-8bd4-33ecd7f4da1a'),
+					'manualJournal' => array('key' => 'MANJOURNAL', 'name' => 'Manual Journal', 'active' => 1, 'guid' => '2087ff6d-0140-478c-8ff2-57f6b0429151'),
 				)),
 			);
 
@@ -2884,10 +2886,30 @@ Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
 			);
 
 			$subscribers = array(
-				array('key'=>'1','name'=>'self','active'=>1,'guid'=>'39455c4c-4c62-4b95-b197-cf4fcec51301'),
-				array('key'=>'2','name'=>'parent','active'=>1,'guid'=>'3b900003-79d8-4178-8dbf-0285f734033d'),
-				array('key'=>'3','name'=>'relative','active'=>1,'guid'=>'8fd29e89-a42d-4d0b-87f7-5a5f2231bb65'),
-				array('key'=>'4','name'=>'other','active'=>1,'guid'=>'d67d6373-ec97-4a52-bf3d-4b3bcbe3503b'),
+				array('key'=>'01','name'=>'Spouse','active'=>1,'guid'=>'27ad996f-6ad7-4e41-8642-c4fcc7c49d87'),
+				array('key'=>'04','name'=>'Grandfather or Grandmother','active'=>1,'guid'=>'48a413aa-4ff7-43a3-9bcd-8cb53364b8f4'),
+				array('key'=>'05','name'=>'Grandson or Granddaughter','active'=>1,'guid'=>'1ad98eb4-cf49-4784-9b2e-c34155a69880'),
+				array('key'=>'07','name'=>'Nephew or Niece','active'=>1,'guid'=>'00cf611e-37c7-4205-8ed1-8cbfd8ed95b0'),
+				array('key'=>'10','name'=>'Foster Child','active'=>1,'guid'=>'785f6508-660a-4e6d-9e35-6ec77ea954c8'),
+				array('key'=>'15','name'=>'Ward','active'=>1,'guid'=>'47b28ed5-81e3-4761-aea9-89e48b10f37e'),
+				array('key'=>'17','name'=>'Stepson or Stepdaughter','active'=>1,'guid'=>'09102aff-1fed-4bed-828c-8eaa0226ac21'),
+				array('key'=>'18','name'=>'Self','active'=>1,'guid'=>'94b7d031-78b4-4677-881b-5e1a3acd689d'),
+				array('key'=>'19','name'=>'Child','active'=>1,'guid'=>'6d6410b1-a548-4b13-ae4b-795bf787c8a7'),
+				array('key'=>'20','name'=>'Employee','active'=>1,'guid'=>'01010c49-dbdb-46be-b625-602030a03c6e'),
+				array('key'=>'21','name'=>'Unknown','active'=>1,'guid'=>'7d5c2e9c-4ca0-4913-83bb-49a3d3bd0eb8'),
+				array('key'=>'22','name'=>'Handicapped Dependent','active'=>1,'guid'=>'38035bec-a09e-4104-82bc-d2c90fa55547'),
+				array('key'=>'23','name'=>'Sponsored Dependent','active'=>1,'guid'=>'342bd073-151e-4665-bdb6-98de534aba11'),
+				array('key'=>'24','name'=>'Dependent of a Minor Dependent','active'=>1,'guid'=>'e341437c-f201-4188-b02a-02188e3aaf44'),
+				array('key'=>'29','name'=>'Significant Other','active'=>1,'guid'=>'592e2259-b2c4-49dc-af0c-81c4d0460e62'),
+				array('key'=>'32','name'=>'Mother','active'=>1,'guid'=>'37c456da-cac6-4347-bd34-0050a5dbc343'),
+				array('key'=>'33','name'=>'Father','active'=>1,'guid'=>'7ec88635-09c9-4366-9909-87b5842550b9'),
+				array('key'=>'36','name'=>'Emancipated Minor','active'=>1,'guid'=>'eb2920b4-692c-45d5-b018-3d476e51335b'),
+				array('key'=>'39','name'=>'Organ Donor','active'=>1,'guid'=>'db322795-58f6-4338-921d-5b1fb5807d97'),
+				array('key'=>'40','name'=>'Cadaver Donor','active'=>1,'guid'=>'4d76c60d-7d8a-47b2-b657-209669ec9a1e'),
+				array('key'=>'41','name'=>'Injured Plaintiff','active'=>1,'guid'=>'b35a8c57-46a3-4c39-899c-ce906c9ea6c4'),
+				array('key'=>'43','name'=>'Child Where Insured Has No Financial Responsibility','active'=>1,'guid'=>'543b281b-b8f4-4f19-901b-c8a09cee3df8'),
+				array('key'=>'53','name'=>'Life Partner','active'=>1,'guid'=>'cc5f5df0-0c9a-4980-b242-677d7728b12c'),
+				array('key'=>'G8','name'=>'Other Relationship','active'=>1,'guid'=>'8fe9f8fd-9f68-408b-bfaa-58df5b2ead5e'),
 			);
 
 			$payerTypes = array(
@@ -3064,6 +3086,46 @@ Highest urgency allowed: ASAP','active'=>1,'guid'=>''),
 
 			$level = array();
 			$level['guid'] = '93f9b91c-9911-4038-a3dc-69522d5816f6';
+			$level['key'] = $key;
+			$level['name'] = $name;
+			$level['category'] = 'System';
+			$level['active'] = 1;
+			$level['data'] = $enums;
+
+			$data = array($level);
+
+			self::_saveEnumeration($data);
+			$ret = true;
+		} while(false);
+		return $ret;
+	}
+
+	public static function generateChargeTypesEnum($force = false) {
+		$ret = false;
+		do {
+			$name = 'Charge Types';
+			$key = 'CHG_TYPES';
+			$enumeration = new Enumeration();
+			$enumeration->populateByUniqueName($name);
+			// check for key existence
+			if (strlen($enumeration->key) > 0 && $enumeration->key == $key) {
+				if (!$force) {
+					break;
+				}
+				$enumerationClosure = new EnumerationsClosure();
+				$enumerationClosure->deleteEnumeration($enumeration->enumerationId);
+			}
+
+			$enums = array(
+				array('key' => 'CORRCHARGE', 'name' => 'Correction Charge', 'active' => 1, 'guid' => '46c4a502-01d5-4de6-93fa-443d53b7b33d'),
+				array('key' => 'LABCHARGE', 'name' => 'Labs Charge', 'active' => 1, 'guid' => '427b5de7-8e77-4019-8152-09d7edbe63c6'),
+				array('key' => 'MEDCHARGE', 'name' => 'Medication Charge', 'active' => 1, 'guid' => '1a0b97d2-5a8f-471b-bb90-2ec2d1aacc7b'),
+				array('key' => 'VISITCHG', 'name' => 'Visit Charge', 'active' => 1, 'guid' => 'b73106f0-fbd4-435f-94f3-2e2e02293aae'),
+				array('key' => 'OTHER', 'name' => 'Other', 'active' => 1, 'guid' => 'b309495a-8f4c-4eb0-b558-a81cf79acf13'),
+			);
+
+			$level = array();
+			$level['guid'] = '5ca94c8c-5198-4461-957b-fa568be9c79e';
 			$level['key'] = $key;
 			$level['name'] = $name;
 			$level['category'] = 'System';

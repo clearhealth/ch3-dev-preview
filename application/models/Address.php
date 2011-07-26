@@ -129,13 +129,14 @@ class Address extends WebVista_Model_ORM {
 		if ($type === null) {
 			$type = $this->getType();
 		}
+		if (!$practiceId > 0) return false;
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
 				->from($this->_table)
 				->where('practiceId = ?',(int)$practiceId)
 				->where('type = ?',$type)
 				->limit(1);
-		$this->populateWithSql($sqlSelect->__toString());
+		return $this->populateWithSql($sqlSelect->__toString());
 	}
 
 	public function populateWithType($type,$forced=false) {

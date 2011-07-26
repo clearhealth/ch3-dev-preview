@@ -157,77 +157,35 @@ class MiscCharge extends WebVista_Model_ORM {
 		return $total;
 	}
 
-	public static function listAccounts(Array $filters) {
+	// can be used to get all misc charges if visit is open
+	public static function getIteratorByIds(Visit $visit) {
+		$orm = new self();
 		$db = Zend_Registry::get('dbAdapter');
 		$sqlSelect = $db->select()
-				->from('misc_charge',array(
-					'misc_charge.misc_charge_id AS id',
-					'misc_charge.amount AS billed',
-					'CONCAT(\'0\') AS paid',
-					'CONCAT(\'0\') AS writeOff',
-					'CONCAT(\'Misc Charge\') AS payer',
-					'encounter.date_of_treatment AS dateOfTreatment',
-					'misc_charge.charge_date AS dateBilled',
-					'CONCAT(patient.last_name,\', \',patient.first_name,\' \',patient.middle_name) AS patientName',
-					'CONCAT(\'\') AS facility',
-					'CONCAT(provider.last_name,\', \',provider.first_name,\' \',provider.middle_name) AS providerName',
-				))
-				->join('encounter','encounter.encounter_id = misc_charge.encounter_id')
-				->join(array('patient'=>'person'),'patient.person_id = encounter.patient_id')
-				->join(array('provider'=>'person'),'provider.person_id = encounter.treating_person_id')
-				->order('misc_charge.charge_date DESC');
-		foreach ($filters as $key=>$value) {
-			switch ($key) {
-				case 'dateRange':
-					$sqlSelect->where("encounter.date_of_treatment BETWEEN '{$value['start']} 00:00:00' AND '{$value['end']} 23:59:59'");
-					break;
-				case 'facilities':
-					// practice, building, room
-					if (!is_array($value)) $value = array($value);
-					$facilities = array();
-					foreach ($value as $val) {
-						$facilities[] = 'encounter.practice_id = '.(int)$val['practice'].' AND encounter.building_id = '.(int)$val['building'].' AND encounter.room_id = '.(int)$val['room'];
-					}
-					$sqlSelect->where(implode(' OR ',$facilities));
-					break;
-				case 'payers':
-					$payers = array();
-					foreach ($value as $payerId) {
-						$payers[] = (int)$payerId;
-					}
-					$sqlSelect->where('encounter.activePayerId IN ('.implode(',',$payers).')');
-					break;
-				case 'facility':
-					// practice, building, room
-					$sqlSelect->where('encounter.practice_id = ?',(int)$value['practice']);
-					$sqlSelect->where('encounter.building_id = ?',(int)$value['building']);
-					$sqlSelect->where('encounter.room_id = ?',(int)$value['room']);
-					break;
-				case 'insurer':
-					$sqlSelect->where('encounter.activePayerId = ?',(int)$value);
-					break;
-				case 'visitId':
-					$sqlSelect->where('encounter.encounter_id = ?',(int)$value);
-					break;
-				case 'provider':
-					$sqlSelect->where('encounter.treating_person_id = ?',(int)$value);
-					break;
-				case 'providers':
-					$providers = array();
-					foreach ($value as $providerId) {
-						$providers[] = (int)$providerId;
-					}
-					$sqlSelect->where('encounter.treating_person_id IN ('.implode(',',$providers).')');
-					break;
+				->from($orm->_table)
+				->where('(encounter_id = '.(int)$visit->visitId.') OR (encounter_id = 0 AND appointmentId = '.(int)$visit->appointmentId.' AND personId = '.(int)$visit->patientId.')');
+		return $orm->getIterator($sqlSelect);
+	}
+
+	public function getEnteredBy() {
+		$db = Zend_Registry::get('dbAdapter');
+		$sqlSelect = $db->select()
+				->from('audits','userId')
+				->where('objectClass = ?','MiscCharge')
+				->where('objectId = ?',$this->misc_charge_id)
+				->order('dateTime DESC')
+				->limit(1);
+		$ret = '';
+		if ($row = $db->fetchRow($sqlSelect)) {
+			$userId = (int)$row['userId'];
+			if ($userId > 0) {
+				$user = new User();
+				$user->userId = $userId;
+				$user->populate();
+				$ret = $user->username;
 			}
 		}
-
-		$rows = array();
-		$stmt = $db->query($sqlSelect);
-		while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-			$rows[] = $row;
-		}
-		return $rows;
+		return $ret;
 	}
 
 }

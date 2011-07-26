@@ -363,6 +363,7 @@ class LabResultsController extends WebVista_Controller_Action {
 
 mainTabbar.setOnTabContentLoaded(function(tabId){
 	TabState.setParam({"orderId":objectId});
+	reloadLabResultsGrid();
 });
 
 EOL;

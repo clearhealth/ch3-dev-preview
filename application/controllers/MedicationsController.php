@@ -33,6 +33,7 @@ class MedicationsController extends WebVista_Controller_Action {
 
 	public function init() {
 		$this->_session = new Zend_Session_Namespace(__CLASS__);
+		if (!isset($this->_session->filters) || !isset($this->_session->filters['active'])) $this->_session->filters = array('active'=>1,'discontinued'=>1,'patientReported'=>1);
 	}
 
 	public function ajaxDiscontinueMedicationAction() {
@@ -153,15 +154,6 @@ class MedicationsController extends WebVista_Controller_Action {
 			$this->view->discontinue = $discontinue;
 		}
 
-		$patient = new Patient();
-		$patient->personId = $personId;
-		$patient->populate();
-		$defPharmacy = new Pharmacy();
-		$defPharmacy->pharmacyId = $patient->defaultPharmacyId;
-		if ($defPharmacy->populate()) {
-			$this->view->defaultPharmacy = $defPharmacy;
-		}
-
 		$name = Medication::ENUM_ADMIN_SCHED;
 		$enumeration = new Enumeration();
 		$enumeration->populateByEnumerationName($name);
@@ -190,7 +182,10 @@ class MedicationsController extends WebVista_Controller_Action {
 		}
 		if (!strlen($this->_medication->pharmacyId) > 0) {
 			$this->_medication->pharmacyId = $patient->defaultPharmacyId;
+			$this->_medication->pharmacy->populate();
 		}
+		$this->view->defaultPharmacy = $this->_medication->pharmacy;
+
 
 		if (strlen($discontinue) > 0) {
 			$this->_medication->daysSupply = -1;
@@ -364,10 +359,8 @@ class MedicationsController extends WebVista_Controller_Action {
 	 * Default action to dispatch
 	 */
 	public function indexAction() {
-		if (!isset($this->_session->filters)) $this->_session->filters = array('active'=>1,'discontinued'=>1,'patientReported'=>0);
 		$this->render('index');
 	}
-
 
 	public function toolbarAction() {
 		header("Cache-Control: public");

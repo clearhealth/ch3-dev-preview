@@ -44,6 +44,7 @@ class ClaimLineIterator extends WebVista_Model_ORMIterator implements Iterator {
 		foreach ($filters as $key=>$value) {
 			switch ($key) {
 				case 'visitId':
+				case 'insuranceProgramId':
 				case 'claimId':
 					$sqlSelect->where($key.' = ?',(int)$value);
 					break;

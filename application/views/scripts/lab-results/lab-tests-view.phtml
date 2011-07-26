@@ -144,6 +144,9 @@ function resultsOnMenuClicked(itemId,type) {
 		case 'clear_graph':
 			clearChart();
 			break;
+		case 'print':
+			printResults();
+			break;
 		case "sign":
 			var rowId = resultsGrid.getSelectedRowId();
 			if (rowId == null) break;
@@ -159,6 +162,15 @@ function clearChart() {
 	dojo.setInnerHTML(dojo.byId('graphLegend'),'');
 	dojo.setInnerHTML(dojo.byId('graphChart'),'');
 	chartData = {};
+}
+
+function printResults() {
+	if (TabState.getParam('orderId') > 0 ) { 
+		window.open('<?=$this->baseUrl?>/lab-results.xml/print-lab-results?patientId='+mainController.getActivePatient()+'&orderId='+TabState.getParam('orderId'),'pdfTemplate');
+	}
+	else {
+		window.open('<?=$this->baseUrl?>/lab-results.xml/print-lab-results?patientId='+mainController.getActivePatient()+'&dateBegin='+TabState.getParam('dateBegin')+'&dateEnd='+TabState.getParam('dateEnd'),'pdfTemplate');
+	}
 }
 
 // convert date format yyyy-mm-dd hh:mm:ss to JS date object
