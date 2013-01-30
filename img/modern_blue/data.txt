@@ -1,2 +1,0 @@
-background: #F6F6EE
-font: Arial 12px bold #FFFFFF
